@@ -1,0 +1,14 @@
+node_modules/
+dist/
+releases/
+*-test.png
+/*.png
+.DS_Store
+__pycache__/
+*.pyc
+*.blend1
+.env
+.env.*
+assets/audio/*.m4a
+!assets/audio/frontline-sequence.m4a
+assets/private-voices/

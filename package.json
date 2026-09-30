@@ -1,0 +1,21 @@
+{
+  "name": "great-powers-rts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "package:offline": "node scripts/package-offline.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "lucide": "^0.468.0",
+    "pathfinding": "^0.4.18",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  }
+}

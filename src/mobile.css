@@ -1,0 +1,60 @@
+@media (max-width: 700px) {
+  .toast-container {
+    top: 105px;
+    max-width: calc(100% - 20px);
+  }
+
+  .bottom-left {
+    min-width: 135px;
+    max-width: 135px;
+  }
+
+  .bottom-left span:last-child {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bottom-left span.selection-health {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+    font-size: 9px;
+  }
+
+  .command-toolbar {
+    right: 6px;
+    gap: 3px;
+  }
+
+  .command-btn {
+    width: 40px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand {
+    min-width: 130px;
+  }
+
+  .brand strong {
+    white-space: nowrap;
+  }
+
+  .mission {
+    order: 3;
+    width: auto;
+    flex: 1;
+  }
+
+  .resources {
+    order: 4;
+    margin-left: auto;
+  }
+
+  .bottom-left {
+    bottom: 60px;
+  }
+}

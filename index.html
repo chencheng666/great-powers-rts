@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#171d1b" />
+    <title>大国崛起 | 即时战略试玩版</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark">R</span><div><strong>大国崛起</strong><small>战区指挥系统 · 试玩版</small></div></div>
+        <div class="mission"><span class="live-dot"></span><span id="mission-label">遭遇战 · 灰谷地带</span><span class="mission-separator"></span><span id="clock">00:00</span></div>
+        <div class="resources">
+          <div class="resource credits" title="资金"><i data-lucide="coins"></i><strong id="credits">0</strong></div>
+          <div class="resource power" title="电力"><i data-lucide="zap"></i><strong id="power">0 / 0</strong></div>
+          <div class="resource army" title="部队"><i data-lucide="users"></i><strong id="army">0</strong></div>
+        </div>
+        <div class="top-actions"><button id="fullscreen-btn" class="icon-btn" title="进入全屏" aria-label="进入全屏" aria-pressed="false"><i data-lucide="maximize"></i></button><button id="sidebar-btn" class="icon-btn" title="收起指挥面板" aria-label="收起指挥面板" aria-expanded="true" aria-controls="command-sidebar"><i data-lucide="panel-right-close"></i></button><button id="sound-btn" class="icon-btn" title="声音设置" aria-label="声音设置" aria-expanded="false" aria-controls="audio-panel"><i data-lucide="volume-2"></i></button><button id="help-btn" class="icon-btn" title="操作说明" aria-label="操作说明"><i data-lucide="circle-help"></i></button><button id="pause-btn" class="icon-btn" title="暂停游戏" aria-label="暂停游戏"><i data-lucide="pause"></i></button></div>
+      </header>
+      <section id="audio-panel" class="audio-panel" aria-label="声音设置" hidden>
+        <div class="audio-panel-heading"><strong>声音设置</strong><button id="audio-close" class="icon-btn" title="关闭声音设置" aria-label="关闭声音设置"><i data-lucide="x"></i></button></div>
+        <label class="audio-mute"><span>静音</span><input id="audio-muted" type="checkbox"></label>
+        <label class="audio-level"><span>总音量</span><input type="range" min="0" max="100" step="1" data-audio="master" aria-label="总音量"><output data-audio-value="master"></output></label>
+        <label class="audio-level"><span>背景音乐</span><input type="range" min="0" max="100" step="1" data-audio="music" aria-label="背景音乐音量"><output data-audio-value="music"></output></label>
+        <label class="audio-level"><span>中文语音</span><input type="range" min="0" max="100" step="1" data-audio="voice" aria-label="中文语音音量"><output data-audio-value="voice"></output></label>
+        <label class="audio-level"><span>战场音效</span><input type="range" min="0" max="100" step="1" data-audio="effects" aria-label="战场音效音量"><output data-audio-value="effects"></output></label>
+      </section>
+
+      <main class="game-layout">
+        <section class="battlefield" id="battlefield" aria-label="即时战略战场">
+          <canvas id="game-canvas"></canvas>
+          <div id="compact-radar" class="compact-radar" hidden></div>
+          <div class="battle-hud top-left"><span class="hud-label">战区态势</span><strong id="battle-status">部署中</strong><span id="battle-objective">摧毁敌方指挥中心</span></div>
+          <div class="battle-hud top-right"><span id="faction-short">请选择阵营</span><span class="divider"></span><span id="enemy-short">敌方：待确认</span></div>
+          <div class="battle-hud bottom-left" id="selection-panel"><span class="hud-label">当前选择</span><strong>未选择单位</strong><span>左键选择 · 框选部队 · 右键下达命令</span></div>
+          <div class="command-toolbar" id="command-toolbar">
+            <button class="command-btn" id="move-btn" title="移动部队"><i data-lucide="move-up-right"></i><span>移动</span></button>
+            <button class="command-btn" id="attack-btn" title="攻击移动 A"><i data-lucide="crosshair"></i><span>攻击</span></button>
+            <button class="command-btn" id="all-btn" title="选择所有作战单位"><i data-lucide="users-round"></i><span>全军</span></button>
+            <button class="command-btn" id="stop-btn" title="停止 S"><i data-lucide="hand"></i><span>停止</span></button>
+            <button class="command-btn" id="home-btn" title="回到基地 H"><i data-lucide="house"></i><span>基地</span></button>
+          </div>
+          <div class="toast-container" id="toast-container"></div>
+        </section>
+
+        <aside class="sidebar" id="command-sidebar">
+          <div class="side-heading"><div><small>战术终端</small><h2 id="side-faction">阵营指挥</h2></div><button id="sidebar-close" class="icon-btn" title="收起指挥面板" aria-label="收起指挥面板"><i data-lucide="chevrons-right"></i></button></div>
+          <div class="minimap-shell" id="minimap-shell"><canvas id="minimap" width="284" height="180"></canvas><div class="minimap-label"><span id="minimap-map">灰谷地带</span><span id="minimap-sector">战区 01</span></div></div>
+          <div class="sidebar-tabs" role="tablist"><button class="tab active" data-tab="build" role="tab" aria-selected="true"><i data-lucide="blocks"></i> 建筑</button><button class="tab" data-tab="units" role="tab" aria-selected="false"><i data-lucide="swords"></i> 部队</button><button class="tab" data-tab="tactics" role="tab" aria-selected="false"><i data-lucide="radar"></i> 战术</button></div>
+          <div class="sidebar-content" id="sidebar-content"></div>
+          <div class="sidebar-footer"><div class="progress-label"><span id="queue-title">建造序列</span><span class="queue-controls"><span id="queue-time">待命</span><button id="queue-cancel" type="button" title="取消当前建造或生产" aria-label="取消当前建造或生产" hidden><i data-lucide="x"></i></button></span></div><div class="progress-track"><div id="queue-progress"></div></div><p id="queue-detail">选择建筑或生产单位开始部署</p></div>
+        </aside>
+      </main>
+
+      <div id="start-screen" class="start-screen">
+        <div class="start-backdrop"></div>
+        <div class="start-shade"></div>
+        <div class="start-content"><div class="start-kicker"><span class="live-dot"></span> 现代即时战略 · 单机遭遇战</div><h1>大国<br><em>崛起</em></h1><p class="start-lede">集结部队。争夺资源。用你的战术，改写这片战场。</p><div class="start-rule"><span>01</span> 五阵营对称开局 <span>02</span> 建造与采矿 <span>03</span> 实时 AI 对战</div><div class="start-bottom"><span>指挥官，请选择你的阵营</span><i data-lucide="arrow-down"></i></div></div>
+        <div class="faction-picker"><div class="picker-heading"><strong>选择阵营</strong><span>每支军队都有自己的优势与弱点</span></div><div class="faction-list" id="faction-list"></div><label class="map-select">战场 <select id="map-select"></select></label><div class="victory-picker"><span>胜利规则</span><div class="victory-options" role="group" aria-label="胜利规则"><button type="button" class="victory-option active" data-victory="quick">快速对战<small>摧毁全部生产核心</small></button><button type="button" class="victory-option" data-victory="annihilation">全域歼灭<small>清除全部建筑与单位</small></button></div></div><div class="start-controls"><label class="enemy-select">对手 <select id="enemy-select"><option value="random">随机阵营</option></select></label><label class="enemy-select">难度 <select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select></label><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 开始作战</button></div></div>
+      </div>
+
+      <div id="modal" class="modal hidden"><div class="modal-card"><button id="modal-close" class="modal-close icon-btn" title="关闭"><i data-lucide="x"></i></button><div id="modal-content"></div></div></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

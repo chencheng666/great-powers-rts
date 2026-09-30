@@ -1,0 +1,37 @@
+{
+  "生成模式": "内置 image_gen.imagegen；原创素材，不使用原版红警美术",
+  "说明": "以下为素材复现提示词，建筑采用三维场景中的高清透明立绘，移动单位采用本地 Blender 模型。",
+  "素材": [
+    {
+      "文件": "assets/armory-v1.png",
+      "透明背景": true,
+      "提示词": "Create ONE original photoreal near-future military ARMORY weapons manufacturing building sprite for a premium realistic isometric RTS, isolated on a genuinely transparent alpha background. Fixed elevated orthographic camera about 55 degrees above the ground, see front and right sides, light from upper left. Architectural massing: long low armored industrial assembly hall, flat reinforced roof, visible skylights and roof vents, a raised electronics assembly tower at the rear, a small side gantry with missile containers, several sealed loading bays with steel blast doors, cyan identification stripes, short orderly pipes, realistic aged dark grey steel and concrete, fine railings and a few restrained yellow safety marks. Not a vehicle factory: NO huge tank garage gate, no tank emerging. Distinct specialized military weapons plant with electronics laboratory details. Complete concrete slab foundation, front access steps and service apron fully visible, don't cut off or bury the foundation. The entire building is fully contained with generous transparent margins. Asset matches realistic modern RTS military architecture, highly detailed PBR rendering, realistic proportions, not cartoon, no voxel, no pixel art, no text, no letters, no logos, no scenery, no background, no people, no ground cast shadow outside the foundation. Landscape sprite, about 4:3 canvas."
+    },
+    {
+      "文件": "assets/terrain-valley-v2.png",
+      "提示词": "Create a premium realistic real-time strategy game TERRAIN BASE TEXTURE, landscape wide image 3:2. A directly overhead orthographic aerial view of an expansive temperate military valley floor, readable real natural terrain, NOT a perspective painting. Highly varied natural patches of short deep olive green meadow grass, sparse dry straw grass, darker earth and mud, scattered fine grey gravel, subtle faint vehicle ruts across the open areas, low scale realistic geological variation and fine soil detail. Wide areas of calm short grass with irregular winding earth clearings, not evenly tiled or uniformly speckled gravel. No buildings, no vehicles, no people, no trees, no large rocks, no mountains, no water, no roads, no text. These objects will be rendered separately by the game. Photoreal physically based game texture, crisp fine material detail, soft diffuse daylight, no hard shadows. Natural muted green, earth charcoal grey with sparse straw details. Fill the entire frame with usable ground surface. The whole frame spans about 300 meters."
+    },
+    {
+      "文件": "assets/buildings-realistic-v2.png",
+      "透明背景": true,
+      "复现提示词": "Create a transparent 4-column by 3-row sprite atlas of twelve original near-future military buildings for a premium realistic RTS game. Fixed elevated orthographic camera, approximately 55 degrees above ground, consistent lighting from the upper left. Each building fully contained and clearly separated within its own cell. Row 1: fortified command center, power station with twin cooling towers, industrial refinery, military barracks. Row 2: armored vehicle factory, naval shipyard with crane, radar station, airbase hangar and control tower. Row 3: defensive gun turret, high-tech research laboratory, missile silo superweapon, oil pumping station. Photoreal PBR steel and concrete, weathering, pipework, vents, stairs, safety rails, detailed windows, military industrial architecture with restrained cyan identification strips. Not cartoon, not voxel, not pixel art, no text or logos, no ground scenery, transparent alpha background."
+    },
+    {
+      "文件": "assets/foliage-realistic-v2.png",
+      "透明背景": true,
+      "复现提示词": "Create a 2-column by 2-row transparent atlas of four realistic temperate trees for an elevated orthographic military RTS camera: spruce, pine, fir, and narrow cypress. Each fully isolated and centered in its cell with generous transparent margins, no overlap. Fine branches, realistic needles and foliage silhouette, natural variation, subtle daylight from upper left. Premium realistic game vegetation, not spherical cartoon foliage, not voxel, not pixel art. No scenery, no ground plane or cast ground shadows, no text, transparent alpha background."
+    },
+    {
+      "文件": "assets/ground-realistic-v2.png",
+      "用途": "早期地表素材，当前战场使用 terrain-valley-v2.png",
+      "复现提示词": "Seamless photoreal top-down military valley ground texture, short muted grass, soil and fine grey gravel, diffuse daylight, no objects, no perspective, no text."
+    }
+  ],
+  "三维模型": {
+    "可编辑源文件": "assets/models/military-library.blend",
+    "运行素材": "assets/models/military-library.glb",
+    "生成脚本": "scripts/build_military_assets.py",
+    "类别数量": 34,
+    "工具": "本地 Blender 5.2.1 LTS"
+  }
+}

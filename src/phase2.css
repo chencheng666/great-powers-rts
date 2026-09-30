@@ -1,0 +1,202 @@
+.victory-picker {
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px solid #4f6254;
+}
+
+.map-select {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 12px;
+  color: #a7baaa;
+  font-size: 10px;
+}
+
+.map-select select {
+  width: 100%;
+  height: 39px;
+  padding: 0 10px;
+  border: 1px solid #627263;
+  border-radius: 0;
+  background: #263329;
+  color: #e7f0e6;
+}
+
+.faction-option {
+  min-height: 68px;
+  padding-block: 8px;
+}
+
+#minimap-map {
+  color: #d4dbc9;
+}
+
+.victory-picker > span {
+  display: block;
+  margin-bottom: 8px;
+  color: #b8c8b5;
+  font-size: 10px;
+}
+
+.victory-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.victory-option {
+  min-height: 50px;
+  padding: 7px 10px;
+  text-align: left;
+  color: #c7d4c7;
+  background: #253329;
+  border: 1px solid #536657;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.victory-option small {
+  display: block;
+  margin-top: 3px;
+  color: #9faf9f;
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.victory-option:hover,
+.victory-option.active {
+  color: #f3f3df;
+  border-color: #dcb774;
+  background: #3b4232;
+}
+
+.selection-actions {
+  display: flex;
+  gap: 5px;
+  margin-top: 7px;
+  pointer-events: auto;
+}
+
+.selection-actions button {
+  width: 29px;
+  height: 25px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #dcebd8;
+  background: #344537;
+  border: 1px solid #7a967c;
+}
+
+.selection-actions button:hover,
+.selection-actions button.active {
+  color: #c6ffd0;
+  border-color: #9ce1aa;
+  background: #416248;
+}
+
+.selection-actions button:disabled {
+  opacity: .38;
+  cursor: not-allowed;
+}
+
+.selection-actions button[data-action="sell"]:hover {
+  color: #ffd0bd;
+  border-color: #d98570;
+  background: #69453a;
+}
+
+.selection-actions svg {
+  width: 15px;
+  height: 15px;
+}
+
+.queue-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e2c47c;
+}
+
+#queue-cancel {
+  width: 23px;
+  height: 23px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #dce9d6;
+  border: 1px solid #6d816e;
+  background: #344537;
+}
+
+#queue-cancel[hidden] {
+  display: none;
+}
+
+#queue-cancel:hover {
+  color: #ffd0bd;
+  border-color: #d98570;
+  background: #69453a;
+}
+
+#queue-cancel svg {
+  width: 14px;
+  height: 14px;
+}
+
+.start-controls .enemy-select {
+  min-width: 0;
+}
+
+.start-controls .enemy-select select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.start-controls .primary-btn {
+  padding-inline: 12px;
+}
+
+@media (max-width: 700px) {
+  .start-content {
+    min-height: 250px;
+  }
+
+  .start-content h1 {
+    font-size: 56px;
+    margin-top: 18px;
+  }
+
+  .faction-picker {
+    min-height: calc(100vh - 250px);
+    padding-top: 14px;
+  }
+
+  .faction-list {
+    gap: 5px;
+  }
+
+  .faction-option {
+    min-height: 52px;
+  }
+
+  .picker-heading {
+    margin-bottom: 8px;
+  }
+
+  .victory-picker {
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+
+  .victory-option {
+    min-height: 45px;
+    font-size: 10px;
+  }
+
+  .start-controls {
+    padding-top: 10px;
+  }
+}
