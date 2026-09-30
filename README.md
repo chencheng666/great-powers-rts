@@ -88,7 +88,7 @@ npm run package:offline  # 生成单文件 HTML 与 ZIP
 
 模型随仓库提供 GLB 和可编辑 `.blend`，无需安装 Blender 就能运行。重新生成模型时可使用本地 Blender 后台模式执行对应 Python 脚本。生成配乐可执行 `node scripts/generate-audio.mjs`。素材提示词与授权说明见 [ASSETS.md](ASSETS.md)。
 
-`scripts/verify-*-browser.js` 是开发过程使用的 ego-browser 手动验证脚本，不是通用 CI 浏览器测试。需要正在运行的游戏、该工具及活动 TaskSpace；从项目根目录执行，并设置 `EGO_TASK_SPACE` 为当前空间编号，不能复用已经结束的空间。现代海战脚本需先进入远洋战区对局。
+`scripts/verify-*-browser.js` 是开发过程使用的 ego-browser 手动验证脚本，不是通用 CI 浏览器测试。需要游戏正在 `http://localhost:4173/` 运行、该工具及活动 TaskSpace，不能复用已经结束的空间。通过 `node scripts/run-browser-check.mjs audio 当前空间编号` 执行；`audio` 也可换为 `visual`、`battlefield` 或 `modern`，后者需先进入远洋战区对局。检查脚本不负责创建或结束 TaskSpace，应由调用方管理。
 
 ## 已知边界
 

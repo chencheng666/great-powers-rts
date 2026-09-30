@@ -1,6 +1,6 @@
-const task = await taskSpace(Number(process.env.EGO_TASK_SPACE));
+const { root, taskSpaceId } = globalThis.GAME_QA;
+const task = await taskSpace(taskSpaceId);
 const page = task.page('p1');
-const root = process.cwd();
 await page.cdp('Emulation.setDeviceMetricsOverride', { width: 1512, height: 762, deviceScaleFactor: 1, mobile: false });
 await page.goto('http://localhost:4173/');
 await page.click('#start-btn');

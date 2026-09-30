@@ -1,5 +1,5 @@
-const task = await taskSpace(Number(process.env.EGO_TASK_SPACE)), page = task.page('p1');
-const root = process.cwd();
+const { root, taskSpaceId } = globalThis.GAME_QA;
+const task = await taskSpace(taskSpaceId), page = task.page('p1');
 await page.evaluate(() => document.querySelector('#modal').classList.add('hidden'));
 await page.click('[data-tab="units"]');
 const production = await page.evaluate(() => ({
