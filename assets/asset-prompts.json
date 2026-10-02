@@ -3,6 +3,10 @@
   "说明": "以下为素材复现提示词，建筑采用三维场景中的高清透明立绘，移动单位采用本地 Blender 模型。",
   "素材": [
     {
+      "文件": "assets/meridian-regolith-v1.png",
+      "复现提示词": "Generate a realistic strictly overhead orthographic lunar regolith ground texture for a modern sci-fi RTS. Broad open silver-grey and charcoal-grey fine dust plains, irregular subtle geological variation, several shallow craters and sparse small fractured gravel. Diffuse daylight, usable level terrain. No perspective, no horizon, no buildings, no objects, no roads, no plants, no vehicles, no UI, no text, no logos, no neon. Natural fine ground surface detail, not cartoon, not pixel art, not voxel. The whole image spans hundreds of meters."
+    },
+    {
       "文件": "assets/armory-v1.png",
       "透明背景": true,
       "提示词": "Create ONE original photoreal near-future military ARMORY weapons manufacturing building sprite for a premium realistic isometric RTS, isolated on a genuinely transparent alpha background. Fixed elevated orthographic camera about 55 degrees above the ground, see front and right sides, light from upper left. Architectural massing: long low armored industrial assembly hall, flat reinforced roof, visible skylights and roof vents, a raised electronics assembly tower at the rear, a small side gantry with missile containers, several sealed loading bays with steel blast doors, cyan identification stripes, short orderly pipes, realistic aged dark grey steel and concrete, fine railings and a few restrained yellow safety marks. Not a vehicle factory: NO huge tank garage gate, no tank emerging. Distinct specialized military weapons plant with electronics laboratory details. Complete concrete slab foundation, front access steps and service apron fully visible, don't cut off or bury the foundation. The entire building is fully contained with generous transparent margins. Asset matches realistic modern RTS military architecture, highly detailed PBR rendering, realistic proportions, not cartoon, no voxel, no pixel art, no text, no letters, no logos, no scenery, no background, no people, no ground cast shadow outside the foundation. Landscape sprite, about 4:3 canvas."

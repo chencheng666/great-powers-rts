@@ -33,6 +33,7 @@ await writeFile(join(destination, 'PLAY.html'), html);
 await copyFile(join(root, 'packaging/README.txt'), join(destination, 'README.txt'));
 await copyFile(join(root, 'LICENSE'), join(destination, 'LICENSE'));
 await copyFile(join(root, 'ASSETS.md'), join(destination, 'ASSETS.md'));
+await copyFile(join(root, 'EQUIPMENT.md'), join(destination, 'EQUIPMENT.md'));
 const licenses = [];
 for (const [name, path, readmeSection] of [
   ['Three.js', 'node_modules/three/LICENSE', false],

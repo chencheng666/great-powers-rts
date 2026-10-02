@@ -1,0 +1,74 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>国庆不只看装备：我用 GPT6.1 做的「红警风」游戏又升级了</title><meta name="description" content="昨天开源，今天继续升级。99A、无人机、远程火力和科幻战区，正在走进这款可以玩的红警风格游戏。多张桌面实机与模型图，聊聊军迷情怀、策略玩法，以及东风、052D、月球基地和联机的下一步。"></head><body style="margin:0;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;letter-spacing:0;"><article style="max-width:740px;margin:0 auto;padding:38px 24px 60px;"><header><p style="color:#a53032;font-size:13px;margin:0 0 14px;">大国崛起 · 国庆开发手记</p><h1 style="font-size:30px;line-height:1.5;margin:0 0 14px;color:#182328;">国庆不只看装备：我用 GPT6.1 做的「红警风」游戏又升级了</h1><p style="font-size:13px;color:#647078;margin:0 0 30px;">陈成 · 2026年10月2日</p></header><p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">昨天，我把用 GPT6.1 / Codex 一起开发的红警风格游戏发到了公众号。反响不错，也让我更想把这个项目继续做下去。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">国庆假期，对军迷来说，装备的魅力不只是一个型号、一张照片。履带、炮塔、雷达、飞翼背后，是材料、制造、电子、航空航天这些工业能力。看到国产装备与科技进步，那份自豪感很自然。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">我想把这份热爱做成一个自己的作品：既能看到熟悉的装备元素，又能真正建基地、调兵、侦察和对战。今天就少讲一点代码，多放一些图，看看《大国崛起》这次更新到了哪里。</p>
+<figure style="margin:26px 0 30px;"><img src="images/02-china-equipment.png" alt="现有模型离线渲染｜参考 99A 与 PHL-03 公开外形特征制作的原创简化模型。Blender 展示灯光，不代表游戏实时画质，也不是等比例工程复刻。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">现有模型离线渲染｜参考 99A 与 PHL-03 公开外形特征制作的原创简化模型。Blender 展示灯光，不代表游戏实时画质，也不是等比例工程复刻。</figcaption></figure>
+<h2 style="margin:42px 0 22px;padding-left:12px;border-left:4px solid #b53132;font-size:23px;line-height:1.5;color:#182328;">先回顾 昨天已经能玩什么</h2>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">它已经不是只有画面的演示：五个虚构阵营，基地建设、供电、采矿、独立生产设施、战争迷雾，以及能打完一局的单机 AI。现代支援车辆、驱逐舰、航母和潜艇也已经进入了玩法。浏览器能运行，公开试玩包也支持离线打开。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">那种熟悉的节奏还在：先保证经济，再选择科技路线，最后把你攒起来的部队送进战场。但这次我想继续往前走，让装备更有辨识度，也让战术选择更有意义。</p>
+<figure style="margin:26px 0 30px;"><img src="images/01-base-and-inspector.png" alt="桌面实机截图｜点击战车工厂，可以看到生命、供电、造价和生产状态。兵营、战车工厂与兵工厂各有分工。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">桌面实机截图｜点击战车工厂，可以看到生命、供电、造价和生产状态。兵营、战车工厂与兵工厂各有分工。</figcaption></figure>
+<h2 style="margin:42px 0 22px;padding-left:12px;border-left:4px solid #b53132;font-size:23px;line-height:1.5;color:#182328;">装备升级 从通用坦克走向不同原型</h2>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">这一轮整理了 20 个现实装备原型名称和公开定位。中国方向有 99A、PHL-03、歼-20、红旗-17；其他方向也引入了 T-90MS、M1A2、K2、梅卡瓦 Mk4 等原型名称。阵营仍然是虚构设定，不是现实国家战争模拟。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">目前五种坦克、五种火箭炮已经有独立的简化模型：炮塔轮廓、装甲模块、尾舱和发射舱开始有区别。航空、防空、运输和舰艇中的一些单位仍使用通用模型，不能因为换了名字，就说已经完成了那个型号的复刻。</p>
+<figure style="margin:26px 0 30px;"><img src="images/03-five-tanks.png" alt="现有模型离线渲染｜五阵营坦克简化模型合集，参考 99A、T-90MS、M1A2、K2、梅卡瓦 Mk4 的部分外形特征。模型还会继续细化。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">现有模型离线渲染｜五阵营坦克简化模型合集，参考 99A、T-90MS、M1A2、K2、梅卡瓦 Mk4 的部分外形特征。模型还会继续细化。</figcaption></figure>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">更重要的是，真实名称不是数值特权。游戏射程、装甲、造价、生产时间和伤害是为对战设计的抽象，不是现实性能评测。喜欢国产装备，和希望游戏公平、对手也有机会赢，并不矛盾。</p>
+<h2 style="margin:42px 0 22px;padding-left:12px;border-left:4px solid #b53132;font-size:23px;line-height:1.5;color:#182328;">战术升级 侦察 火力 反制与补给</h2>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">比起再加一辆更大的坦克，我更希望让不同装备组成一套体系。现在这六种车辆已经能上场：巡飞弹发射车、电子干扰车、激光反无人机车、远程火箭炮、装甲运输车、维修补给车。</p>
+<figure style="margin:26px 0 30px;"><img src="images/04-support-vehicles.png" alt="桌面实机截图｜现代支援车辆展示。上排为巡飞弹发射车、电子干扰车、激光反无人机车，下排为远程火箭炮、装甲运输车、维修补给车。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">桌面实机截图｜现代支援车辆展示。上排为巡飞弹发射车、电子干扰车、激光反无人机车，下排为远程火箭炮、装甲运输车、维修补给车。</figcaption></figure>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">侦察帮你发现目标，远程火力需要前排保护，无人机要面对干扰与拦截，运输车负责把步兵送到合适的位置，补给决定高价值单位能否持续作战。于是，部队多不多之外，还要考虑编组有没有短板。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">这一轮还补了装甲朝向：正面、侧面、背面命中不再完全一样。科幻地图中的掩体能帮助步兵承受部分直射火力，但不能挡住所有攻击。防空单位专心对空，低空无人机也不能随便挑战高空战机。双方都按同一套规则计算。</p>
+<h2 style="margin:42px 0 22px;padding-left:12px;border-left:4px solid #b53132;font-size:23px;line-height:1.5;color:#182328;">无人机与战斗反馈 更容易看清战场</h2>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">无人机不再只是一个悬浮的小方块。四旋翼攻击机、隐形侦察飞翼、六旋翼母机，分别有了旋翼、承力臂、光电吊舱和不同轮廓。旋翼转动、飞行倾斜也开始体现在游戏里。它们是原创游戏设计，不对应某个已服役的完整型号。</p>
+<figure style="margin:26px 0 30px;"><img src="images/05-drone-models.png" alt="现有模型离线渲染｜左侧四旋翼攻击无人机，上方六旋翼母机，下方隐形侦察飞翼。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">现有模型离线渲染｜左侧四旋翼攻击无人机，上方六旋翼母机，下方隐形侦察飞翼。</figcaption></figure>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">敌我识别也更明确了：我方蓝青色，敌方红色。血条、目标圈、机体识别带和雷达标记都参与区分，即使双方选同一阵营，也不用只凭坦克长相猜敌我。密集部队的血条排布和单位间距也做了优化。</p>
+<figure style="margin:26px 0 30px;"><img src="images/06-desktop-battle.png" alt="桌面实机截图｜蓝青色我方与红色敌方标记、混合编组和远程火力。截图为游戏内固定展示场景，不是对局胜率证明。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">桌面实机截图｜蓝青色我方与红色敌方标记、混合编组和远程火力。截图为游戏内固定展示场景，不是对局胜率证明。</figcaption></figure>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">攻击反馈加入了炮口闪光、后坐、短曳光、命中碎屑、冲击波和导弹烟迹。目标是让你看得出谁开火、谁被命中，而不是把整张地图堆成看不清单位的特效秀。</p>
+<h2 style="margin:42px 0 22px;padding-left:12px;border-left:4px solid #b53132;font-size:23px;line-height:1.5;color:#182328;">桌面操作和地图 继续向可玩靠近</h2>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">现在可以全屏，也能收起右侧指挥面板，把空间还给战场。地图支持拖拽和缩放，建筑点击信息、生产队列、出口和集结点，也开始连成一个完整的指挥流程。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">兵营出步兵，工厂出战车；完成生产后，单位沿设施出口部署，再前往集结点。采矿车的提前避障和矿区分流也做了调整，减少贴到障碍物前才反复停顿的情况。大规模拥堵仍值得大家多试、多反馈。</p>
+<figure style="margin:26px 0 30px;"><img src="images/08-frontier-map.png" alt="桌面实机截图｜纵深战区拉远视角，展示道路、侧翼通路与资源分布。地图尺寸 4480 × 2880，面积是基础灰谷地图的四倍。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">桌面实机截图｜纵深战区拉远视角，展示道路、侧翼通路与资源分布。地图尺寸 4480 × 2880，面积是基础灰谷地图的四倍。</figcaption></figure>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">目前共有六张地图。除了陆地战区，还有 3520 × 2240 的大型海图。海上已经能指挥驱逐舰、航母和潜艇，但现有舰艇是通用游戏模型，还不能当成 052D 或某艘真实航母的复刻。</p>
+<figure style="margin:26px 0 30px;"><img src="images/07-ocean-fleet.png" alt="桌面实机截图｜大型海图中的通用航母、驱逐舰与潜艇。052D 专属外形和定位仍在后续计划中。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">桌面实机截图｜大型海图中的通用航母、驱逐舰与潜艇。052D 专属外形和定位仍在后续计划中。</figcaption></figure>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">后续会优先围绕电脑端继续优化镜头、编队、模型与性能，不再把开发精力主要花在手机端布局上。</p>
+<h2 style="margin:42px 0 22px;padding-left:12px;border-left:4px solid #b53132;font-size:23px;line-height:1.5;color:#182328;">科幻战区 子午环阵已经可以玩</h2>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">军迷的兴趣常常也会延伸到航空航天和未来科技。这次加入了原创地图「子午环阵」：月面风格地表、三维模块化基地、光伏掩体、测控设施和通信扰动。它不是南天门计划的官方联动，也不代表现实项目已经具备游戏里的能力。</p>
+<figure style="margin:26px 0 30px;"><img src="images/09-meridian-battle.png" alt="桌面实机截图｜子午环阵的原创三维基地和未来装备，当前已经进入单机玩法。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">桌面实机截图｜子午环阵的原创三维基地和未来装备，当前已经进入单机玩法。</figcaption></figure>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">这里不只有换皮。三处信标可以争夺，既关系到供电，也关系到据点积分；周期性的离子扰动会影响部分空中与制导单位，友方中继车和已控制信标能提供一定范围的保护。天气和胜利条件对双方相同。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">三个新单位也已经能生产：凌霄电磁炮车有部署时间、最小射程和弹药限制；云隼无人制空机专注对空，需要补弹；子午通信中继车不直接开火，却能保护编组的通信。未来装备越强，就越需要清楚的代价和反制。</p>
+<figure style="margin:26px 0 30px;"><img src="images/10-future-models.png" alt="现有模型离线渲染｜原创电磁炮车、通信中继车和无人制空机。这三个单位已进入子午环阵，不是现实服役装备。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">现有模型离线渲染｜原创电磁炮车、通信中继车和无人制空机。这三个单位已进入子午环阵，不是现实服役装备。</figcaption></figure>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">现实的子午工程是空间天气监测科研工程；游戏借用了空间天气的灵感，不把科研工程写成武器计划。南天门计划则是航空主题科幻 IP。这些边界会保留，模型和设定也会继续以原创为主。</p>
+<h2 style="margin:42px 0 22px;padding-left:12px;border-left:4px solid #b53132;font-size:23px;line-height:1.5;color:#182328;">接下来 东风 052D 蜂群与月球基地</h2>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">下面这些是路线图，不是今天已经交付的功能。我很想做，但会先确定用途、反制和平衡，再逐步增加模型与玩法。</p>
+<figure style="margin:26px 0 30px;"><img src="images/12-equipment-roadmap-concept.png" alt="未来规划概念图｜AI 辅助生成的导弹发射车、导弹驱逐舰、协同无人机与高速飞行器视觉方向。不是实机、不是现有模型，也不是指定型号的准确复刻。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">未来规划概念图｜AI 辅助生成的导弹发射车、导弹驱逐舰、协同无人机与高速飞行器视觉方向。不是实机、不是现有模型，也不是指定型号的准确复刻。</figcaption></figure>
+<h3 style="margin:28px 0 15px;font-size:19px;line-height:1.6;color:#182328;">东风系列与战略武器</h3>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">计划引入东风系列外形与命名元素，以战略威慑和有限次数的远程打击作为游戏方向。具体型号还要挑选公开资料，不能把不同型号当成同一种武器。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">核武器也会作为后续可选规则研究：默认常规对局可以关闭，开局双方知道规则；如果加入，就必须有高成本、长准备时间、预警和制约机制。它不应该成为随手点一下就结束整局的按钮，更不是现实核武器使用或制造模拟。</p>
+<h3 style="margin:28px 0 15px;font-size:19px;line-height:1.6;color:#182328;">052D与海空协同</h3>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">现有通用驱逐舰之后，计划增加参考 052D 公开外形的独立模型，细化舰桥、雷达阵面、甲板与垂直发射区的视觉辨识。玩法上研究区域防空、护航和反潜分工，让航母、驱逐舰和水下单位互相需要，而不是只比舰艇血量。</p>
+<h3 style="margin:28px 0 15px;font-size:19px;line-height:1.6;color:#182328;">蜂群无人机与超音速飞行器</h3>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">无人系统准备往协同方向扩展：侦察、诱饵、中继与攻击各有任务，同时让电子干扰、激光拦截和补给成为反制环节。高速飞行器则研究短窗口出击、转场和补给代价。超音速与高超音速不是同一个概念，后续会分别选定原型，不把速度写成万能优势。</p>
+<h3 style="margin:28px 0 15px;font-size:19px;line-height:1.6;color:#182328;">更完整的月球基地</h3>
+<figure style="margin:26px 0 30px;"><img src="images/11-lunar-base-concept.png" alt="未来规划概念图｜AI 辅助生成的原创月球基地愿景，展示空间探索、模块化设施和月面车辆。不是当前游戏画面，也不代表真实已建成基地。" style="display:block;width:100%;height:auto;"><figcaption style="margin-top:10px;font-size:13px;line-height:1.7;color:#647078;">未来规划概念图｜AI 辅助生成的原创月球基地愿景，展示空间探索、模块化设施和月面车辆。不是当前游戏画面，也不代表真实已建成基地。</figcaption></figure>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">子午环阵只是第一步。未来想把资源处理、能源、通信、月面运输和空天单位连成更完整的科技路线，再研究低重力表现、空间天气和基地扩展。但会先做好眼前能玩的内容，不靠一张概念图就宣布功能完成。</p>
+<h2 style="margin:42px 0 22px;padding-left:12px;border-left:4px solid #b53132;font-size:23px;line-height:1.5;color:#182328;">联机怎么做 先局域网再公网</h2>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">目前仍是单机，联网功能尚未实现。计划先做双人局域网，把房间、准备、同步和断线恢复跑通，再把同一套服务端部署到公网。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">方案是 Node.js + WebSocket 的权威服务端：浏览器发送移动、攻击、生产这些指令，服务器校验资源、归属与科技条件，统一计算战斗，再把各玩家有权看到的状态发回浏览器。迷雾里的敌方信息不应直接发给客户端，客户端也不能自己宣布金币增加或伤害生效。</p>
+<pre style="margin:24px 0 12px;padding:18px 12px;background:#f2f5f6;border-left:3px solid #196d87;overflow:auto;line-height:1.8;font-size:13px;color:#26383f;">玩家 A 浏览器 ─┐
+                ├─ WebSocket ─ 权威游戏服务器
+玩家 B 浏览器 ─┘                │
+                  指令校验 → 统一模拟 → 按迷雾过滤
+                                │
+                    状态同步 → 浏览器平滑渲染</pre><p style="font-size:13px;line-height:1.7;color:#647078;">联机架构规划｜局域网先验证同一套服务端，公网阶段再增加 HTTPS / WSS、房间认证和运维保障。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">单机本身使用 JavaScript、Vite、Three.js 与 pathfinding，模型由 Blender 生成，地图贴图部分采用 AI 辅助制作。规则、画面、操作、音频与素材相对分开，方便以后替换模型、补单元测试和接入服务器。联机不是简单把两台电脑的点击广播过去。</p>
+<h2 style="margin:42px 0 22px;padding-left:12px;border-left:4px solid #b53132;font-size:23px;line-height:1.5;color:#182328;">一起玩 一起把它做得更好</h2>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">这个项目不会因为发了一篇文章就停下。我会继续更新，也希望它从「我用 AI 做的游戏」，慢慢变成「我们一起维护的游戏」。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">军迷朋友欢迎帮我挑装备轮廓和公开资料；RTS 玩家欢迎多打几局，告诉我哪个兵种没有存在感、哪张地图容易一边倒；会 Blender、Three.js、音效、寻路或网络同步的朋友，也欢迎通过 Pull Request 一起共建。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">发现问题可以在 Issues 里附上地图、阵营、复现步骤和截图；提建议也欢迎说明你期待的玩法，而不只是更大的伤害数字。模型和音频贡献请注明来源与授权，不使用来路不明的商业游戏素材。</p>
+<p style="margin:12px 0;font-size:15px;line-height:1.7;word-break:break-word;"><a style="color:#196d87;" href="https://github.com/chencheng666/great-powers-rts">GitHub 开源仓库</a><br><span style="font-size:12px;color:#647078;">https://github.com/chencheng666/great-powers-rts</span></p>
+<p style="margin:12px 0;font-size:15px;line-height:1.7;word-break:break-word;"><a style="color:#196d87;" href="https://github.com/chencheng666/great-powers-rts/releases">试玩下载与版本更新</a><br><span style="font-size:12px;color:#647078;">https://github.com/chencheng666/great-powers-rts/releases</span></p>
+<p style="margin:12px 0;font-size:15px;line-height:1.7;word-break:break-word;"><a style="color:#196d87;" href="https://github.com/chencheng666/great-powers-rts/issues">提交问题和建议</a><br><span style="font-size:12px;color:#647078;">https://github.com/chencheng666/great-powers-rts/issues</span></p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">本文展示的是国庆 v0.2.0 版，试玩请下载 Release 页的 Great-Powers-RTS-v0.2.0.zip，具体内容以对应版本说明为准。游戏是原创、非官方红警风格 RTS，不是《红色警戒》的官方续作，也不以现实军事实力排行为目标。</p>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">国庆的这份热爱，除了看装备，也可以是亲手做一个作品。祝大家假期快乐，欢迎来玩，欢迎来提意见，我们一起把它做得更好。</p>
+<h3 style="margin:28px 0 15px;font-size:19px;line-height:1.6;color:#182328;">公开资料与素材说明</h3>
+<p style="margin:0 0 20px;font-size:17px;line-height:1.9;color:#30363b;">游戏截图来自本地桌面开发版，其中部分通过固定游戏内展示场景采集并展开迷雾，方便观察模型与编组，不作为自然对局战绩。四张模型特写使用现有 Blender 源模型离线渲染；两张未来愿景图由 AI 辅助生成，并已就地标注。</p>
+<p style="margin:12px 0;font-size:15px;line-height:1.7;word-break:break-word;"><a style="color:#196d87;" href="https://www.nssc.cas.cn/jgsz2015/ztjg/gjkjtqkxzx/">子午工程与空间天气科研介绍 中国科学院国家空间科学中心</a><br><span style="font-size:12px;color:#647078;">https://www.nssc.cas.cn/jgsz2015/ztjg/gjkjtqkxzx/</span></p>
+<p style="margin:12px 0;font-size:15px;line-height:1.7;word-break:break-word;"><a style="color:#196d87;" href="https://stcsm.sh.gov.cn/xwzx/mtjj/20240819/44882ec4bcb04a958c949a4d3dfe9d83.html">南天门计划航空科幻 IP 介绍 上海市科学技术委员会</a><br><span style="font-size:12px;color:#647078;">https://stcsm.sh.gov.cn/xwzx/mtjj/20240819/44882ec4bcb04a958c949a4d3dfe9d83.html</span></p></article></body></html>

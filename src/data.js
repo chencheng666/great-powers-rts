@@ -4,7 +4,8 @@ export const PRODUCERS = ['barracks', 'factory', 'armory', 'airfield', 'dock'];
 export const ORE_VALUES = { gold: 1, gem: 2 };
 export const VICTORY_MODES = {
   quick: { name: '快速对战', description: '摧毁敌方全部生产核心' },
-  annihilation: { name: '全域歼灭', description: '清除敌方全部建筑与单位' }
+  annihilation: { name: '全域歼灭', description: '清除敌方全部建筑与单位' },
+  control: { name: '据点控制', description: '占领信标积累 240 分，或摧毁敌方生产核心' }
 };
 export const AI_DIFFICULTIES = {
   recruit: { name: '新兵', waveStart: 125, waveInterval: 45, waveSize: 5, thinkInterval: 3.5, combatLimit: 22, engineerStart: 58 },
@@ -42,7 +43,7 @@ export const UNITS = {
   tank: { name: '主战坦克', cost: 480, time: 20, hp: 380, speed: 62, range: 205, damage: 38, cooldown: 1.3, sight: 280, icon: 'shield', producer: 'factory', tags: ['armor'], desc: '重装核心，克制步兵和防空单位。' },
   drone: { name: '攻击无人机', cost: 260, time: 13, hp: 130, speed: 116, range: 180, damage: 20, cooldown: 0.85, sight: 330, icon: 'scan', producer: 'armory', tags: ['drone', 'air'], desc: '机动灵活，对装甲目标有额外伤害。' },
   ghost: { name: '隐形侦察无人机', cost: 340, time: 18, hp: 85, speed: 124, range: 0, damage: 0, cooldown: 1, sight: 450, icon: 'eye-off', producer: 'armory', requires: 'radar', faction: 'middleeast', tags: ['drone', 'air', 'scout', 'stealth'], desc: '新月专属；深入敌后提供视野，接近侦察兵、防空车或雷达信标会暴露。' },
-  aa: { name: '防空车', cost: 360, time: 17, hp: 230, speed: 72, range: 250, damage: 22, cooldown: 0.8, sight: 320, icon: 'radar', producer: 'armory', requires: 'radar', tags: ['vehicle', 'anti-air'], desc: '压制无人机，也可支援地面战斗。' },
+  aa: { name: '防空车', cost: 360, time: 17, hp: 230, speed: 72, range: 250, damage: 22, cooldown: 0.8, sight: 320, icon: 'radar', producer: 'armory', requires: 'radar', tags: ['vehicle', 'anti-air'], desc: '防空与弹药拦截，不能对地；需要装甲或步兵护卫。' },
   fighter: { name: '制空战机', cost: 620, time: 24, hp: 215, speed: 210, range: 275, damage: 37, cooldown: 0.85, sight: 470, ammo: 9, rearmTime: 8, icon: 'plane', producer: 'airfield', tags: ['air', 'jet', 'anti-air'], desc: '只攻击空中目标；高速穿越地形，弹药耗尽后返场。' },
   strike: { name: '对地攻击机', cost: 760, time: 29, hp: 235, speed: 170, range: 245, damage: 62, cooldown: 1.55, sight: 420, ammo: 3, rearmTime: 10, icon: 'plane-takeoff', producer: 'airfield', tags: ['air', 'jet', 'bomber'], desc: '重创地面与建筑；无法空战，须返回空军基地补给。' },
   patrol: { name: '近海巡逻艇', cost: 380, time: 18, hp: 270, speed: 110, range: 235, damage: 26, cooldown: 0.9, sight: 355, sonar: 150, icon: 'ship', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-sub'], desc: '高速夺取海面优势，近距声呐发现潜艇；对建筑伤害较低。' },
@@ -60,8 +61,15 @@ export const UNITS = {
   submarine: { name: '攻击潜艇', cost: 920, time: 35, hp: 420, speed: 64, range: 340, damage: 110, cooldown: 3.5, sight: 360, sonar: 190, ammo: 5, rearmTime: 10, icon: 'waves', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'submerged', 'stealth'], desc: '潜航伏击舰艇；声呐或发射后短暂暴露，可被反潜舰反制，不能攻击陆地。' }
 };
 
+Object.assign(UNITS, {
+  railgun: { name: '凌霄电磁炮车', cost: 940, time: 35, hp: 290, speed: 49, range: 430, minRange: 110, damage: 96, cooldown: 3.2, sight: 270, ammo: 4, rearmTime: 10, deployTime: 1.8, producer: 'armory', requires: 'lab', map: 'meridian', tags: ['armor', 'artillery'], icon: 'zap', desc: '原创科幻；展开后直射穿甲，受地形遮挡，不能防空，有限弹药。' },
+  aegis: { name: '云隼无人制空机', cost: 790, time: 30, hp: 195, speed: 215, range: 295, damage: 40, cooldown: .9, sight: 475, ammo: 6, rearmTime: 10, producer: 'airfield', requires: 'lab', map: 'meridian', tags: ['air', 'jet', 'anti-air'], icon: 'plane', desc: '原创科幻；仅制空，需返场补弹，离子扰动期间需中继保护。' },
+  relay: { name: '子午通信中继车', cost: 540, time: 24, hp: 220, speed: 65, range: 0, damage: 0, cooldown: 1, sight: 420, producer: 'factory', requires: 'radar', map: 'meridian', tags: ['vehicle', 'support', 'scout'], icon: 'radio-tower', desc: '原创科幻；260 范围保护友军空中链路与制导弹药，不造成伤害。' }
+});
+
 export const BUILD_ORDER = ['power', 'refinery', 'barracks', 'factory', 'armory', 'dock', 'radar', 'airfield', 'turret', 'lab', 'super'];
 export const UNIT_ORDER = ['rifle', 'engineer', 'scout', 'tank', 'apc', 'supply', 'harvester', 'drone', 'ghost', 'aa', 'loiterer', 'jammer', 'laser', 'rocket', 'elite', 'fighter', 'strike', 'patrol', 'frigate', 'destroyer', 'carrier', 'submarine'];
+UNIT_ORDER.push('railgun', 'aegis', 'relay');
 
 export const ORE_LAYOUT = [
   [330, 510, 2100, 'gold'], [330, 930, 2100, 'gold'],
@@ -72,6 +80,23 @@ export const ORE_LAYOUT = [
 ];
 
 export const MAPS = {
+  meridian: {
+    name: '子午环阵', sector: '战区 06 · 原创科幻', future: true, world: { width: 3200, height: 2080, cell: 40, fog: 80 },
+    ore: [[330,830,2700,'gold'],[330,1250,2700,'gold'],[870,400,2100,'gem'],[870,1680,2100,'gem'],[1150,1040,3100,'gold'],[2050,1040,3100,'gold'],[2330,400,2100,'gem'],[2330,1680,2100,'gem'],[2870,830,2700,'gold'],[2870,1250,2700,'gold']],
+    oil: [{ id: 'oil-a', x: 940, y: 650 }, { id: 'oil-b', x: 2260, y: 1430 }],
+    beacons: [{ id: 'beacon-north', x: 1600, y: 400 }, { id: 'beacon-center', x: 1600, y: 1040 }, { id: 'beacon-south', x: 1600, y: 1680 }],
+    barriers: [{x1:1480,y1:620,x2:1720,y2:900},{x1:1480,y1:1180,x2:1720,y2:1460}],
+    noBuild: [{x1:1420,y1:580,x2:1780,y2:940},{x1:1420,y1:1140,x2:1780,y2:1500}],
+    cover: [{x1:930,y1:760,x2:1110,y2:920},{x1:2090,y1:1160,x2:2270,y2:1320},{x1:1180,y1:1420,x2:1380,y2:1550},{x1:1820,y1:530,x2:2020,y2:660}],
+    bridges: [], water: null, dockZones: []
+  },
+  frontier: {
+    name: '纵深战区', sector: '战区 05 · 纵深陆战', world: { width: 4480, height: 2880, cell: 40, fog: 80 },
+    ore: [[330, 1230, 2600, 'gold'], [330, 1650, 2600, 'gold'], [860, 660, 1800, 'gem'], [860, 2220, 1800, 'gem'], [1420, 1160, 3200, 'gold'], [1420, 1720, 3200, 'gold'], [3060, 1160, 3200, 'gold'], [3060, 1720, 3200, 'gold'], [3620, 660, 1800, 'gem'], [3620, 2220, 1800, 'gem'], [4150, 1230, 2600, 'gold'], [4150, 1650, 2600, 'gold']],
+    oil: [{ id: 'oil-a', x: 1320, y: 420 }, { id: 'oil-b', x: 3160, y: 2460 }, { id: 'oil-c', x: 1320, y: 2460 }, { id: 'oil-d', x: 3160, y: 420 }],
+    beacons: [{ id: 'beacon-north', x: 2240, y: 820 }, { id: 'beacon-south', x: 2240, y: 2060 }],
+    barriers: [], noBuild: [], bridges: [], water: null, dockZones: []
+  },
   ocean: {
     name: '远洋战区', sector: '战区 04 · 大型海战', world: { width: 3520, height: 2240, cell: 40, fog: 80 },
     ore: [[330, 910, 3000, 'gold'], [330, 1330, 3000, 'gold'], [760, 400, 2200, 'gem'], [760, 1840, 2200, 'gem'], [780, 1120, 3200, 'gold'], [2740, 1120, 3200, 'gold'], [2760, 400, 2200, 'gem'], [2760, 1840, 2200, 'gem'], [3190, 910, 3000, 'gold'], [3190, 1330, 3000, 'gold']],

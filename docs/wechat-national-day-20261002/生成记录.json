@@ -1,0 +1,33 @@
+{
+  "mode": "内置 image_gen 新图生成",
+  "date": "2026-10-02",
+  "assets": [
+    {
+      "file": "images/11-lunar-base-concept.png",
+      "classification": "未来规划概念图",
+      "prompt": "Use case: stylized-concept. Asset type: editorial illustration for a Chinese open-source modern RTS game's National Day development article. Primary request: a beautiful, plausible near-future lunar base vision, clearly concept art, not a game screenshot. Wide 16:9 landscape 2048 by 1152. View from a low elevated ridge revealing the full base, crisp grey lunar regolith, modular white habitat and command buildings on grounded foundations, blue-black solar arrays, communications antenna dishes, pressurized rover convoy and two small unmanned aerospace craft, Earth visible above horizon. Industrial Chinese aerospace ambition, optimistic exploration, strong engineering detail, refined realistic PBR materials, cool cyan identification lighting and restrained red Chinese flags on two structures, balanced sunlit white surfaces with deep but readable shadows. No combat, no explosion, no nuclear detonation, no city targets, no weapon blueprints, no game HUD, no text, no watermark. Fictional original design, not claiming a real current lunar military base, nor a licensed Nantianmen project asset. Show the structures and rovers clearly rather than atmospheric silhouettes. Composition suitable for a publication planning-section image."
+    },
+    {
+      "file": "images/12-equipment-roadmap-concept.png",
+      "classification": "未来规划概念图",
+      "prompt": "Use case: stylized-concept. Asset type: future equipment roadmap editorial illustration for an original Chinese open-source RTS. Create one wide 16:9 2048x1152 premium 3D concept-model display image arranged as four clearly separated object studies on a neutral graphite studio floor, each with readable silhouette and no overlap. Upper left: original modern Chinese-inspired multi-axle strategic missile transporter with a closed cylindrical launch canister in safe horizontal transport posture, no firing, no cutaway, no blueprints. Upper right: a complete modern Chinese 052D-inspired guided missile destroyer display model, long grey hull, angular bridge and radar panels, complete bow and stern visible, deck equipment abstract not technically precise. Lower left: an original coordinated unmanned aircraft group with one flying-wing drone and three small quadcopters. Lower right: an original sleek supersonic aerospace research craft display model. Precise product-visualization look, elegant hard-surface design, realistic material light, small restrained red identification accents and blue optics, soft studio lights, legible object detail. These are speculative original visual directions for planned future game features, not current game assets, not exact engineering replicas. No logos, no text, no HUD, no combat, no explosions, no nuclear detonation, no weapon diagrams or dimensions, no targets, no neon clutter, no military propaganda slogans."
+    }
+  ],
+  "actualModels": {
+    "script": "scripts/render-article-models.py",
+    "sourceLibraries": [
+      "assets/models/equipment-library.blend",
+      "assets/models/drone-library.blend"
+    ],
+    "changesToGameLibraries": false
+  },
+  "screenshots": {
+    "script": "scripts/capture-article-images.js",
+    "taskSpaceId": 33,
+    "viewport": [
+      1600,
+      1000
+    ],
+    "note": "子午环阵复用本轮升级已有1512×862实机截图；其他五张新采集。"
+  }
+}

@@ -1,0 +1,16 @@
+.victory-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.victory-option { min-width: 0; font-size: 11px; }
+.victory-option small { white-space: normal; line-height: 1.5; }
+.future .camera-tools { top: 124px; }
+.top-left { max-width: 260px; }
+#battle-objective { font-size: 10px; line-height: 1.5; }
+#environment-status { color: #a9dada; margin-top: 3px; }
+.bottom-left .equipment-detail { max-width: 275px; font-size: 10px; line-height: 1.6; color: #b4c7ca; }
+.action-text { min-width: 0; }
+.action-text strong, .action-text small { overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .top-left { max-width: 190px; }
+  .future .camera-tools { top: 97px; }
+  .bottom-left .equipment-detail { display: none; }
+  .victory-option { font-size: 10px; padding: 7px 4px; }
+}

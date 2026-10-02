@@ -1,0 +1,55 @@
+.camera-tools { position: absolute; left: 18px; top: 105px; z-index: 3; display: flex; align-items: center; gap: 4px; padding: 4px; background: #111a1ded; border: 1px solid #71867a70; }
+.camera-tools .icon-btn { width: 30px; height: 30px; min-width: 30px; }
+.camera-tools .icon-btn svg { width: 16px; height: 16px; }
+.camera-tools output { width: 44px; text-align: center; font-size: 11px; color: #c6d3cc; font-variant-numeric: tabular-nums; }
+#game-canvas.pan-mode { cursor: grab; }
+#game-canvas.panning { cursor: grabbing; }
+.building-info { position: absolute; overflow: auto; z-index: 4; width: 278px; max-width: calc(100% - 16px); padding: 12px; background: #16201fee; border: 1px solid #80958b; border-top: 2px solid #95d4b6; box-shadow: 0 6px 24px #0007; color: #e0e9e1; pointer-events: auto; border-radius: 3px; }
+.building-info[hidden] { display: none; }
+.building-info { border-top-color: var(--team-color, #68d9f2); }
+#faction-short { color: #94e8f7; }
+#enemy-short { color: #ff9f91; }
+.building-info-heading { display: grid; grid-template-columns: 47px minmax(0, 1fr) 24px; gap: 9px; align-items: center; }
+.building-info-heading img { width: 47px; height: 47px; object-fit: contain; }
+.building-info-heading strong { display: block; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.building-info-heading small { display: block; margin-top: 3px; font-size: 10px; color: #b1c4b7; }
+.building-info .icon-btn { width: 26px; height: 26px; min-width: 26px; }
+.building-info .icon-btn svg { width: 14px; height: 14px; }
+.building-info .building-info-close { align-self: start; border: 0; background: transparent; }
+.building-info-health { display: flex; justify-content: space-between; gap: 8px; margin-top: 9px; font-size: 10px; color: #c8d5c9; }
+.building-info-health strong { color: var(--team-color, #68d9f2); font-weight: 500; }
+.building-info-track { height: 4px; background: #33403b; margin: 5px 0 9px; }
+.building-info-track > div { height: 100%; background: var(--team-color, #68d9f2); }
+.building-info-description { margin: 0; font-size: 11px; line-height: 1.6; color: #c0ccc2; }
+.building-info-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #4a5a4d; }
+.building-info-stats small { display: block; font-size: 9px; color: #a2b4a5; }
+.building-info-stats strong { display: block; margin-top: 3px; font-size: 12px; color: #dbd6aa; font-weight: 500; }
+.building-info-production { margin-top: 9px; padding-top: 8px; border-top: 1px solid #4a5a4d; font-size: 10px; }
+.building-info-production > div:first-child { display: flex; justify-content: space-between; gap: 6px; }
+.building-info-production > div:first-child span { min-width: 0; overflow-wrap: anywhere; }
+.building-info-production .building-info-track { margin-bottom: 4px; }
+.building-info-production small { color: #b0c0b1; font-size: 10px; }
+.building-info-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 9px; }
+.building-info-actions .active { color: #c6f1d6; border-color: #91c89a; }
+.building-info-actions .icon-btn:disabled { opacity: .35; cursor: default; }
+@media (max-width: 700px) {
+  .camera-tools { left: 8px; top: 79px; padding: 3px; }
+  .camera-tools .icon-btn { width: 25px; height: 25px; min-width: 25px; }
+  .camera-tools output { width: 36px; font-size: 10px; }
+}
+@media (max-width: 700px), (max-height: 500px) {
+  .building-info { width: 224px; padding: 9px; }
+  .building-info-heading { grid-template-columns: 33px minmax(0, 1fr) 22px; gap: 6px; }
+  .building-info-heading img { width: 33px; height: 33px; }
+  .building-info-heading strong { font-size: 12px; }
+  .building-info-description { font-size: 10px; line-height: 1.45; }
+  .building-info-stats { margin-top: 6px; padding-top: 5px; }
+  .building-info-health { margin-top: 6px; }
+  .building-info-production { padding-top: 5px; margin-top: 6px; }
+  .building-info-actions { margin-top: 6px; }
+}
+@media (min-width: 701px) and (max-height: 700px) {
+  .faction-picker { overflow-y: auto; }
+  .faction-picker > * { flex-shrink: 0; }
+  .faction-list { overflow: visible; }
+}

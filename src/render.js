@@ -4,8 +4,12 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BUILDINGS, FACTIONS, UNITS } from './data.js';
 import { createModel, prepareVisualAssets, spriteTexture, visualLibrary } from './visual-assets.js';
 import { architectureLayout, CAMERA_ELEVATION } from './architecture.js';
+import { productionExit } from './battlefield-details.js';
+import { healthVisual, showHealthBar, teamVisual } from './team-visuals.js';
 import { layoutHealthBars } from './health-layout.js';
 import { unitRadius } from './unit-spacing.js';
+import { equipmentModel } from './equipment.js';
+import { weatherState } from './tactical-rules.js';
 
 const TAU = Math.PI * 2;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -13,6 +17,7 @@ const hash = (x, y, seed = 0) => { const value = Math.sin(x * 127.1 + y * 311.7 
 const SIN_ELEVATION = .819;
 const UNIT_SCALE = { rifle: 12, engineer: 12, scout: 12, tank: 10, harvester: 9.5, aa: 10, elite: 10, fighter: 11, strike: 11, drone: 10, ghost: 10, patrol: 10, frigate: 10 };
 Object.assign(UNIT_SCALE, { loiterer: 10, jammer: 10, laser: 10, rocket: 10, apc: 10, supply: 10, destroyer: 9, carrier: 8, submarine: 8 });
+Object.assign(UNIT_SCALE, { railgun: 10, relay: 10, aegis: 11 });
 const vector = (x, z, y = 0) => new THREE.Vector3(x, y, z);
 const makeCanvas = (width, height) => { const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; return canvas; };
 
@@ -46,13 +51,13 @@ export class Renderer {
     this.raycaster = new THREE.Raycaster(); this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const pmrem = new THREE.PMREMGenerator(this.webgl), room = new RoomEnvironment();
     const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .4; room.dispose(); pmrem.dispose();
-    this.scene.add(new THREE.HemisphereLight('#d7e8ef', '#4b4940', 1.55));
-    const sun = new THREE.DirectionalLight('#fff2db', 3.2); sun.position.set(this.world.width / 2 - 1750, 2450, this.world.height / 2 - 1520); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true;
+    this.scene.add(new THREE.HemisphereLight('#d7e8ef', game.map.future ? '#444951' : '#4b4940', 1.55));
+    const sun = new THREE.DirectionalLight(game.map.future ? '#f0f6ff' : '#fff2db', 3.2); sun.position.set(this.world.width / 2 - 1750, 2450, this.world.height / 2 - 1520); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true;
     const shadowSize = innerWidth < 700 ? 2048 : 4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
     Object.assign(sun.shadow.camera, { left: -this.world.width * .7, right: this.world.width * .7, top: this.world.height * .85, bottom: -this.world.height * .85, near: 10, far: 6000 });
     sun.shadow.bias = -.0004; sun.shadow.normalBias = .8; this.scene.add(sun, sun.target);
     this.fireTexture = particleTexture(); this.smokeTexture = particleTexture(true);
-    this.createTerrain(); this.createBridges(); this.createEnvironment(); this.createSites(); this.createFog(); this.createOverlays();
+    this.createTerrain(); this.createBridges(); this.createEnvironment(); this.createFutureStructures(); this.createSites(); this.createFog(); this.createOverlays();
     this.createTracks();
     this.resize(); this.centerOn(innerWidth < 700 ? 400 : 470, game.homeY);
   }
@@ -65,11 +70,14 @@ export class Renderer {
   }
 
   createTerrain() {
-    const canvas = makeCanvas(this.world.width, this.world.height), ctx = canvas.getContext('2d'), image = visualLibrary().ground.image;
-    ctx.filter = 'saturate(.8) contrast(.95) brightness(.94)';
-    ctx.drawImage(image, 0, 0, this.world.width, this.world.height);
+    const factor = Math.min(1, (innerWidth < 700 ? 2048 : 4096) / this.world.width);
+    const canvas = makeCanvas(Math.round(this.world.width * factor), Math.round(this.world.height * factor)), ctx = canvas.getContext('2d'), image = (this.game.map.future ? visualLibrary().meridian : visualLibrary().ground).image;
+    ctx.scale(factor, factor);
+    ctx.filter = this.game.map.future ? 'saturate(.55) contrast(.68) brightness(.83)' : 'saturate(.8) contrast(.95) brightness(.94)';
+    if (this.game.map.future) ctx.drawImage(image, 0, 0, this.world.width, this.world.height);
+    else for (let y = 0; y < this.world.height; y += 1440) for (let x = 0; x < this.world.width; x += 2240) ctx.drawImage(image, x, y, 2240, 1440);
     ctx.filter = 'none';
-    ctx.fillStyle = 'rgba(97,102,79,.12)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = this.game.map.future ? 'rgba(86,100,120,.06)' : 'rgba(97,102,79,.12)'; ctx.fillRect(0, 0, this.world.width, this.world.height);
     const road = (points, width) => {
       const trace = () => { ctx.beginPath(); ctx.moveTo(...points[0]); points.slice(1).forEach(point => ctx.lineTo(...point)); };
       trace(); ctx.lineJoin = 'round'; ctx.strokeStyle = '#686962'; ctx.lineWidth = width + 11; ctx.stroke();
@@ -82,14 +90,30 @@ export class Renderer {
     if (this.game.mapId === 'ocean') for (const bridge of this.game.map.bridges) {
       const y = (bridge.y1 + bridge.y2) / 2;
       road([[410, cy], [850, y], [this.world.width - 850, y], [this.world.width - 410, cy]], 36);
+    } else if (this.game.map.future) {
+      for (const y of [400, 1680]) road([[410, cy], [800, y], [2400, y], [2790, cy]], 28);
+      road([[1600, 80], [1600, this.world.height - 80]], 24);
+    } else if (this.game.mapId === 'frontier') {
+      for (const offset of [-1, 1]) road([[410, cy], [880, cy + offset * 380], [2240, cy + offset * 620], [3600, cy + offset * 380], [4070, cy]], 32);
+      road([[2240, 100], [2240, this.world.height - 100]], 24);
     } else road([[410, -20], [680, 350], [930, 545], [1310, 895], [1560, 1090], [1830, 1460]], 30);
+    for (const building of this.game.buildings) {
+      const radius = building.size * 1.05, fade = ctx.createRadialGradient(building.x, building.y + 14, radius * .32, building.x, building.y + 14, radius);
+      fade.addColorStop(0, '#7a827380'); fade.addColorStop(.7, '#64705d35'); fade.addColorStop(1, '#64705d00');
+      ctx.fillStyle = fade; ctx.fillRect(building.x - radius, building.y + 14 - radius, radius * 2, radius * 2);
+    }
     for (let i = 0; i < 1600; i++) {
       const x = hash(i, 11) * this.world.width, y = hash(i, 17) * this.world.height;
       if (Math.abs(y - cy) > 38) continue;
       ctx.strokeStyle = 'rgba(23,29,29,.23)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 7, y + 3); ctx.lineTo(x + 14, y - 2); ctx.stroke();
     }
     if (this.game.map.water) {
-      const water = this.game.map.water; ctx.fillStyle = '#717563'; ctx.fillRect(water.x1 - 24, 0, water.x2 - water.x1 + 48, this.world.height);
+      const water = this.game.map.water;
+      for (const [edge, side] of [[water.x1, -1], [water.x2, 1]]) {
+        const shore = ctx.createLinearGradient(edge - 54, 0, edge + 54, 0);
+        shore.addColorStop(side < 0 ? 0 : 1, '#64716400'); shore.addColorStop(.5, '#929d89b0'); shore.addColorStop(side < 0 ? 1 : 0, '#3e646b');
+        ctx.fillStyle = shore; ctx.fillRect(edge - 54, 0, 108, this.world.height);
+      }
       ctx.fillStyle = '#334044'; ctx.fillRect(water.x1, 0, water.x2 - water.x1, this.world.height);
     } else for (const rect of this.game.map.barriers) {
       ctx.fillStyle = '#242e2c'; ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
@@ -101,12 +125,23 @@ export class Renderer {
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i), z = positions.getZ(i); let height = (hash(x, z) - .5) * 1.2;
       if (this.game.map.water && x > this.game.map.water.x1 && x < this.game.map.water.x2) height = -15;
-      else if (this.game.map.barriers.some(rect => x > rect.x1 && x < rect.x2 && z > rect.y1 && z < rect.y2)) height = -28;
+      else if (!this.game.map.future && this.game.map.barriers.some(rect => x > rect.x1 && x < rect.x2 && z > rect.y1 && z < rect.y2)) height = -28;
       positions.setY(i, height);
     }
     geometry.computeVertexNormals();
     const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, roughness: .93, metalness: .015 }))); terrain.receiveShadow = true; this.scene.add(terrain);
-    if (this.game.map.water) this.createWater();
+    if (this.game.map.water) { this.createWater(); this.createShoreline(); }
+  }
+
+  createShoreline() {
+    const water = this.game.map.water, geometries = [];
+    for (const [edge, side] of [[water.x1, 1], [water.x2, -1]]) for (let z = 24; z < this.world.height; z += 48) {
+      if (this.game.map.bridges.some(bridge => z >= bridge.y1 - 24 && z <= bridge.y2 + 24)) continue;
+      const width = 5 + hash(edge, z, 81) * 13, geometry = new THREE.PlaneGeometry(width, 43);
+      geometry.rotateX(-Math.PI / 2); geometry.translate(edge + side * width / 2, 1.1, z); geometries.push(geometry);
+    }
+    this.shoreMaterial = this.track(new THREE.MeshBasicMaterial({ color: '#d9e7dc', transparent: true, opacity: .14, depthWrite: false }));
+    const shore = new THREE.Mesh(this.track(mergeGeometries(geometries)), this.shoreMaterial); this.scene.add(shore); geometries.forEach(geometry => geometry.dispose());
   }
 
   createWater() {
@@ -166,11 +201,12 @@ export class Renderer {
 
   createEnvironment() {
     const points = { tree: [], rock: [] }, forbidden = [...this.game.buildings, ...this.game.ore, ...this.game.oil, ...this.game.beacons];
-    for (let i = 0; i < (this.game.mapId === 'ocean' ? 360 : 230); i++) {
+    const density = Math.min(850, Math.round(this.world.width * this.world.height / (2240 * 1440) * 230));
+    for (let i = 0; i < density; i++) {
       const x = 45 + hash(i, 91) * (this.world.width - 90), z = 40 + hash(i, 193) * (this.world.height - 80);
       if (Math.abs(z - this.game.homeY) < 145 || forbidden.some(item => Math.hypot(item.x - x, item.y - z) < 100)) continue;
       if (this.game.map.noBuild.some(rect => x > rect.x1 - 25 && x < rect.x2 + 25)) continue;
-      const kind = hash(i, 71) > .24 ? 'tree' : 'rock'; points[kind].push({ x, z, scale: kind === 'tree' ? 8 + hash(i, 25) * 7 : 12 + hash(i, 45) * 11, angle: hash(i, 33) * TAU });
+      const kind = this.game.map.future ? 'rock' : hash(i, 71) > .24 ? 'tree' : 'rock'; points[kind].push({ x, z, scale: kind === 'tree' ? 8 + hash(i, 25) * 7 : 12 + hash(i, 45) * 11, angle: hash(i, 33) * TAU });
     }
     if (this.game.mapId === 'canyon') for (const rect of this.game.map.barriers) {
       for (let z = rect.y1 + 12; z < rect.y2 - 8; z += 32) for (const [side, x] of [[0, rect.x1 + 10], [1, rect.x2 - 10]]) {
@@ -186,7 +222,9 @@ export class Renderer {
     this.createFoliage(points.tree);
     for (const [name, transforms] of [['rock', points.rock]]) for (const child of visualLibrary().models.get(name).children) {
       if (!child.isMesh) continue;
-      const mesh = new THREE.InstancedMesh(child.geometry, child.material, transforms.length); mesh.castShadow = true; mesh.receiveShadow = true; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      const material = this.game.map.future ? this.track(new THREE.MeshStandardMaterial({ color: '#69717b', roughness: .96, flatShading: true })) : child.material;
+      const geometry = this.game.map.future ? this.track(new THREE.IcosahedronGeometry(.7, 1)) : child.geometry;
+      const mesh = new THREE.InstancedMesh(geometry, material, transforms.length); mesh.castShadow = true; mesh.receiveShadow = true; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       transforms.forEach((point, index) => { dummy.position.set(point.x, point.heightOffset ?? 1, point.z); dummy.rotation.set(0, point.angle, 0); dummy.scale.set(point.scale, point.verticalScale || point.scale, point.scale); dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix); });
       this.scene.add(mesh); this.environment.push({ mesh, transforms });
     }
@@ -220,11 +258,32 @@ export class Renderer {
     model.add(sprite, caster); return sprite;
   }
 
+  createFutureStructures() {
+    if (!this.game.map.future) return;
+    const steel = this.track(new THREE.MeshStandardMaterial({ color: '#9ba6ac', metalness: .65, roughness: .52 }));
+    const cells = this.track(new THREE.MeshStandardMaterial({ color: '#293d46', metalness: .4, roughness: .37 }));
+    const stripe = this.track(new THREE.MeshStandardMaterial({ color: '#dfbb66', roughness: .7 }));
+    for (const rect of this.game.map.barriers) {
+      const x = (rect.x1 + rect.x2) / 2, y = (rect.y1 + rect.y2) / 2;
+      const core = createModel('future_power', '#d6b363'); core.scale.setScalar(30); core.position.set(x, 1, y); this.scene.add(core); this.bridges.push(core);
+      this.box(x, 1, y, rect.x2 - rect.x1, 2, rect.y2 - rect.y1, steel);
+      for (const z of [rect.y1 + 6, rect.y2 - 6]) this.box(x, 3, z, rect.x2 - rect.x1 - 12, 2, 3, stripe);
+    }
+    for (const rect of this.game.map.cover) {
+      const x = (rect.x1 + rect.x2) / 2, y = (rect.y1 + rect.y2) / 2;
+      for (let offset = -60; offset <= 60; offset += 30) {
+        this.box(x + offset, 6, y, 2, 12, rect.y2 - rect.y1, steel);
+        const panel = this.box(x + offset, 13, y, 27, 1.5, rect.y2 - rect.y1, cells); panel.rotation.z = .18;
+        for (let z = rect.y1 + 15; z < rect.y2; z += 20) this.box(x + offset, 14, z, 25, .6, .7, steel);
+      }
+    }
+  }
+
   createSites() {
     this.sites = [];
     for (const site of [...this.game.oil, ...this.game.beacons]) {
-      const oil = this.game.oil.includes(site), model = createModel(oil ? 'oil' : 'beacon', '#dac17b'); model.scale.setScalar(oil ? 13 : 10);
-      const sprite = oil ? this.attachArchitecture(model, 'oil', '#dac17b', 8.5) : null;
+      const oil = this.game.oil.includes(site), model = createModel(this.game.map.future ? oil ? 'future_oil' : 'future_beacon' : oil ? 'oil' : 'beacon', '#dac17b'); model.scale.setScalar(oil ? 13 : 10);
+      const sprite = oil && !this.game.map.future ? this.attachArchitecture(model, 'oil', '#dac17b', 8.5) : null;
       model.userData.entity = site; model.position.set(site.x, this.elevation(site.x, site.y), site.y); this.scene.add(model); this.sites.push({ entity: site, model, owner: null, sprite });
     }
     this.ores = this.game.ore.map(ore => { const model = createModel(`ore_${ore.kind}`); model.scale.setScalar(22); model.position.set(ore.x, 1, ore.y); this.scene.add(model); return { ore, model }; });
@@ -256,7 +315,8 @@ export class Renderer {
     this.overlayCanvas = makeCanvas(1, 1); this.overlayCanvas.className = 'world-overlay'; Object.assign(this.overlayCanvas.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', pointerEvents: 'none' });
     this.canvas.after(this.overlayCanvas); this.overlay = this.overlayCanvas.getContext('2d');
     this.selectionGeometry = this.track(new THREE.RingGeometry(.94, 1, 64)); this.selectionGeometry.rotateX(-Math.PI / 2);
-    this.selectionMaterial = this.track(new THREE.MeshBasicMaterial({ color: '#82e9f2', transparent: true, opacity: .78, depthWrite: false })); this.placement = null;
+    this.selectionMaterial = this.track(new THREE.MeshBasicMaterial({ color: teamVisual(0).color, transparent: true, opacity: .78, depthWrite: false })); this.placement = null;
+    this.enemySelectionMaterial = this.track(new THREE.MeshBasicMaterial({ color: teamVisual(1).color, transparent: true, opacity: .85, depthWrite: false }));
   }
 
   resize() {
@@ -310,26 +370,57 @@ export class Renderer {
     this.game.events.selection?.();
   }
   pan(dx, dy) { this.center.x += dx / this.camera.zoom; this.center.y += dy / this.camera.zoom / SIN_ELEVATION; this.clampCamera(); this.updateCamera(); }
-  zoomAt(factor, sx, sy) { const before = this.screenToWorld(sx, sy); this.camera.zoom = clamp(this.camera.zoom * factor, .65, 1.85); this.updateCamera(); const after = this.screenToWorld(sx, sy); this.center.x += before.x - after.x; this.center.y += before.y - after.y; this.clampCamera(); this.updateCamera(); }
+  zoomAt(factor, sx, sy) { const before = this.screenToWorld(sx, sy); this.camera.zoom = clamp(this.camera.zoom * factor, .45, 2.4); this.updateCamera(); const after = this.screenToWorld(sx, sy); this.center.x += before.x - after.x; this.center.y += before.y - after.y; this.clampCamera(); this.updateCamera(); }
 
   createEntity(entity) {
-    const color = FACTIONS[this.game.players[entity.owner].faction].color, name = entity.type === 'elite' ? `elite_${this.game.players[entity.owner].faction}` : entity.type;
+    const color = teamVisual(entity.owner).color, name = equipmentModel(this.game.players[entity.owner].faction, entity.type, this.game.map.future);
     const model = createModel(name, color), scale = entity.kind === 'building' ? entity.size / 7.2 : UNIT_SCALE[entity.type]; model.scale.setScalar(scale);
     model.userData.entity = entity;
-    const sprite = entity.kind === 'building' && entity.type !== 'turret' ? this.attachArchitecture(model, name, color) : null;
-    const ring = new THREE.Mesh(this.selectionGeometry, this.selectionMaterial); ring.visible = false; this.scene.add(model, ring);
+    const sprite = entity.kind === 'building' && entity.type !== 'turret' && !this.game.map.future ? this.attachArchitecture(model, name, color) : null;
+    const entrance = entity.kind === 'building' && ['barracks', 'factory', 'armory', 'airfield'].includes(entity.type) ? this.createEntrance(entity, model, scale) : null;
+    const ring = new THREE.Mesh(this.selectionGeometry, entity.owner === 0 ? this.selectionMaterial : this.enemySelectionMaterial); ring.visible = false; this.scene.add(model, ring);
     const exhausts = [];
     if (entity.kind === 'unit' && UNITS[entity.type].tags.includes('jet')) for (const z of [-.36, .36]) {
       const exhaust = this.effectSprite('#89c7ff'); exhaust.position.set(-4.2, .42, z); exhaust.scale.set(1.25, .43, 1); model.add(exhaust); exhausts.push(exhaust);
     }
     model.updateMatrixWorld(true);
-    const topHeight = entity.kind === 'unit' ? new THREE.Box3().setFromObject(model).max.y : 0;
-    const value = { model, ring, entity, scale, sprite, exhausts, topHeight, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon') }; this.entities.set(entity.id, value); return value;
+    const topHeight = new THREE.Box3().setFromObject(model).max.y;
+    const rotors = []; model.traverse(object => { if (/^rotor_\d+_/.test(object.name)) rotors.push(object); });
+    rotors.sort((a, b) => Number(a.name.split('_')[1]) - Number(b.name.split('_')[1]));
+    const value = { model, ring, entity, scale, sprite, entrance, exhausts, topHeight, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0 }; this.entities.set(entity.id, value); return value;
+  }
+
+  createEntrance(building, model, scale) {
+    const infantry = building.type === 'barracks', exit = productionExit(building, infantry ? 'rifle' : 'tank');
+    const root = new THREE.Group(); root.scale.setScalar(1 / scale); root.position.set((exit.x - building.x) / scale, 0, (exit.y - building.y) / scale); root.rotation.y = building.owner ? Math.PI : 0;
+    const steel = this.track(new THREE.MeshStandardMaterial({ color: '#59666a', roughness: .58, metalness: .62 }));
+    const concrete = this.track(new THREE.MeshStandardMaterial({ color: '#808779', roughness: .94 }));
+    const stripes = this.track(new THREE.MeshStandardMaterial({ color: '#d1b15f', roughness: .76 }));
+    const lampMaterial = this.track(new THREE.MeshStandardMaterial({ color: '#8cedce', emissive: '#70c3ae', emissiveIntensity: .7 }));
+    const height = infantry ? 20 : 31, width = infantry ? 23 : 48;
+    const piece = (w, h, d, x, y, z, material) => { const mesh = new THREE.Mesh(this.track(new THREE.BoxGeometry(w, h, d)), material); mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; root.add(mesh); return mesh; };
+    piece(72, .6, width + 12, 28, .4, 0, concrete);
+    for (const z of [-width / 2, width / 2]) { piece(4, height, 4, 0, height / 2, z, steel); piece(61, .7, 1.6, 31, .9, z - Math.sign(z) * 3, stripes); }
+    piece(5, 4, width + 4, 0, height, 0, steel);
+    const door = piece(2, height - 4, width - 5, 0, height / 2 + 1, 0, steel);
+    for (let x = 7; x < 55; x += 12) piece(4, .7, 7, x, 1, width / 2 - 7, stripes);
+    piece(4, 2, 5, 2, height + 3, width / 2, lampMaterial);
+    model.add(root); return { root, door, lampMaterial, height };
+  }
+
+  entityAnchor(entity) {
+    const entry = this.entities.get(entity.id);
+    if (!entry) return this.worldToScreen(entity.x, entity.y);
+    if (!entry.sprite) return this.worldToScreen(entity.x, entity.y, entry.model.position.y + entry.topHeight + 9);
+    const point = this.worldToScreen(entity.x, entity.y + entry.sprite.position.z * entry.scale, entry.model.position.y + entry.sprite.position.y * entry.scale);
+    point.y -= entry.sprite.scale.y * entry.scale * this.camera.zoom / 2;
+    return point;
   }
 
   updateEntities(now) {
     const dt = this.game.paused ? 0 : Math.min(.05, Math.max(0, (now - (this.lastEntityFrame ?? now)) / 1000)); this.lastEntityFrame = now;
     const active = new Set();
+    const targeted = new Set(this.game.selected.map(id => this.game.getEntity(id)).filter(entity => entity?.owner === 0).map(entity => entity.order?.targetId || entity.targetId).filter(Boolean));
     for (const entity of [...this.game.buildings, ...this.game.units]) {
       if (entity.hp <= 0) continue; active.add(entity.id);
       const entry = this.entities.get(entity.id) || this.createEntity(entity), visible = this.game.canSeeEntity(0, entity); entry.model.visible = visible;
@@ -337,17 +428,32 @@ export class Renderer {
       let height = this.elevation(entity.x, entity.y);
       if (entity.kind === 'unit') {
         const tags = UNITS[entity.type].tags;
-        if (tags.includes('jet')) height = 95 + Math.sin(now * .001 + entity.id) * 2;
-        else if (tags.includes('drone')) height = 23 + Math.sin(now * .003 + entity.id) * 1.5;
+        if (tags.includes('jet')) height = 95 * (entity.deployment ? Math.min(1, (this.game.time - entity.deployment.start) / 2.6) : 1) + Math.sin(now * .001 + entity.id) * 2;
+        else if (tags.includes('drone')) height = 23 + Math.sin(this.game.time * 3 + entity.id) * 1.5;
         else if (tags.includes('ship')) height = 2 + Math.sin(now * .002 + entity.id) * .6;
         const turn = Math.atan2(Math.sin(entity.angle - entry.heading), Math.cos(entity.angle - entry.heading));
         entry.heading += turn * (1 - Math.exp(-dt * (tags.includes('infantry') ? 18 : 9)));
         entry.model.rotation.y = -entry.heading;
-        if (entry.weapon) entry.weapon.rotation.y = entry.heading - entity.turretAngle;
+        if (entry.weapon) { entry.weapon.rotation.y = entry.heading - entity.turretAngle; entry.weapon.position.x = -.35 * Math.exp(-Math.max(0, this.game.time - (entity.lastFireAt ?? -100)) * 18); }
         if (tags.includes('infantry')) entry.model.rotation.z = moving ? Math.sin(entity.movePulse * 1.8) * .025 : 0;
+        entry.legs.forEach((leg, index) => { leg.rotation.z = moving ? Math.sin(entity.movePulse * 2 + index * Math.PI) * .47 : 0; });
+        if (tags.includes('drone') || entry.rotors.length) {
+          const activeFlight = this.game.time >= entity.stunUntil;
+          entry.rotors.forEach((rotor, index) => { rotor.rotation.y += dt * (activeFlight ? 47 : 7) * (index % 2 ? -1 : 1); });
+          const smoothing = 1 - Math.exp(-dt * 7);
+          entry.bank += ((activeFlight ? clamp(turn * .45, -.17, .17) : 0) - entry.bank) * smoothing;
+          entry.pitch += ((moving && activeFlight ? -.09 : 0) - entry.pitch) * smoothing;
+          entry.model.rotation.x = entry.bank; entry.model.rotation.z = entry.pitch;
+          if (tags.includes('drone')) height += Math.sin(this.game.time * 2.3 + entity.id * .7) * .7;
+        }
       } else if (entity.type === 'dock') entry.model.rotation.y = entity.x > this.world.width / 2 ? Math.PI : 0;
       else if (entity.type === 'turret') entry.model.rotation.y = -entity.angle;
       entry.model.position.set(entity.x, height, entity.y);
+      if (entry.entrance) {
+        const age = this.game.time - ((entity.exitUntil || -10) - 2.6), open = entity.exitUntil > this.game.time ? Math.min(1, age / .3) : Math.max(0, 1 - (this.game.time - (entity.exitUntil || -10)) / .45);
+        entry.entrance.door.scale.y = Math.max(.03, 1 - open); entry.entrance.door.position.y = entry.entrance.height - 2 - (entry.entrance.height - 4) * (1 - open) / 2;
+        entry.entrance.lampMaterial.emissiveIntensity = entity.active ? .9 + Math.sin(now * .005) * .4 : .4;
+      }
       if (entity.kind === 'unit' && visible && moving && this.game.time >= entry.trailAt && this.trails.length < 100) {
         const tags = UNITS[entity.type].tags, ship = tags.includes('ship');
         if (!tags.includes('jet') && !tags.includes('drone') && !tags.includes('infantry')) {
@@ -366,7 +472,7 @@ export class Renderer {
       }
       entry.lastX = entity.x; entry.lastY = entity.y;
       for (const exhaust of entry.exhausts) exhaust.material.opacity = .7 + Math.sin(now * .02 + entity.id) * .15;
-      entry.ring.visible = this.game.selected.includes(entity.id) && visible; entry.ring.position.set(entity.x, this.elevation(entity.x, entity.y) + .65, entity.y);
+      entry.ring.visible = visible && (this.game.selected.includes(entity.id) || entity.owner !== 0 && (this.hoveredId === entity.id || targeted.has(entity.id))); entry.ring.position.set(entity.x, this.elevation(entity.x, entity.y) + .65, entity.y);
       if (UNITS[entity.type]?.tags.includes('ship')) entry.ring.position.y = 3;
       const radius = entity.kind === 'building' ? entity.size * .65 : unitRadius(entity) + 4; entry.ring.scale.set(radius, 1, radius);
     }
@@ -374,7 +480,7 @@ export class Renderer {
     for (const site of this.sites) {
       site.model.visible = this.game.hasExploredFor(0, site.entity.x, site.entity.y);
       if (site.entity.owner !== site.owner) {
-        const color = site.entity.owner === null ? '#d5bd7e' : FACTIONS[this.game.players[site.entity.owner].faction].color;
+        const color = teamVisual(site.entity.owner).color;
         site.model.traverse(mesh => { if (mesh.isMesh && mesh.material.name === '阵营标识') { mesh.material = mesh.material.clone(); mesh.material.color.set(color); mesh.material.emissive.set(color); } }); site.owner = site.entity.owner;
         if (site.sprite) site.sprite.material.map = spriteTexture('oil', color);
       }
@@ -440,16 +546,32 @@ export class Renderer {
           group.userData.fromHeight = this.effectHeight(effect.sourceType, effect.x, effect.y); group.userData.toHeight = this.effectHeight(effect.targetType, effect.toX, effect.toY);
           const color = effect.style === 'laser' ? '#72edff' : effect.style === 'repair' ? '#6dffbd' : effect.style === 'elite' ? '#8ddff0' : '#ffd9a0';
           group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vector(effect.x, effect.y, group.userData.fromHeight), vector(effect.toX, effect.toY, group.userData.toHeight)]), new THREE.LineBasicMaterial({ color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })), this.effectSprite(color));
-        } else if (['hit', 'explosion'].includes(effect.type)) group.add(this.effectSprite('#ffc177'), this.effectSprite('#f47a34'), this.effectSprite('#465059', true));
+        } else if (['hit', 'explosion'].includes(effect.type)) {
+          group.add(this.effectSprite('#ffc177'), this.effectSprite('#f47a34'), this.effectSprite('#465059', true));
+          const count = effect.type === 'explosion' ? 18 : 9, positions = new Float32Array(count * 3);
+          const sparks = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(positions, 3)), new THREE.PointsMaterial({ color: '#ffe3ab', size: 3, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); sparks.frustumCulled = false; group.add(sparks);
+          const waveGeometry = new THREE.RingGeometry(.86, 1, 48); waveGeometry.rotateX(-Math.PI / 2);
+          group.add(new THREE.Mesh(waveGeometry, new THREE.MeshBasicMaterial({ color: '#a4a5a1', transparent: true, depthWrite: false, side: THREE.DoubleSide })));
+        }
         else if (['order', 'build', 'capture', 'ability', 'jam', 'sonar'].includes(effect.type)) group.add(new THREE.Mesh(this.selectionGeometry, new THREE.MeshBasicMaterial({ color: effect.type === 'jam' ? '#c2a4ff' : effect.type === 'sonar' ? '#83ccd9' : effect.owner === 1 ? '#fb7968' : '#8cdff0', transparent: true, depthWrite: false })));
         group.position.set(effect.x, ['hit', 'explosion'].includes(effect.type) ? this.effectHeight(effect.targetType, effect.x, effect.y) : this.elevation(effect.x, effect.y) + 2, effect.y); this.scene.add(group); this.effects.set(effect, group);
         if (effect.type === 'sonar') group.position.y = 3;
       }
       if (effect.type === 'shot') {
-        group.position.set(0, 0, 0); group.children[0].material.opacity = (1 - t) * .8; group.children[1].position.set(effect.x + (effect.toX - effect.x) * t, group.userData.fromHeight + (group.userData.toHeight - group.userData.fromHeight) * t + Math.sin(t * Math.PI) * 6, effect.y + (effect.toY - effect.y) * t); group.children[1].scale.setScalar(9 * (1 - t));
+        group.position.set(0, 0, 0);
+        const beam = ['laser', 'repair', 'railgun'].includes(effect.style), line = group.children[0], position = line.geometry.attributes.position;
+        const length = Math.hypot(effect.toX - effect.x, effect.toY - effect.y), muzzle = Math.min(.35, 35 / Math.max(1, length));
+        const head = muzzle + (1 - muzzle) * t, tail = Math.max(muzzle, head - .13);
+        for (const [index, progress] of [[0, beam ? muzzle : tail], [1, beam ? 1 : head]]) position.setXYZ(index, effect.x + (effect.toX - effect.x) * progress, group.userData.fromHeight + (group.userData.toHeight - group.userData.fromHeight) * progress, effect.y + (effect.toY - effect.y) * progress);
+        position.needsUpdate = true; line.material.opacity = (1 - t) * (beam ? .8 : .95);
+        const flash = group.children[1]; flash.position.set(effect.x + (effect.toX - effect.x) * muzzle, group.userData.fromHeight, effect.y + (effect.toY - effect.y) * muzzle); flash.scale.setScalar((['tank', 'railgun', 'elite'].includes(effect.sourceType) ? 23 : 11) * (1 - t)); flash.material.opacity = (1 - t) ** 3;
       } else if (['hit', 'explosion'].includes(effect.type)) {
         const size = effect.type === 'explosion' ? effect.size * 1.25 : 20;
-        group.children.forEach((sprite, i) => { const smoke = i === 2; sprite.position.set(Math.sin(i * 3.1) * size * t * .15, size * t * (smoke ? .65 : .22), Math.cos(i * 3.1) * size * t * .1); sprite.scale.setScalar(size * (.3 + t * (smoke ? 1.3 : .6))); sprite.material.opacity = smoke ? Math.sin(t * Math.PI) * .72 : (1 - t) ** 1.5; });
+        group.children.slice(0, 3).forEach((sprite, i) => { const smoke = i === 2; sprite.position.set(Math.sin(i * 3.1) * size * t * .15, size * t * (smoke ? .65 : .22), Math.cos(i * 3.1) * size * t * .1); sprite.scale.setScalar(size * (.3 + t * (smoke ? 1.3 : .6))); sprite.material.opacity = smoke ? Math.sin(t * Math.PI) * .72 : (1 - t) ** 1.5; });
+        const sparks = group.children[3], positions = sparks.geometry.attributes.position;
+        for (let i = 0; i < positions.count; i++) { const angle = i * 2.399, speed = size * (.6 + hash(i, effect.x) * .9); positions.setXYZ(i, Math.cos(angle) * speed * t, speed * t * (.3 + hash(i, effect.y)) - size * t * t * .8, Math.sin(angle) * speed * t); }
+        positions.needsUpdate = true; sparks.material.opacity = (1 - t) ** 2;
+        const wave = group.children[4]; wave.position.y = -group.position.y + this.elevation(effect.x, effect.y) + 2.5; wave.scale.setScalar(size * (.3 + t * 1.8)); wave.material.opacity = (1 - t) ** 3 * .35;
       } else if (group.children[0]) { const pulse = ['jam', 'sonar'].includes(effect.type), radius = pulse ? effect.size * t : effect.type === 'ability' ? 245 * Math.min(1, t * 2) : 10 + t * 24; group.children[0].scale.set(radius, 1, radius); group.children[0].material.opacity = (1 - t) * (pulse ? .3 : 1); }
     }
     for (const [effect, group] of this.effects) if (!current.has(effect)) { group.traverse(item => { if (item.geometry && item.geometry !== this.selectionGeometry) item.geometry.dispose(); if (item.material) item.material.dispose(); }); this.scene.remove(group); this.effects.delete(effect); }
@@ -462,7 +584,7 @@ export class Renderer {
       active.add(p.id);
       let model = this.projectileModels.get(p.id);
       if (!model) {
-        const color = FACTIONS[this.game.players[p.owner].faction].color;
+        const color = teamVisual(p.owner).color;
         if (['wing', 'loitering'].includes(p.kind)) {
           model = createModel(p.kind === 'wing' ? 'strike' : 'drone', color);
           model.scale.setScalar(p.kind === 'wing' ? 6 : 3);
@@ -484,52 +606,72 @@ export class Renderer {
       const span = Math.hypot(p.toX - p.startX, p.toY - p.startY) || 1, progress = Math.min(1, Math.hypot(p.x - p.startX, p.y - p.startY) / span);
       const height = p.kind === 'wing' ? 88 + Math.sin(now * .004 + p.id) * 2 : p.kind === 'torpedo' ? 2 : p.kind === 'rocket' ? 22 + Math.sin(progress * Math.PI) * 135 : 35;
       model.position.set(p.x, height, p.y); model.rotation.y = -p.angle;
+      if (model.visible && ['rocket', 'missile'].includes(p.kind) && this.game.time >= (p.trailAt || 0) && this.trails.length < 100) {
+        const sprite = this.effectSprite('#a7a9a7', true); sprite.position.set(p.x, height, p.y); sprite.scale.setScalar(8); sprite.material.opacity = .2;
+        this.scene.add(sprite); this.trails.push({ sprite, baseY: height, start: this.game.time }); p.trailAt = this.game.time + .09;
+      }
     }
     for (const [id, model] of this.projectileModels) if (!active.has(id)) { model.children.at(-1)?.material?.dispose(); this.scene.remove(model); this.projectileModels.delete(id); }
   }
 
   drawOverlay() {
     const ctx = this.overlay; ctx.clearRect(0, 0, this.viewport.width, this.viewport.height);
+    if (weatherState(this.game.map, this.game.time).phase === 'storm') {
+      ctx.strokeStyle = '#a5d1e526'; ctx.lineWidth = 1;
+      for (let i = 0; i < 12; i++) { const x = hash(i, 7) * this.viewport.width, y = (hash(i, 9) * this.viewport.height + this.game.time * 45) % this.viewport.height; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 30, y - 8); ctx.stroke(); }
+    }
     const selected = new Set(this.game.selected), bars = [], viewportRect = this.canvas.getBoundingClientRect();
-    const obstacles = [...this.canvas.parentElement.querySelectorAll('.battle-hud, .command-toolbar, .compact-radar:not([hidden]), .toast')].map(element => {
+    const obstacles = [...this.canvas.parentElement.querySelectorAll('.battle-hud, .command-toolbar, .camera-tools, .building-info:not([hidden]), .compact-radar:not([hidden]), .toast')].map(element => {
       const rect = element.getBoundingClientRect(); return { x: rect.x - viewportRect.x, y: rect.y - viewportRect.y, width: rect.width, height: rect.height };
     });
     for (const entry of this.entities.values()) {
       const { entity, model, scale, sprite } = entry, ratio = clamp(entity.hp / entity.maxHp, 0, 1), hovered = this.hoveredId === entity.id, isSelected = selected.has(entity.id);
       const elapsed = Math.max(0, this.game.time - entry.healthAt); entry.healthAt = this.game.time;
       entry.healthEcho = Math.max(ratio, entry.healthEcho - elapsed * .24);
-      if (!model.visible || ratio === 1 && !isSelected && !hovered) continue;
+      if (!showHealthBar(entity, model.visible, isSelected, hovered, this.game.time - (entity.lastDamageAt ?? -100) < 2)) continue;
       let screen;
-      if (sprite) { screen = this.worldToScreen(entity.x, entity.y + sprite.position.z * scale, model.position.y + sprite.position.y * scale); screen.y -= sprite.scale.y * scale * this.camera.zoom + 7; }
+      if (sprite) { screen = this.entityAnchor(entity); screen.y -= 7; }
       else screen = this.worldToScreen(entity.x, entity.y, model.position.y + entry.topHeight + 9);
       if (screen.x < 0 || screen.x > this.viewport.width || screen.y < 0 || screen.y > this.viewport.height) continue;
       const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry'), ammo = UNITS[entity.type]?.ammo;
       const numeric = hovered || isSelected && selected.size === 1;
-      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, ammo, anchorX: screen.x, anchorY: screen.y, width: entity.kind === 'building' ? 76 : infantry ? 28 : 50, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner === 1 ? 2 : 1 });
+      const label = `${entity.owner === 1 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
+      const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.jammedUntil > this.game.time ? '干扰' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? '补给' : '';
+      ctx.font = '500 10px "Noto Sans SC",sans-serif';
+      const width = Math.max(entity.kind === 'building' ? 76 : infantry ? 28 : 50, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0);
+      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner === 1 ? 2 : 1 });
     }
     this.healthBars = layoutHealthBars(bars, this.viewport, obstacles);
     for (const bar of this.healthBars) {
-      const { entity, x, y, width, numeric, ammo, selected: isSelected } = bar, top = y + (numeric ? 12 : 0), color = bar.ratio > .5 ? '#81e3b5' : bar.ratio > .25 ? '#f3c66e' : '#fc7e70';
+      const { entity, x, y, width, numeric, ammo } = bar, top = y + (numeric ? 12 : 0), style = healthVisual(entity.owner, bar.ratio);
       if (Math.abs(x + width / 2 - bar.anchorX) > 2 || Math.abs(y + bar.height - bar.anchorY) > 2) {
-        ctx.strokeStyle = isSelected ? '#9cc8d98f' : '#83979c66'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + width / 2, y + bar.height); ctx.lineTo(bar.anchorX, bar.anchorY + 4); ctx.stroke();
+        ctx.strokeStyle = style.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + width / 2, y + bar.height); ctx.lineTo(bar.anchorX, bar.anchorY + 4); ctx.stroke();
       }
-      if (numeric) { ctx.font = '500 10px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; const label = `${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`; ctx.strokeText(label, x + width / 2, y + 9); ctx.fillStyle = '#e5f4f4'; ctx.fillText(label, x + width / 2, y + 9); }
-      ctx.fillStyle = '#081116ed'; ctx.fillRect(x, top, width, 9); ctx.strokeStyle = isSelected ? '#b6edf4' : '#657a8299'; ctx.lineWidth = 1; ctx.strokeRect(x + .5, top + .5, width - 1, 8);
-      ctx.fillStyle = entity.owner === 0 ? '#91d9ed' : '#ff8d81'; ctx.fillRect(x + 2, top + 2, 3, 5);
+      if (numeric) { ctx.font = '500 10px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.label, x + width / 2, y + 9); ctx.fillStyle = style.frame; ctx.fillText(bar.label, x + width / 2, y + 9); }
+      ctx.fillStyle = '#081116ed'; ctx.fillRect(x, top, width, 9); ctx.strokeStyle = style.warning ? '#f3c66e' : style.frame; ctx.lineWidth = 1; ctx.strokeRect(x + .5, top + .5, width - 1, 8);
+      ctx.fillStyle = style.color;
+      if (style.hostile) { ctx.beginPath(); ctx.moveTo(x + 3.5, top + 1); ctx.lineTo(x + 6, top + 4.5); ctx.lineTo(x + 3.5, top + 8); ctx.lineTo(x + 1, top + 4.5); ctx.closePath(); ctx.fill(); }
+      else ctx.fillRect(x + 2, top + 2, 3, 5);
       const innerWidth = width - 10;
-      ctx.fillStyle = '#b8a981'; ctx.fillRect(x + 7, top + 2, innerWidth * bar.echo, 5);
-      ctx.fillStyle = color; ctx.fillRect(x + 7, top + 2, innerWidth * bar.ratio, 5);
+      ctx.fillStyle = style.echo; ctx.fillRect(x + 7, top + 2, innerWidth * bar.echo, 5);
+      ctx.fillStyle = style.fill; ctx.fillRect(x + 7, top + 2, innerWidth * bar.ratio, 5);
       ctx.fillStyle = '#0c191b77'; const segments = entity.kind === 'building' ? 10 : width < 30 ? 4 : 6;
       for (let i = 1; i < segments; i++) ctx.fillRect(Math.round(x + 7 + innerWidth * i / segments), top + 2, 1, 5);
-      if (ammo) for (let i = 0; i < ammo; i++) { ctx.fillStyle = i < entity.ammo ? '#c8ddec' : '#273a47'; ctx.fillRect(x + 2 + i * (width - 4) / ammo, top + 11, Math.max(1, (width - 4) / ammo - 2), 3); }
+      if (ammo) for (let i = 0; i < ammo; i++) { ctx.fillStyle = i < entity.ammo ? style.frame : '#273a47'; ctx.fillRect(x + 2 + i * (width - 4) / ammo, top + 11, Math.max(1, (width - 4) / ammo - 2), 3); }
+      if (bar.status) { const baseline = top + (ammo ? 26 : 20); ctx.font = '500 9px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.status, x + width / 2, baseline); ctx.fillStyle = '#f4ce82'; ctx.fillText(bar.status, x + width / 2, baseline); }
     }
     if (this.dragBox) {
       const a = this.worldToScreen(this.dragBox.start.x, this.dragBox.start.y), b = this.worldToScreen(this.dragBox.end.x, this.dragBox.end.y); ctx.fillStyle = 'rgba(104,220,239,.1)'; ctx.strokeStyle = '#8de5f0'; ctx.lineWidth = 1; ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y); ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
     }
+    for (const building of this.game.ownedBuildings(0)) if (selected.has(building.id) && building.rallyPoint) {
+      const start = this.worldToScreen(building.x, building.y), point = this.worldToScreen(building.rallyPoint.x, building.rallyPoint.y);
+      ctx.save(); ctx.strokeStyle = '#b6ead7'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(point.x, point.y); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = '#91d8b5'; ctx.beginPath(); ctx.moveTo(point.x, point.y - 22); ctx.lineTo(point.x + 18, point.y - 17); ctx.lineTo(point.x, point.y - 10); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(point.x, point.y); ctx.lineTo(point.x, point.y - 22); ctx.stroke(); ctx.restore();
+    }
     for (const effect of this.game.effects) if (effect.type === 'income' && this.game.isVisibleFor(0, effect.x, effect.y)) {
       const point = this.worldToScreen(effect.x, effect.y, 20 + effect.age / effect.duration * 32); ctx.font = '600 13px "Noto Sans SC",sans-serif'; ctx.fillStyle = '#e9cd90'; ctx.textAlign = 'center'; ctx.fillText(`+${effect.amount}`, point.x, point.y);
     }
-    if (this.pointer && (this.game.pendingAbility || this.game.orderMode === 'attackMove')) {
+    if (this.pointer && (this.game.pendingAbility || ['attackMove', 'rally'].includes(this.game.orderMode))) {
       const point = this.worldToScreen(this.pointer.x, this.pointer.y); ctx.strokeStyle = '#c4edf2'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(point.x, point.y, 18, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(point.x - 26, point.y); ctx.lineTo(point.x + 26, point.y); ctx.moveTo(point.x, point.y - 26); ctx.lineTo(point.x, point.y + 26); ctx.stroke();
     }
   }
@@ -553,6 +695,7 @@ export class Renderer {
     this.updateEntities(now); this.updateEffects(); this.updateProjectileModels(now); this.updateTracks(); this.updatePlacement();
     if (now - this.lastFog >= 180) { this.updateFog(); this.lastFog = now; }
     if (this.waterNormal) this.waterNormal.offset.set(now * .000004, now * .000007);
+    if (this.shoreMaterial) this.shoreMaterial.opacity = .13 + Math.sin(now * .0012) * .035;
     this.webgl.render(this.scene, this.viewCamera); this.drawOverlay();
     if (now - this.lastMinimap >= 180) { this.drawMinimap(); this.lastMinimap = now; }
   }
@@ -569,8 +712,12 @@ export class Renderer {
     if (this.game.map.water) { const water = this.game.map.water; ctx.fillStyle = '#315662'; ctx.fillRect(water.x1 * sx, 0, (water.x2 - water.x1) * sx, height); }
     for (const bridge of this.game.map.bridges) { ctx.fillStyle = '#a0a296'; ctx.fillRect((this.game.map.water ? this.game.map.water.x1 - 38 : 1010) * sx, bridge.y1 * sy, (this.game.map.water ? this.game.map.water.x2 - this.game.map.water.x1 + 76 : 220) * sx, (bridge.y2 - bridge.y1) * sy); }
     for (const ore of this.game.ore) if (ore.amount > 0) { ctx.fillStyle = ore.kind === 'gem' ? '#93b9b8' : '#c6ae75'; ctx.fillRect(ore.x * sx - 2, ore.y * sy - 2, 4, 4); }
-    for (const site of [...this.game.oil, ...this.game.beacons]) { ctx.fillStyle = site.owner === null ? '#dcc998' : FACTIONS[this.game.players[site.owner].faction].color; ctx.fillRect(site.x * sx - 2, site.y * sy - 2, 5, 5); }
-    for (const entity of [...this.game.buildings, ...this.game.units]) if (entity.hp > 0 && this.game.canSeeEntity(0, entity)) { ctx.fillStyle = FACTIONS[this.game.players[entity.owner].faction].color; const size = entity.kind === 'building' ? 5 : 2.5; ctx.fillRect(entity.x * sx - size / 2, entity.y * sy - size / 2, size, size); }
+    for (const site of [...this.game.oil, ...this.game.beacons]) { ctx.fillStyle = teamVisual(site.owner).color; ctx.fillRect(site.x * sx - 2, site.y * sy - 2, 5, 5); }
+    for (const entity of [...this.game.buildings, ...this.game.units]) if (entity.hp > 0 && this.game.canSeeEntity(0, entity)) {
+      ctx.fillStyle = teamVisual(entity.owner).color; const size = entity.kind === 'building' ? 5 : 3;
+      if (entity.owner === 0) ctx.fillRect(entity.x * sx - size / 2, entity.y * sy - size / 2, size, size);
+      else { const x = entity.x * sx, y = entity.y * sy; ctx.beginPath(); ctx.moveTo(x, y - size); ctx.lineTo(x + size, y); ctx.lineTo(x, y + size); ctx.lineTo(x - size, y); ctx.closePath(); ctx.fill(); }
+    }
     ctx.drawImage(this.fogCanvas, 0, 0, width, height);
     const a = this.screenToWorld(0, 0), b = this.screenToWorld(this.viewport.width, this.viewport.height); ctx.strokeStyle = '#d5edf0'; ctx.lineWidth = 1; ctx.strokeRect(a.x * sx, a.y * sy, (b.x - a.x) * sx, (b.y - a.y) * sy);
   }

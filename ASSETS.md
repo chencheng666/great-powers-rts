@@ -9,10 +9,14 @@
 | 地表、建筑、植被 | `assets/terrain-valley-v2.png`、`buildings-realistic-v2.png`、`foliage-realistic-v2.png`、`armory-v1.png`；使用 AI 图像生成工具制作 | 复现提示词见 `assets/asset-prompts.json`，建筑和植被使用透明图集 |
 | 开场画面 | `assets/battlefield-key-art.png`；AI 生成的原创战场插画 | 不代表实际运行画质，游戏截图位于 `docs/images/` |
 | 军事模型 | `assets/models/military-library.glb` 与 `modern-library.glb`；本地 Blender 程序化建模 | 包含 `.blend` 源文件及 `scripts/build_*_assets.py` 生成脚本，共 34 类基础模型模板与 9 类现代单位模板 |
+| 无人机重制 | `assets/models/drone-library.glb` 与 `.blend`；本地 Blender 程序化建模 | `scripts/build_drone_assets.py` 重制攻击无人机、隐形侦察机和蜂群母机三个已有模板；四／六旋翼保留独立轴心关节，不新增兵种或改变属性 |
+| 阵营原型与科幻模型 | `assets/models/equipment-library.glb` 与 `.blend`；本地 Blender 程序化建模 | `scripts/build_equipment_assets.py`，五种坦克、五种火箭炮、十三种科幻设施、三种原创未来单位，共 26 个模板；不是厂商精确模型 |
+| 子午环阵地表 | `assets/meridian-regolith-v1.png`；AI 生成的原创俯视月壤纹理 | 提示词见 `assets/asset-prompts.json`；道路、掩体、反应堆和基地由程序及三维模型叠加 |
 | 配乐 | `assets/audio/frontline-sequence.m4a`；程序编曲、合成的循环配乐《前线序列》 | `scripts/generate-audio.mjs`，约 74 秒，不使用官方游戏音乐 |
 | 战场音效 | `src/audio.js` 中 Web Audio 振荡器、噪声与滤波合成 | 修改频率、包络和滤波参数 |
 | 中文应答 | `src/audio-data.js` 中 36 条台词 | 公开版由玩家设备通过 Speech Synthesis 实时播报；中文音色和离线可用性取决于设备，不分发语音引擎或系统录音 |
 | 游戏截图 | `docs/images/`；本项目浏览器运行截图 | 海军集中展示、密集编队及手机版截图来自渲染验证场景，不是预渲染宣传图 |
+| 国庆公众号图文素材 | `docs/wechat-national-day-20261002/images/`；六张桌面实机截图、四张现有模型离线渲染、两张 AI 规划概念图 | 正文逐图标注类别；`生成记录.json` 保存内置图像生成工具模式与完整提示词，`scripts/render-article-models.py` 保留模型渲染流程；概念图不是已实现功能或现实装备精确复刻 |
 
 本仓库中由作者提供的代码、文档、模型、图片及程序合成配乐，均在作者可授予的权利范围内按根目录 MIT 许可提供。AI 生成图片的可保护性、独占性及第三方权利不作保证；商业使用者应独立核验素材与品牌使用风险。第三方依赖不因本项目许可证而改变其原有许可。
 

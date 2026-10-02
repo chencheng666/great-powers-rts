@@ -1,5 +1,6 @@
 import { UNITS } from './data.js';
 import { unitLayer, unitRadius } from './unit-spacing.js';
+import { weatherState, hasSignalCover } from './tactical-rules.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const alive = u => u.hp > 0 && !u.embarkedIn;
@@ -9,7 +10,9 @@ export const modernCombat = {
   activeUnits(side, type) { return this.ownedUnits(side, type).filter(u => !u.embarkedIn); },
 
   updateElectronicWarfare(dt) {
+    const storm = weatherState(this.map, this.time).phase === 'storm';
     for (const u of this.units) {
+      if (storm && alive(u) && UNITS[u.type].tags.includes('air') && !hasSignalCover(this, u.owner, u)) u.jammedUntil = this.time + .3;
       u.heat = Math.max(0, (u.heat || 0) - dt * 18);
       if (u.overheated && u.heat < 28) u.overheated = false;
       if (u.embarkedIn) {
@@ -55,8 +58,8 @@ export const modernCombat = {
     // 优先拦截入境弹药；与普通射击共享射击间隔及弹药，不能同时无限输出。
     for (const defender of this.units.filter(u => alive(u) && this.time >= u.stunUntil && u.fireTimer <= 0)) {
       const d = UNITS[defender.type];
-      if (!['laser', 'aa', 'frigate', 'destroyer', 'fighter'].includes(defender.type) || defender.overheated || d.ammo && defender.ammo <= 0 || defender.order?.type === 'rearm') continue;
-      const target = list.filter(p => p.hp > 0 && p.owner !== defender.owner && !['rocket', 'torpedo'].includes(p.kind) && !(defender.type === 'laser' && p.kind === 'wing') && !(defender.type === 'fighter' && p.kind !== 'wing') && distance(defender, p) <= d.range && this.isVisibleFor(defender.owner, p.x, p.y)).sort((a, b) => distance(defender, a) - distance(defender, b))[0];
+      if (!['laser', 'aa', 'frigate', 'destroyer', 'fighter', 'aegis'].includes(defender.type) || defender.overheated || d.ammo && defender.ammo <= 0 || defender.order?.type === 'rearm') continue;
+      const target = list.filter(p => p.hp > 0 && p.owner !== defender.owner && !['rocket', 'torpedo'].includes(p.kind) && !(defender.type === 'laser' && p.kind === 'wing') && !(['fighter', 'aegis'].includes(defender.type) && p.kind !== 'wing') && distance(defender, p) <= d.range && this.isVisibleFor(defender.owner, p.x, p.y)).sort((a, b) => distance(defender, a) - distance(defender, b))[0];
       if (!target) continue;
       target.hp -= d.damage * (defender.type === 'laser' ? 1 : 1.8);
       defender.fireTimer = d.cooldown;
@@ -70,7 +73,7 @@ export const modernCombat = {
       p.age += dt;
       if (p.hp <= 0) { this.finishProjectile(p, true); continue; }
       const source = this.getEntity(p.sourceId), target = this.getEntity(p.targetId);
-      const jammed = ['loitering', 'missile', 'wing'].includes(p.kind) && this.activeUnits(1 - p.owner, 'jammer').some(u => this.time >= u.stunUntil && distance(u, p) <= UNITS.jammer.range * (this.players[u.owner].faction === 'middleeast' ? 1.15 : 1));
+      const jammed = ['loitering', 'missile', 'wing'].includes(p.kind) && (weatherState(this.map, this.time).phase === 'storm' && !hasSignalCover(this, p.owner, p) || this.activeUnits(1 - p.owner, 'jammer').some(u => this.time >= u.stunUntil && distance(u, p) <= UNITS.jammer.range * (this.players[u.owner].faction === 'middleeast' ? 1.15 : 1)));
       if (jammed) p.jam += dt;
       else p.jam = Math.max(0, p.jam - dt * .25);
       if (p.jam >= 1.1 && p.kind !== 'wing') { this.finishProjectile(p, true); continue; }

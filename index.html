@@ -34,7 +34,14 @@
         <section class="battlefield" id="battlefield" aria-label="即时战略战场">
           <canvas id="game-canvas"></canvas>
           <div id="compact-radar" class="compact-radar" hidden></div>
-          <div class="battle-hud top-left"><span class="hud-label">战区态势</span><strong id="battle-status">部署中</strong><span id="battle-objective">摧毁敌方指挥中心</span></div>
+          <div class="camera-tools" aria-label="战场镜头">
+            <button id="pan-map-btn" class="icon-btn" title="拖拽地图模式" aria-label="拖拽地图模式" aria-pressed="false"><i data-lucide="move"></i></button>
+            <button id="zoom-out-btn" class="icon-btn" title="拉远镜头" aria-label="拉远镜头"><i data-lucide="minus"></i></button>
+            <output id="zoom-level" aria-label="镜头缩放">100%</output>
+            <button id="zoom-in-btn" class="icon-btn" title="拉近镜头" aria-label="拉近镜头"><i data-lucide="plus"></i></button>
+          </div>
+          <section id="building-info" class="building-info" aria-label="建筑信息" hidden></section>
+          <div class="battle-hud top-left"><span class="hud-label">战区态势</span><strong id="battle-status">部署中</strong><span id="battle-objective">摧毁敌方指挥中心</span><span id="environment-status" hidden></span></div>
           <div class="battle-hud top-right"><span id="faction-short">请选择阵营</span><span class="divider"></span><span id="enemy-short">敌方：待确认</span></div>
           <div class="battle-hud bottom-left" id="selection-panel"><span class="hud-label">当前选择</span><strong>未选择单位</strong><span>左键选择 · 框选部队 · 右键下达命令</span></div>
           <div class="command-toolbar" id="command-toolbar">
@@ -60,7 +67,7 @@
         <div class="start-backdrop"></div>
         <div class="start-shade"></div>
         <div class="start-content"><div class="start-kicker"><span class="live-dot"></span> 现代即时战略 · 单机遭遇战</div><h1>大国<br><em>崛起</em></h1><p class="start-lede">集结部队。争夺资源。用你的战术，改写这片战场。</p><div class="start-rule"><span>01</span> 五阵营对称开局 <span>02</span> 建造与采矿 <span>03</span> 实时 AI 对战</div><div class="start-bottom"><span>指挥官，请选择你的阵营</span><i data-lucide="arrow-down"></i></div></div>
-        <div class="faction-picker"><div class="picker-heading"><strong>选择阵营</strong><span>每支军队都有自己的优势与弱点</span></div><div class="faction-list" id="faction-list"></div><label class="map-select">战场 <select id="map-select"></select></label><div class="victory-picker"><span>胜利规则</span><div class="victory-options" role="group" aria-label="胜利规则"><button type="button" class="victory-option active" data-victory="quick">快速对战<small>摧毁全部生产核心</small></button><button type="button" class="victory-option" data-victory="annihilation">全域歼灭<small>清除全部建筑与单位</small></button></div></div><div class="start-controls"><label class="enemy-select">对手 <select id="enemy-select"><option value="random">随机阵营</option></select></label><label class="enemy-select">难度 <select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select></label><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 开始作战</button></div></div>
+        <div class="faction-picker"><div class="picker-heading"><strong>选择阵营</strong><span>每支军队都有自己的优势与弱点</span></div><div class="faction-list" id="faction-list"></div><label class="map-select">战场 <select id="map-select"></select></label><div class="victory-picker"><span>胜利规则</span><div class="victory-options" role="group" aria-label="胜利规则"><button type="button" class="victory-option active" data-victory="quick">快速对战<small>摧毁全部生产核心</small></button><button type="button" class="victory-option" data-victory="annihilation">全域歼灭<small>清除全部建筑与单位</small></button><button type="button" class="victory-option" data-victory="control">据点控制<small>争夺信标累计 240 分</small></button></div></div><div class="start-controls"><label class="enemy-select">对手 <select id="enemy-select"><option value="random">随机阵营</option></select></label><label class="enemy-select">难度 <select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select></label><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 开始作战</button></div></div>
       </div>
 
       <div id="modal" class="modal hidden"><div class="modal-card"><button id="modal-close" class="modal-close icon-btn" title="关闭"><i data-lucide="x"></i></button><div id="modal-content"></div></div></div>

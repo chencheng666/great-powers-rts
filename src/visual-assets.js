@@ -4,6 +4,9 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const modelURL = new URL('../assets/models/military-library.glb', import.meta.url).href;
 const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url).href;
+const droneURL = new URL('../assets/models/drone-library.glb', import.meta.url).href;
+const equipmentURL = new URL('../assets/models/equipment-library.glb', import.meta.url).href;
+const meridianURL = new URL('../assets/meridian-regolith-v1.png', import.meta.url).href;
 const groundURL = new URL('../assets/terrain-valley-v2.png', import.meta.url).href;
 const buildingsURL = new URL('../assets/buildings-realistic-v2.png', import.meta.url).href;
 const foliageURL = new URL('../assets/foliage-realistic-v2.png', import.meta.url).href;
@@ -11,6 +14,7 @@ const armoryURL = new URL('../assets/armory-v1.png', import.meta.url).href;
 const buildingNames = ['hq', 'power', 'refinery', 'barracks', 'factory', 'dock', 'radar', 'airfield', 'turret', 'lab', 'super', 'oil', 'armory'];
 const names = ['hq', 'power', 'refinery', 'barracks', 'factory', 'dock', 'radar', 'airfield', 'turret', 'lab', 'super', 'tank', 'harvester', 'aa', 'fighter', 'strike', 'drone', 'ghost', 'rifle', 'engineer', 'scout', 'patrol', 'frigate', 'elite_china', 'elite_russia', 'elite_nato', 'elite_asia', 'elite_middleeast', 'oil', 'beacon', 'ore_gold', 'ore_gem', 'tree', 'rock'];
 names.push('loiterer', 'jammer', 'laser', 'rocket', 'apc', 'supply', 'destroyer', 'carrier', 'submarine');
+names.push('railgun', 'aegis', 'relay', ...['china','russia','nato','asia','middleeast'].flatMap(faction => [`tank_${faction}`, `rocket_${faction}`]), ...buildingNames.filter(name => name !== 'dock').map(name => `future_${name}`), 'future_beacon');
 let pending;
 let library;
 const variants = new Map();
@@ -41,12 +45,14 @@ ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothste
 }
 
 export function prepareVisualAssets() {
-  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL)]).then(([gltf, ground, buildings, foliage, armory, modern]) => {
+  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL)]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian]) => {
     const models = new Map();
     gltf.scene.updateMatrixWorld(true);
     modern.scene.updateMatrixWorld(true);
+    drones.scene.updateMatrixWorld(true);
+    equipment.scene.updateMatrixWorld(true);
     for (const name of names) {
-      const source = gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
+      const source = equipment.scene.getObjectByName(name) || drones.scene.getObjectByName(name) || gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
       if (!source) throw new Error(`缺少战场模型：${name}`);
       const batches = new Map();
       source.traverse(mesh => {
@@ -55,23 +61,41 @@ export function prepareVisualAssets() {
         geometry.applyMatrix4(mesh.matrixWorld);
         for (const attr of Object.keys(geometry.attributes)) if (!['position', 'normal'].includes(attr)) geometry.deleteAttribute(attr);
         const material = mesh.material;
-        const articulated = ['tank', 'elite_nato'].includes(name) && /炮塔|滑膛炮|炮管|车长|舱盖|瞄准|反应装甲/.test(mesh.name);
-        const key = `${material.name}:${articulated}`;
-        if (!batches.has(key)) batches.set(key, { material: weatherMaterial(material), geometries: [], articulated });
+        const articulated = (['tank', 'elite_nato'].includes(name) || name.startsWith('tank_')) && /炮塔|滑膛炮|炮管|车长|舱盖|瞄准|反应装甲/.test(mesh.name) || name === 'railgun' && /炮塔|加速器|线圈|电容/.test(mesh.name);
+        let limb = null;
+        let pivot = null;
+        if (['rifle', 'engineer', 'scout'].includes(name) && /腿部|军靴/.test(mesh.name)) {
+          geometry.computeBoundingBox();
+          limb = geometry.boundingBox.getCenter(new THREE.Vector3()).z < 0 ? 'leg_left' : 'leg_right';
+        }
+        for (let parent = mesh.parent; parent && parent !== source; parent = parent.parent) {
+          if (/^rotor_\d+_/.test(parent.name)) { limb = parent.name; pivot = new THREE.Vector3().setFromMatrixPosition(parent.matrixWorld); break; }
+        }
+        const key = `${material.name}:${articulated}:${limb}`;
+        if (!batches.has(key)) batches.set(key, { material: weatherMaterial(material), geometries: [], articulated, limb, pivot });
         batches.get(key).geometries.push(geometry);
       });
       const template = new THREE.Group(); template.name = name;
       const weapon = new THREE.Group(); weapon.name = 'weapon'; template.add(weapon);
-      for (const { material, geometries, articulated } of batches.values()) {
-        const mesh = new THREE.Mesh(mergeGeometries(geometries, false), material);
-        mesh.castShadow = true; mesh.receiveShadow = true; (articulated ? weapon : template).add(mesh);
+      const legs = new Map();
+      for (const { material, geometries, articulated, limb, pivot } of batches.values()) {
+        let parent = articulated ? weapon : template;
+        if (limb) {
+          if (!legs.has(limb)) { const joint = new THREE.Group(); joint.name = limb; if (pivot) joint.position.copy(pivot); else joint.position.set(-.05, .88, limb === 'leg_left' ? -.15 : .15); template.add(joint); legs.set(limb, joint); }
+          parent = legs.get(limb);
+        }
+        const geometry = mergeGeometries(geometries, false);
+        if (limb) geometry.translate(-parent.position.x, -parent.position.y, -parent.position.z);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh);
         geometries.forEach(item => item.dispose());
       }
       models.set(name, template);
     }
     ground.colorSpace = THREE.SRGBColorSpace; ground.wrapS = ground.wrapT = THREE.RepeatWrapping;
     models.set('armory', models.get('factory'));
-    library = { models, ground, buildings, foliage, armory }; return library;
+    meridian.colorSpace = THREE.SRGBColorSpace;
+    library = { models, ground, buildings, foliage, armory, meridian }; return library;
   });
   return pending;
 }

@@ -1,0 +1,62 @@
+[
+  {
+    "type": "image",
+    "file": "02-china-equipment.png",
+    "caption": "现有模型离线渲染｜参考 99A 与 PHL-03 公开外形特征制作的原创简化模型。Blender 展示灯光，不代表游戏实时画质，也不是等比例工程复刻。"
+  },
+  {
+    "type": "image",
+    "file": "01-base-and-inspector.png",
+    "caption": "桌面实机截图｜点击战车工厂，可以看到生命、供电、造价和生产状态。兵营、战车工厂与兵工厂各有分工。"
+  },
+  {
+    "type": "image",
+    "file": "03-five-tanks.png",
+    "caption": "现有模型离线渲染｜五阵营坦克简化模型合集，参考 99A、T-90MS、M1A2、K2、梅卡瓦 Mk4 的部分外形特征。模型还会继续细化。"
+  },
+  {
+    "type": "image",
+    "file": "04-support-vehicles.png",
+    "caption": "桌面实机截图｜现代支援车辆展示。上排为巡飞弹发射车、电子干扰车、激光反无人机车，下排为远程火箭炮、装甲运输车、维修补给车。"
+  },
+  {
+    "type": "image",
+    "file": "05-drone-models.png",
+    "caption": "现有模型离线渲染｜左侧四旋翼攻击无人机，上方六旋翼母机，下方隐形侦察飞翼。"
+  },
+  {
+    "type": "image",
+    "file": "06-desktop-battle.png",
+    "caption": "桌面实机截图｜蓝青色我方与红色敌方标记、混合编组和远程火力。截图为游戏内固定展示场景，不是对局胜率证明。"
+  },
+  {
+    "type": "image",
+    "file": "08-frontier-map.png",
+    "caption": "桌面实机截图｜纵深战区拉远视角，展示道路、侧翼通路与资源分布。地图尺寸 4480 × 2880，面积是基础灰谷地图的四倍。"
+  },
+  {
+    "type": "image",
+    "file": "07-ocean-fleet.png",
+    "caption": "桌面实机截图｜大型海图中的通用航母、驱逐舰与潜艇。052D 专属外形和定位仍在后续计划中。"
+  },
+  {
+    "type": "image",
+    "file": "09-meridian-battle.png",
+    "caption": "桌面实机截图｜子午环阵的原创三维基地和未来装备，当前已经进入单机玩法。"
+  },
+  {
+    "type": "image",
+    "file": "10-future-models.png",
+    "caption": "现有模型离线渲染｜原创电磁炮车、通信中继车和无人制空机。这三个单位已进入子午环阵，不是现实服役装备。"
+  },
+  {
+    "type": "image",
+    "file": "12-equipment-roadmap-concept.png",
+    "caption": "未来规划概念图｜AI 辅助生成的导弹发射车、导弹驱逐舰、协同无人机与高速飞行器视觉方向。不是实机、不是现有模型，也不是指定型号的准确复刻。"
+  },
+  {
+    "type": "image",
+    "file": "11-lunar-base-concept.png",
+    "caption": "未来规划概念图｜AI 辅助生成的原创月球基地愿景，展示空间探索、模块化设施和月面车辆。不是当前游戏画面，也不代表真实已建成基地。"
+  }
+]
