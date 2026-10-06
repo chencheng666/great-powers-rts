@@ -9,6 +9,24 @@ const alive = u => u.hp > 0 && !u.embarkedIn;
 export const modernCombat = {
   activeUnits(side, type) { return this.ownedUnits(side, type).filter(u => !u.embarkedIn); },
 
+  serviceAircraft(u, dt) {
+    if (u.hp >= u.maxHp || this.time - (u.lastDamageAt ?? -10) <= 3 || this.time - (u.lastMovedAt ?? -10) < .5 || !this.hasPower(u.owner)) return;
+    const home = this.ownedBuildings(u.owner, 'airfield').find(b => distance(b, u) <= b.size * .55 + 30);
+    if (!home) return;
+    const p = this.players[u.owner], repaired = Math.min(22 * dt, u.maxHp - u.hp, p.credits / .3);
+    u.hp += repaired; p.credits = Math.max(0, p.credits - repaired * .3);
+    if (repaired > 0 && this.time >= (u.serviceFXAt || 0)) {
+      u.serviceFXAt = this.time + .7;
+      this.effects.push({ type: 'shot', style: 'repair', x: home.x, y: home.y, toX: u.x, toY: u.y, targetType: u.type, owner: u.owner, age: 0, duration: .6 });
+    }
+  },
+
+  requestResupply(u) {
+    if (!u || u.hp <= 0 || u.embarkedIn || !UNITS[u.type].ammo && !UNITS[u.type].tags.includes('air')) return false;
+    if (u.order?.type !== 'rearm') { u.resumeOrder = u.order; u.order = { type: 'rearm' }; u.path = []; u.pathTimer = 0; }
+    return true;
+  },
+
   updateElectronicWarfare(dt) {
     const storm = weatherState(this.map, this.time).phase === 'storm';
     for (const u of this.units) {
@@ -46,7 +64,7 @@ export const modernCombat = {
       const flights = this.projectiles.filter(p => !p.finished && p.sourceId === source.id && p.kind === 'wing').length;
       if (flights >= source.wing || source.wing <= 0) return false;
     }
-    const kind = style === 'carrier' ? 'wing' : style === 'rocket' ? 'rocket' : style === 'submarine' ? 'torpedo' : style === 'loiterer' ? 'loitering' : 'missile';
+    const kind = style === 'bomber' ? 'bomb' : style === 'carrier' ? 'wing' : style === 'rocket' ? 'rocket' : style === 'submarine' ? 'torpedo' : style === 'loiterer' ? 'loitering' : 'missile';
     this.projectiles.push({ id: this.nextProjectileId++, kind, owner: source.owner, sourceId: source.id, targetId: target.id, targetType: target.type, x: source.x, y: source.y, startX: source.x, startY: source.y, toX: target.x, toY: target.y, angle: Math.atan2(target.y - source.y, target.x - source.x), age: 0, jam: 0, amount, hp: kind === 'wing' ? 90 : 38, speed: kind === 'wing' ? 185 : kind === 'torpedo' ? 155 : kind === 'rocket' ? 300 : kind === 'missile' ? 360 : 185, returning: false });
     if (style === 'submarine') source.exposedUntil = this.time + 4;
     this.events.shot?.(style, source.owner);
@@ -59,7 +77,7 @@ export const modernCombat = {
     for (const defender of this.units.filter(u => alive(u) && this.time >= u.stunUntil && u.fireTimer <= 0)) {
       const d = UNITS[defender.type];
       if (!['laser', 'aa', 'frigate', 'destroyer', 'fighter', 'aegis'].includes(defender.type) || defender.overheated || d.ammo && defender.ammo <= 0 || defender.order?.type === 'rearm') continue;
-      const target = list.filter(p => p.hp > 0 && p.owner !== defender.owner && !['rocket', 'torpedo'].includes(p.kind) && !(defender.type === 'laser' && p.kind === 'wing') && !(['fighter', 'aegis'].includes(defender.type) && p.kind !== 'wing') && distance(defender, p) <= d.range && this.isVisibleFor(defender.owner, p.x, p.y)).sort((a, b) => distance(defender, a) - distance(defender, b))[0];
+      const target = list.filter(p => p.hp > 0 && p.owner !== defender.owner && !['rocket', 'torpedo', 'bomb'].includes(p.kind) && !(defender.type === 'laser' && p.kind === 'wing') && !(['fighter', 'aegis'].includes(defender.type) && p.kind !== 'wing') && distance(defender, p) <= d.range && this.isVisibleFor(defender.owner, p.x, p.y)).sort((a, b) => distance(defender, a) - distance(defender, b))[0];
       if (!target) continue;
       target.hp -= d.damage * (defender.type === 'laser' ? 1 : 1.8);
       defender.fireTimer = d.cooldown;
@@ -80,7 +98,7 @@ export const modernCombat = {
       if (p.returning) {
         if (!source || source.hp <= 0) { this.finishProjectile(p, true); continue; }
         p.toX = source.x; p.toY = source.y;
-      } else if (p.kind !== 'rocket' && !jammed && target?.hp > 0 && this.canSeeEntity(p.owner, target)) {
+      } else if (!['rocket', 'bomb'].includes(p.kind) && !jammed && target?.hp > 0 && this.canSeeEntity(p.owner, target)) {
         p.toX = target.x; p.toY = target.y;
       }
       const remaining = distance(p, { x: p.toX, y: p.toY }), step = p.speed * dt * (jammed ? .5 : 1);
@@ -92,11 +110,11 @@ export const modernCombat = {
           const record = { target: entity, amount: p.amount, side: p.owner, stun: 0 };
           if (this.collectingHits) this.pendingHits.push(record); else this.applyHit(record);
         };
-        if (p.kind === 'rocket') {
+        if (['rocket', 'bomb'].includes(p.kind)) {
           for (const entity of [...this.units, ...this.buildings]) {
             if (entity.owner === p.owner || !alive(entity) || entity.kind === 'unit' && UNITS[entity.type].tags.some(t => ['air', 'submerged'].includes(t))) continue;
             const gap = distance(entity, { x: p.toX, y: p.toY });
-            if (gap <= 65) {
+            if (gap <= (p.kind === 'bomb' ? UNITS.bomber.splash : 65)) {
               const record = { target: entity, amount: p.amount * (1 - gap / 100), side: p.owner, stun: 0 };
               if (this.collectingHits) this.pendingHits.push(record); else this.applyHit(record);
             }
@@ -129,7 +147,7 @@ export const modernCombat = {
       const truck = this.activeUnits(u.owner, 'supply').find(s => s.stock >= 8 && distance(s, u) < UNITS.supply.range && !['move', 'attackMove'].includes(s.order?.type));
       if (truck) { this.moveUnit(u, truck, dt, 75); return; }
     }
-    const homes = this.ownedBuildings(u.owner).filter(b => naval ? b.type === 'dock' : ['factory', 'armory'].includes(b.type));
+    const homes = this.ownedBuildings(u.owner).filter(b => naval ? b.type === 'dock' : d.tags.includes('infantry') ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type));
     const home = homes.sort((a, b) => distance(a, u) - distance(b, u))[0];
     if (!home) return;
     const berth = naval ? this.navalGoal(home.x, home.y, unitRadius(u)) : home;
@@ -137,8 +155,9 @@ export const modernCombat = {
     if (!this.hasPower(u.owner)) return;
     u.rearmProgress += dt;
     const interval = d.rearmTime / d.ammo;
-    if (u.rearmProgress >= interval && u.ammo < d.ammo && this.players[u.owner].credits >= 10) {
-      this.players[u.owner].credits -= 10; u.ammo++; u.rearmProgress = 0;
+    const cost = d.ammoCost ?? 10;
+    if (u.rearmProgress >= interval && u.ammo < d.ammo && this.players[u.owner].credits >= cost) {
+      this.players[u.owner].credits -= cost; u.ammo++; u.rearmProgress = 0;
     }
     if (u.type === 'carrier' && u.wing < d.wing && this.players[u.owner].credits >= 150) {
       u.wingRearm = (u.wingRearm || 0) + dt;
@@ -165,8 +184,33 @@ export const modernCombat = {
       if (u.rearmProgress >= 8) { p.credits -= 100; u.stock = UNITS.supply.stock; this.restoreCombatOrder(u); }
       return;
     }
-    if (['move', 'attackMove'].includes(u.order?.type) || this.time - (u.lastMovedAt ?? -10) < .5) return;
-    const nearby = this.activeUnits(u.owner).filter(v => v !== u && !UNITS[v.type].tags.some(t => ['air', 'infantry'].includes(t)) && distance(u, v) < UNITS.supply.range).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp || a.id - b.id);
+    if (['move', 'attackMove'].includes(u.order?.type)) {
+      if (distance(u, u.order) > 10) { this.moveUnit(u, u.order, dt, 8); return; }
+      u.order = null;
+    }
+    const eligible = v => v !== u && !UNITS[v.type].tags.some(t => ['air', 'ship', 'harvester'].includes(t));
+    const needs = v => eligible(v) && (v.hp < v.maxHp - .01 || UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo);
+    if (u.autoSupply !== false && p.credits > 0) {
+      let target = this.getEntity(u.serviceTargetId);
+      if (!target || target.owner !== u.owner || !alive(target) || !needs(target)) target = null;
+      if (!target && this.time >= (u.serviceSearchAt || 0)) {
+        u.serviceSearchAt = this.time + 1.5;
+        const candidates = this.activeUnits(u.owner).filter(v => needs(v) && this.time - (v.lastDamageAt ?? -10) > 3 && this.time - (v.lastFireAt ?? -10) > 3).sort((a, b) => distance(u, a) - distance(u, b) || a.id - b.id);
+        // 不派补给车追逐隔海、障碍后方或其他补给车已经服务的目标。
+        target = candidates.find(v => {
+          if (this.activeUnits(u.owner, 'supply').some(s => s !== u && s.serviceTargetId === v.id && s.autoSupply !== false)) return false;
+          if (distance(u, v) < UNITS.supply.range) return true;
+          const path = this.findPath(u, v, UNITS.supply.range * .75);
+          return path.length && distance(path.at(-1), v) <= UNITS.supply.range;
+        }) || null;
+      }
+      u.serviceTargetId = target?.id ?? null;
+      if (target && distance(u, target) >= UNITS.supply.range * .85 && this.time - (target.lastDamageAt ?? -10) > 3 && this.time - (target.lastFireAt ?? -10) > 3) {
+        this.moveUnit(u, target, dt, UNITS.supply.range * .75); return;
+      }
+    }
+    if (this.time - (u.lastMovedAt ?? -10) < .5) return;
+    const nearby = this.activeUnits(u.owner).filter(v => eligible(v) && distance(u, v) < UNITS.supply.range).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp || a.id - b.id);
     const damaged = nearby.find(v => v.hp < v.maxHp && this.time - (v.lastDamageAt ?? -10) > 3);
     if (damaged) {
       const repair = Math.min(24 * dt, damaged.maxHp - damaged.hp, p.credits / .3, u.stock / .2);
@@ -175,16 +219,43 @@ export const modernCombat = {
     }
     u.serviceTimer = Math.max(0, (u.serviceTimer || 0) - dt);
     const empty = nearby.find(v => UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo);
-    if (empty && u.serviceTimer <= 0 && u.stock >= 8 && p.credits >= 10) {
-      u.stock -= 8; p.credits -= 10; empty.ammo++; u.serviceTimer = 1.5;
+    const cost = empty ? UNITS[empty.type].ammoCost ?? 10 : 10;
+    const stockCost = empty && UNITS[empty.type].tags.includes('infantry') ? 1 : empty && ['tank', 'aa', 'elite'].includes(empty.type) ? 4 : 8;
+    if (empty && u.serviceTimer <= 0 && u.stock >= stockCost && p.credits >= cost) {
+      u.stock -= stockCost; p.credits -= cost; empty.ammo++; u.serviceTimer = 1.5;
       if (empty.order?.type === 'rearm' && empty.ammo >= Math.ceil(UNITS[empty.type].ammo / 2) && empty.type !== 'carrier') this.restoreCombatOrder(empty);
     }
   },
 
+  transportLoad(transport) {
+    return (transport.passengers || []).reduce((total, id) => {
+      const u = this.getEntity(id); return total + (u && u.hp > 0 ? UNITS[u.type].tags.includes('infantry') ? 1 : 4 : 0);
+    }, 0);
+  },
+
+  canBoardTransport(u, transport) {
+    if (!u || !transport || u === transport || u.kind !== 'unit' || transport.hp <= 0 || u.hp <= 0 || u.owner !== transport.owner || u.embarkedIn || transport.embarkedIn || !UNITS[transport.type].capacity || UNITS[u.type].capacity) return false;
+    const tags = UNITS[u.type].tags, weight = tags.includes('infantry') ? 1 : 4;
+    if (tags.some(t => ['air', 'ship'].includes(t)) || transport.type === 'apc' && !tags.includes('infantry')) return false;
+    return this.transportLoad(transport) + weight <= UNITS[transport.type].capacity;
+  },
+
+  transportGrounded(transport) {
+    if (transport.type !== 'airlift') return true;
+    return !this.isGroundBlocked(transport.x, transport.y, 35) && this.time - (transport.lastMovedAt ?? -10) >= .5 && !this.buildings.some(b => b.hp > 0 && distance(b, transport) < b.size * .5 + 35);
+  },
+
   boardTransport(u, dt) {
     const transport = this.getEntity(u.order.targetId);
-    if (!transport || transport.hp <= 0 || transport.owner !== u.owner || transport.type !== 'apc' || transport.passengers.length >= UNITS.apc.capacity) { u.order = null; return; }
-    if (distance(u, transport) > 52) { this.moveUnit(u, transport, dt, 40); return; }
+    if (!this.canBoardTransport(u, transport)) { u.order = null; return; }
+    if (transport.type === 'landing') {
+      const shore = this.resolveMoveGoal(u, transport.x, transport.y);
+      if (distance(shore, transport) > 145 || !this.canOccupyUnit(u, shore)) return;
+      if (distance(u, transport) > 150) { this.moveUnit(u, shore, dt, 12); return; }
+    } else {
+      if (!this.transportGrounded(transport)) return;
+      if (distance(u, transport) > 65) { this.moveUnit(u, transport, dt, 45); return; }
+    }
     transport.passengers.push(u.id); u.embarkedIn = transport.id; u.order = null; u.path = [];
     u.x = transport.x; u.y = transport.y;
     this.selected = this.selected.filter(id => id !== u.id);
@@ -192,13 +263,17 @@ export const modernCombat = {
   },
 
   unloadTransport(transport, emergency = false) {
-    if (!transport || transport.type !== 'apc' || !transport.passengers) return 0;
+    if (!transport || !UNITS[transport.type]?.capacity || !transport.passengers) return 0;
+    if (!emergency && (!this.transportGrounded(transport) || ['move', 'attackMove'].includes(transport.order?.type))) {
+      if (transport.owner === 0) this.events.notice?.('运输单位需要在安全位置停驻后卸载');
+      return 0;
+    }
     let unloaded = 0;
     for (const id of [...transport.passengers]) {
       const passenger = this.getEntity(id);
       if (!passenger || passenger.hp <= 0) { transport.passengers = transport.passengers.filter(value => value !== id); continue; }
       let spot = null;
-      for (let n = 0; n < 80; n++) {
+      for (let n = 0; n < 180; n++) {
         const angle = n * 2.399963, reach = 50 + Math.floor(n / 12) * 12;
         const candidate = { x: transport.x + Math.cos(angle) * reach, y: transport.y + Math.sin(angle) * reach };
         if (this.canOccupyUnit(passenger, candidate) && !this.units.some(v => alive(v) && unitLayer(v) === 'ground' && distance(v, candidate) < unitRadius(v) + unitRadius(passenger) + 4)) { spot = candidate; break; }
@@ -210,7 +285,36 @@ export const modernCombat = {
       transport.passengers = transport.passengers.filter(value => value !== id);
     }
     if (unloaded) { this.fogTimer = 0; this.events.selection?.(); }
-    if (!emergency && transport.owner === 0) this.events.notice?.(unloaded ? `${unloaded} 名乘员已下车` : '周围没有安全的下车位置');
+    if (!emergency && transport.owner === 0) this.events.notice?.(unloaded ? `${unloaded} 个作战单位已卸载` : '周围没有安全的陆地卸载位置，请靠岸或移至空地');
     return unloaded;
+  },
+
+  updateAITransports() {
+    for (const t of this.activeUnits(1).filter(u => ['landing', 'airlift'].includes(u.type))) {
+      if (t.order?.type === 'rearm' || t.deployment) continue;
+      const water = this.map.water;
+      const home = { x: t.type === 'landing' ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 };
+      const shore = { x: t.type === 'landing' ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 };
+      t.transportStage ||= 'load';
+      const goal = ['load', 'return'].includes(t.transportStage) ? home : shore;
+      if (distance(t, goal) > 20) { t.order = { type: 'move', ...goal }; continue; }
+      t.order = null;
+      if (t.transportStage === 'return') { t.transportStage = 'load'; t.loadStartedAt = this.time; }
+      if (t.transportStage === 'load') {
+        t.loadStartedAt ??= this.time;
+        if (this.transportLoad(t) >= 4 && this.time - t.loadStartedAt > 12) { t.transportStage = 'depart'; continue; }
+        for (const unit of this.activeUnits(1).filter(u => ['rifle', 'tank'].includes(u.type) && !['board', 'rearm'].includes(u.order?.type) && distance(u, t) < 900)) {
+          if (this.canBoardTransport(unit, t)) unit.order = { type: 'board', targetId: t.id };
+        }
+      } else {
+        const carried = [...t.passengers];
+        this.unloadTransport(t);
+        for (const id of carried) {
+          const u = this.getEntity(id);
+          if (u?.hp > 0 && !u.embarkedIn) u.order = { type: 'attackMove', x: 300, y: this.homeY };
+        }
+        if (!t.passengers.length) { t.transportStage = 'return'; t.loadStartedAt = null; }
+      }
+    }
   }
 };

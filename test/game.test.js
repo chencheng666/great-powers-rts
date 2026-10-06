@@ -711,7 +711,7 @@ test('攻击机弹药耗尽后返场，断电暂停补给，恢复供电后继�
   advance(game, 2);
   assert.equal(strike.rearmProgress, 0);
   game.addBuilding(0, 'power', 660, 450);
-  for (let i = 0; i < 250 && strike.ammo === 0; i++) game.update(0.05);
+  for (let i = 0; i < 350 && strike.order?.type === 'rearm'; i++) game.update(0.05);
   assert.equal(strike.ammo, 3);
   assert.equal(strike.order.type, 'attack');
 });

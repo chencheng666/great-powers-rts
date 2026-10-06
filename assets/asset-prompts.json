@@ -3,6 +3,13 @@
   "说明": "以下为素材复现提示词，建筑采用三维场景中的高清透明立绘，移动单位采用本地 Blender 模型。",
   "素材": [
     {
+      "文件": "assets/meridian-regolith-v2.png",
+      "生成日期": "2026-10-04",
+      "工具": "内置 image_gen.imagegen",
+      "用途": "当前子午环阵地表；旧 v1 保留，不覆盖原素材",
+      "复现提示词": "Use case: photorealistic-natural. Asset type: tileable albedo ground material for a realistic 3D military RTS lunar map, NOT a screenshot or concept scene. Create a high-resolution square orthographic directly overhead photograph-like material swatch showing compacted lunar regolith: graphite and neutral silver-grey fine dust, subtle stratification, barely discernible small gravel at less than 1% of image width, quiet variations in density, sparse very small shallow impact pocks. The overall texture should be refined, subtle and almost continuous matte grey from a distance, not busy white rocks or mottled chunky stones. Flat diffuse even illumination across the entire square, no directional baked shadows, no large rocks or craters, no horizon, no perspective, no structures, no roads, no tracks, no grid, no game UI, no text, no logos. Seamless opposite edges desirable, material fills the whole image, realistic photographic microstructure suitable for overlaying movable 3D objects and shadows."
+    },
+    {
       "文件": "assets/meridian-regolith-v1.png",
       "复现提示词": "Generate a realistic strictly overhead orthographic lunar regolith ground texture for a modern sci-fi RTS. Broad open silver-grey and charcoal-grey fine dust plains, irregular subtle geological variation, several shallow craters and sparse small fractured gravel. Diffuse daylight, usable level terrain. No perspective, no horizon, no buildings, no objects, no roads, no plants, no vehicles, no UI, no text, no logos, no neon. Natural fine ground surface detail, not cartoon, not pixel art, not voxel. The whole image spans hundreds of meters."
     },

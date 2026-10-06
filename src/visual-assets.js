@@ -6,7 +6,8 @@ const modelURL = new URL('../assets/models/military-library.glb', import.meta.ur
 const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url).href;
 const droneURL = new URL('../assets/models/drone-library.glb', import.meta.url).href;
 const equipmentURL = new URL('../assets/models/equipment-library.glb', import.meta.url).href;
-const meridianURL = new URL('../assets/meridian-regolith-v1.png', import.meta.url).href;
+const logisticsURL = new URL('../assets/models/logistics-library.glb', import.meta.url).href;
+const meridianURL = new URL('../assets/meridian-regolith-v2.png', import.meta.url).href;
 const groundURL = new URL('../assets/terrain-valley-v2.png', import.meta.url).href;
 const buildingsURL = new URL('../assets/buildings-realistic-v2.png', import.meta.url).href;
 const foliageURL = new URL('../assets/foliage-realistic-v2.png', import.meta.url).href;
@@ -15,6 +16,7 @@ const buildingNames = ['hq', 'power', 'refinery', 'barracks', 'factory', 'dock',
 const names = ['hq', 'power', 'refinery', 'barracks', 'factory', 'dock', 'radar', 'airfield', 'turret', 'lab', 'super', 'tank', 'harvester', 'aa', 'fighter', 'strike', 'drone', 'ghost', 'rifle', 'engineer', 'scout', 'patrol', 'frigate', 'elite_china', 'elite_russia', 'elite_nato', 'elite_asia', 'elite_middleeast', 'oil', 'beacon', 'ore_gold', 'ore_gem', 'tree', 'rock'];
 names.push('loiterer', 'jammer', 'laser', 'rocket', 'apc', 'supply', 'destroyer', 'carrier', 'submarine');
 names.push('railgun', 'aegis', 'relay', ...['china','russia','nato','asia','middleeast'].flatMap(faction => [`tank_${faction}`, `rocket_${faction}`]), ...buildingNames.filter(name => name !== 'dock').map(name => `future_${name}`), 'future_beacon');
+names.push('landing', 'bomber', 'airlift');
 let pending;
 let library;
 const variants = new Map();
@@ -23,7 +25,7 @@ const thumbnails = new Map();
 let portraitRenderer;
 
 function weatherMaterial(material) {
-  if (!['装甲钢', '浅色金属', '深色钢', '航空涂层', '建筑面板', '屋顶', '岩石', '矿石', '矿晶'].includes(material.name)) return material;
+  if (!['装甲钢', '浅色金属', '深色钢', '航空涂层', '建筑面板', '屋顶', '岩石', '矿石', '矿晶', '航天复合外墙', '航天浅色合金', '热防护屋面'].includes(material.name)) return material;
   const result = material.clone(), stone = ['岩石', '矿石', '矿晶'].includes(material.name);
   result.onBeforeCompile = shader => {
     shader.vertexShader = `varying vec3 vSurface;\n${shader.vertexShader}`.replace('#include <begin_vertex>', '#include <begin_vertex>\nvSurface = position;');
@@ -45,14 +47,15 @@ ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothste
 }
 
 export function prepareVisualAssets() {
-  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL)]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian]) => {
+  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL), new GLTFLoader().loadAsync(logisticsURL)]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics]) => {
     const models = new Map();
     gltf.scene.updateMatrixWorld(true);
     modern.scene.updateMatrixWorld(true);
     drones.scene.updateMatrixWorld(true);
     equipment.scene.updateMatrixWorld(true);
+    logistics.scene.updateMatrixWorld(true);
     for (const name of names) {
-      const source = equipment.scene.getObjectByName(name) || drones.scene.getObjectByName(name) || gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
+      const source = logistics.scene.getObjectByName(name) || equipment.scene.getObjectByName(name) || drones.scene.getObjectByName(name) || gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
       if (!source) throw new Error(`缺少战场模型：${name}`);
       const batches = new Map();
       source.traverse(mesh => {

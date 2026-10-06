@@ -55,21 +55,31 @@ export const UNITS = {
   laser: { name: '激光反无人机车', cost: 580, time: 25, hp: 220, speed: 67, range: 250, damage: 45, cooldown: .75, sight: 320, icon: 'focus', producer: 'armory', requires: 'radar', tags: ['vehicle', 'anti-drone'], desc: '拦截巡飞弹、击落无人机；连续射击会过热，不能攻击坦克或高空战机。' },
   rocket: { name: '远程火箭炮', cost: 880, time: 34, hp: 230, speed: 52, range: 680, minRange: 180, damage: 85, cooldown: 3.8, sight: 240, ammo: 6, rearmTime: 10, deployTime: 2, icon: 'rocket', producer: 'armory', requires: 'lab', tags: ['vehicle', 'artillery'], desc: '展开 2 秒后发射区域火箭；需要侦察，180 最小射程，有限弹药。' },
   apc: { name: '装甲运输车', cost: 420, time: 19, hp: 430, speed: 90, range: 0, damage: 0, cooldown: 1, sight: 280, capacity: 4, icon: 'bus-front', producer: 'factory', tags: ['vehicle', 'armor', 'transport'], desc: '运载 4 名步兵或工程师；车毁乘员受伤撤出，无法无敌穿越封锁线。' },
-  supply: { name: '维修补给车', cost: 460, time: 21, hp: 230, speed: 64, range: 115, damage: 0, cooldown: 1, sight: 270, stock: 120, icon: 'wrench', producer: 'factory', tags: ['vehicle', 'support'], desc: '停驻后消耗库存与资金维修载具、补弹；库存用尽自动回战车工厂补货。' },
-  destroyer: { name: '导弹驱逐舰', cost: 1150, time: 40, hp: 800, speed: 67, range: 470, damage: 72, cooldown: 2.6, sight: 440, sonar: 290, ammo: 8, rearmTime: 10, icon: 'ship', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'anti-air', 'anti-sub', 'artillery'], desc: '远程对舰、防空与反潜；导弹有飞行时间，须靠船坞或补给车补弹。' },
+  supply: { name: '维修补给车', cost: 460, time: 21, hp: 230, speed: 64, range: 115, damage: 0, cooldown: 1, sight: 270, stock: 120, icon: 'wrench', producer: 'factory', tags: ['vehicle', 'support'], desc: '自动寻找可达的友军步兵和陆地载具，脱战后治疗、维修和补弹；消耗库存与资金，缺货自动回厂。' },
+  destroyer: { name: '导弹驱逐舰', cost: 1150, time: 40, hp: 800, speed: 67, range: 470, damage: 72, cooldown: 2.6, sight: 440, sonar: 290, ammo: 8, rearmTime: 10, icon: 'ship', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'anti-air', 'anti-sub', 'artillery'], desc: '远程对舰、防空与反潜；导弹有飞行时间，须返回有电船坞付费补弹。' },
   carrier: { name: '舰队航空母舰', cost: 1900, time: 58, hp: 1400, speed: 43, range: 720, damage: 95, cooldown: 4, sight: 420, ammo: 6, rearmTime: 14, wing: 3, icon: 'plane-takeoff', producer: 'dock', requires: 'lab', map: 'ocean', tags: ['ship', 'naval', 'artillery'], desc: '3 架可被击落的舰载机执行远程打击；飞机返舰，损失后在船坞付费补充，惧怕潜艇。' },
   submarine: { name: '攻击潜艇', cost: 920, time: 35, hp: 420, speed: 64, range: 340, damage: 110, cooldown: 3.5, sight: 360, sonar: 190, ammo: 5, rearmTime: 10, icon: 'waves', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'submerged', 'stealth'], desc: '潜航伏击舰艇；声呐或发射后短暂暴露，可被反潜舰反制，不能攻击陆地。' }
 };
 
 Object.assign(UNITS, {
+  landing: { name: '坦克登陆舰', cost: 900, time: 36, hp: 850, speed: 59, range: 0, damage: 0, cooldown: 1, sight: 310, capacity: 12, icon: 'ship', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'transport'], desc: '12 格载重：步兵 1 格、陆地车辆 4 格；靠近海岸装卸，深海无法卸载，需舰队护航。' },
+  bomber: { name: '远程轰炸机', cost: 1250, time: 44, hp: 320, speed: 142, range: 300, damage: 105, splash: 60, cooldown: 2.8, sight: 380, ammo: 4, rearmTime: 14, icon: 'plane', producer: 'airfield', requires: 'lab', tags: ['air', 'jet', 'bomber'], desc: '有限炸弹，对地范围打击；无法空战，友军免伤是游戏化规则，返场付费维修补弹。' },
+  airlift: { name: '重型运输机', cost: 1000, time: 38, hp: 380, speed: 158, range: 0, damage: 0, cooldown: 1, sight: 360, capacity: 8, rearmTime: 10, icon: 'plane-takeoff', producer: 'airfield', requires: 'radar', tags: ['air', 'jet', 'transport'], desc: '8 格载重，可运 8 名步兵或 2 辆坦克；停驻在安全陆地上装卸，不能海上空投，无武装。' },
   railgun: { name: '凌霄电磁炮车', cost: 940, time: 35, hp: 290, speed: 49, range: 430, minRange: 110, damage: 96, cooldown: 3.2, sight: 270, ammo: 4, rearmTime: 10, deployTime: 1.8, producer: 'armory', requires: 'lab', map: 'meridian', tags: ['armor', 'artillery'], icon: 'zap', desc: '原创科幻；展开后直射穿甲，受地形遮挡，不能防空，有限弹药。' },
   aegis: { name: '云隼无人制空机', cost: 790, time: 30, hp: 195, speed: 215, range: 295, damage: 40, cooldown: .9, sight: 475, ammo: 6, rearmTime: 10, producer: 'airfield', requires: 'lab', map: 'meridian', tags: ['air', 'jet', 'anti-air'], icon: 'plane', desc: '原创科幻；仅制空，需返场补弹，离子扰动期间需中继保护。' },
   relay: { name: '子午通信中继车', cost: 540, time: 24, hp: 220, speed: 65, range: 0, damage: 0, cooldown: 1, sight: 420, producer: 'factory', requires: 'radar', map: 'meridian', tags: ['vehicle', 'support', 'scout'], icon: 'radio-tower', desc: '原创科幻；260 范围保护友军空中链路与制导弹药，不造成伤害。' }
 });
 
+// 弹药表示一次射击批次，不逐发模拟步枪弹匣；双方共用容量与补给费用。
+for (const [type, ammo, ammoCost, rearmTime] of [['rifle', 18, 1, 9], ['tank', 12, 6, 12], ['aa', 16, 4, 10], ['elite', 12, 6, 12], ['drone', 8, 4, 8], ['patrol', 24, 3, 12], ['frigate', 16, 5, 12]]) {
+  Object.assign(UNITS[type], { ammo, ammoCost, rearmTime });
+  UNITS[type].desc += ' 有限弹药，耗尽后自动补给。';
+}
+
 export const BUILD_ORDER = ['power', 'refinery', 'barracks', 'factory', 'armory', 'dock', 'radar', 'airfield', 'turret', 'lab', 'super'];
 export const UNIT_ORDER = ['rifle', 'engineer', 'scout', 'tank', 'apc', 'supply', 'harvester', 'drone', 'ghost', 'aa', 'loiterer', 'jammer', 'laser', 'rocket', 'elite', 'fighter', 'strike', 'patrol', 'frigate', 'destroyer', 'carrier', 'submarine'];
 UNIT_ORDER.push('railgun', 'aegis', 'relay');
+UNIT_ORDER.push('landing', 'bomber', 'airlift');
 
 export const ORE_LAYOUT = [
   [330, 510, 2100, 'gold'], [330, 930, 2100, 'gold'],

@@ -5,6 +5,7 @@ import { modernCombat } from './modern-combat.js';
 import { productionDuration, productionExit } from './battlefield-details.js';
 import { equipmentProfile } from './equipment.js';
 import { tacticalDamage } from './tactical-rules.js';
+import { createSave, SNAPSHOT_FIELDS, validateSave } from './savegame.js';
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -72,6 +73,32 @@ export class Game {
   }
 
   get faction() { return FACTIONS[this.players[0].faction]; }
+
+  toSave(view = {}) { return createSave(this, view); }
+
+  static fromSave(save, events = {}) {
+    validateSave(save);
+    const copy = JSON.parse(JSON.stringify(save));
+    // 不重新部署基地，避免覆盖队列、迷雾或触发新对局通知。
+    const game = Object.create(Game.prototype);
+    game.events = events;
+    game.mapId = copy.config.mapId; game.map = MAPS[game.mapId]; game.world = game.map.world || WORLD;
+    game.homeY = game.world.height / 2; game.victoryMode = copy.config.victoryMode;
+    game.difficulty = AI_DIFFICULTIES[copy.config.difficulty];
+    for (const key of SNAPSHOT_FIELDS) game[key] = copy.state[key];
+    // 兼容旧存档中原本没有有限弹药的单位。
+    for (const u of game.units) {
+      if (UNITS[u.type].ammo && u.ammo === null) u.ammo = UNITS[u.type].ammo;
+      if (u.type === 'supply' && u.autoSupply === undefined) u.autoSupply = true;
+    }
+    game.fog = game.fogs[0]; game.running = true; game.paused = true; game.winner = null;
+    game.effects = []; game.pendingHits = []; game.pendingMoves = []; game.collectingHits = game.collectingMoves = false;
+    game.orderMode = null; game.noticeQueue = []; game.unitIndex = null;
+    game.selected = game.selected.filter(id => game.getEntity(id)?.owner === 0 && !game.getEntity(id).embarkedIn);
+    nextId = Math.max(nextId, ...[...game.units, ...game.buildings].map(entity => entity.id + 1));
+    game.recalculatePower();
+    return game;
+  }
   get enemyFaction() { return FACTIONS[this.players[1].faction]; }
   getEntity(id) { return this.units.find(item => item.id === id) || this.buildings.find(item => item.id === id) || this.oil.find(item => item.id === id) || this.beacons.find(item => item.id === id); }
   ownedBuildings(side, type) { return this.buildings.filter(item => item.owner === side && item.hp > 0 && (!type || item.type === type)); }
@@ -127,6 +154,7 @@ export class Game {
     const unit = { id: nextId++, kind: 'unit', owner, type, x, y, hp, maxHp: hp, angle: owner ? Math.PI : 0, turretAngle: owner ? Math.PI : 0, order: null, targetId: null, path: [], pathTimer: 0, fireTimer: random(0, 0.4), movePulse: 0, cargo: 0, cargoValue: 0, harvestState: 'find', ammo: d.ammo ?? null, rearmProgress: 0, resumeOrder: null, stunUntil: 0, temporaryUntil: temporary ? this.time + 27 : 0, selected: false };
     unit.passengers = []; unit.embarkedIn = null; unit.stock = d.stock ?? null;
     unit.wing = d.wing ?? null; unit.heat = 0; unit.deployProgress = 0;
+    if (type === 'supply') unit.autoSupply = true;
     this.units.push(unit);
     if (owner === 1 && type === 'strike') this.players[owner].aiFirstStrikeProduced = true;
     this.players[owner].unitCount++;
@@ -285,11 +313,11 @@ export class Game {
     }
     const enemy = [...this.units, ...this.buildings].filter(e => e.owner === 1 && e.hp > 0 && this.canSeeEntity(0, e) && distance(e, { x, y }) < (e.kind === 'building' ? e.size * 0.55 : 25)).at(-1);
     const site = [...this.oil, ...this.beacons].find(item => distance(item, { x, y }) < 40 && item.owner !== 0 && this.hasExploredFor(0, item.x, item.y));
-    const transport = !attackMove && this.activeUnits(0, 'apc').find(v => !this.selected.includes(v.id) && distance(v, { x, y }) < 40);
+    const transport = !attackMove && this.activeUnits(0).find(v => UNITS[v.type].capacity && !this.selected.includes(v.id) && distance(v, { x, y }) < (v.type === 'landing' ? 75 : 45));
     const offsets = formationOffsets(selectedUnits, { x, y });
     selectedUnits.forEach(u => {
       const offset = offsets.get(u.id);
-      if (transport && UNITS[u.type].tags.includes('infantry')) u.order = { type: 'board', targetId: transport.id };
+      if (transport && this.canBoardTransport(u, transport)) u.order = { type: 'board', targetId: transport.id };
       else if (site && u.type === 'engineer') u.order = { type: 'capture', targetId: site.id, x: site.x, y: site.y };
       else if (enemy && this.canAttack(u, enemy)) u.order = { type: 'attack', targetId: enemy.id, x: enemy.x, y: enemy.y };
       else {
@@ -305,7 +333,7 @@ export class Game {
 
   stopSelected() {
     if (this.selected.some(id => this.getEntity(id)?.kind === 'unit')) this.events.voice?.('stopOrder');
-    this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit').forEach(u => { u.order = null; u.path = []; });
+    this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit').forEach(u => { u.order = null; u.resumeOrder = null; u.path = []; if (u.type === 'supply') u.autoSupply = false; });
     this.orderMode = null;
   }
 
@@ -509,8 +537,9 @@ export class Game {
     if (this.time < u.stunUntil) return;
     u.fireTimer -= dt * (u.jammedUntil > this.time ? .4 : 1);
     const d = UNITS[u.type];
+    if (d.tags.includes('air') && u.order?.type !== 'rearm') this.serviceAircraft(u, dt);
     if (u.order?.type === 'board') { this.boardTransport(u, dt); return; }
-    if (u.type === 'supply') this.updateSupply(u, dt);
+    if (u.type === 'supply') { this.updateSupply(u, dt); return; }
     if (d.ammo && (u.ammo <= 0 || u.type === 'carrier' && u.wing <= 0) && u.order?.type !== 'rearm') {
       u.resumeOrder = u.order;
       u.order = { type: 'rearm' };
@@ -576,7 +605,7 @@ export class Game {
   }
 
   updateRearm(u, dt) {
-    if (!UNITS[u.type].tags.includes('jet')) { this.updateGroundRearm(u, dt); return; }
+    if (!UNITS[u.type].tags.includes('air')) { this.updateGroundRearm(u, dt); return; }
     const home = this.ownedBuildings(u.owner, 'airfield').sort((a, b) => distance(a, u) - distance(b, u))[0];
     if (!home) {
       if (u.resumeOrder?.x !== undefined) this.moveUnit(u, u.resumeOrder, dt, 8);
@@ -588,12 +617,15 @@ export class Game {
       return;
     }
     if (!this.hasPower(u.owner)) return;
+    this.serviceAircraft(u, dt);
     u.rearmProgress += dt;
-    if (u.rearmProgress >= UNITS[u.type].rearmTime) {
-      u.ammo = UNITS[u.type].ammo;
+    const d = UNITS[u.type], cost = d.ammoCost ?? 10;
+    if (d.ammo && u.ammo < d.ammo && u.rearmProgress >= d.rearmTime / d.ammo && this.players[u.owner].credits >= cost) {
+      this.players[u.owner].credits -= cost; u.ammo++;
       u.rearmProgress = 0;
-      u.order = u.resumeOrder;
-      u.resumeOrder = null;
+    }
+    if ((!d.ammo || u.ammo === d.ammo) && u.hp >= u.maxHp - .01) {
+      this.restoreCombatOrder(u);
       if (u.owner === 0) this.events.notice?.(`${UNITS[u.type].name}补给完成`);
     }
   }
@@ -608,7 +640,7 @@ export class Game {
     if (type === 'aa') return tags.includes('air');
     if (type === 'laser') return tags.includes('drone');
     if (type === 'submarine') return tags.includes('ship');
-    if (['rocket', 'loiterer', 'carrier'].includes(type) && tags.includes('air')) return false;
+    if (['rocket', 'loiterer', 'carrier', 'bomber'].includes(type) && tags.includes('air')) return false;
     if (['fighter', 'aegis'].includes(type)) return tags.includes('air');
     if (type === 'railgun' && tags.includes('air')) return false;
     if (type === 'strike') return target.kind === 'building' || !tags.includes('air');
@@ -641,7 +673,7 @@ export class Game {
 
   resolveMoveGoal(unit, x, y) {
     if (UNITS[unit.type].tags.includes('ship')) return this.navalGoal(x, y, unitRadius(unit));
-    if (UNITS[unit.type].tags.includes('jet') || !this.isGroundBlocked(x, y, UNITS[unit.type].tags.includes('infantry') ? 6 : 14)) return { x, y };
+    if (UNITS[unit.type].tags.includes('air') || !this.isGroundBlocked(x, y, UNITS[unit.type].tags.includes('infantry') ? 6 : 14)) return { x, y };
     const radius = UNITS[unit.type].tags.includes('infantry') ? 6 : 14;
     let best = null, bestScore = Infinity;
     for (let cy = 0; cy < this.world.height / this.world.cell; cy++) for (let cx = 0; cx < this.world.width / this.world.cell; cx++) {
@@ -655,8 +687,8 @@ export class Game {
 
   hasLineOfFire(source, target) {
     if (['rocket', 'loiterer'].includes(source.type)) return true;
-    if (source.kind === 'unit' && UNITS[source.type].tags.includes('jet')) return true;
-    if (target.kind === 'unit' && UNITS[target.type].tags.includes('jet')) return true;
+    if (source.kind === 'unit' && UNITS[source.type].tags.includes('air')) return true;
+    if (target.kind === 'unit' && UNITS[target.type].tags.includes('air')) return true;
     if (source.kind === 'unit' && UNITS[source.type].tags.includes('ship')) return true;
     if (target.kind === 'unit' && UNITS[target.type].tags.includes('ship')) return true;
     return !this.map.barriers.some(rect => crossesRect(source, target, rect));
@@ -709,7 +741,7 @@ export class Game {
 
   fire(source, target, amount, style) {
     source.lastFireAt = this.time;
-    if (['loiterer', 'rocket', 'destroyer', 'carrier', 'submarine'].includes(style)) { this.launchProjectile(source, target, amount, style); return; }
+    if (['loiterer', 'rocket', 'destroyer', 'carrier', 'submarine', 'bomber'].includes(style)) { this.launchProjectile(source, target, amount, style); return; }
     this.effects.push({ type: 'shot', sourceId: source.id, x: source.x, y: source.y, toX: target.x, toY: target.y, sourceType: source.type, targetType: target.type, age: 0, duration: style === 'railgun' ? .32 : .18, owner: source.owner, style });
     this.effects.push({ type: 'hit', x: target.x, y: target.y, targetType: target.type, age: 0, duration: 0.42, owner: source.owner, style });
     const tags = target.kind === 'unit' ? UNITS[target.type].tags : [];
@@ -736,15 +768,27 @@ export class Game {
   }
 
   damage(target, amount, attackerSide) {
-    if (target.hp <= 0) return;
-    if (target.owner === 0 && target.kind === 'building' && amount > 0 && attackerSide === 1) this.events.voice?.('underAttack');
+    if (target.hp <= 0 || !Number.isFinite(amount) || amount <= 0) return;
     if (this.players[target.owner].shieldUntil > this.time) amount *= 0.48;
     if (target.kind === 'building' && this.players[target.owner].faction === 'china' && target.type === 'turret') amount *= 0.85;
     target.hp -= amount;
     if (amount > 0) target.lastDamageAt = this.time;
+    if (target.owner === 0 && attackerSide === 1) {
+      const building = target.kind === 'building';
+      const previous = this.attackAlerts?.find(alert => alert.id === target.id);
+      if (!this.attackAlerts) this.attackAlerts = [];
+      if (previous) { previous.x = target.x; previous.y = target.y; previous.at = this.time; }
+      else this.attackAlerts.push({ id: target.id, x: target.x, y: target.y, at: this.time, building, type: target.type });
+      this.attackAlerts = this.attackAlerts.filter(alert => this.time - alert.at < 8).slice(-12);
+      const key = building ? 'underAttack' : 'unitUnderAttack';
+      if (this.time - (this.lastAttackVoiceAt ?? -100) >= 10 || building && !this.lastAttackVoiceBuilding && this.time - (this.lastAttackVoiceAt ?? -100) >= 3) {
+        this.lastAttackVoiceAt = this.time; this.lastAttackVoiceBuilding = building;
+        this.events.voice?.(key);
+      }
+    }
     if (target.hp <= 0) {
       target.hp = 0;
-      if (target.type === 'apc') this.unloadTransport(target, true);
+      if (UNITS[target.type]?.capacity) this.unloadTransport(target, true);
       this.effects.push({ type: 'explosion', x: target.x, y: target.y, targetType: target.type, age: 0, duration: 1.2, owner: attackerSide, size: target.kind === 'building' ? target.size : 40 });
       if (target.owner === 0) this.events.notice?.(`${target.kind === 'building' ? BUILDINGS[target.type].name : equipmentProfile(this.players[0].faction, target.type).name}已损毁`);
       if (target.owner === 0) this.events.voice?.(target.kind === 'building' ? 'buildingLost' : 'unitLost');
@@ -802,7 +846,7 @@ export class Game {
 
   moveUnitNow(u, goal, dt, stopDistance = 8) {
     if (distance(u, goal) <= stopDistance) return;
-    if (UNITS[u.type].tags.includes('jet')) {
+    if (UNITS[u.type].tags.includes('air')) {
       this.moveWithAvoidance(u, goal, dt, stopDistance);
       return;
     }
@@ -836,7 +880,7 @@ export class Game {
   canOccupyUnit(unit, point) {
     if (point.x < 18 || point.x > this.world.width - 18 || point.y < 18 || point.y > this.world.height - 18) return false;
     const layer = unitLayer(unit);
-    if (layer === 'jet') return true;
+    if (layer === 'jet' || layer === 'drone') return true;
     if (layer === 'naval' || layer === 'submerged') return !this.isNavalBlocked(point.x, point.y, Math.max(18, unitRadius(unit)));
     const radius = UNITS[unit.type].tags.includes('infantry') ? 6 : 14;
     return !this.isGroundBlocked(point.x, point.y, radius) && !this.buildings.some(b => b.hp > 0 && distance(b, point) < b.size * .45 + radius);
@@ -1030,7 +1074,7 @@ export class Game {
       const airborne = this.ownedUnits(1).filter(u => UNITS[u.type].tags.includes('jet')).length;
       const pending = airfield.queue.length + (airfield.active ? 1 : 0);
       if (airborne + pending < 4) {
-        const type = this.map.future && this.hasBuilding(1, 'lab') && p.aiAirUnitCount % 3 === 2 ? 'aegis' : p.aiAirUnitCount % 2 === 0 ? 'strike' : 'fighter';
+        const type = this.hasBuilding(1, 'lab') && p.aiAirUnitCount % 4 === 2 ? 'bomber' : this.hasBuilding(1, 'radar') && p.aiAirUnitCount % 4 === 3 && !this.ownedUnits(1, 'airlift').length ? 'airlift' : this.map.future && this.hasBuilding(1, 'lab') && p.aiAirUnitCount % 3 === 2 ? 'aegis' : p.aiAirUnitCount % 2 === 0 ? 'strike' : 'fighter';
         if (this.queueAIUnit(type)) p.aiAirUnitCount++;
       }
     }
@@ -1038,7 +1082,7 @@ export class Game {
       const afloat = this.ownedUnits(1).filter(u => UNITS[u.type].tags.includes('ship')).length;
       const pending = dock.queue.length + (dock.active ? 1 : 0);
       if (afloat + pending < (this.mapId === 'ocean' ? 9 : 4)) {
-        const fleet = (this.mapId === 'ocean' ? ['patrol', 'frigate', 'destroyer', 'submarine', 'carrier'] : ['patrol', 'frigate']).filter(type => !UNITS[type].requires || this.hasBuilding(1, UNITS[type].requires));
+        const fleet = (this.mapId === 'ocean' ? ['patrol', 'frigate', 'destroyer', 'submarine', 'carrier', 'landing'] : ['patrol', 'frigate']).filter(type => !UNITS[type].requires || this.hasBuilding(1, UNITS[type].requires));
         const pendingTypes = [...dock.queue, ...(dock.active ? [dock.active.type] : [])];
         const missing = fleet.find(type => ['destroyer', 'submarine', 'carrier'].includes(type) && !this.ownedUnits(1, type).length && !pendingTypes.includes(type));
         const type = missing || fleet[p.aiNavyUnitCount % fleet.length];
@@ -1051,7 +1095,9 @@ export class Game {
         for (const infantry of this.activeUnits(1, 'rifle').filter(u => distance(u, transport) < 150).slice(0, UNITS.apc.capacity - transport.passengers.length)) infantry.order = { type: 'board', targetId: transport.id };
       }
     }
+    this.updateAITransports();
     for (const support of this.activeUnits(1).filter(u => ['supply', 'jammer', 'relay'].includes(u.type))) {
+      if (support.type === 'supply') continue;
       if (support.order?.type === 'restock') continue;
       const front = this.activeUnits(1).filter(u => ['tank', 'rocket', 'loiterer'].includes(u.type)).sort((a, b) => a.x - b.x)[0];
       if (front && distance(front, support) > 100) support.order = { type: 'move', x: front.x + 75, y: front.y + 30 };
@@ -1103,7 +1149,7 @@ export class Game {
   launchAIWave() {
     const combat = this.activeUnits(1).filter(u => (UNITS[u.type].damage > 0 || u.type === 'apc') && !UNITS[u.type].tags.includes('ship') && !UNITS[u.type].tags.includes('jet'));
     if (combat.length < 3) return;
-    const wave = combat.filter(u => u.order?.type !== 'attackMove').slice(0, this.difficulty.waveSize);
+    const wave = combat.filter(u => !['attackMove', 'rearm', 'board'].includes(u.order?.type)).slice(0, this.difficulty.waveSize);
     const objective = this.victoryMode === 'control' ? this.beacons.filter(site => site.owner !== 1 && this.hasExploredFor(1, site.x, site.y)).sort((a, b) => distance(a, wave[0] || combat[0]) - distance(b, wave[0] || combat[0]))[0] : null;
     for (const u of wave) { u.order = { type: 'attackMove', x: (objective?.x ?? 300) + random(-70, 70), y: (objective?.y ?? this.homeY) + random(-90, 90) }; u.path = []; }
     if (wave.length && this.isVisible(wave[0].x, wave[0].y)) this.events.notice?.(objective ? '敌军正在争夺信标' : '敌军正在向基地推进');

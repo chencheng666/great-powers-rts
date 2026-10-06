@@ -10,6 +10,10 @@ import { layoutHealthBars } from './health-layout.js';
 import { unitRadius } from './unit-spacing.js';
 import { equipmentModel } from './equipment.js';
 import { weatherState } from './tactical-rules.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const TAU = Math.PI * 2;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -17,6 +21,7 @@ const hash = (x, y, seed = 0) => { const value = Math.sin(x * 127.1 + y * 311.7 
 const SIN_ELEVATION = .819;
 const UNIT_SCALE = { rifle: 12, engineer: 12, scout: 12, tank: 10, harvester: 9.5, aa: 10, elite: 10, fighter: 11, strike: 11, drone: 10, ghost: 10, patrol: 10, frigate: 10 };
 Object.assign(UNIT_SCALE, { loiterer: 10, jammer: 10, laser: 10, rocket: 10, apc: 10, supply: 10, destroyer: 9, carrier: 8, submarine: 8 });
+Object.assign(UNIT_SCALE, { landing: 9, bomber: 11, airlift: 11 });
 Object.assign(UNIT_SCALE, { railgun: 10, relay: 10, aegis: 11 });
 const vector = (x, z, y = 0) => new THREE.Vector3(x, y, z);
 const makeCanvas = (width, height) => { const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; return canvas; };
@@ -43,26 +48,56 @@ export class Renderer {
     this.pointer = null; this.dragBox = null; this.lastMinimap = 0; this.lastFog = -1000;
     this.entities = new Map(); this.effects = new Map(); this.environment = []; this.bridges = []; this.trails = []; this.ownedResources = [];
     this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+    // 返回菜单或读档时复用同一画布，先清理上一渲染器遗留的 WebGL 绑定。
+    this.webgl.resetState();
     this.webgl.setPixelRatio(Math.min(devicePixelRatio, innerWidth < 700 ? 1.5 : 2));
     this.webgl.shadowMap.enabled = true; this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = 1.22;
+    this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = 1.06;
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color('#10181d');
     this.viewCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 8000);
     this.raycaster = new THREE.Raycaster(); this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const pmrem = new THREE.PMREMGenerator(this.webgl), room = new RoomEnvironment();
-    const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .4; room.dispose(); pmrem.dispose();
-    this.scene.add(new THREE.HemisphereLight('#d7e8ef', game.map.future ? '#444951' : '#4b4940', 1.55));
-    const sun = new THREE.DirectionalLight(game.map.future ? '#f0f6ff' : '#fff2db', 3.2); sun.position.set(this.world.width / 2 - 1750, 2450, this.world.height / 2 - 1520); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true;
+    const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .58; room.dispose(); pmrem.dispose();
+    this.scene.add(new THREE.HemisphereLight('#d7e8ef', game.map.future ? '#3e434c' : '#3b4739', .95));
+    const sun = new THREE.DirectionalLight(game.map.future ? '#e8f2ff' : '#ffedd4', 3.05); sun.position.set(this.world.width / 2 - 1750, 2450, this.world.height / 2 - 1520); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true; this.sun = sun;
     const shadowSize = innerWidth < 700 ? 2048 : 4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
     Object.assign(sun.shadow.camera, { left: -this.world.width * .7, right: this.world.width * .7, top: this.world.height * .85, bottom: -this.world.height * .85, near: 10, far: 6000 });
-    sun.shadow.bias = -.0004; sun.shadow.normalBias = .8; this.scene.add(sun, sun.target);
+    sun.shadow.bias = -.00015; sun.shadow.normalBias = .24; sun.shadow.radius = 2; this.scene.add(sun, sun.target);
     this.fireTexture = particleTexture(); this.smokeTexture = particleTexture(true);
     this.createTerrain(); this.createBridges(); this.createEnvironment(); this.createFutureStructures(); this.createSites(); this.createFog(); this.createOverlays();
     this.createTracks();
+    this.createPostprocessing();
     this.resize(); this.centerOn(innerWidth < 700 ? 400 : 470, game.homeY);
   }
 
   track(resource) { this.ownedResources.push(resource); return resource; }
+
+  createPostprocessing() {
+    const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }); target.samples = 4;
+    this.composer = new EffectComposer(this.webgl, target);
+    this.composer.addPass(new RenderPass(this.scene, this.viewCamera));
+    this.ambientPass = new SSAOPass(this.scene, this.viewCamera, 1, 1, 16);
+    this.ambientPass.kernelRadius = 12; this.ambientPass.minDistance = .00025; this.ambientPass.maxDistance = .006;
+    const render = this.ambientPass.render.bind(this.ambientPass);
+    // 透明贴片和战争迷雾不参加法线预处理，避免矩形阴影与迷雾泄露。
+    this.ambientPass.render = (...args) => {
+      const hidden = [];
+      this.scene.traverse(object => {
+        if (object.visible && (object.isSprite || object.material?.transparent || object.material?.colorWrite === false)) { hidden.push(object); object.visible = false; }
+      });
+      try { render(...args); } finally { hidden.forEach(object => { object.visible = true; }); }
+    };
+    this.composer.addPass(this.ambientPass); this.composer.addPass(new OutputPass());
+    this.quality = 'high';
+    try { this.quality = localStorage.getItem('great-powers-quality') === 'standard' ? 'standard' : 'high'; } catch { /* 无本地存储时使用默认画质。 */ }
+    this.ambientPass.enabled = this.quality === 'high';
+  }
+
+  setQuality(value) {
+    this.quality = value === 'standard' ? 'standard' : 'high'; this.ambientPass.enabled = this.quality === 'high';
+    try { localStorage.setItem('great-powers-quality', this.quality); } catch { /* 当前战局仍可切换画质。 */ }
+    this.resize();
+  }
 
   box(x, y, z, width, height, depth, material) {
     const mesh = new THREE.Mesh(this.track(new THREE.BoxGeometry(width, height, depth)), material);
@@ -73,7 +108,7 @@ export class Renderer {
     const factor = Math.min(1, (innerWidth < 700 ? 2048 : 4096) / this.world.width);
     const canvas = makeCanvas(Math.round(this.world.width * factor), Math.round(this.world.height * factor)), ctx = canvas.getContext('2d'), image = (this.game.map.future ? visualLibrary().meridian : visualLibrary().ground).image;
     ctx.scale(factor, factor);
-    ctx.filter = this.game.map.future ? 'saturate(.55) contrast(.68) brightness(.83)' : 'saturate(.8) contrast(.95) brightness(.94)';
+    ctx.filter = this.game.map.future ? 'saturate(.45) contrast(.52) brightness(.86)' : 'saturate(.86) contrast(.9) brightness(.96)';
     if (this.game.map.future) ctx.drawImage(image, 0, 0, this.world.width, this.world.height);
     else for (let y = 0; y < this.world.height; y += 1440) for (let x = 0; x < this.world.width; x += 2240) ctx.drawImage(image, x, y, 2240, 1440);
     ctx.filter = 'none';
@@ -115,7 +150,7 @@ export class Renderer {
         ctx.fillStyle = shore; ctx.fillRect(edge - 54, 0, 108, this.world.height);
       }
       ctx.fillStyle = '#334044'; ctx.fillRect(water.x1, 0, water.x2 - water.x1, this.world.height);
-    } else for (const rect of this.game.map.barriers) {
+    } else if (!this.game.map.future) for (const rect of this.game.map.barriers) {
       ctx.fillStyle = '#242e2c'; ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
       ctx.fillStyle = 'rgba(98,99,84,.55)'; ctx.fillRect(rect.x1 - 12, rect.y1, 22, rect.y2 - rect.y1); ctx.fillRect(rect.x2 - 10, rect.y1, 22, rect.y2 - rect.y1);
     }
@@ -129,7 +164,15 @@ export class Renderer {
       positions.setY(i, height);
     }
     geometry.computeVertexNormals();
-    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, roughness: .93, metalness: .015 }))); terrain.receiveShadow = true; this.scene.add(terrain);
+    const detailCanvas = makeCanvas(256, 256), detailContext = detailCanvas.getContext('2d'), detail = detailContext.createImageData(256, 256);
+    for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) {
+      const i = (y * 256 + x) * 4, value = 105 + hash(x, y, 37) * 35 + hash(Math.floor(x / 4), Math.floor(y / 4), 18) * 22;
+      detail.data[i] = detail.data[i + 1] = detail.data[i + 2] = value; detail.data[i + 3] = 255;
+    }
+    detailContext.putImageData(detail, 0, 0);
+    const bump = this.track(new THREE.CanvasTexture(detailCanvas)); bump.wrapS = bump.wrapT = THREE.RepeatWrapping; bump.repeat.set(this.world.width / 100, this.world.height / 100);
+    bump.anisotropy = Math.min(8, this.webgl.capabilities.getMaxAnisotropy());
+    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, bumpMap: bump, bumpScale: .65, roughness: .96, metalness: 0 }))); terrain.receiveShadow = true; this.scene.add(terrain);
     if (this.game.map.water) { this.createWater(); this.createShoreline(); }
   }
 
@@ -322,6 +365,10 @@ export class Renderer {
   resize() {
     const rect = this.canvas.getBoundingClientRect(); if (rect.width < 1 || rect.height < 1) return;
     this.viewport = { width: rect.width, height: rect.height }; this.webgl.setSize(rect.width, rect.height, false);
+    if (this.composer) {
+      this.composer.setPixelRatio(this.webgl.getPixelRatio()); this.composer.setSize(rect.width, rect.height);
+      this.ambientPass.setSize(Math.round(rect.width * .65), Math.round(rect.height * .65));
+    }
     const dpr = Math.min(devicePixelRatio, 2); this.overlayCanvas.width = rect.width * dpr; this.overlayCanvas.height = rect.height * dpr; this.overlay.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.clampCamera(); this.updateCamera();
   }
@@ -338,6 +385,16 @@ export class Renderer {
     const halfWidth = this.viewport.width / this.camera.zoom / 2, halfHeight = this.viewport.height / this.camera.zoom / 2;
     Object.assign(this.viewCamera, { left: -halfWidth, right: halfWidth, top: halfHeight, bottom: -halfHeight }); this.viewCamera.position.set(this.center.x, 1700, this.center.y + 1190);
     this.viewCamera.lookAt(this.center.x, 0, this.center.y); this.viewCamera.updateProjectionMatrix(); this.viewCamera.updateMatrixWorld();
+    if (this.sun) {
+      const radius = Math.max(700, halfWidth * 1.3, halfHeight / SIN_ELEVATION * 1.3);
+      const snappedX = Math.round(this.center.x / 4) * 4, snappedY = Math.round(this.center.y / 4) * 4;
+      this.sun.position.set(snappedX - 1750, 2450, snappedY - 1520); this.sun.target.position.set(snappedX, 0, snappedY);
+      Object.assign(this.sun.shadow.camera, { left: -radius, right: radius, top: radius, bottom: -radius }); this.sun.shadow.camera.updateProjectionMatrix();
+    }
+    if (this.ambientPass) {
+      this.ambientPass.ssaoMaterial.uniforms.cameraProjectionMatrix.value.copy(this.viewCamera.projectionMatrix);
+      this.ambientPass.ssaoMaterial.uniforms.cameraInverseProjectionMatrix.value.copy(this.viewCamera.projectionMatrixInverse);
+    }
   }
 
   screenToWorld(x, y) {
@@ -430,6 +487,7 @@ export class Renderer {
         const tags = UNITS[entity.type].tags;
         if (tags.includes('jet')) height = 95 * (entity.deployment ? Math.min(1, (this.game.time - entity.deployment.start) / 2.6) : 1) + Math.sin(now * .001 + entity.id) * 2;
         else if (tags.includes('drone')) height = 23 + Math.sin(this.game.time * 3 + entity.id) * 1.5;
+        if (entity.type === 'airlift' && !moving && this.game.transportGrounded(entity)) height = this.elevation(entity.x, entity.y) + 6;
         else if (tags.includes('ship')) height = 2 + Math.sin(now * .002 + entity.id) * .6;
         const turn = Math.atan2(Math.sin(entity.angle - entry.heading), Math.cos(entity.angle - entry.heading));
         entry.heading += turn * (1 - Math.exp(-dt * (tags.includes('infantry') ? 18 : 9)));
@@ -600,11 +658,12 @@ export class Renderer {
           model = this.munitionTemplates.get(p.kind).clone();
         }
         const plume = this.effectSprite(p.kind === 'torpedo' ? '#bbebee' : '#ffb578'); plume.position.set(p.kind === 'wing' ? -4.8 : -7, .4, 0); plume.scale.set(p.kind === 'wing' ? 2.5 : 12, p.kind === 'wing' ? .6 : 3, 1); model.add(plume);
+        if (p.kind === 'bomb') plume.visible = false;
         this.scene.add(model); this.projectileModels.set(p.id, model);
       }
       model.visible = p.owner === 0 || this.game.isVisibleFor(0, p.x, p.y);
       const span = Math.hypot(p.toX - p.startX, p.toY - p.startY) || 1, progress = Math.min(1, Math.hypot(p.x - p.startX, p.y - p.startY) / span);
-      const height = p.kind === 'wing' ? 88 + Math.sin(now * .004 + p.id) * 2 : p.kind === 'torpedo' ? 2 : p.kind === 'rocket' ? 22 + Math.sin(progress * Math.PI) * 135 : 35;
+      const height = p.kind === 'bomb' ? 95 * (1 - progress) + 4 : p.kind === 'wing' ? 88 + Math.sin(now * .004 + p.id) * 2 : p.kind === 'torpedo' ? 2 : p.kind === 'rocket' ? 22 + Math.sin(progress * Math.PI) * 135 : 35;
       model.position.set(p.x, height, p.y); model.rotation.y = -p.angle;
       if (model.visible && ['rocket', 'missile'].includes(p.kind) && this.game.time >= (p.trailAt || 0) && this.trails.length < 100) {
         const sprite = this.effectSprite('#a7a9a7', true); sprite.position.set(p.x, height, p.y); sprite.scale.setScalar(8); sprite.material.opacity = .2;
@@ -621,7 +680,7 @@ export class Renderer {
       for (let i = 0; i < 12; i++) { const x = hash(i, 7) * this.viewport.width, y = (hash(i, 9) * this.viewport.height + this.game.time * 45) % this.viewport.height; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 30, y - 8); ctx.stroke(); }
     }
     const selected = new Set(this.game.selected), bars = [], viewportRect = this.canvas.getBoundingClientRect();
-    const obstacles = [...this.canvas.parentElement.querySelectorAll('.battle-hud, .command-toolbar, .camera-tools, .building-info:not([hidden]), .compact-radar:not([hidden]), .toast')].map(element => {
+    const obstacles = [...this.canvas.parentElement.querySelectorAll('.battle-hud, .command-toolbar, .camera-tools, .building-info:not([hidden]), .compact-radar:not([hidden]), .attack-alert:not([hidden]), .toast')].map(element => {
       const rect = element.getBoundingClientRect(); return { x: rect.x - viewportRect.x, y: rect.y - viewportRect.y, width: rect.width, height: rect.height };
     });
     for (const entry of this.entities.values()) {
@@ -671,6 +730,7 @@ export class Renderer {
     for (const effect of this.game.effects) if (effect.type === 'income' && this.game.isVisibleFor(0, effect.x, effect.y)) {
       const point = this.worldToScreen(effect.x, effect.y, 20 + effect.age / effect.duration * 32); ctx.font = '600 13px "Noto Sans SC",sans-serif'; ctx.fillStyle = '#e9cd90'; ctx.textAlign = 'center'; ctx.fillText(`+${effect.amount}`, point.x, point.y);
     }
+    this.drawAttackFeedback();
     if (this.pointer && (this.game.pendingAbility || ['attackMove', 'rally'].includes(this.game.orderMode))) {
       const point = this.worldToScreen(this.pointer.x, this.pointer.y); ctx.strokeStyle = '#c4edf2'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(point.x, point.y, 18, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(point.x - 26, point.y); ctx.lineTo(point.x + 26, point.y); ctx.moveTo(point.x, point.y - 26); ctx.lineTo(point.x, point.y + 26); ctx.stroke();
     }
@@ -696,8 +756,39 @@ export class Renderer {
     if (now - this.lastFog >= 180) { this.updateFog(); this.lastFog = now; }
     if (this.waterNormal) this.waterNormal.offset.set(now * .000004, now * .000007);
     if (this.shoreMaterial) this.shoreMaterial.opacity = .13 + Math.sin(now * .0012) * .035;
-    this.webgl.render(this.scene, this.viewCamera); this.drawOverlay();
+    this.composer.render(); this.drawOverlay();
     if (now - this.lastMinimap >= 180) { this.drawMinimap(); this.lastMinimap = now; }
+  }
+
+  drawAttackFeedback() {
+    const ctx = this.overlay, time = this.game.time;
+    for (const entry of this.entities.values()) {
+      const entity = entry.entity, age = time - (entity.lastDamageAt ?? -100);
+      if (!entry.model.visible || entity.owner !== 0 || age < 0 || age > 1.15) continue;
+      const point = this.worldToScreen(entity.x, entity.y, entry.model.position.y + (entity.kind === 'building' ? entry.topHeight * .45 : 12));
+      const radius = clamp((entity.kind === 'building' ? entity.size * .4 : 24) * this.camera.zoom, 16, 58);
+      ctx.save(); ctx.globalAlpha = (1 - age / 1.15) * .9; ctx.strokeStyle = '#ff8164'; ctx.lineWidth = 2;
+      for (const direction of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(point.x + direction * (radius - 8), point.y - radius * .65); ctx.lineTo(point.x + direction * radius, point.y - radius * .65); ctx.lineTo(point.x + direction * radius, point.y - radius * .3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(point.x + direction * (radius - 8), point.y + radius * .65); ctx.lineTo(point.x + direction * radius, point.y + radius * .65); ctx.lineTo(point.x + direction * radius, point.y + radius * .3); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    const age = time - (this.game.lastAttackVoiceAt ?? -100);
+    if (age >= 0 && age < .85) {
+      ctx.save(); ctx.strokeStyle = `rgba(245,85,65,${(1 - age / .85) * .35})`; ctx.lineWidth = 5;
+      ctx.strokeRect(2.5, 2.5, this.viewport.width - 5, this.viewport.height - 5); ctx.restore();
+    }
+  }
+
+  drawMinimapAlerts(ctx, width, height) {
+    for (const alert of this.game.attackAlerts || []) {
+      const age = this.game.time - alert.at; if (age > 7) continue;
+      const x = alert.x / this.world.width * width, y = alert.y / this.world.height * height, pulse = (this.game.time * 1.8) % 1;
+      ctx.save(); ctx.lineWidth = 1.8; ctx.strokeStyle = '#ff8c72'; ctx.globalAlpha = (1 - age / 7) * (1 - pulse * .5);
+      ctx.beginPath(); ctx.arc(x, y, 5 + pulse * 9, 0, TAU); ctx.stroke();
+      ctx.fillStyle = '#fff0ce'; ctx.fillRect(x - 1.5, y - 1.5, 3, 3); ctx.restore();
+    }
   }
 
   drawMinimap() {
@@ -705,7 +796,7 @@ export class Renderer {
     if (!this.game.hasRadarIntel(0)) {
       ctx.fillStyle = '#0e171d'; ctx.fillRect(0, 0, width, height); ctx.strokeStyle = '#263842'; ctx.lineWidth = 1;
       for (let y = 0; y < height; y += 12) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
-      ctx.fillStyle = '#95abb4'; ctx.font = '500 12px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.fillText(this.game.hasBuilding(0, 'radar') ? '电力不足 · 雷达离线' : '雷达站未建造', width / 2, height / 2); return;
+      ctx.fillStyle = '#95abb4'; ctx.font = '500 12px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.fillText(this.game.hasBuilding(0, 'radar') ? '电力不足 · 雷达离线' : '雷达站未建造', width / 2, height / 2); this.drawMinimapAlerts(ctx, width, height); return;
     }
     ctx.drawImage(this.terrainTexture.image, 0, 0, width, height);
     const sx = width / this.world.width, sy = height / this.world.height;
@@ -719,10 +810,13 @@ export class Renderer {
       else { const x = entity.x * sx, y = entity.y * sy; ctx.beginPath(); ctx.moveTo(x, y - size); ctx.lineTo(x + size, y); ctx.lineTo(x, y + size); ctx.lineTo(x - size, y); ctx.closePath(); ctx.fill(); }
     }
     ctx.drawImage(this.fogCanvas, 0, 0, width, height);
+    this.drawMinimapAlerts(ctx, width, height);
     const a = this.screenToWorld(0, 0), b = this.screenToWorld(this.viewport.width, this.viewport.height); ctx.strokeStyle = '#d5edf0'; ctx.lineWidth = 1; ctx.strokeRect(a.x * sx, a.y * sy, (b.x - a.x) * sx, (b.y - a.y) * sy);
   }
 
   dispose() {
+    this.webgl.setRenderTarget(null); this.webgl.resetState();
+    this.composer?.passes.forEach(pass => pass.dispose()); this.composer?.dispose();
     this.projectileModels.forEach(model => model.children.at(-1)?.material?.dispose());
     this.trails.forEach(trail => trail.sprite.material.dispose());
     this.entities.forEach(entry => entry.exhausts.forEach(sprite => sprite.material.dispose()));

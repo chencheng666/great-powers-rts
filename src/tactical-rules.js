@@ -12,7 +12,7 @@ export function inCover(map, unit) {
 export function tacticalDamage(map, source, target) {
   let factor = 1;
   if (target.kind === 'unit' && UNITS[target.type].tags.includes('armor') && ['tank', 'railgun'].includes(source.type)) factor *= armorFacing(source, target).multiplier;
-  if (inCover(map, target) && !['rocket', 'strike', 'loiterer', 'railgun'].includes(source.type)) factor *= .72;
+  if (inCover(map, target) && !['rocket', 'strike', 'bomber', 'loiterer', 'railgun'].includes(source.type)) factor *= .72;
   return factor;
 }
 

@@ -1,0 +1,117 @@
+import { AI_DIFFICULTIES, BUILDINGS, FACTIONS, MAPS, UNITS, WORLD } from './data.js';
+
+export const SAVE_VERSION = 1;
+export const SAVE_LIMIT = 8 * 1024 * 1024;
+export const SAVE_KEYS = { manual: 'great-powers-save-manual-v1', auto: 'great-powers-save-auto-v1' };
+export const SNAPSHOT_FIELDS = ['time', 'players', 'units', 'buildings', 'ore', 'oil', 'beacons', 'fogs', 'projectiles', 'nextProjectileId', 'selected', 'pendingBuilding', 'pendingAbility', 'aiTimer', 'aiWaveTimer', 'fogTimer'];
+
+const invalid = () => { throw new Error('存档内容不完整或已损坏，原有战局和存档未被替换'); };
+const finite = value => typeof value === 'number' && Number.isFinite(value);
+const object = value => value && typeof value === 'object' && !Array.isArray(value);
+const known = (table, key) => typeof key === 'string' && Object.hasOwn(table, key);
+
+function checkTree(value, depth = 0) {
+  if (depth > 24 || typeof value === 'number' && !finite(value)) invalid();
+  if (value === null || typeof value !== 'object') return;
+  for (const [key, item] of Object.entries(value)) {
+    if (['__proto__', 'prototype', 'constructor'].includes(key)) invalid();
+    checkTree(item, depth + 1);
+  }
+}
+
+export function validateSave(save) {
+  if (save?.format !== 'great-powers-rts' || save.version !== SAVE_VERSION) throw new Error('无法读取此存档：文件类型或存档版本不兼容');
+  checkTree(save);
+  const s = save.state, config = save.config;
+  if (!object(s) || !object(config) || !known(MAPS, config.mapId) || !known(AI_DIFFICULTIES, config.difficulty) || !['quick', 'annihilation', 'control'].includes(config.victoryMode) || !finite(save.savedAt) || !finite(s.time) || s.time < 0) invalid();
+  if (SNAPSHOT_FIELDS.some(key => !Object.hasOwn(s, key))) invalid();
+  if (!Array.isArray(s.players) || s.players.length !== 2) invalid();
+  const checkProduction = (queue, definitions) => {
+    if (queue !== null && (!object(queue) || !known(definitions, queue.type) || !finite(queue.progress) || queue.progress < 0 || !finite(queue.paid) || queue.paid < 0)) invalid();
+  };
+  for (const [side, player] of s.players.entries()) {
+    if (!object(player) || player.side !== side || !known(FACTIONS, player.faction) || !['credits', 'abilityCharge', 'abilityCooldown', 'shieldUntil', 'controlScore', 'unitCount', 'aiPlanIndex', 'aiUnitCount', 'aiAirUnitCount', 'aiNavyUnitCount', 'aiEngineerRetryAt', 'aiScoutRetryAt', 'aiGhostRetryAt'].every(key => finite(player[key])) || player.credits < 0) invalid();
+    checkProduction(player.buildQueue, BUILDINGS);
+  }
+  const world = MAPS[config.mapId].world || WORLD, ids = new Set();
+  const point = value => object(value) && finite(value.x) && finite(value.y);
+  const checkOrder = order => {
+    if (order === null) return;
+    if (!object(order) || !['move', 'attackMove', 'attack', 'capture', 'board', 'rearm', 'restock'].includes(order.type)) invalid();
+    if (['move', 'attackMove', 'attack', 'capture'].includes(order.type) && !point(order)) invalid();
+    if (['attack', 'capture', 'board'].includes(order.type) && typeof order.targetId !== 'string' && !Number.isSafeInteger(order.targetId)) invalid();
+  };
+  for (const [key, definitions] of [['units', UNITS], ['buildings', BUILDINGS]]) {
+    if (!Array.isArray(s[key]) || s[key].length > 5000) invalid();
+    for (const entity of s[key]) {
+      if (!object(entity) || !Number.isSafeInteger(entity.id) || entity.id < 1 || ids.has(entity.id) || entity.kind !== (key === 'units' ? 'unit' : 'building') || !known(definitions, entity.type) || ![0, 1].includes(entity.owner) || !point(entity) || entity.x < 0 || entity.x > world.width || entity.y < 0 || entity.y > world.height || !finite(entity.hp) || !finite(entity.maxHp) || entity.maxHp <= 0 || !finite(entity.angle) || !finite(entity.fireTimer)) invalid();
+      ids.add(entity.id);
+      if (key === 'units') {
+        if (!Array.isArray(entity.path) || entity.path.some(p => !point(p)) || !Array.isArray(entity.passengers) || entity.passengers.some(id => !Number.isSafeInteger(id)) || !['pathTimer', 'stunUntil', 'turretAngle', 'cargo', 'cargoValue', 'rearmProgress', 'temporaryUntil', 'movePulse', 'heat', 'deployProgress'].every(key => finite(entity[key]))) invalid();
+        checkOrder(entity.order); checkOrder(entity.resumeOrder);
+        const d = UNITS[entity.type];
+        if (entity.ammo !== null && (!Number.isSafeInteger(entity.ammo) || entity.ammo < 0 || !d.ammo || entity.ammo > d.ammo)) invalid();
+        if (d.stock && (!finite(entity.stock) || entity.stock < 0 || entity.stock > d.stock)) invalid();
+        if (entity.type === 'supply' && entity.autoSupply !== undefined && typeof entity.autoSupply !== 'boolean') invalid();
+        if (entity.deployment && (!point(entity.deployment) || !finite(entity.deployment.start) || !finite(entity.deployment.until) || !finite(entity.deployment.fromX) || !finite(entity.deployment.fromY))) invalid();
+      } else {
+        if (!Array.isArray(entity.queue) || entity.queue.length > 1000 || entity.queue.some(type => !known(UNITS, type)) || !finite(entity.size) || entity.rallyPoint && !point(entity.rallyPoint)) invalid();
+        checkProduction(entity.active, UNITS);
+      }
+    }
+  }
+  const transported = new Set(), units = new Map(s.units.map(u => [u.id, u]));
+  for (const t of s.units) {
+    let weight = 0;
+    for (const id of t.passengers) {
+      const u = units.get(id);
+      if (!UNITS[t.type].capacity || !u || u === t || u.owner !== t.owner || u.embarkedIn !== t.id || transported.has(id) || UNITS[u.type].capacity || UNITS[u.type].tags.some(tag => ['air', 'ship'].includes(tag)) || t.type === 'apc' && !UNITS[u.type].tags.includes('infantry')) invalid();
+      transported.add(id); weight += UNITS[u.type].tags.includes('infantry') ? 1 : 4;
+    }
+    if (weight > (UNITS[t.type].capacity || 0)) invalid();
+  }
+  for (const u of s.units) if (u.embarkedIn && !transported.has(u.id)) invalid();
+  for (const key of ['ore', 'oil', 'beacons']) {
+    if (!Array.isArray(s[key]) || s[key].length !== MAPS[config.mapId][key].length) invalid();
+    for (const site of s[key]) {
+      if (!object(site) || !finite(site.x) || !finite(site.y)) invalid();
+      if (key === 'ore' ? !finite(site.amount) || site.amount < 0 || !finite(site.max) || site.max <= 0 || !['gold', 'gem'].includes(site.kind) : ![null, 0, 1].includes(site.owner)) invalid();
+    }
+  }
+  if (!Array.isArray(s.fogs) || s.fogs.length !== 2) invalid();
+  for (const fog of s.fogs) {
+    if (fog.cols !== world.width / world.fog || fog.rows !== world.height / world.fog) invalid();
+    for (const key of ['visible', 'explored']) if (!Array.isArray(fog[key]) || fog[key].length !== fog.cols * fog.rows || fog[key].some(value => typeof value !== 'boolean')) invalid();
+  }
+  if (!Array.isArray(s.selected) || s.selected.some(id => !Number.isSafeInteger(id)) || !Array.isArray(s.projectiles) || s.projectiles.length > 10000 || !Number.isSafeInteger(s.nextProjectileId) || ![s.aiTimer, s.aiWaveTimer, s.fogTimer].every(finite) || s.pendingBuilding !== null && !known(BUILDINGS, s.pendingBuilding) || typeof s.pendingAbility !== 'boolean') invalid();
+  for (const projectile of s.projectiles) if (!object(projectile) || !['x', 'y', 'startX', 'startY', 'toX', 'toY', 'angle', 'age', 'amount', 'speed', 'hp', 'jam'].every(key => finite(projectile[key])) || projectile.speed <= 0 || ![0, 1].includes(projectile.owner) || !['wing', 'torpedo', 'rocket', 'missile', 'loitering', 'bomb'].includes(projectile.kind)) invalid();
+  if (save.view !== undefined && !object(save.view)) invalid();
+  return save;
+}
+
+export function parseSave(text) {
+  if (typeof text !== 'string' || text.length > SAVE_LIMIT) throw new Error('存档文件过大，无法读取');
+  let value;
+  try { value = JSON.parse(text); } catch { throw new Error('无法读取存档：不是有效的 JSON 文件'); }
+  return validateSave(value);
+}
+
+export function createSave(game, view = {}, savedAt = Date.now()) {
+  if (!game?.running || game.winner !== null) throw new Error('只能保存尚未结束的战局');
+  const difficulty = Object.entries(AI_DIFFICULTIES).find(([, value]) => value === game.difficulty)?.[0];
+  const save = { format: 'great-powers-rts', version: SAVE_VERSION, savedAt, config: { mapId: game.mapId, victoryMode: game.victoryMode, difficulty }, state: Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])), view };
+  validateSave(save);
+  return JSON.parse(JSON.stringify(save));
+}
+
+export function writeSave(storage, slot, save) {
+  if (!SAVE_KEYS[slot]) throw new Error('未知存档位置');
+  validateSave(save);
+  try { storage.setItem(SAVE_KEYS[slot], JSON.stringify(save)); } catch { throw new Error('本地存储不可用或空间不足，请导出存档文件；当前战局仍然保留'); }
+  return save;
+}
+
+export function readSave(storage, slot) {
+  const text = storage.getItem(SAVE_KEYS[slot]);
+  return text ? parseSave(text) : null;
+}

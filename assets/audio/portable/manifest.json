@@ -1,0 +1,231 @@
+{
+  "generator": "eSpeak NG text-to-speech: 1.52.0  Data at: /opt/homebrew/Cellar/espeak-ng/1.52.0/share/espeak-ng-data",
+  "generatedOn": "2026-10-06",
+  "source": "https://github.com/espeak-ng/espeak-ng",
+  "license": "仅分发原创台词的合成音频，不捆绑 GPL 引擎、系统录音或第三方声音模型。",
+  "voice": "cmn",
+  "files": [
+    {
+      "file": "welcome-0.wav",
+      "key": "welcome",
+      "index": 0,
+      "text": "战区通信已接入。指挥官，部队等待您的命令。"
+    },
+    {
+      "file": "construction-0.wav",
+      "key": "construction",
+      "index": 0,
+      "text": "开始建造。"
+    },
+    {
+      "file": "buildReady-0.wav",
+      "key": "buildReady",
+      "index": 0,
+      "text": "建筑建造完成，等待部署。"
+    },
+    {
+      "file": "deployed-0.wav",
+      "key": "deployed",
+      "index": 0,
+      "text": "建筑已部署。"
+    },
+    {
+      "file": "queued-0.wav",
+      "key": "queued",
+      "index": 0,
+      "text": "生产任务已确认。"
+    },
+    {
+      "file": "unitReady-0.wav",
+      "key": "unitReady",
+      "index": 0,
+      "text": "新单位已就绪。"
+    },
+    {
+      "file": "powerLow-0.wav",
+      "key": "powerLow",
+      "index": 0,
+      "text": "电力不足。请增建电力站。"
+    },
+    {
+      "file": "powerRestored-0.wav",
+      "key": "powerRestored",
+      "index": 0,
+      "text": "供电已恢复。"
+    },
+    {
+      "file": "fundsLow-0.wav",
+      "key": "fundsLow",
+      "index": 0,
+      "text": "资金不足。"
+    },
+    {
+      "file": "underAttack-0.wav",
+      "key": "underAttack",
+      "index": 0,
+      "text": "警报！我方基地遭到攻击。"
+    },
+    {
+      "file": "unitUnderAttack-0.wav",
+      "key": "unitUnderAttack",
+      "index": 0,
+      "text": "警报！我方部队遭到攻击，请求支援。"
+    },
+    {
+      "file": "buildingLost-0.wav",
+      "key": "buildingLost",
+      "index": 0,
+      "text": "我方建筑被摧毁。"
+    },
+    {
+      "file": "unitLost-0.wav",
+      "key": "unitLost",
+      "index": 0,
+      "text": "我方单位损失。"
+    },
+    {
+      "file": "oilCaptured-0.wav",
+      "key": "oilCaptured",
+      "index": 0,
+      "text": "油井已占领，经济供给已接入。"
+    },
+    {
+      "file": "beaconCaptured-0.wav",
+      "key": "beaconCaptured",
+      "index": 0,
+      "text": "雷达信标已接入。"
+    },
+    {
+      "file": "ability-0.wav",
+      "key": "ability",
+      "index": 0,
+      "text": "战略系统已启动。"
+    },
+    {
+      "file": "victory-0.wav",
+      "key": "victory",
+      "index": 0,
+      "text": "战役胜利。战区已由我方控制。"
+    },
+    {
+      "file": "defeat-0.wav",
+      "key": "defeat",
+      "index": 0,
+      "text": "任务失败。部队撤离战区。"
+    },
+    {
+      "file": "draw-0.wav",
+      "key": "draw",
+      "index": 0,
+      "text": "战局结束。双方战力耗尽。"
+    },
+    {
+      "file": "structureSelected-0.wav",
+      "key": "structureSelected",
+      "index": 0,
+      "text": "指挥系统在线。"
+    },
+    {
+      "file": "armorSelected-0.wav",
+      "key": "armorSelected",
+      "index": 0,
+      "text": "装甲部队待命。"
+    },
+    {
+      "file": "armorSelected-1.wav",
+      "key": "armorSelected",
+      "index": 1,
+      "text": "车组就位，请指示。"
+    },
+    {
+      "file": "infantrySelected-0.wav",
+      "key": "infantrySelected",
+      "index": 0,
+      "text": "小队待命。"
+    },
+    {
+      "file": "infantrySelected-1.wav",
+      "key": "infantrySelected",
+      "index": 1,
+      "text": "收到，请下达命令。"
+    },
+    {
+      "file": "engineerSelected-0.wav",
+      "key": "engineerSelected",
+      "index": 0,
+      "text": "工程组就位。"
+    },
+    {
+      "file": "engineerSelected-1.wav",
+      "key": "engineerSelected",
+      "index": 1,
+      "text": "准备接管目标。"
+    },
+    {
+      "file": "airSelected-0.wav",
+      "key": "airSelected",
+      "index": 0,
+      "text": "空中编队就绪。"
+    },
+    {
+      "file": "airSelected-1.wav",
+      "key": "airSelected",
+      "index": 1,
+      "text": "航电系统正常。"
+    },
+    {
+      "file": "droneSelected-0.wav",
+      "key": "droneSelected",
+      "index": 0,
+      "text": "无人机链路已接通。"
+    },
+    {
+      "file": "navySelected-0.wav",
+      "key": "navySelected",
+      "index": 0,
+      "text": "舰艇等待指令。"
+    },
+    {
+      "file": "moveOrder-0.wav",
+      "key": "moveOrder",
+      "index": 0,
+      "text": "收到，正在前往目标位置。"
+    },
+    {
+      "file": "moveOrder-1.wav",
+      "key": "moveOrder",
+      "index": 1,
+      "text": "开始机动。"
+    },
+    {
+      "file": "moveOrder-2.wav",
+      "key": "moveOrder",
+      "index": 2,
+      "text": "部队出发。"
+    },
+    {
+      "file": "attackOrder-0.wav",
+      "key": "attackOrder",
+      "index": 0,
+      "text": "确认目标，进入战斗。"
+    },
+    {
+      "file": "attackOrder-1.wav",
+      "key": "attackOrder",
+      "index": 1,
+      "text": "火力单元开始推进。"
+    },
+    {
+      "file": "captureOrder-0.wav",
+      "key": "captureOrder",
+      "index": 0,
+      "text": "工程组出发，准备接管。"
+    },
+    {
+      "file": "stopOrder-0.wav",
+      "key": "stopOrder",
+      "index": 0,
+      "text": "停止机动，保持阵位。"
+    }
+  ]
+}

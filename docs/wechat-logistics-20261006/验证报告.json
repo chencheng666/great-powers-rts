@@ -1,0 +1,112 @@
+{
+  "screenshots": [
+    {
+      "file": "01-auto-support-before.png",
+      "colors": 7707,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "02-auto-support-after.png",
+      "colors": 6823,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "03-airfield-repair.png",
+      "colors": 6907,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "04-landing-loaded.png",
+      "colors": 3151,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "05-landing-unloaded.png",
+      "colors": 3712,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "06-airlift-cargo.png",
+      "colors": 6393,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "07-drone-over-sea.png",
+      "colors": 182,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "08-bomber-strike.png",
+      "colors": 6263,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "09-save-and-menu.png",
+      "colors": 6263,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    }
+  ],
+  "checks": {
+    "autoSupport": {
+      "x": 1005.8966229584837,
+      "tankHP": 380,
+      "tankMax": 380,
+      "tankAmmo": 12,
+      "rifleHP": 110,
+      "rifleMax": 110,
+      "stock": 35.00000000000033
+    },
+    "airRepair": {
+      "hp": 235,
+      "maxHp": 235,
+      "ammo": 3
+    },
+    "landing": {
+      "sea": {
+        "load": 5,
+        "unload": 0
+      },
+      "landed": {
+        "count": 2,
+        "safe": true
+      }
+    },
+    "airlift": {
+      "passengers": 3,
+      "weight": 6
+    },
+    "drone": {
+      "x": 1793.999999999994,
+      "y": 1300
+    },
+    "saveRestore": {
+      "bomber": true,
+      "bomb": true
+    },
+    "portableVoice": {
+      "duration": 4.687791666666667,
+      "sampleRate": 48000,
+      "context": "running",
+      "noChineseSystemVoice": true,
+      "rms": 0.023482168325038456
+    }
+  }
+}

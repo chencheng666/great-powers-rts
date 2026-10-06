@@ -8,19 +8,21 @@ import { buildingInformation, placeBuildingPanel, productionDuration } from './b
 import { teamVisual } from './team-visuals.js';
 import { equipmentProfile, equipmentModel, EQUIPMENT_SYSTEMS } from './equipment.js';
 import { weatherState, inCover } from './tactical-rules.js';
+import { parseSave, readSave, SAVE_LIMIT, writeSave } from './savegame.js';
 import './styles.css';
 import './mobile.css';
 import './phase2.css';
 import './visual-v2.css';
 import './battlefield-details.css';
 import './future.css';
+import './session.css';
 
 const $ = selector => document.querySelector(selector);
 const fmt = amount => Math.floor(amount).toLocaleString('zh-CN');
 const seconds = value => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
 const selectionStatus = entity => {
   const d = UNITS[entity.type];
-  return `生命 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)}${entity.type === 'harvester' ? ` · 矿石 ${Math.floor(entity.cargo)} / 210` : ''}${d?.ammo ? ` · 弹药 ${entity.ammo} / ${d.ammo}` : ''}${entity.type === 'apc' ? ` · 乘员 ${entity.passengers.length} / ${d.capacity}` : ''}${entity.type === 'supply' ? ` · 库存 ${Math.floor(entity.stock)} / ${d.stock}` : ''}${entity.type === 'carrier' ? ` · 舰载机 ${entity.wing} / ${d.wing}` : ''}${entity.type === 'laser' ? ` · 热量 ${Math.ceil(entity.heat)}%${entity.overheated ? ' 冷却中' : ''}` : ''}${entity.type === 'rocket' ? ` · 展开 ${entity.deployProgress.toFixed(1)} / 2 秒` : ''}${entity.type === 'submarine' ? entity.exposedUntil > state.game.time ? ' · 暴露' : ' · 潜航' : ''}${entity.jammedUntil > state.game.time ? ' · 受干扰' : ''}${entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? ' · 返场补给' : ''}`;
+  return `生命 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)}${entity.type === 'harvester' ? ` · 矿石 ${Math.floor(entity.cargo)} / 210` : ''}${d?.ammo ? ` · 弹药 ${entity.ammo} / ${d.ammo}` : ''}${d?.capacity ? ` · 载重 ${state.game.transportLoad(entity)} / ${d.capacity} 格 · ${entity.passengers.length} 单位` : ''}${entity.type === 'supply' ? ` · 库存 ${Math.floor(entity.stock)} / ${d.stock} · ${entity.autoSupply !== false ? '自动保障' : '驻点保障'}` : ''}${entity.type === 'carrier' ? ` · 舰载机 ${entity.wing} / ${d.wing}` : ''}${entity.type === 'laser' ? ` · 热量 ${Math.ceil(entity.heat)}%${entity.overheated ? ' 冷却中' : ''}` : ''}${entity.type === 'rocket' ? ` · 展开 ${entity.deployProgress.toFixed(1)} / 2 秒` : ''}${entity.type === 'submarine' ? entity.exposedUntil > state.game.time ? ' · 暴露' : ' · 潜航' : ''}${entity.jammedUntil > state.game.time ? ' · 受干扰' : ''}${entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? ' · 返场补给' : ''}`;
 };
 const icon = name => `<i data-lucide="${name}"></i>`;
 const refreshIcons = () => createIcons({ icons });
@@ -55,7 +57,11 @@ const state = {
   modalMode: null,
   lastPower: true,
   lastSelection: '',
-  sidebarCollapsed: false
+  sidebarCollapsed: false,
+  loading: false,
+  nextAutoAt: 45,
+  autoSaveFailed: false,
+  alertId: null
 };
 
 function setSidebarCollapsed(collapsed) {
@@ -110,7 +116,7 @@ function drawFactionPicker() {
 }
 
 function toast(message, danger = false) {
-  const container = $('#toast-container');
+  const container = $('#start-screen').style.display !== 'none' || !$('#modal').classList.contains('hidden') ? $('#menu-toast-container') : $('#toast-container');
   const item = document.createElement('div'); item.className = `toast${danger ? ' danger' : ''}`; item.textContent = message;
   container.appendChild(item);
   setTimeout(() => { item.style.opacity = '0'; item.style.transition = 'opacity .3s'; setTimeout(() => item.remove(), 300); }, 2800);
@@ -121,10 +127,10 @@ function beep(style, owner = 0) {
   gameAudio.shot(style, owner);
 }
 
-async function startGame() {
+async function startGame(save = null) {
   const button = $('#start-btn');
-  if (button.disabled) return;
-  gameAudio.stopBattle();
+  if (state.loading) return;
+  state.loading = true;
   gameAudio.unlock().catch(() => {});
   button.disabled = true;
   button.innerHTML = `${icon('loader-circle')} 战场部署中`;
@@ -134,17 +140,28 @@ async function startGame() {
   } catch (error) {
     toast(`战场素材载入失败：${error.message}`, true);
     button.disabled = false;
+    state.loading = false;
     button.innerHTML = `${icon('play')} 开始作战`;
     refreshIcons();
     return;
   }
+  ++state.loopToken;
+  gameAudio.stopBattle();
   state.renderer?.dispose();
   const enemyChoice = $('#enemy-select').value;
   const candidates = Object.keys(FACTIONS).filter(key => key !== state.faction);
   const enemy = enemyChoice === 'random' ? candidates[Math.floor(Math.random() * candidates.length)] : enemyChoice;
   state.difficulty = $('#difficulty-select').value;
   state.mapId = $('#map-select').value;
-  state.game = new Game(state.faction, enemy, { notice: toast, shot: beep, voice: key => gameAudio.say(key), selection: updateSelection, end: showResult }, { victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId });
+  const events = { notice: toast, shot: beep, voice: key => gameAudio.say(key), selection: updateSelection, end: showResult };
+  state.game = save ? Game.fromSave(save, events) : new Game(state.faction, enemy, events, { victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId });
+  if (save) {
+    state.faction = state.game.players[0].faction; state.mapId = save.config.mapId;
+    state.victoryMode = save.config.victoryMode; state.difficulty = save.config.difficulty;
+    $('#map-select').value = state.mapId; $('#difficulty-select').value = state.difficulty;
+    drawFactionPicker(); $('#enemy-select').value = state.game.players[1].faction;
+    document.querySelectorAll('[data-victory]').forEach(option => option.classList.toggle('active', option.dataset.victory === state.victoryMode));
+  }
   try {
     state.renderer = new Renderer($('#game-canvas'), $('#minimap'), state.game);
   } catch (error) {
@@ -152,18 +169,20 @@ async function startGame() {
     state.renderer = null;
     toast(`无法初始化三维战场，请检查浏览器硬件加速：${error.message}`, true);
     button.disabled = false;
+    state.loading = false;
     button.innerHTML = `${icon('play')} 开始作战`;
     refreshIcons();
     return;
   }
   button.disabled = false;
+  state.loading = false;
   button.innerHTML = `${icon('play')} 开始作战`;
   refreshIcons();
   $('#start-screen').style.display = 'none';
   window.scrollTo(0, 0);
   $('#side-faction').textContent = FACTIONS[state.faction].name;
   $('#faction-short').textContent = `我方：${FACTIONS[state.faction].name}`;
-  $('#enemy-short').textContent = `敌方：${FACTIONS[enemy].name}`;
+  $('#enemy-short').textContent = `敌方：${state.game.enemyFaction.name}`;
   $('#battle-status').textContent = '战斗进行中';
   $('#battle-objective').textContent = VICTORY_MODES[state.victoryMode].description;
   $('.battlefield').classList.toggle('future', !!state.game.map.future);
@@ -173,13 +192,21 @@ async function startGame() {
   $('#modal').classList.add('hidden');
   state.modalMode = null;
   state.groups = {};
+  for (const [key, ids] of Object.entries(save?.view?.groups || {})) if (/^[1-9]$/.test(key) && Array.isArray(ids)) state.groups[key] = ids.filter(id => state.game.getEntity(id)?.owner === 0);
   state.cameraPanMode = false; state.panning = null; state.drag = null; state.pointerPosition = null;
   state.touchPoints.clear(); state.touchStart = state.touchLast = null; state.touchPan = state.touchPinching = false;
   state.inspectorId = state.dismissedInspectorId = null; $('#building-info').hidden = true; updatePanControl();
   state.lastPower = state.game.hasPower(0); state.lastSelection = '';
+  state.keys.clear(); state.nextAutoAt = state.game.time + 45; state.autoSaveFailed = false;
+  $('#pause-btn').innerHTML = icon(save ? 'play' : 'pause');
+  $('#attack-alert').hidden = true; state.alertId = null;
+  if (save?.view?.center && Number.isFinite(save.view.center.x) && Number.isFinite(save.view.center.y)) {
+    if (Number.isFinite(save.view.zoom)) state.renderer.camera.zoom = Math.max(.35, Math.min(2.2, save.view.zoom));
+    state.renderer.centerOn(save.view.center.x, save.view.center.y);
+  }
   $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false');
   const battle = state.game;
-  gameAudio.startBattle().then(ok => { if (!ok && state.game === battle) toast('声音未能启动，可在声音设置中重试', true); });
+  gameAudio.startBattle().then(ok => { if (state.game === battle) { gameAudio.setPaused(battle.paused); if (!ok) toast('声音未能启动，可在声音设置中重试', true); } });
   state.tab = 'build';
   document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.tab === 'build'));
   updateUI(true);
@@ -187,6 +214,8 @@ async function startGame() {
   state.lastFrame = 0;
   const token = ++state.loopToken;
   requestAnimationFrame(now => frame(now, token));
+  if (save) showModal('战局已恢复', `<p>${state.game.map.name} · ${seconds(state.game.time)} · ${state.game.faction.name}</p>`, `<button class="primary-btn" data-modal="resume">${icon('play')} 继续作战</button><button class="secondary-btn" data-modal="menu">返回主界面</button>`);
+  refreshIcons();
 }
 
 function frame(now, token) {
@@ -204,6 +233,9 @@ function frame(now, token) {
     if (dx || dy) state.renderer.pan(dx * 450 * dt, dy * 450 * dt);
   }
   state.game.update(dt);
+  if (state.game.running && !state.game.paused && state.game.time >= state.nextAutoAt) {
+    saveProgress('auto', false); state.nextAutoAt = state.game.time + 45;
+  }
   gameAudio.setPaused(state.game.paused || document.hidden);
   state.renderer.render(now);
   updateBuildingInspector(now);
@@ -216,6 +248,8 @@ function updateUI(force = false) {
   const g = state.game;
   if (!g) return;
   const p = g.players[0];
+  updateAttackAlert();
+  $('#save-btn').disabled = !g.running;
   if (g.victoryMode === 'control') $('#battle-objective').textContent = `信标积分 ${Math.floor(p.controlScore)} : ${Math.floor(g.players[1].controlScore)} / 240`;
   const environmentStatus = $('#environment-status');
   environmentStatus.hidden = !g.map.future;
@@ -313,10 +347,13 @@ function updateSelection() {
   else if (selected.length === 1) {
     const e = selected[0], profile = e.kind === 'unit' ? equipmentProfile(g.players[e.owner].faction, e.type) : null, name = profile ? profile.name : BUILDINGS[e.type].name;
     const actions = e.kind === 'building' ? `<div class="selection-actions"><button type="button" data-action="repair" class="${e.repairing ? 'active' : ''}" title="${e.hp >= e.maxHp && !e.repairing ? '建筑完好' : e.repairing ? '停止维修' : '维修建筑'}" ${e.hp >= e.maxHp && !e.repairing ? 'disabled' : ''}>${icon('wrench')}</button>${e.type === 'hq' ? '' : `<button type="button" data-action="sell" title="出售建筑，返还一半造价">${icon('coins')}</button>`}</div>` : e.type === 'apc' ? `<div class="selection-actions"><button type="button" data-action="unload" title="乘员下车" aria-label="乘员下车">${icon('log-out')}</button></div>` : '';
-    panel.innerHTML = `<span class="hud-label">当前选择${profile ? ` · ${profile.category}` : ''}</span><strong>${name}</strong><span class="selection-health">${selectionStatus(e)}</span>${profile ? `<span class="equipment-detail" title="${profile.description}">${profile.description}${inCover(g.map, e) ? ' · 掩体内' : ''}</span>` : ''}${actions}`;
+    const unitActions = e.kind === 'unit' && e.owner === 0 ? `<div class="selection-actions">${UNITS[e.type].capacity ? `<button type="button" data-action="unload" title="卸载部队" aria-label="卸载部队">${icon('log-out')}</button>` : ''}${UNITS[e.type].ammo || UNITS[e.type].tags.includes('air') ? `<button type="button" data-action="resupply" title="返回基地维修补给" aria-label="返回基地维修补给">${icon('fuel')}</button>` : ''}${e.type === 'supply' ? `<button type="button" data-action="auto-supply" class="${e.autoSupply !== false ? 'active' : ''}" aria-pressed="${e.autoSupply !== false}" title="自动寻找保障目标" aria-label="自动寻找保障目标">${icon('scan-search')}</button>` : ''}</div>` : '';
+    panel.innerHTML = `<span class="hud-label">当前选择${profile ? ` · ${profile.category}` : ''}</span><strong>${name}</strong><span class="selection-health">${selectionStatus(e)}</span>${profile ? `<span class="equipment-detail" title="${profile.description}">${profile.description}${inCover(g.map, e) ? ' · 掩体内' : ''}</span>` : ''}${e.kind === 'building' ? actions : unitActions}`;
     panel.querySelector('[data-action="repair"]')?.addEventListener('click', () => { g.toggleRepair(0, e.id); updateSelection(); });
     panel.querySelector('[data-action="sell"]')?.addEventListener('click', () => { g.sellBuilding(0, e.id); updateUI(true); });
     panel.querySelector('[data-action="unload"]')?.addEventListener('click', () => { g.unloadTransport(e); updateSelection(); });
+    panel.querySelector('[data-action="resupply"]')?.addEventListener('click', () => { if (!g.paused) g.requestResupply(e); updateSelection(); });
+    panel.querySelector('[data-action="auto-supply"]')?.addEventListener('click', () => { if (!g.paused) { e.autoSupply = e.autoSupply === false; e.serviceTargetId = null; } updateSelection(); });
     refreshIcons();
   } else panel.innerHTML = `<span class="hud-label">当前选择</span><strong>${selected.length} 个单位</strong><span>${touch ? '选择指令后轻点目标' : '右键移动或攻击 · A 攻击移动 · S 停止'}</span>`;
 }
@@ -349,7 +386,7 @@ function updateBuildingInspector(now) {
   panel.hidden = false;
   panel.style.maxHeight = `${Math.max(80, r.viewport.height - 16)}px`;
   const canvasRect = r.canvas.getBoundingClientRect();
-  const obstacles = [...$('#battlefield').querySelectorAll('.battle-hud, .camera-tools, .command-toolbar, .compact-radar:not([hidden]), .toast')].map(element => { const rect = element.getBoundingClientRect(); return { x: rect.x - canvasRect.x, y: rect.y - canvasRect.y, width: rect.width, height: rect.height }; });
+  const obstacles = [...$('#battlefield').querySelectorAll('.battle-hud, .camera-tools, .command-toolbar, .compact-radar:not([hidden]), .attack-alert:not([hidden]), .toast')].map(element => { const rect = element.getBoundingClientRect(); return { x: rect.x - canvasRect.x, y: rect.y - canvasRect.y, width: rect.width, height: rect.height }; });
   const rect = panel.getBoundingClientRect(), point = placeBuildingPanel(anchor, rect, r.viewport, obstacles);
   panel.style.left = `${point.x}px`; panel.style.top = `${point.y}px`;
 }
@@ -359,6 +396,96 @@ function showModal(title, body, actions, kicker = '指挥系统') {
   $('#modal-content').innerHTML = `<div class="modal-kicker">${kicker}</div><h2>${title}</h2>${body}<div class="modal-actions">${actions}</div>`;
   $('#modal').classList.remove('hidden');
   refreshIcons();
+}
+
+function saveProgress(slot = 'manual', feedback = true) {
+  if (!state.game?.running) return false;
+  try {
+    const save = state.game.toSave({ center: { ...state.renderer.center }, zoom: state.renderer.camera.zoom, groups: state.groups });
+    writeSave(localStorage, slot, save);
+    if (feedback) toast(`进度已保存 · ${seconds(save.state.time)}`);
+    state.autoSaveFailed = false; updateContinueControl();
+    return true;
+  } catch (error) {
+    if (feedback || !state.autoSaveFailed) toast(error.message, true);
+    state.autoSaveFailed = true;
+    return false;
+  }
+}
+
+function availableSaves() {
+  return ['manual', 'auto'].map(slot => {
+    try { return { slot, save: readSave(localStorage, slot) }; }
+    catch (error) { return { slot, save: null, error: error.message }; }
+  });
+}
+
+function updateContinueControl() {
+  const saves = availableSaves(), latest = saves.filter(item => item.save).sort((a, b) => b.save.savedAt - a.save.savedAt)[0]?.save;
+  $('#continue-btn').disabled = !latest;
+  $('#save-summary').textContent = latest ? `${MAPS[latest.config.mapId].name} · ${seconds(latest.state.time)} · ${new Date(latest.savedAt).toLocaleString('zh-CN')}` : saves.some(item => item.error) ? '本地存档不可读取，可导入备份文件' : '暂无保存的战局';
+}
+
+function showLoadMenu() {
+  if (state.game?.running) { state.game.paused = true; gameAudio.setPaused(true); }
+  const rows = availableSaves().map(({ slot, save, error }) => `<div class="save-slot"><div><strong>${slot === 'manual' ? '手动存档' : '自动存档'}</strong><small>${save ? `${MAPS[save.config.mapId].name} · ${FACTIONS[save.state.players[0].faction].name} · ${seconds(save.state.time)}<br>${new Date(save.savedAt).toLocaleString('zh-CN')}` : error ? '存档不可读取，请导入备份文件' : '暂无存档'}</small></div><button class="icon-btn" data-modal="load-${slot}" title="读取${slot === 'manual' ? '手动' : '自动'}存档" aria-label="读取${slot === 'manual' ? '手动' : '自动'}存档" ${save ? '' : 'disabled'}>${icon('folder-open')}</button></div>`).join('');
+  showModal('继续战局', `${state.game?.running ? '<p>读取前先备份当前战局到自动存档。</p>' : ''}${rows}`, `<button class="secondary-btn" data-modal="import">${icon('upload')} 导入存档</button><button class="primary-btn" data-modal="resume">${state.game ? '返回战场' : '返回'}</button>`);
+}
+
+async function loadProgress(slot) {
+  if (state.loading) return;
+  try {
+    // 先读出目标存档，再备份当前战局，避免自动存档被覆盖后读错目标。
+    const save = readSave(localStorage, slot);
+    if (!save) throw new Error('未找到此存档');
+    if (state.game?.running && !saveProgress('auto', true)) return;
+    await startGame(save);
+  } catch (error) { toast(error.message, true); }
+}
+
+function exportProgress() {
+  if (!state.game?.running) return;
+  try {
+    const save = state.game.toSave({ center: { ...state.renderer.center }, zoom: state.renderer.camera.zoom, groups: state.groups });
+    const url = URL.createObjectURL(new Blob([JSON.stringify(save)], { type: 'application/json' }));
+    const anchor = document.createElement('a'); anchor.href = url;
+    anchor.download = `Great-Powers-save-${Date.now()}.json`; anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    toast('存档文件已导出');
+  } catch (error) { toast(error.message, true); }
+}
+
+function requestMainMenu() {
+  if (!state.game?.running) { returnToMenu(); return; }
+  state.game.paused = true; state.keys.clear(); gameAudio.setPaused(true);
+  showModal('返回主界面', `<p>${state.game.map.name} · 当前进度 ${seconds(state.game.time)}</p><p>是否保存本次战局？</p>`, `<button class="primary-btn" data-modal="save-menu">${icon('save')} 保存并返回</button><button class="secondary-btn" data-modal="discard-menu">不保存返回</button><button class="secondary-btn" data-modal="resume">取消</button>`);
+}
+
+function returnToMenu() {
+  ++state.loopToken; state.keys.clear(); state.game = null;
+  state.renderer?.dispose(); state.renderer = null; gameAudio.stopBattle();
+  state.drag = state.panning = state.pointerPosition = null;
+  state.touchPoints.clear(); state.inspectorId = state.dismissedInspectorId = null;
+  $('#building-info').hidden = true; $('#attack-alert').hidden = true; $('#audio-panel').hidden = true;
+  $('#toast-container').replaceChildren(); $('#modal').classList.add('hidden'); state.modalMode = null;
+  $('#start-screen').style.display = ''; $('#pause-btn').innerHTML = icon('pause');
+  updateContinueControl(); refreshIcons();
+}
+
+function updateAttackAlert() {
+  const g = state.game, alerts = (g.attackAlerts || []).filter(alert => g.time - alert.at < 7);
+  const alert = alerts.sort((a, b) => Number(b.building) - Number(a.building) || b.at - a.at)[0];
+  const panel = $('#attack-alert'); panel.hidden = !alert;
+  if (!alert) { state.alertId = null; return; }
+  const label = alert.building ? BUILDINGS[alert.type].name : equipmentProfile(g.players[0].faction, alert.type).name;
+  $('#attack-alert-title').textContent = alert.building ? '基地遭到攻击' : '部队遭到攻击';
+  $('#attack-alert-detail').textContent = `${label} · ${alerts.length > 1 ? `${alerts.length} 处受袭` : '请求支援'}`;
+  state.alertId = alert.id;
+}
+
+function locateAttack() {
+  const alert = state.game?.attackAlerts?.find(item => item.id === state.alertId);
+  if (alert) state.renderer.centerOn(alert.x, alert.y);
 }
 
 function showHelp() {
@@ -381,7 +508,8 @@ function showPause() {
   state.game.paused = true;
   gameAudio.setPaused(true);
   $('#pause-btn').innerHTML = icon('play'); refreshIcons();
-  showModal('战斗暂停', `<p>前线暂时安静了。继续指挥，或重新部署一场遭遇战。</p><p>当前战斗时长：${seconds(state.game.time)}</p>`, '<button class="primary-btn" data-modal="resume">继续作战</button><button class="secondary-btn" data-modal="restart">重新开始</button>', '战场控制');
+  const graphics = `<label class="graphics-setting">画质<select data-quality aria-label="画质"><option value="high" ${state.renderer.quality === 'high' ? 'selected' : ''}>精细</option><option value="standard" ${state.renderer.quality === 'standard' ? 'selected' : ''}>流畅</option></select></label>`;
+  showModal('战斗暂停', `<p>${state.game.map.name} · 当前战斗时长 ${seconds(state.game.time)}</p>${graphics}`, `<button class="primary-btn" data-modal="resume">${icon('play')} 继续作战</button><button class="secondary-btn" data-modal="save">${icon('save')} 保存进度</button><button class="secondary-btn" data-modal="load">${icon('folder-open')} 读取存档</button><button class="secondary-btn" data-modal="export">${icon('download')} 导出存档</button><button class="secondary-btn" data-modal="menu">${icon('house')} 返回主界面</button><button class="secondary-btn" data-modal="restart">${icon('rotate-ccw')} 重新开始</button>`, '战场控制');
 }
 
 function showResult(winner) {
@@ -396,9 +524,7 @@ function closeModal() {
   $('#modal').classList.add('hidden');
   state.modalMode = null;
   if (state.game?.winner !== null && state.game?.winner !== undefined) {
-    state.game = null;
-    gameAudio.stopBattle();
-    $('#start-screen').style.display = '';
+    returnToMenu();
     return;
   }
   if (state.game?.paused) { state.game.paused = false; $('#pause-btn').innerHTML = icon('pause'); refreshIcons(); }
@@ -515,6 +641,7 @@ function setupControls() {
     else if (key === 's') { g.stopSelected(); clearOrderButtons(); }
     else if (key === 'h') state.renderer.centerOn(280, state.game.homeY);
     else if (key === 'u') { for (const id of state.game.selected) state.game.unloadTransport(state.game.getEntity(id)); updateSelection(); }
+    else if (key === 'r') { for (const id of state.game.selected) state.game.requestResupply(state.game.getEntity(id)); updateSelection(); }
   });
   window.addEventListener('keyup', event => state.keys.delete(event.key.toLowerCase()));
   window.addEventListener('resize', () => state.renderer?.resize());
@@ -554,22 +681,64 @@ function setupControls() {
   document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { state.tab = tab.dataset.tab; document.querySelectorAll('.tab').forEach(item => { item.classList.toggle('active', item === tab); item.setAttribute('aria-selected', item === tab ? 'true' : 'false'); }); updateSidebar(true); }));
   $('#help-btn').addEventListener('click', showHelp);
   $('#pause-btn').addEventListener('click', () => { if (state.game?.paused) closeModal(); else showPause(); });
+  $('#save-btn').addEventListener('click', () => saveProgress());
+  $('#menu-btn').addEventListener('click', requestMainMenu);
+  $('#continue-btn').addEventListener('click', showLoadMenu);
+  $('#import-btn').addEventListener('click', () => $('#save-file').click());
+  $('#attack-alert').addEventListener('click', locateAttack);
+  $('#save-file').addEventListener('change', async event => {
+    const file = event.target.files[0]; event.target.value = '';
+    if (!file || state.loading) return;
+    try {
+      if (file.size > SAVE_LIMIT) throw new Error('存档文件过大，无法读取');
+      const save = parseSave(await file.text());
+      if (state.game?.running && !saveProgress('auto', true)) return;
+      await startGame(save);
+    } catch (error) { toast(error.message, true); }
+  });
   $('#sound-btn').addEventListener('click', () => {
     $('#audio-panel').hidden = !$('#audio-panel').hidden;
     $('#sound-btn').setAttribute('aria-expanded', String(!$('#audio-panel').hidden));
     gameAudio.unlock().then(ok => { if (ok && state.game && !gameAudio.music) gameAudio.startBattle(); }).catch(() => {});
   });
   $('#audio-close').addEventListener('click', () => { $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false'); });
+  $('#audio-test').addEventListener('click', () => { gameAudio.unlock().then(ok => { if (ok) gameAudio.say('welcome'); }).catch(() => {}); });
   $('#audio-muted').addEventListener('change', event => { gameAudio.setSettings({ muted: event.target.checked }); updateAudioControls(); });
   document.querySelectorAll('[data-audio]').forEach(slider => slider.addEventListener('input', () => { gameAudio.setSettings({ [slider.dataset.audio]: Number(slider.value) / 100 }); updateAudioControls(); }));
   document.addEventListener('pointerdown', event => { if (!event.target.closest('#audio-panel, #sound-btn')) { $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false'); } });
-  $('#start-btn').addEventListener('click', startGame);
+  $('#start-btn').addEventListener('click', () => startGame());
   document.querySelectorAll('[data-victory]').forEach(button => button.addEventListener('click', () => {
     state.victoryMode = button.dataset.victory;
     document.querySelectorAll('[data-victory]').forEach(option => option.classList.toggle('active', option === button));
   }));
   $('#modal-close').addEventListener('click', closeModal);
-  $('#modal').addEventListener('click', event => { if (event.target === $('#modal')) closeModal(); const action = event.target.closest('[data-modal]')?.dataset.modal; if (!action) return; if (action === 'resume') closeModal(); else if (action === 'restart') startGame(); else if (action === 'menu') { state.game = null; gameAudio.stopBattle(); $('#modal').classList.add('hidden'); $('#start-screen').style.display = ''; } });
+  $('#modal').addEventListener('change', event => { if (event.target.matches('[data-quality]')) state.renderer?.setQuality(event.target.value); });
+  $('#modal').addEventListener('click', event => {
+    if (state.loading) return;
+    if (event.target === $('#modal')) closeModal();
+    const action = event.target.closest('[data-modal]')?.dataset.modal; if (!action) return;
+    if (action === 'resume') closeModal();
+    else if (action === 'save') saveProgress();
+    else if (action === 'load') showLoadMenu();
+    else if (action?.startsWith('load-')) loadProgress(action.slice(5));
+    else if (action === 'export') exportProgress();
+    else if (action === 'import') $('#save-file').click();
+    else if (action === 'restart') {
+      if (!state.game?.running) startGame();
+      else showModal('重新开始', '<p>当前战局将备份到自动存档，然后重新部署。</p>', '<button class="primary-btn" data-modal="confirm-restart">保存后重新开始</button><button class="secondary-btn" data-modal="resume">取消</button>');
+    } else if (action === 'confirm-restart') { if (saveProgress('auto', true)) startGame(); }
+    else if (action === 'menu') requestMainMenu();
+    else if (action === 'save-menu') { if (saveProgress('manual', true)) returnToMenu(); }
+    else if (action === 'discard-menu') returnToMenu();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && state.game?.running) {
+      saveProgress('auto', false); state.game.paused = true; gameAudio.setPaused(true);
+      $('#pause-btn').innerHTML = icon('play'); refreshIcons();
+    }
+    state.lastFrame = 0; state.keys.clear();
+  });
+  window.addEventListener('beforeunload', () => { if (state.game?.running) saveProgress('auto', false); });
 }
 
 function updateAudioControls() {
@@ -585,5 +754,6 @@ $('#map-select').innerHTML = Object.entries(MAPS).map(([id, map]) => `<option va
 setupControls();
 try { setSidebarCollapsed(localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(false); }
 updateAudioControls();
+updateContinueControl();
 refreshIcons();
 Renderer.prepare().catch(() => {});

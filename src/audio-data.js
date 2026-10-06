@@ -3,7 +3,7 @@ export const VOICE_LINES = {
   construction: ['开始建造。'], buildReady: ['建筑建造完成，等待部署。'], deployed: ['建筑已部署。'],
   queued: ['生产任务已确认。'], unitReady: ['新单位已就绪。'],
   powerLow: ['电力不足。请增建电力站。'], powerRestored: ['供电已恢复。'],
-  fundsLow: ['资金不足。'], underAttack: ['警报！我方基地遭到攻击。'],
+  fundsLow: ['资金不足。'], underAttack: ['警报！我方基地遭到攻击。'], unitUnderAttack: ['警报！我方部队遭到攻击，请求支援。'],
   buildingLost: ['我方建筑被摧毁。'], unitLost: ['我方单位损失。'],
   oilCaptured: ['油井已占领，经济供给已接入。'], beaconCaptured: ['雷达信标已接入。'],
   ability: ['战略系统已启动。'], victory: ['战役胜利。战区已由我方控制。'], defeat: ['任务失败。部队撤离战区。'], draw: ['战局结束。双方战力耗尽。'],
@@ -19,8 +19,8 @@ export const VOICE_LINES = {
 };
 
 export const COMMAND_LINES = new Set(['armorSelected','infantrySelected','engineerSelected','airSelected','droneSelected','navySelected','moveOrder','attackOrder','captureOrder','stopOrder']);
-export const VOICE_PRIORITY = { underAttack: 3, defeat: 4, victory: 4, draw: 4, buildingLost: 2, powerLow: 2, fundsLow: 2, unitReady: 1, buildReady: 1, oilCaptured: 1, beaconCaptured: 1, welcome: 2 };
-export const VOICE_COOLDOWN = { underAttack: 14, unitLost: 10, buildingLost: 6, fundsLow: 10, queued: 3, unitReady: 3, construction: 2, deployed: 2 };
+export const VOICE_PRIORITY = { underAttack: 3, unitUnderAttack: 3, defeat: 4, victory: 4, draw: 4, buildingLost: 2, powerLow: 2, fundsLow: 2, unitReady: 1, buildReady: 1, oilCaptured: 1, beaconCaptured: 1, welcome: 2 };
+export const VOICE_COOLDOWN = { underAttack: 10, unitUnderAttack: 10, unitLost: 10, buildingLost: 6, fundsLow: 10, queued: 3, unitReady: 3, construction: 2, deployed: 2 };
 
 export function voiceFile(key, index = 0) { return `${key}-${index}.m4a`; }
 

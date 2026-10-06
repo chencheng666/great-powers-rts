@@ -19,7 +19,7 @@
           <div class="resource power" title="电力"><i data-lucide="zap"></i><strong id="power">0 / 0</strong></div>
           <div class="resource army" title="部队"><i data-lucide="users"></i><strong id="army">0</strong></div>
         </div>
-        <div class="top-actions"><button id="fullscreen-btn" class="icon-btn" title="进入全屏" aria-label="进入全屏" aria-pressed="false"><i data-lucide="maximize"></i></button><button id="sidebar-btn" class="icon-btn" title="收起指挥面板" aria-label="收起指挥面板" aria-expanded="true" aria-controls="command-sidebar"><i data-lucide="panel-right-close"></i></button><button id="sound-btn" class="icon-btn" title="声音设置" aria-label="声音设置" aria-expanded="false" aria-controls="audio-panel"><i data-lucide="volume-2"></i></button><button id="help-btn" class="icon-btn" title="操作说明" aria-label="操作说明"><i data-lucide="circle-help"></i></button><button id="pause-btn" class="icon-btn" title="暂停游戏" aria-label="暂停游戏"><i data-lucide="pause"></i></button></div>
+        <div class="top-actions"><button id="save-btn" class="icon-btn" title="保存进度" aria-label="保存进度"><i data-lucide="save"></i></button><button id="menu-btn" class="icon-btn" title="返回主界面" aria-label="返回主界面"><i data-lucide="house"></i></button><button id="fullscreen-btn" class="icon-btn" title="进入全屏" aria-label="进入全屏" aria-pressed="false"><i data-lucide="maximize"></i></button><button id="sidebar-btn" class="icon-btn" title="收起指挥面板" aria-label="收起指挥面板" aria-expanded="true" aria-controls="command-sidebar"><i data-lucide="panel-right-close"></i></button><button id="sound-btn" class="icon-btn" title="声音设置" aria-label="声音设置" aria-expanded="false" aria-controls="audio-panel"><i data-lucide="volume-2"></i></button><button id="help-btn" class="icon-btn" title="操作说明" aria-label="操作说明"><i data-lucide="circle-help"></i></button><button id="pause-btn" class="icon-btn" title="暂停游戏" aria-label="暂停游戏"><i data-lucide="pause"></i></button></div>
       </header>
       <section id="audio-panel" class="audio-panel" aria-label="声音设置" hidden>
         <div class="audio-panel-heading"><strong>声音设置</strong><button id="audio-close" class="icon-btn" title="关闭声音设置" aria-label="关闭声音设置"><i data-lucide="x"></i></button></div>
@@ -28,6 +28,7 @@
         <label class="audio-level"><span>背景音乐</span><input type="range" min="0" max="100" step="1" data-audio="music" aria-label="背景音乐音量"><output data-audio-value="music"></output></label>
         <label class="audio-level"><span>中文语音</span><input type="range" min="0" max="100" step="1" data-audio="voice" aria-label="中文语音音量"><output data-audio-value="voice"></output></label>
         <label class="audio-level"><span>战场音效</span><input type="range" min="0" max="100" step="1" data-audio="effects" aria-label="战场音效音量"><output data-audio-value="effects"></output></label>
+        <button id="audio-test" class="secondary-btn" title="试听中文播报"><i data-lucide="audio-lines"></i>试听中文</button>
       </section>
 
       <main class="game-layout">
@@ -41,6 +42,7 @@
             <button id="zoom-in-btn" class="icon-btn" title="拉近镜头" aria-label="拉近镜头"><i data-lucide="plus"></i></button>
           </div>
           <section id="building-info" class="building-info" aria-label="建筑信息" hidden></section>
+          <button id="attack-alert" class="attack-alert" title="定位受袭区域" aria-label="定位受袭区域" hidden><i data-lucide="triangle-alert"></i><span><strong id="attack-alert-title">部队遭到攻击</strong><small id="attack-alert-detail">请求支援</small></span><i data-lucide="locate-fixed"></i></button>
           <div class="battle-hud top-left"><span class="hud-label">战区态势</span><strong id="battle-status">部署中</strong><span id="battle-objective">摧毁敌方指挥中心</span><span id="environment-status" hidden></span></div>
           <div class="battle-hud top-right"><span id="faction-short">请选择阵营</span><span class="divider"></span><span id="enemy-short">敌方：待确认</span></div>
           <div class="battle-hud bottom-left" id="selection-panel"><span class="hud-label">当前选择</span><strong>未选择单位</strong><span>左键选择 · 框选部队 · 右键下达命令</span></div>
@@ -66,11 +68,13 @@
       <div id="start-screen" class="start-screen">
         <div class="start-backdrop"></div>
         <div class="start-shade"></div>
-        <div class="start-content"><div class="start-kicker"><span class="live-dot"></span> 现代即时战略 · 单机遭遇战</div><h1>大国<br><em>崛起</em></h1><p class="start-lede">集结部队。争夺资源。用你的战术，改写这片战场。</p><div class="start-rule"><span>01</span> 五阵营对称开局 <span>02</span> 建造与采矿 <span>03</span> 实时 AI 对战</div><div class="start-bottom"><span>指挥官，请选择你的阵营</span><i data-lucide="arrow-down"></i></div></div>
+        <div class="start-content"><div class="start-kicker"><span class="live-dot"></span> 现代即时战略 · 单机遭遇战</div><h1>大国<br><em>崛起</em></h1><p class="start-lede">集结部队。争夺资源。用你的战术，改写这片战场。</p><div class="start-rule"><span>01</span> 五阵营对称开局 <span>02</span> 建造与采矿 <span>03</span> 实时 AI 对战</div><section class="menu-saves" aria-label="保存的战局"><div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="icon-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i></button></div><small id="save-summary">暂无保存的战局</small></section></div>
         <div class="faction-picker"><div class="picker-heading"><strong>选择阵营</strong><span>每支军队都有自己的优势与弱点</span></div><div class="faction-list" id="faction-list"></div><label class="map-select">战场 <select id="map-select"></select></label><div class="victory-picker"><span>胜利规则</span><div class="victory-options" role="group" aria-label="胜利规则"><button type="button" class="victory-option active" data-victory="quick">快速对战<small>摧毁全部生产核心</small></button><button type="button" class="victory-option" data-victory="annihilation">全域歼灭<small>清除全部建筑与单位</small></button><button type="button" class="victory-option" data-victory="control">据点控制<small>争夺信标累计 240 分</small></button></div></div><div class="start-controls"><label class="enemy-select">对手 <select id="enemy-select"><option value="random">随机阵营</option></select></label><label class="enemy-select">难度 <select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select></label><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 开始作战</button></div></div>
       </div>
 
-      <div id="modal" class="modal hidden"><div class="modal-card"><button id="modal-close" class="modal-close icon-btn" title="关闭"><i data-lucide="x"></i></button><div id="modal-content"></div></div></div>
+      <input id="save-file" type="file" accept=".json,application/json" hidden>
+      <div id="menu-toast-container" class="menu-toast-container" role="status" aria-live="polite"></div>
+      <div id="modal" class="modal hidden"><div class="modal-card"><button id="modal-close" class="modal-close icon-btn" title="关闭" aria-label="关闭"><i data-lucide="x"></i></button><div id="modal-content"></div></div></div>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

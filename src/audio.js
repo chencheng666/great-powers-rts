@@ -1,6 +1,7 @@
 import { COMMAND_LINES, normalizeAudioSettings, speechOptions, VOICE_COOLDOWN, VOICE_LINES, VOICE_PRIORITY, voiceFile } from './audio-data.js';
 
 const assets = import.meta.glob('../assets/audio/*.m4a', { eager: true, query: '?url', import: 'default' });
+const portableVoices = import.meta.glob('../assets/audio/portable/*.wav', { eager: true, query: '?url', import: 'default' });
 const SETTINGS_KEY = 'great-powers-audio-v1';
 
 export class GameAudio {
@@ -35,7 +36,7 @@ export class GameAudio {
   async buffer(file) {
     if (this.buffers.has(file)) return this.buffers.get(file);
     if (!this.pending.has(file)) {
-      const url = assets[`../assets/audio/${file}`];
+      const url = assets[`../assets/audio/${file}`] || portableVoices[`../assets/audio/${file}`];
       if (!url) throw new Error(`缺少音频素材：${file}`);
       this.pending.set(file, fetch(url).then(response => { if (!response.ok) throw new Error('音频载入失败'); return response.arrayBuffer(); }).then(bytes => this.context.decodeAudioData(bytes)).then(buffer => { this.buffers.set(file, buffer); return buffer; }).finally(() => this.pending.delete(file)));
     }
@@ -111,7 +112,10 @@ export class GameAudio {
     // 先占用通道，防止异步解码期间多个应答同时播放。
     const token = { ...line, source: null }; this.currentVoice = token;
     if (!assets[`../assets/audio/${voiceFile(line.key, line.index)}`]) {
-      this.playSpeech(token); return;
+      const chinese = window.speechSynthesis?.getVoices().some(voice => /^zh(?:-|_)/i.test(voice.lang));
+      if (chinese) this.playSpeech(token);
+      else await this.playPortableVoice(token);
+      return;
     }
     try {
       const buffer = await this.buffer(voiceFile(line.key, line.index));
@@ -122,10 +126,21 @@ export class GameAudio {
     } catch { if (this.currentVoice === token) { this.currentVoice = null; this.playNextVoice(); } }
   }
 
+  async playPortableVoice(token) {
+    const session = this.session, file = `portable/${token.key}-${token.index}.wav`;
+    try {
+      const buffer = await this.buffer(file);
+      if (session !== this.session || this.currentVoice !== token || !this.active || this.paused || this.settings.muted || !this.settings.voice || !this.settings.master) return;
+      const source = this.context.createBufferSource(); source.buffer = buffer; source.connect(COMMAND_LINES.has(token.key) ? this.radioFilter : this.voiceBus);
+      source.onended = () => { source.disconnect(); if (this.currentVoice === token) { this.currentVoice = null; this.applySettings(); this.playNextVoice(); } };
+      token.source = source; source.start(); this.applySettings();
+    } catch { if (this.currentVoice === token) { this.currentVoice = null; this.applySettings(); this.playNextVoice(); } }
+  }
+
   playSpeech(token) {
-    // 公开版只分发台词，由玩家设备实时播报，不分发系统语音录音。
+    // 不分发系统语音录音；设备音色不可用时回退到自带中文播报。
     if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) {
-      this.currentVoice = null; this.applySettings(); this.playNextVoice(); return;
+      this.playPortableVoice(token); return;
     }
     const synth = window.speechSynthesis;
     const speech = new window.SpeechSynthesisUtterance(VOICE_LINES[token.key][token.index]);
@@ -139,12 +154,16 @@ export class GameAudio {
       if (this.currentVoice !== token) return;
       this.currentVoice = null; this.applySettings(); this.playNextVoice();
     };
-    speech.onend = finish; speech.onerror = finish;
+    speech.onend = finish;
+    const fallback = () => {
+      clearTimeout(token.timeout); speech.onend = null; speech.onerror = null;
+      if (this.currentVoice === token) { synth.cancel(); token.speech = null; this.playPortableVoice(token); }
+    };
+    speech.onerror = fallback;
     token.timeout = setTimeout(() => {
-      speech.onend = null; speech.onerror = null;
-      if (this.currentVoice === token) { synth.cancel(); finish(); }
+      fallback();
     }, 12000);
-    try { synth.speak(speech); this.applySettings(); } catch { finish(); }
+    try { synth.speak(speech); this.applySettings(); } catch { fallback(); }
   }
 
   selection(entities) {
@@ -154,9 +173,9 @@ export class GameAudio {
     if (entity.kind === 'building') key = 'structureSelected';
     else if (entity.type === 'engineer') key = 'engineerSelected';
     else if (['tank','aa','harvester','elite','loiterer','jammer','laser','rocket','apc','supply'].includes(entity.type)) key = 'armorSelected';
-    else if (['fighter','strike'].includes(entity.type)) key = 'airSelected';
+    else if (['fighter','strike','bomber','airlift','aegis'].includes(entity.type)) key = 'airSelected';
     else if (['drone','ghost'].includes(entity.type)) key = 'droneSelected';
-    else if (['patrol','frigate','destroyer','carrier','submarine'].includes(entity.type)) key = 'navySelected';
+    else if (['patrol','frigate','destroyer','carrier','submarine','landing'].includes(entity.type)) key = 'navySelected';
     this.say(key);
   }
 

@@ -27,7 +27,7 @@ test('公开版保留全部中文台词和独立配乐，不要求分发系统�
   for (const [key,lines] of Object.entries(VOICE_LINES)) for (const index of lines.keys()) {
     assert.ok(lines[index].trim()); assert.equal(voiceFile(key,index), `${key}-${index}.m4a`); count++;
   }
-  assert.equal(count,36);
+  assert.equal(count,37);
   assert.ok(existsSync(new URL('../assets/audio/frontline-sequence.m4a',import.meta.url)));
 });
 
