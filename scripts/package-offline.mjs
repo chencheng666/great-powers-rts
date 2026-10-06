@@ -53,7 +53,12 @@ for (const [name, path, readmeSection] of [
   licenses.push(`${name}\n${'='.repeat(60)}\n${content.trim()}\n`);
 }
 await writeFile(join(destination, 'THIRD-PARTY-NOTICES.txt'), licenses.join('\n'));
-execFileSync('/usr/bin/zip', ['-9', '-r', archive, folder], { cwd: stage, stdio: 'inherit' });
+// macOS 自带 zip 不标记 UTF-8 文件名，使用 libarchive 避免中文脚本在其他系统乱码。
+if (process.platform === 'darwin') {
+  execFileSync('/usr/bin/tar', ['--format', 'zip', '--options', 'zip:compression-level=9', '-cf', archive, folder], { cwd: stage, env: { ...process.env, COPYFILE_DISABLE: '1' }, stdio: 'inherit' });
+} else {
+  execFileSync('/usr/bin/zip', ['-9', '-r', '-UN=UTF8', archive, folder], { cwd: stage, stdio: 'inherit' });
+}
 execFileSync('/usr/bin/unzip', ['-t', archive], { stdio: 'inherit' });
 const bytes = (await stat(archive)).size;
 console.log(JSON.stringify({ archive, html: join(destination, 'PLAY.html'), bytes, sizeMB: Number((bytes / 1024 / 1024).toFixed(2)) }, null, 2));
