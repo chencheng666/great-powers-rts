@@ -18,6 +18,8 @@
 | 离线兜底播报 | `assets/audio/portable/*.wav` 与 `manifest.json` | `scripts/generate-portable-voices.mjs` 使用 eSpeak NG 1.52.0 合成原创台词；缺少中文音色或播报失败时使用。声音为机械合成，不分发 eSpeak NG 引擎、库、词典或第三方声音模型 |
 | 海空运输模型 | `assets/models/logistics-library.glb` / `.blend` | `scripts/build_logistics_assets.py` 原创建模，登陆舰、轰炸机、运输机；为通用游戏模型，不冒充某现役型号的精密复刻 |
 | 后勤与舰队模型 | `assets/models/convoy-library.glb` / `.blend` | `scripts/build_convoy_assets.py` 原创程序建模：后勤中心、补给运输机、集装箱船、052D 简化外形、重制航母，共五个模板；公开外形参考，不含现实参数与厂商网格 |
+| 月表机器人模型 | `assets/models/robot-library.glb` / `.blend` | `scripts/build_robot_assets.py` 原创程序建模：月卫、天工、巡星三类机体；封闭机舱、电池背包、机械关节、工具／传感器和双腿步态，不是官方南天门 IP 模型或现实装备复刻 |
+| 机器人展示图 | `docs/images/lunar-robot*.png` 与 `robot-*-model.png` | 前者为 `scripts/verify-robots-browser.js` 布置的桌面游戏验收场景；后者由 `scripts/render-robot-models.py` 渲染实际 `.blend` 源模型，不是游戏截图 |
 | 游戏截图 | `docs/images/`；本项目浏览器运行截图 | 海军集中展示、密集编队及手机版截图来自渲染验证场景，不是预渲染宣传图 |
 | 国庆公众号图文素材 | `docs/wechat-national-day-20261002/images/`；六张桌面实机截图、四张现有模型离线渲染、两张 AI 规划概念图 | 正文逐图标注类别；`生成记录.json` 保存内置图像生成工具模式与完整提示词，`scripts/render-article-models.py` 保留模型渲染流程；概念图不是已实现功能或现实装备精确复刻 |
 | 补给运输公众号素材 | `docs/wechat-logistics-20261006/images/`；十张桌面游戏界面截图、三张新增源模型摄影棚渲染 | 功能截图安排验证场景但使用实际战局规则；模型图使用 `scripts/render-logistics-models.py`，不是概念图或游戏截图；文章开头感谢 CAI 试玩反馈 |

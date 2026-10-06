@@ -1,4 +1,5 @@
-const { root, taskSpaceId } = globalThis.GAME_QA;
+const { root, taskSpaceId, mapId = 'ocean' } = globalThis.GAME_QA;
+const robots = mapId === 'meridian', prefix = robots ? 'robots' : 'convoy';
 const fs = await import('node:fs/promises');
 const task = await taskSpace(taskSpaceId), page = task.page('p1');
 const names = (await fs.readdir(`${root}/releases`)).filter(name => /^\d{14}$/.test(name)).sort();
@@ -29,7 +30,7 @@ try {
       return start.apply(this, args);
     };
   });
-  await page.selectOption('#map-select', 'ocean'); await page.click('#start-btn');
+  await page.selectOption('#map-select', mapId); await page.click('#start-btn');
   await page.waitForFunction(() => document.querySelector('#start-screen').style.display === 'none' && document.querySelector('#game-canvas').width > 100, undefined, { timeout: 60000 });
   await page.waitForFunction(() => {
     const canvas = document.querySelector('#game-canvas'), gl = canvas.getContext('webgl2');
@@ -41,9 +42,17 @@ try {
   await page.click('#save-btn');
   report.save = await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('great-powers-save-manual-v1'));
-    return { mode: save.config.economyMode, routes: save.state.logistics.length, ore: save.state.ore.length, miners: save.state.units.filter(u => u.type === 'harvester').length };
+    return { mode: save.config.economyMode, routes: save.state.logistics.length, ore: save.state.ore.length, miners: save.state.units.filter(u => u.type === 'harvester').length, robots: save.state.units.filter(u => ['rifle', 'engineer', 'scout'].includes(u.type)).map(u => ({ battery: u.battery, ammo: u.ammo })) };
   });
-  check(report.save.mode === 'convoy' && report.save.routes === 2 && !report.save.ore && !report.save.miners, '离线包不是新版运输经济');
+  if (robots) {
+    check(report.save.mode === 'mining' && report.save.ore > 0 && report.save.miners > 0 && report.save.robots.length > 0 && report.save.robots.every(u => u.battery > 90 && u.ammo === null), '离线包月表机器人或采矿规则缺失');
+    await page.evaluate(() => {
+      const save = JSON.parse(localStorage.getItem('great-powers-save-manual-v1'));
+      const robot = save.state.units.find(u => u.owner === 0 && u.type === 'rifle');
+      robot.battery = 17.35; robot.order = { type: 'rearm' }; save.state.selected = [robot.id];
+      localStorage.setItem('great-powers-save-manual-v1', JSON.stringify(save));
+    });
+  } else check(report.save.mode === 'convoy' && report.save.routes === 2 && !report.save.ore && !report.save.miners, '离线包不是新版运输经济');
   await page.click('#sound-btn'); await page.click('#audio-test');
   await page.waitForFunction(() => __decodedVoices.some(v => v.duration > .1 && v.duration < 15 && v.rms > .001), undefined, { timeout: 15000 });
   report.render = await page.evaluate(() => {
@@ -54,14 +63,18 @@ try {
     return { colors: colors.size, glError: gl.getError(), errors: __offlineErrors, externalRequests: performance.getEntriesByType('resource').filter(r => /^https?:/.test(r.name)).map(r => r.name), voices: __decodedVoices, chineseSystemVoices: speechSynthesis.getVoices().filter(v => /^zh/.test(v.lang)).length, overflow: document.documentElement.scrollWidth - innerWidth };
   });
   check(!report.render.glError && !report.render.errors.length && !report.render.externalRequests.length && !report.render.overflow, '离线包有渲染错误、外部请求或溢出');
-  await page.screenshot({ path: `${root}/releases/convoy-offline.png` });
+  await page.screenshot({ path: `${root}/releases/${prefix}-offline.png` });
   await page.click('#menu-btn'); await page.click('[data-modal="discard-menu"]');
   await page.click('#continue-btn'); await page.click('[data-modal="load-manual"]');
   await page.waitForFunction(() => document.querySelector('#modal-content').textContent.includes('战局已恢复'));
   report.restored = true;
+  if (robots) {
+    report.restoredRobot = await page.evaluate(() => document.querySelector('#selection-panel').innerText);
+    check(report.restoredRobot.includes('月卫战斗机器人') && report.restoredRobot.includes('电池 18%') && report.restoredRobot.includes('返场充电'), '离线读档没有恢复选中机体、电量和任务');
+  }
   await page.click('[data-modal="resume"]');
   await page.click('#menu-btn'); await page.click('[data-modal="discard-menu"]');
-  await fs.writeFile(`${root}/releases/convoy-offline-report.json`, `${JSON.stringify(report, null, 2)}\n`);
+  await fs.writeFile(`${root}/releases/${prefix}-offline-report.json`, `${JSON.stringify(report, null, 2)}\n`);
   console.log(report);
 } finally {
   if (backup) await page.evaluate(values => { for (const [key, value] of Object.entries(values)) value === null ? localStorage.removeItem(key) : localStorage.setItem(key, value); }, backup);

@@ -1,4 +1,5 @@
 import { AI_DIFFICULTIES, BUILDINGS, FACTIONS, MAPS, UNITS, WORLD } from './data.js';
+import { isLunarRobot, ROBOT_ENERGY } from './lunar-robots.js';
 
 export const SAVE_VERSION = 1;
 export const SAVE_LIMIT = 8 * 1024 * 1024;
@@ -52,6 +53,7 @@ export function validateSave(save) {
         if (!Array.isArray(entity.path) || entity.path.some(p => !point(p)) || !Array.isArray(entity.passengers) || entity.passengers.some(id => !Number.isSafeInteger(id)) || !['pathTimer', 'stunUntil', 'turretAngle', 'cargo', 'cargoValue', 'rearmProgress', 'temporaryUntil', 'movePulse', 'heat', 'deployProgress'].every(key => finite(entity[key]))) invalid();
         checkOrder(entity.order); checkOrder(entity.resumeOrder);
         const d = UNITS[entity.type];
+        if (entity.battery !== undefined && (!isLunarRobot(MAPS[config.mapId], entity.type) || !finite(entity.battery) || entity.battery < 0 || entity.battery > ROBOT_ENERGY.capacity)) invalid();
         if (entity.ammo !== null && (!Number.isSafeInteger(entity.ammo) || entity.ammo < 0 || !d.ammo || entity.ammo > d.ammo)) invalid();
         if (d.stock && (!finite(entity.stock) || entity.stock < 0 || entity.stock > d.stock)) invalid();
         if (entity.type === 'supply' && entity.autoSupply !== undefined && typeof entity.autoSupply !== 'boolean') invalid();

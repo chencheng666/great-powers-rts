@@ -9,6 +9,7 @@ import { healthVisual, showHealthBar, teamVisual } from './team-visuals.js';
 import { layoutHealthBars } from './health-layout.js';
 import { unitRadius } from './unit-spacing.js';
 import { equipmentModel } from './equipment.js';
+import { isLunarRobot } from './lunar-robots.js';
 import { projectileFlightPose } from './projectile-flight.js';
 import { weatherState } from './tactical-rules.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -640,7 +641,7 @@ export class Renderer {
         group = new THREE.Group();
         if (effect.type === 'shot') {
           group.userData.fromHeight = this.effectHeight(effect.sourceType, effect.x, effect.y); group.userData.toHeight = this.effectHeight(effect.targetType, effect.toX, effect.toY);
-          const color = effect.style === 'laser' ? '#72edff' : effect.style === 'repair' ? '#6dffbd' : effect.style === 'elite' ? '#8ddff0' : '#ffd9a0';
+          const color = ['laser', 'robotPulse'].includes(effect.style) ? '#72edff' : effect.style === 'repair' ? '#6dffbd' : effect.style === 'elite' ? '#8ddff0' : '#ffd9a0';
           group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vector(effect.x, effect.y, group.userData.fromHeight), vector(effect.toX, effect.toY, group.userData.toHeight)]), new THREE.LineBasicMaterial({ color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })), this.effectSprite(color));
         } else if (['hit', 'explosion'].includes(effect.type)) {
           group.add(this.effectSprite('#ffc177'), this.effectSprite('#f47a34'), this.effectSprite('#465059', true));
@@ -660,7 +661,7 @@ export class Renderer {
       }
       if (effect.type === 'shot') {
         group.position.set(0, 0, 0);
-        const beam = ['laser', 'repair', 'railgun'].includes(effect.style), line = group.children[0], position = line.geometry.attributes.position;
+        const beam = ['laser', 'robotPulse', 'repair', 'railgun'].includes(effect.style), line = group.children[0], position = line.geometry.attributes.position;
         const length = Math.hypot(effect.toX - effect.x, effect.toY - effect.y), muzzle = Math.min(.35, 35 / Math.max(1, length));
         const head = muzzle + (1 - muzzle) * t, tail = Math.max(muzzle, head - .13);
         for (const [index, progress] of [[0, beam ? muzzle : tail], [1, beam ? 1 : head]]) position.setXYZ(index, effect.x + (effect.toX - effect.x) * progress, group.userData.fromHeight + (group.userData.toHeight - group.userData.fromHeight) * progress, effect.y + (effect.toY - effect.y) * progress);
@@ -737,13 +738,13 @@ export class Renderer {
       if (sprite) { screen = this.entityAnchor(entity); screen.y -= 7; }
       else screen = this.worldToScreen(entity.x, entity.y, model.position.y + entry.topHeight + 9);
       if (screen.x < 0 || screen.x > this.viewport.width || screen.y < 0 || screen.y > this.viewport.height) continue;
-      const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry'), ammo = UNITS[entity.type]?.ammo;
+      const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry'), robot = entity.kind === 'unit' && isLunarRobot(this.game.map, entity.type), ammo = robot ? 10 : UNITS[entity.type]?.ammo;
       const numeric = hovered || isSelected && selected.size === 1;
       const label = `${entity.owner === 1 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
-      const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.jammedUntil > this.game.time ? '干扰' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : '';
+      const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : '';
       ctx.font = '500 10px "Noto Sans SC",sans-serif';
       const width = Math.max(entity.kind === 'building' ? 76 : infantry ? 28 : 50, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0);
-      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner === 1 ? 2 : 1 });
+      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner === 1 ? 2 : 1 });
     }
     this.healthBars = layoutHealthBars(bars, this.viewport, obstacles);
     for (const bar of this.healthBars) {
@@ -761,7 +762,7 @@ export class Renderer {
       ctx.fillStyle = style.fill; ctx.fillRect(x + 7, top + 2, innerWidth * bar.ratio, 5);
       ctx.fillStyle = '#0c191b77'; const segments = entity.kind === 'building' ? 10 : width < 30 ? 4 : 6;
       for (let i = 1; i < segments; i++) ctx.fillRect(Math.round(x + 7 + innerWidth * i / segments), top + 2, 1, 5);
-      if (ammo) for (let i = 0; i < ammo; i++) { ctx.fillStyle = i < entity.ammo ? style.frame : '#273a47'; ctx.fillRect(x + 2 + i * (width - 4) / ammo, top + 11, Math.max(1, (width - 4) / ammo - 2), 3); }
+      if (ammo) for (let i = 0; i < ammo; i++) { ctx.fillStyle = i < bar.charge ? style.frame : '#273a47'; ctx.fillRect(x + 2 + i * (width - 4) / ammo, top + 11, Math.max(1, (width - 4) / ammo - 2), 3); }
       if (bar.status) { const baseline = top + (ammo ? 26 : 20); ctx.font = '500 9px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.status, x + width / 2, baseline); ctx.fillStyle = '#f4ce82'; ctx.fillText(bar.status, x + width / 2, baseline); }
     }
     if (this.dragBox) {

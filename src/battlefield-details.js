@@ -1,6 +1,7 @@
 import { BUILDINGS, FACTIONS, PRODUCERS, UNITS } from './data.js';
 import { equipmentProfile } from './equipment.js';
 import { unitRadius } from './unit-spacing.js';
+import { lunarBuildingProfile } from './lunar-robots.js';
 
 export function productionExit(building, type) {
   const side = building.owner === 0 ? 1 : -1, tags = UNITS[type].tags;
@@ -14,7 +15,7 @@ export function productionDuration(game, building, type) {
 
 export function buildingInformation(game, building) {
   if (!building || building.kind !== 'building' || building.hp <= 0 || !game.canSeeEntity(0, building)) return null;
-  const data = BUILDINGS[building.type], own = building.owner === 0;
+  const data = lunarBuildingProfile(game.map.future, building.type, BUILDINGS[building.type]), own = building.owner === 0;
   const producer = PRODUCERS.includes(building.type), active = own ? building.active : null;
   const duration = active ? productionDuration(game, building, active.type) : 0;
   return {
@@ -25,7 +26,7 @@ export function buildingInformation(game, building) {
     status: !own ? '敌方设施' : building.repairing ? '维修中' : !game.hasPower(0) && data.power < 0 ? '供电不足' : active ? '生产中' : producer ? '生产线待命' : '运行正常',
     producer, repairing: own && building.repairing,
     queue: own ? building.queue.length : null,
-    production: active ? { name: equipmentProfile(game.players[building.owner].faction, active.type).name, progress: Math.min(1, active.progress / duration), remaining: Math.max(0, Math.ceil(duration - active.progress)) } : null,
+    production: active ? { name: equipmentProfile(game.players[building.owner].faction, active.type, game.map.future).name, progress: Math.min(1, active.progress / duration), remaining: Math.max(0, Math.ceil(duration - active.progress)) } : null,
     rally: own ? building.rallyPoint : null
   };
 }

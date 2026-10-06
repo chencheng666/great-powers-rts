@@ -1,4 +1,5 @@
 import { FACTIONS, UNITS } from './data.js';
+import { isLunarRobot, ROBOT_SPECS } from './lunar-robots.js';
 
 // 原型资料只影响名称、简介与外形，不能把现实宣传参数直接当作游戏战力。
 export const EQUIPMENT_SYSTEMS = {
@@ -27,15 +28,17 @@ export const EQUIPMENT_SOURCES = {
   'middleeast-loiterer': 'https://www.iai.co.il/product/harop/'
 };
 
-export function equipmentProfile(faction, type) {
+export function equipmentProfile(faction, type, future = false) {
   const system = EQUIPMENT_SYSTEMS[faction], entry = system?.[type], data = UNITS[type];
   if (!data) return null;
+  if (isLunarRobot(future, type)) { const robot = ROBOT_SPECS[type]; return { name: robot.name, description: robot.description, country: '原创月表无人体系', category: '原创／机器人', source: null }; }
   if (entry) return { name: entry[0], description: entry[1], country: system.country, category: '现实原型', source: EQUIPMENT_SOURCES[entry[2]] };
   const concept = ['elite', 'ghost', 'drone', 'jammer', 'laser', 'railgun', 'aegis', 'relay'].includes(type);
   return { name: type === 'elite' ? FACTIONS[faction].elite : data.name, description: data.desc, country: system?.country || '通用体系', category: concept ? '原创／概念装备' : '通用战术单位', source: null };
 }
 
 export function equipmentModel(faction, type, future = false) {
+  if (isLunarRobot(future, type)) return ROBOT_SPECS[type].model;
   if (type === 'navalFighter') return 'fighter';
   if (type === 'navalStrike') return 'strike';
   if (type === 'refinery' && !future) return 'logistics_depot';

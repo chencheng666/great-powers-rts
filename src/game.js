@@ -7,6 +7,7 @@ import { equipmentProfile } from './equipment.js';
 import { tacticalDamage } from './tactical-rules.js';
 import { createSave, SNAPSHOT_FIELDS, validateSave } from './savegame.js';
 import { FREIGHT_TYPES, logisticsEconomy } from './logistics-economy.js';
+import { isLunarRobot, lunarBuildingProfile, lunarRobots, ROBOT_ENERGY, ROBOT_SPECS } from './lunar-robots.js';
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -95,7 +96,8 @@ export class Game {
     if (!game.logistics) game.initLogistics();
     // 兼容旧存档中原本没有有限弹药的单位。
     for (const u of game.units) {
-      if (UNITS[u.type].ammo && u.ammo === null) u.ammo = UNITS[u.type].ammo;
+      if (isLunarRobot(game.map, u.type)) { u.battery ??= ROBOT_ENERGY.capacity; u.ammo = null; }
+      if (!isLunarRobot(game.map, u.type) && UNITS[u.type].ammo && u.ammo === null) u.ammo = UNITS[u.type].ammo;
       if (u.type === 'supply' && u.autoSupply === undefined) u.autoSupply = true;
     }
     game.fog = game.fogs[0]; game.running = true; game.paused = true; game.winner = null;
@@ -162,6 +164,7 @@ export class Game {
     unit.passengers = []; unit.embarkedIn = null; unit.stock = d.stock ?? null;
     unit.wing = d.wing ?? null; unit.heat = 0; unit.deployProgress = 0;
     if (type === 'supply') unit.autoSupply = true;
+    if (isLunarRobot(this.map, type)) { unit.battery = ROBOT_ENERGY.capacity; unit.ammo = null; }
     this.units.push(unit);
     if (owner === 1 && type === 'strike') this.players[owner].aiFirstStrikeProduced = true;
     this.players[owner].unitCount++;
@@ -178,6 +181,8 @@ export class Game {
         else p.powerOut -= power;
       }
       if (this.map.future) p.powerIn += this.beacons.filter(site => site.owner === p.side).length * 40;
+      p.robotChargeLoad = this.units.filter(u => u.owner === p.side && u.hp > 0 && !u.embarkedIn && isLunarRobot(this.map, u.type) && u.order?.type === 'rearm' && this.robotChargeSite(u)).length * ROBOT_ENERGY.chargeLoad;
+      p.powerOut += p.robotChargeLoad;
     }
   }
 
@@ -190,7 +195,7 @@ export class Game {
     const p = this.players[side];
     if (!this.canBuild(side, type) || p.buildQueue || (side === 0 && this.pendingBuilding)) return false;
     p.buildQueue = { type, progress: 0, paid: 0 };
-    if (side === 0) this.events.notice?.(`${BUILDINGS[type].name}开始建造`);
+    if (side === 0) this.events.notice?.(`${lunarBuildingProfile(this.map.future, type, BUILDINGS[type]).name}开始建造`);
     if (side === 0) this.events.voice?.('construction');
     return true;
   }
@@ -238,7 +243,7 @@ export class Game {
     this.addBuilding(side, type, x, y);
     if (side === 0) {
       this.pendingBuilding = null;
-      this.events.notice?.(`${BUILDINGS[type].name}部署完成`);
+      this.events.notice?.(`${lunarBuildingProfile(this.map.future, type, BUILDINGS[type]).name}部署完成`);
       this.events.voice?.('deployed');
     }
     this.effects.push({ type: 'build', x, y, age: 0, duration: 0.8, owner: side });
@@ -250,7 +255,7 @@ export class Game {
     if (!building || building.kind !== 'building' || building.owner !== side || building.hp <= 0) return false;
     if (building.hp >= building.maxHp && !building.repairing) return false;
     building.repairing = !building.repairing && building.hp < building.maxHp;
-    if (side === 0) this.events.notice?.(building.repairing ? `正在维修${BUILDINGS[building.type].name}` : '已停止维修');
+    if (side === 0) this.events.notice?.(building.repairing ? `正在维修${lunarBuildingProfile(this.map.future, building.type, BUILDINGS[building.type]).name}` : '已停止维修');
     return true;
   }
 
@@ -265,7 +270,7 @@ export class Game {
     if (side === 0) {
       this.selected = this.selected.filter(selectedId => selectedId !== id);
       this.events.selection?.();
-      this.events.notice?.(`${BUILDINGS[building.type].name}已出售，返还 ${refund} 资金`);
+      this.events.notice?.(`${lunarBuildingProfile(this.map.future, building.type, BUILDINGS[building.type]).name}已出售，返还 ${refund} 资金`);
     }
     return true;
   }
@@ -276,7 +281,7 @@ export class Game {
     const producer = this.ownedBuildings(side, d.producer).sort((a, b) => a.queue.length - b.queue.length)[0];
     if (!producer || producer.queue.length >= 5) return false;
     producer.queue.push(type);
-    if (side === 0) this.events.notice?.(`${equipmentProfile(this.players[side].faction, type).name}已加入队列`);
+    if (side === 0) this.events.notice?.(`${equipmentProfile(this.players[side].faction, type, this.map.future).name}已加入队列`);
     if (side === 0) this.events.voice?.('queued');
     return true;
   }
@@ -441,7 +446,7 @@ export class Game {
     p.credits -= need; q.paid += need; q.progress += dt;
     if (q.progress >= d.time || q.paid >= d.cost - 0.1) {
       p.buildQueue = null;
-      if (p.side === 0) { this.pendingBuilding = q.type; this.events.notice?.(`${d.name}建造完成，请在基地附近部署`); this.events.voice?.('buildReady'); }
+      if (p.side === 0) { this.pendingBuilding = q.type; this.events.notice?.(`${lunarBuildingProfile(this.map.future, q.type, d).name}建造完成，请在基地附近部署`); this.events.voice?.('buildReady'); }
       else this.placeAIBuilding(q.type);
     }
   }
@@ -465,6 +470,7 @@ export class Game {
     if (!PRODUCERS.includes(b.type)) return;
     if (!b.active && b.queue.length) b.active = { type: b.queue.shift(), progress: 0, paid: 0 };
     if (!b.active) return;
+    if (this.map.future && b.type === 'barracks' && !this.hasPower(b.owner)) return;
     const d = UNITS[b.active.type];
     const duration = productionDuration(this, b, b.active.type);
     const cost = this.unitCost(b.owner, b.active.type);
@@ -496,7 +502,7 @@ export class Game {
         unit.order = { type: 'attackMove', x: this.map.water.x1 + unitRadius(unit) + 40, y: yCenter + random(-290, 290) };
       } else if (b.owner === 1 && unit.type !== 'harvester') unit.order = { type: 'move', x: this.world.width - 630 + random(-70, 70), y: yCenter + random(-120, 120) };
       if (b.rallyPoint && unit.type !== 'harvester') unit.order = { type: 'move', ...this.resolveMoveGoal(unit, b.rallyPoint.x, b.rallyPoint.y) };
-      if (b.owner === 0) this.events.notice?.(`${equipmentProfile(p.faction, unit.type).name}已就绪`);
+      if (b.owner === 0) this.events.notice?.(`${equipmentProfile(p.faction, unit.type, this.map.future).name}已就绪`);
       if (b.owner === 0) this.events.voice?.('unitReady');
       b.active = null;
     }
@@ -520,7 +526,7 @@ export class Game {
     if (building.type === 'dock') Object.assign(point, this.navalGoal(point.x, point.y, 95));
     else if (building.type !== 'airfield' && this.isGroundBlocked(point.x, point.y, 14)) return false;
     building.rallyPoint = point;
-    if (side === 0) { this.effects.push({ type: 'order', ...point, age: 0, duration: .6, owner: side }); this.events.notice?.(`${BUILDINGS[building.type].name}集结点已设置`); }
+    if (side === 0) { this.effects.push({ type: 'order', ...point, age: 0, duration: .6, owner: side }); this.events.notice?.(`${lunarBuildingProfile(this.map.future, building.type, BUILDINGS[building.type]).name}集结点已设置`); }
     return true;
   }
 
@@ -536,6 +542,7 @@ export class Game {
   }
 
   updateUnit(u, dt) {
+    if (isLunarRobot(this.map, u.type) && (this.time < u.stunUntil || this.updateRobotEnergy(u, dt))) return;
     if (u.deployment) {
       if (this.time < u.stunUntil) return;
       if (distance(u, u.deployment) > 9 && this.time < u.deployment.until) { this.moveUnit(u, u.deployment, dt, 8); return; }
@@ -552,7 +559,7 @@ export class Game {
     if (d.tags.includes('ship') && u.order?.type !== 'rearm') this.serviceShip(u, dt);
     if (u.order?.type === 'board') { this.boardTransport(u, dt); return; }
     if (u.type === 'supply') { this.updateSupply(u, dt); return; }
-    if (d.ammo && (u.ammo <= 0 || u.type === 'carrier' && u.wing <= 0) && u.order?.type !== 'rearm') {
+    if (d.ammo && !isLunarRobot(this.map, u.type) && (u.ammo <= 0 || u.type === 'carrier' && u.wing <= 0) && u.order?.type !== 'rearm') {
       u.resumeOrder = u.order;
       u.order = { type: 'rearm' };
       u.path = [];
@@ -600,7 +607,7 @@ export class Game {
       if (dist >= (d.minRange || 0) && dist <= reach && clear && u.fireTimer <= 0 && !u.overheated && (!d.deployTime || u.deployProgress >= d.deployTime) && (u.type !== 'carrier' || flights < u.wing)) {
         u.turretAngle = Math.atan2(target.y - u.y, target.x - u.x);
         this.fire(u, target, this.unitDamage(u, target), u.type);
-        if (d.ammo) u.ammo--;
+        if (d.ammo && !isLunarRobot(this.map, u.type)) u.ammo--;
         if (u.type === 'laser') this.laserHeat(u);
         u.fireTimer = d.cooldown;
       }
@@ -621,6 +628,7 @@ export class Game {
   }
 
   updateRearm(u, dt) {
+    if (isLunarRobot(this.map, u.type)) { this.updateRobotRearm(u, dt); return; }
     if (!UNITS[u.type].tags.includes('air')) { this.updateGroundRearm(u, dt); return; }
     if (u.homeCarrierId && this.returnToCarrier(u, dt)) return;
     const home = this.ownedBuildings(u.owner, 'airfield').sort((a, b) => distance(a, u) - distance(b, u))[0];
@@ -758,6 +766,12 @@ export class Game {
   }
 
   fire(source, target, amount, style) {
+    if (isLunarRobot(this.map, source.type)) {
+      const cost = ROBOT_SPECS[source.type].shotCost;
+      if (source.battery < cost) return;
+      source.battery = Math.max(0, source.battery - cost);
+      style = 'robotPulse';
+    }
     source.lastFireAt = this.time;
     if (['loiterer', 'rocket', 'destroyer', 'carrier', 'submarine', 'bomber', 'fighter', 'strike', 'aegis', 'navalFighter', 'navalStrike'].includes(style)) { this.launchProjectile(source, target, amount, style); return; }
     this.effects.push({ type: 'shot', sourceId: source.id, x: source.x, y: source.y, toX: target.x, toY: target.y, sourceType: source.type, targetType: target.type, age: 0, duration: style === 'railgun' ? .32 : .18, owner: source.owner, style });
@@ -812,7 +826,7 @@ export class Game {
         if (target.owner === 0) this.events.notice?.(`后勤运输被截断，损失 ${target.freight.value} 待交付物资`);
       }
       this.effects.push({ type: 'explosion', x: target.x, y: target.y, targetType: target.type, age: 0, duration: 1.2, owner: attackerSide, size: target.kind === 'building' ? target.size : 40 });
-      if (target.owner === 0) this.events.notice?.(`${target.kind === 'building' ? BUILDINGS[target.type].name : equipmentProfile(this.players[0].faction, target.type).name}已损毁`);
+      if (target.owner === 0) this.events.notice?.(`${target.kind === 'building' ? lunarBuildingProfile(this.map.future, target.type, BUILDINGS[target.type]).name : equipmentProfile(this.players[0].faction, target.type, this.map.future).name}已损毁`);
       if (target.owner === 0) this.events.voice?.(target.kind === 'building' ? 'buildingLost' : 'unitLost');
       this.recalculatePower();
     }
@@ -993,7 +1007,7 @@ export class Game {
         visible.fill(true); explored.fill(true); continue;
       }
       const sources = [
-        ...this.activeUnits(side).map(u => ({ x: u.x, y: u.y, sight: UNITS[u.type].sight, overTerrain: UNITS[u.type].tags.includes('air') || UNITS[u.type].tags.includes('ship') || u.type === 'aa' })),
+        ...this.activeUnits(side).filter(u => !isLunarRobot(this.map, u.type) || u.battery > 0).map(u => ({ x: u.x, y: u.y, sight: UNITS[u.type].sight, overTerrain: UNITS[u.type].tags.includes('air') || UNITS[u.type].tags.includes('ship') || u.type === 'aa' })),
         ...this.ownedBuildings(side).map(b => ({ x: b.x, y: b.y, sight: b.type === 'radar' && this.hasPower(side) ? 630 : b.type === 'hq' ? 400 : 310, overTerrain: b.type === 'radar' && this.hasPower(side) }))
       ];
       for (const beacon of this.beacons.filter(site => site.owner === side)) sources.push({ x: beacon.x, y: beacon.y, sight: 650, overTerrain: true });
@@ -1026,6 +1040,7 @@ export class Game {
   }
 
   detectionRange(side, entity) {
+    if (entity.kind === 'unit' && isLunarRobot(this.map, entity.type) && entity.battery <= 0) return 0;
     if (entity.kind === 'building') return entity.type === 'radar' && this.hasPower(side) ? (this.players[side].faction === 'china' ? 610 : 470) : 0;
     if (entity.type === 'scout') return 260;
     if (entity.type === 'aa') return this.players[side].faction === 'china' ? 230 : 175;
@@ -1213,4 +1228,4 @@ export class Game {
   }
 }
 
-Object.assign(Game.prototype, modernCombat, logisticsEconomy);
+Object.assign(Game.prototype, modernCombat, logisticsEconomy, lunarRobots);

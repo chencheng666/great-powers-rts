@@ -2,6 +2,7 @@ import { UNITS } from './data.js';
 import { unitLayer, unitRadius } from './unit-spacing.js';
 import { weatherState, hasSignalCover } from './tactical-rules.js';
 import { turnToward } from './projectile-flight.js';
+import { isLunarRobot } from './lunar-robots.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const alive = u => u.hp > 0 && !u.embarkedIn;
@@ -23,7 +24,7 @@ export const modernCombat = {
   },
 
   requestResupply(u) {
-    if (!u || u.hp <= 0 || u.embarkedIn || UNITS[u.type].tags.includes('logistics') || !UNITS[u.type].ammo && !UNITS[u.type].tags.some(t => ['air', 'ship'].includes(t))) return false;
+    if (!u || u.hp <= 0 || u.embarkedIn || UNITS[u.type].tags.includes('logistics') || !isLunarRobot(this.map, u.type) && !UNITS[u.type].ammo && !UNITS[u.type].tags.some(t => ['air', 'ship'].includes(t))) return false;
     if (u.order?.type !== 'rearm') { u.resumeOrder = u.order; u.order = { type: 'rearm' }; u.path = []; u.pathTimer = 0; }
     return true;
   },
@@ -226,8 +227,8 @@ export const modernCombat = {
       u.order = null;
     }
     const eligible = v => v !== u && !UNITS[v.type].tags.some(t => ['air', 'ship', 'harvester'].includes(t));
-    const needs = v => eligible(v) && (v.hp < v.maxHp - .01 || UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo);
-    if (u.autoSupply !== false && p.credits > 0) {
+    const needs = v => eligible(v) && (p.credits > 0 && (v.hp < v.maxHp - .01 || !isLunarRobot(this.map, v.type) && UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo) || isLunarRobot(this.map, v.type) && v.order?.type === 'rearm' && v.battery < 100 && this.hasPower(u.owner));
+    if (u.autoSupply !== false && (p.credits > 0 || this.hasPower(u.owner))) {
       let target = this.getEntity(u.serviceTargetId);
       if (!target || target.owner !== u.owner || !alive(target) || !needs(target)) target = null;
       if (!target && this.time >= (u.serviceSearchAt || 0)) {
@@ -255,7 +256,7 @@ export const modernCombat = {
       if (repair > 0 && this.time > (u.serviceFXAt || 0)) { u.serviceFXAt = this.time + .6; this.effects.push({ type: 'shot', style: 'repair', x: u.x, y: u.y, toX: damaged.x, toY: damaged.y, sourceType: 'supply', targetType: damaged.type, owner: u.owner, age: 0, duration: .6 }); }
     }
     u.serviceTimer = Math.max(0, (u.serviceTimer || 0) - dt);
-    const empty = nearby.find(v => UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo);
+    const empty = nearby.find(v => !isLunarRobot(this.map, v.type) && UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo);
     const cost = empty ? UNITS[empty.type].ammoCost ?? 10 : 10;
     const stockCost = empty && UNITS[empty.type].tags.includes('infantry') ? 1 : empty && ['tank', 'aa', 'elite'].includes(empty.type) ? 4 : 8;
     if (empty && u.serviceTimer <= 0 && u.stock >= stockCost && p.credits >= cost) {

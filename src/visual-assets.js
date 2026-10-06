@@ -8,6 +8,7 @@ const droneURL = new URL('../assets/models/drone-library.glb', import.meta.url).
 const equipmentURL = new URL('../assets/models/equipment-library.glb', import.meta.url).href;
 const logisticsURL = new URL('../assets/models/logistics-library.glb', import.meta.url).href;
 const convoyURL = new URL('../assets/models/convoy-library.glb', import.meta.url).href;
+const robotURL = new URL('../assets/models/robot-library.glb', import.meta.url).href;
 const meridianURL = new URL('../assets/meridian-regolith-v2.png', import.meta.url).href;
 const groundURL = new URL('../assets/terrain-valley-v2.png', import.meta.url).href;
 const buildingsURL = new URL('../assets/buildings-realistic-v2.png', import.meta.url).href;
@@ -19,6 +20,7 @@ names.push('loiterer', 'jammer', 'laser', 'rocket', 'apc', 'supply', 'destroyer'
 names.push('railgun', 'aegis', 'relay', ...['china','russia','nato','asia','middleeast'].flatMap(faction => [`tank_${faction}`, `rocket_${faction}`]), ...buildingNames.filter(name => name !== 'dock').map(name => `future_${name}`), 'future_beacon');
 names.push('landing', 'bomber', 'airlift');
 names.push('logistics_depot', 'containerShip', 'freightPlane', 'destroyer_china');
+names.push('robot_rifle', 'robot_engineer', 'robot_scout');
 let pending;
 let library;
 const variants = new Map();
@@ -49,7 +51,7 @@ ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothste
 }
 
 export function prepareVisualAssets() {
-  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL), new GLTFLoader().loadAsync(logisticsURL), new GLTFLoader().loadAsync(convoyURL)]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics, convoy]) => {
+  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL), new GLTFLoader().loadAsync(logisticsURL), new GLTFLoader().loadAsync(convoyURL), new GLTFLoader().loadAsync(robotURL)]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics, convoy, robots]) => {
     const models = new Map();
     gltf.scene.updateMatrixWorld(true);
     modern.scene.updateMatrixWorld(true);
@@ -57,8 +59,9 @@ export function prepareVisualAssets() {
     equipment.scene.updateMatrixWorld(true);
     logistics.scene.updateMatrixWorld(true);
     convoy.scene.updateMatrixWorld(true);
+    robots.scene.updateMatrixWorld(true);
     for (const name of names) {
-      const source = convoy.scene.getObjectByName(name) || logistics.scene.getObjectByName(name) || equipment.scene.getObjectByName(name) || drones.scene.getObjectByName(name) || gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
+      const source = robots.scene.getObjectByName(name) || convoy.scene.getObjectByName(name) || logistics.scene.getObjectByName(name) || equipment.scene.getObjectByName(name) || drones.scene.getObjectByName(name) || gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
       if (!source) throw new Error(`缺少战场模型：${name}`);
       const batches = new Map();
       source.traverse(mesh => {
@@ -76,6 +79,8 @@ export function prepareVisualAssets() {
           limb = geometry.boundingBox.getCenter(new THREE.Vector3()).z < 0 ? 'leg_left' : 'leg_right';
         }
         for (let parent = mesh.parent; parent && parent !== source; parent = parent.parent) {
+          const leg = parent.name.match(/^robot_leg_(left|right)/);
+          if (leg) { limb = `leg_${leg[1]}`; pivot = new THREE.Vector3().setFromMatrixPosition(parent.matrixWorld); break; }
           if (/^rotor_\d+_/.test(parent.name)) { limb = parent.name; pivot = new THREE.Vector3().setFromMatrixPosition(parent.matrixWorld); break; }
         }
         const key = `${material.name}:${articulated}:${limb}`;
