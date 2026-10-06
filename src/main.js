@@ -17,6 +17,7 @@ import './battlefield-details.css';
 import './future.css';
 import { isLunarRobot, lunarBuildingProfile } from './lunar-robots.js';
 import './session.css';
+import './visual-v3.css';
 
 const $ = selector => document.querySelector(selector);
 const fmt = amount => Math.floor(amount).toLocaleString('zh-CN');
@@ -107,14 +108,15 @@ async function toggleFullscreen() {
 function drawFactionPicker() {
   const enemyChoice = $('#enemy-select').value || 'random';
   $('#faction-list').innerHTML = Object.entries(FACTIONS).map(([key, faction]) => `
-    <button class="faction-option ${state.faction === key ? 'active' : ''}" data-faction="${key}" style="--faction-color:${faction.color}">
-      <span class="faction-symbol">${faction.symbol}</span>
+    <button class="faction-option ${state.faction === key ? 'active' : ''}" data-faction="${key}" aria-pressed="${state.faction === key}" style="--faction-color:${faction.color}">
+      <span class="faction-symbol">${icon({ china: 'shield', russia: 'flame', nato: 'crosshair', asia: 'radar', middleeast: 'radio-tower' }[key])}</span>
       <span><strong>${faction.name}</strong><small>${EQUIPMENT_SYSTEMS[key].country}原型 · ${faction.summary}</small></span>
       <span class="faction-role">${faction.role}</span>
     </button>`).join('');
   $('#enemy-select').innerHTML = '<option value="random">随机阵营</option>' + Object.entries(FACTIONS).map(([key, value]) => `<option value="${key}">${value.name}${key === state.faction ? ' · 镜像对战' : ''}</option>`).join('');
   $('#enemy-select').value = enemyChoice;
   $('#faction-list').querySelectorAll('button').forEach(button => button.addEventListener('click', () => { state.faction = button.dataset.faction; drawFactionPicker(); }));
+  refreshIcons();
 }
 
 function toast(message, danger = false) {

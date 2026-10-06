@@ -1,7 +1,21 @@
 {
   "生成模式": "内置 image_gen.imagegen；原创素材，不使用原版红警美术",
-  "说明": "以下为素材复现提示词，建筑采用三维场景中的高清透明立绘，移动单位采用本地 Blender 模型。",
+  "说明": "以下为素材复现提示词，核心建筑与移动单位采用本地 Blender 模型，其余常规设施和植被保留透明图集。首页插画不代表实机画质。",
   "素材": [
+    {
+      "文件": "assets/terrain-material-v3.png",
+      "生成日期": "2026-10-06",
+      "工具": "内置 image_gen.imagegen",
+      "用途": "常规地表小尺度重复材质；旧素材保留",
+      "复现提示词": "Use case: photorealistic-natural. Asset type: seamless albedo ground material for a realistic modern 3D military RTS, square 2048x2048. Strict orthographic straight overhead photographic material swatch of a temperate industrial training ground: finely textured compact grey earth and granite dust, irregular low moss and short cool green grass patches (35%), weathered pale gravel clearings (45%), dry darker soil (20%). Crisp small grains and individual grass blades, low relief, extremely fine scale, diffuse uniform neutral daylight, no baked directional shadows. The image covers about 45 metres, not an aerial landscape hundreds of metres across. Natural quiet irregular clustering, subtle variation, realistic PBR material quality. Opposite edges must tile seamlessly. No roads, tracks, buildings, vehicles, trees, large boulders, mountains, people, water, horizon, perspective, text, grid or UI. Not cartoon, not voxel, not pixel art, not blurred. This will be repeated at small scale on a 3D terrain with real separately rendered roads and models."
+    },
+    {
+      "文件": "assets/battlefield-key-art-v2.png",
+      "生成日期": "2026-10-06",
+      "工具": "内置 image_gen.imagegen",
+      "用途": "首页原创插画，不是游戏截图或真实装备精确复刻",
+      "复现提示词": "Use case: stylized-concept. Asset type: full-bleed widescreen background key art for the main menu of an original modern military RTS called 大国崛起. Cinematic photorealistic 3D artwork with believable modern equipment proportions and PBR detail, NOT pixel art, NOT toy or cartoon. Wide 16:9 composition: a large modern main battle tank with angular composite turret armor, long cannon, exposed realistic tracks, optic modules and restrained cyan identification strips occupies middle RIGHT; a second armored support vehicle slightly behind, a reconnaissance drone small but visibly mechanical overhead. Open green-grey valley floor, low distant hills, concrete military facilities far behind. The tank is actually inspectable: clean sharp detailed armor edges, welds, matte worn olive paint, rubber tracks, dirt on lower hull, subtle atmosphere, daylight from upper right, small dust behind tracks rather than smoke obscuring machinery. LEFT third has uncluttered sky and muted distant landscape as negative space for the game's Chinese title. Keep the bottom quarter a calmer dark gravel foreground for overlaying real menu controls, no bright objects there. Balanced warm-neutral sunlight, grey concrete, muted varied greens, small red and cyan accents. No fire wall, no people, no gore, no national flags, no logos, no text, no UI, no watermark, no visible overlay. Fully original equipment artwork, do not copy any existing game art."
+    },
     {
       "文件": "assets/meridian-regolith-v2.png",
       "生成日期": "2026-10-04",
@@ -34,7 +48,7 @@
     },
     {
       "文件": "assets/ground-realistic-v2.png",
-      "用途": "早期地表素材，当前战场使用 terrain-valley-v2.png",
+      "用途": "早期地表素材，当前常规战场使用 terrain-material-v3.png",
       "复现提示词": "Seamless photoreal top-down military valley ground texture, short muted grass, soil and fine grey gravel, diffuse daylight, no objects, no perspective, no text."
     }
   ],

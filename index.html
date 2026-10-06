@@ -68,8 +68,23 @@
       <div id="start-screen" class="start-screen">
         <div class="start-backdrop"></div>
         <div class="start-shade"></div>
-        <div class="start-content"><div class="start-kicker"><span class="live-dot"></span> 现代即时战略 · 单机遭遇战</div><h1>大国<br><em>崛起</em></h1><p class="start-lede">集结部队。争夺资源。用你的战术，改写这片战场。</p><div class="start-rule"><span>01</span> 五阵营对称开局 <span>02</span> 后勤与资源 <span>03</span> 实时 AI 对战</div><section class="menu-saves" aria-label="保存的战局"><div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="icon-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i></button></div><small id="save-summary">暂无保存的战局</small></section></div>
-        <div class="faction-picker"><div class="picker-heading"><strong>选择阵营</strong><span>每支军队都有自己的优势与弱点</span></div><div class="faction-list" id="faction-list"></div><label class="map-select">战场 <select id="map-select"></select></label><div class="victory-picker"><span>胜利规则</span><div class="victory-options" role="group" aria-label="胜利规则"><button type="button" class="victory-option active" data-victory="quick">快速对战<small>摧毁全部生产核心</small></button><button type="button" class="victory-option" data-victory="annihilation">全域歼灭<small>清除全部建筑与单位</small></button><button type="button" class="victory-option" data-victory="control">据点控制<small>争夺信标累计 240 分</small></button></div></div><div class="start-controls"><label class="enemy-select">对手 <select id="enemy-select"><option value="random">随机阵营</option></select></label><label class="enemy-select">难度 <select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select></label><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 开始作战</button></div></div>
+        <div class="start-content">
+          <div class="start-kicker"><span class="live-dot"></span> 现代即时战略 · 单机遭遇战</div>
+          <h1>大国<em>崛起</em></h1>
+          <p class="start-lede">指挥你的部队，掌握战场主动权。</p>
+          <section class="menu-saves" aria-label="保存的战局"><div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="icon-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i></button></div><small id="save-summary">暂无保存的战局</small></section>
+        </div>
+        <div class="faction-picker">
+          <div class="picker-heading"><strong>作战部署</strong><span>选择你的阵营</span></div>
+          <div class="faction-list" id="faction-list"></div>
+          <div class="deployment-controls">
+            <label class="map-select">战场 <select id="map-select"></select></label>
+            <div class="victory-picker"><span>胜利规则</span><div class="victory-options" role="group" aria-label="胜利规则"><button type="button" class="victory-option active" data-victory="quick">快速对战<small>摧毁生产核心</small></button><button type="button" class="victory-option" data-victory="annihilation">全域歼灭<small>清除全部敌军</small></button><button type="button" class="victory-option" data-victory="control">据点控制<small>累计 240 分</small></button></div></div>
+            <label class="enemy-select">对手 <select id="enemy-select"><option value="random">随机阵营</option></select></label>
+            <label class="enemy-select">难度 <select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select></label>
+            <button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 开始作战</button>
+          </div>
+        </div>
       </div>
 
       <input id="save-file" type="file" accept=".json,application/json" hidden>

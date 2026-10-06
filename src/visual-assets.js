@@ -9,8 +9,9 @@ const equipmentURL = new URL('../assets/models/equipment-library.glb', import.me
 const logisticsURL = new URL('../assets/models/logistics-library.glb', import.meta.url).href;
 const convoyURL = new URL('../assets/models/convoy-library.glb', import.meta.url).href;
 const robotURL = new URL('../assets/models/robot-library.glb', import.meta.url).href;
+const realismURL = new URL('../assets/models/realism-library.glb', import.meta.url).href;
 const meridianURL = new URL('../assets/meridian-regolith-v2.png', import.meta.url).href;
-const groundURL = new URL('../assets/terrain-valley-v2.png', import.meta.url).href;
+const groundURL = new URL('../assets/terrain-material-v3.png', import.meta.url).href;
 const buildingsURL = new URL('../assets/buildings-realistic-v2.png', import.meta.url).href;
 const foliageURL = new URL('../assets/foliage-realistic-v2.png', import.meta.url).href;
 const armoryURL = new URL('../assets/armory-v1.png', import.meta.url).href;
@@ -21,6 +22,7 @@ names.push('railgun', 'aegis', 'relay', ...['china','russia','nato','asia','midd
 names.push('landing', 'bomber', 'airlift');
 names.push('logistics_depot', 'containerShip', 'freightPlane', 'destroyer_china');
 names.push('robot_rifle', 'robot_engineer', 'robot_scout');
+names.push('armory');
 let pending;
 let library;
 const variants = new Map();
@@ -28,8 +30,8 @@ const sprites = new Map();
 const thumbnails = new Map();
 let portraitRenderer;
 
-function weatherMaterial(material) {
-  if (!['装甲钢', '浅色金属', '深色钢', '航空涂层', '建筑面板', '屋顶', '岩石', '矿石', '矿晶', '航天复合外墙', '航天浅色合金', '热防护屋面'].includes(material.name)) return material;
+export function weatherMaterial(material) {
+  if (!['装甲钢', '浅色金属', '深色钢', '航空涂层', '建筑面板', '混凝土', '屋顶', '岩石', '矿石', '矿晶', '航天复合外墙', '航天浅色合金', '热防护屋面', '月表陶瓷装甲', '机器人钛合金'].includes(material.name)) return material;
   const result = material.clone(), stone = ['岩石', '矿石', '矿晶'].includes(material.name);
   result.onBeforeCompile = shader => {
     shader.vertexShader = `varying vec3 vSurface;\n${shader.vertexShader}`.replace('#include <begin_vertex>', '#include <begin_vertex>\nvSurface = position;');
@@ -44,14 +46,15 @@ float weather = surfaceNoise(vSurface * ${stone ? '9.0' : '35.0'});
 float patches = surfaceNoise(vSurface * ${stone ? '2.5' : '1.5'});
 diffuseColor.rgb *= ${stone ? '0.64 + weather * 0.52 + patches * 0.28' : '0.84 + weather * 0.24'};
 ${material.name === '装甲钢' ? 'diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(.57,.61,.56), smoothstep(.51,.59,patches) * .8);' : ''}
-${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothstep(.69,.83,weather) * .35);' : ''}`);
+${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothstep(.69,.83,weather) * .35);' : ''}`)
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (surfaceNoise(vSurface * 28.0) - .4) * .18, .28, 1.0);');
   };
   result.customProgramCacheKey = () => `军用表面:${material.name}`;
   return result;
 }
 
 export function prepareVisualAssets() {
-  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL), new GLTFLoader().loadAsync(logisticsURL), new GLTFLoader().loadAsync(convoyURL), new GLTFLoader().loadAsync(robotURL)]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics, convoy, robots]) => {
+  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL), new GLTFLoader().loadAsync(logisticsURL), new GLTFLoader().loadAsync(convoyURL), new GLTFLoader().loadAsync(robotURL), new GLTFLoader().loadAsync(realismURL)]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics, convoy, robots, realism]) => {
     const models = new Map();
     gltf.scene.updateMatrixWorld(true);
     modern.scene.updateMatrixWorld(true);
@@ -60,8 +63,9 @@ export function prepareVisualAssets() {
     logistics.scene.updateMatrixWorld(true);
     convoy.scene.updateMatrixWorld(true);
     robots.scene.updateMatrixWorld(true);
+    realism.scene.updateMatrixWorld(true);
     for (const name of names) {
-      const source = robots.scene.getObjectByName(name) || convoy.scene.getObjectByName(name) || logistics.scene.getObjectByName(name) || equipment.scene.getObjectByName(name) || drones.scene.getObjectByName(name) || gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
+      const source = realism.scene.getObjectByName(name) || robots.scene.getObjectByName(name) || convoy.scene.getObjectByName(name) || logistics.scene.getObjectByName(name) || equipment.scene.getObjectByName(name) || drones.scene.getObjectByName(name) || gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
       if (!source) throw new Error(`缺少战场模型：${name}`);
       const batches = new Map();
       source.traverse(mesh => {
@@ -105,7 +109,6 @@ export function prepareVisualAssets() {
       models.set(name, template);
     }
     ground.colorSpace = THREE.SRGBColorSpace; ground.wrapS = ground.wrapT = THREE.RepeatWrapping;
-    models.set('armory', models.get('factory'));
     meridian.colorSpace = THREE.SRGBColorSpace;
     library = { models, ground, buildings, foliage, armory, meridian }; return library;
   });
@@ -144,7 +147,7 @@ export function spriteTexture(name, teamColor = '#59d7ec') {
 export function modelThumbnail(name, color) {
   const key = `${name}:${color}`;
   if (thumbnails.has(key)) return thumbnails.get(key);
-  if (buildingNames.includes(name)) {
+  if (buildingNames.includes(name) && !['hq', 'power', 'barracks', 'factory', 'armory'].includes(name)) {
     const url = spriteTexture(name, color).image.toDataURL(); thumbnails.set(key, url); return url;
   }
   portraitRenderer ||= new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });

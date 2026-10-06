@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BUILDINGS, FACTIONS, UNITS } from './data.js';
-import { createModel, prepareVisualAssets, spriteTexture, visualLibrary } from './visual-assets.js';
+import { createModel, prepareVisualAssets, spriteTexture, visualLibrary, weatherMaterial } from './visual-assets.js';
 import { architectureLayout, CAMERA_ELEVATION } from './architecture.js';
 import { productionExit } from './battlefield-details.js';
 import { healthVisual, showHealthBar, teamVisual } from './team-visuals.js';
@@ -16,6 +16,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { terrainHeight, REALISM_BUILDINGS } from './visual-detail.js';
+import { realisticEffects } from './realistic-fx.js';
 
 const TAU = Math.PI * 2;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -31,11 +33,19 @@ const vector = (x, z, y = 0) => new THREE.Vector3(x, y, z);
 const makeCanvas = (width, height) => { const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; return canvas; };
 
 function particleTexture(smoke = false) {
-  const canvas = makeCanvas(128, 128), ctx = canvas.getContext('2d'), image = ctx.createImageData(128, 128);
-  for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
-    const r = Math.hypot(x - 64, y - 64) / 64, noise = hash(Math.floor(x / 4), Math.floor(y / 4)), i = (y * 128 + x) * 4;
+  const size = 256, canvas = makeCanvas(size, size), ctx = canvas.getContext('2d'), image = ctx.createImageData(size, size);
+  const smoothNoise = (x, y, scale) => {
+    const gx = x / scale, gy = y / scale, ix = Math.floor(gx), iy = Math.floor(gy);
+    const fx = gx - ix, fy = gy - iy, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    const a = hash(ix, iy) * (1 - sx) + hash(ix + 1, iy) * sx;
+    const b = hash(ix, iy + 1) * (1 - sx) + hash(ix + 1, iy + 1) * sx;
+    return a * (1 - sy) + b * sy;
+  };
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const noise = smoothNoise(x, y, 42) * .6 + smoothNoise(x, y, 17) * .3 + smoothNoise(x, y, 7) * .1;
+    const r = Math.hypot(x - size / 2, y - size / 2) / (size / 2), i = (y * size + x) * 4;
     image.data[i] = image.data[i + 1] = image.data[i + 2] = 255;
-    image.data[i + 3] = Math.max(0, 1 - r) ** (smoke ? 1.2 : 2.4) * (smoke ? .45 + noise * .55 : .8 + noise * .2) * 255;
+    image.data[i + 3] = Math.max(0, 1 - r) ** (smoke ? 1.15 : 2.4) * (smoke ? .15 + noise * .85 : .7 + noise * .3) * 255;
   }
   ctx.putImageData(image, 0, 0); return new THREE.CanvasTexture(canvas);
 }
@@ -69,7 +79,7 @@ export class Renderer {
     sun.shadow.bias = -.00015; sun.shadow.normalBias = .24; sun.shadow.radius = 2; this.scene.add(sun, sun.target);
     this.fireTexture = particleTexture(); this.smokeTexture = particleTexture(true);
     this.createTerrain(); this.createBridges(); this.createEnvironment(); this.createFutureStructures(); this.createSites(); this.createFog(); this.createOverlays();
-    this.createTracks();
+    this.createTracks(); this.createCombatAtmosphere();
     this.createPostprocessing();
     this.resize(); this.centerOn(innerWidth < 700 ? 400 : 470, game.homeY);
   }
@@ -112,9 +122,9 @@ export class Renderer {
     const factor = Math.min(1, (innerWidth < 700 ? 2048 : 4096) / this.world.width);
     const canvas = makeCanvas(Math.round(this.world.width * factor), Math.round(this.world.height * factor)), ctx = canvas.getContext('2d'), image = (this.game.map.future ? visualLibrary().meridian : visualLibrary().ground).image;
     ctx.scale(factor, factor);
-    ctx.filter = this.game.map.future ? 'saturate(.45) contrast(.52) brightness(.86)' : 'saturate(.86) contrast(.9) brightness(.96)';
-    if (this.game.map.future) ctx.drawImage(image, 0, 0, this.world.width, this.world.height);
-    else for (let y = 0; y < this.world.height; y += 1440) for (let x = 0; x < this.world.width; x += 2240) ctx.drawImage(image, x, y, 2240, 1440);
+    ctx.filter = this.game.map.future ? 'saturate(.25) contrast(.72) brightness(.75)' : 'saturate(.78) contrast(.82) brightness(.85)';
+    const tile = this.game.map.future ? 560 : 420;
+    for (let y = 0; y < this.world.height; y += tile) for (let x = 0; x < this.world.width; x += tile) ctx.drawImage(image, x, y, tile, tile);
     ctx.filter = 'none';
     ctx.fillStyle = this.game.map.future ? 'rgba(86,100,120,.06)' : 'rgba(97,102,79,.12)'; ctx.fillRect(0, 0, this.world.width, this.world.height);
     const road = (points, width) => {
@@ -122,6 +132,9 @@ export class Renderer {
       trace(); ctx.lineJoin = 'round'; ctx.strokeStyle = '#686962'; ctx.lineWidth = width + 11; ctx.stroke();
       trace(); ctx.strokeStyle = '#454a4b'; ctx.lineWidth = width; ctx.stroke();
       trace(); ctx.strokeStyle = '#535758'; ctx.lineWidth = width - 7; ctx.stroke();
+      for (const side of [-1, 1]) {
+        ctx.save(); ctx.translate(0, side * width * .22); trace(); ctx.strokeStyle = 'rgba(23,28,27,.23)'; ctx.lineWidth = 5; ctx.stroke(); ctx.restore();
+      }
       ctx.setLineDash([18, 25]); trace(); ctx.strokeStyle = 'rgba(222,218,183,.43)'; ctx.lineWidth = 1.4; ctx.stroke(); ctx.setLineDash([]);
     };
     const cy = this.game.homeY;
@@ -159,13 +172,10 @@ export class Renderer {
       ctx.fillStyle = 'rgba(98,99,84,.55)'; ctx.fillRect(rect.x1 - 12, rect.y1, 22, rect.y2 - rect.y1); ctx.fillRect(rect.x2 - 10, rect.y1, 22, rect.y2 - rect.y1);
     }
     const texture = this.track(new THREE.CanvasTexture(canvas)); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = Math.min(8, this.webgl.capabilities.getMaxAnisotropy()); this.terrainTexture = texture;
-    const geometry = this.track(new THREE.PlaneGeometry(this.world.width, this.world.height, 112, 72)); geometry.rotateX(-Math.PI / 2); geometry.translate(this.world.width / 2, 0, this.world.height / 2);
+    const geometry = this.track(new THREE.PlaneGeometry(this.world.width, this.world.height, 192, 128)); geometry.rotateX(-Math.PI / 2); geometry.translate(this.world.width / 2, 0, this.world.height / 2);
     const positions = geometry.attributes.position;
     for (let i = 0; i < positions.count; i++) {
-      const x = positions.getX(i), z = positions.getZ(i); let height = (hash(x, z) - .5) * 1.2;
-      if (this.game.map.water && x > this.game.map.water.x1 && x < this.game.map.water.x2) height = -15;
-      else if (!this.game.map.future && this.game.map.barriers.some(rect => x > rect.x1 && x < rect.x2 && z > rect.y1 && z < rect.y2)) height = -28;
-      positions.setY(i, height);
+      positions.setY(i, terrainHeight(this.game, positions.getX(i), positions.getZ(i)));
     }
     geometry.computeVertexNormals();
     const detailCanvas = makeCanvas(256, 256), detailContext = detailCanvas.getContext('2d'), detail = detailContext.createImageData(256, 256);
@@ -255,9 +265,9 @@ export class Renderer {
   }
 
   elevation(x, z) {
-    if (!this.game.map.bridges.length) return 1;
+    if (!this.game.map.bridges.length) return terrainHeight(this.game, x, z) + 1;
     const west = this.game.map.water ? this.game.map.water.x1 - 38 : 1010, east = this.game.map.water ? this.game.map.water.x2 + 38 : 1230;
-    return x >= west && x <= east && this.game.map.bridges.some(bridge => z >= bridge.y1 && z <= bridge.y2) ? 27 : 1;
+    return x >= west && x <= east && this.game.map.bridges.some(bridge => z >= bridge.y1 && z <= bridge.y2) ? 27 : this.game.map.water && x > west && x < east ? 1 : terrainHeight(this.game, x, z) + 1;
   }
 
   createEnvironment() {
@@ -283,10 +293,16 @@ export class Renderer {
     this.createFoliage(points.tree);
     for (const [name, transforms] of [['rock', points.rock]]) for (const child of visualLibrary().models.get(name).children) {
       if (!child.isMesh) continue;
-      const material = this.game.map.future ? this.track(new THREE.MeshStandardMaterial({ color: '#69717b', roughness: .96, flatShading: true })) : child.material;
-      const geometry = this.game.map.future ? this.track(new THREE.IcosahedronGeometry(.7, 1)) : child.geometry;
+      const base = new THREE.MeshStandardMaterial({ color: this.game.map.future ? '#555b63' : '#64665c', roughness: .96 }); base.name = '岩石';
+      const material = this.track(weatherMaterial(base)); base.dispose();
+      const geometry = this.track(new THREE.IcosahedronGeometry(.7, 3)), vertices = geometry.attributes.position;
+      for (let n = 0; n < vertices.count; n++) {
+        const x = vertices.getX(n), y = vertices.getY(n), z = vertices.getZ(n), shape = .82 + hash(Math.round(x * 25), Math.round(z * 25), Math.round(y * 25)) * .3;
+        vertices.setXYZ(n, x * shape * 1.2, y * shape * .65 + .38, z * shape);
+      }
+      geometry.computeVertexNormals();
       const mesh = new THREE.InstancedMesh(geometry, material, transforms.length); mesh.castShadow = true; mesh.receiveShadow = true; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      transforms.forEach((point, index) => { dummy.position.set(point.x, point.heightOffset ?? 1, point.z); dummy.rotation.set(0, point.angle, 0); dummy.scale.set(point.scale, point.verticalScale || point.scale, point.scale); dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix); });
+      transforms.forEach((point, index) => { dummy.position.set(point.x, point.heightOffset ?? this.elevation(point.x, point.z), point.z); dummy.rotation.set(0, point.angle, 0); dummy.scale.set(point.scale, point.verticalScale || point.scale, point.scale); dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix); });
       this.scene.add(mesh); this.environment.push({ mesh, transforms });
     }
   }
@@ -451,7 +467,7 @@ export class Renderer {
     const color = teamVisual(entity.owner).color, name = equipmentModel(this.game.players[entity.owner].faction, entity.type, this.game.map.future);
     const model = createModel(name, color), scale = entity.kind === 'building' ? entity.size / 7.2 : UNIT_SCALE[entity.type]; model.scale.setScalar(scale);
     model.userData.entity = entity;
-    const sprite = entity.kind === 'building' && !['turret', 'refinery'].includes(entity.type) && !this.game.map.future ? this.attachArchitecture(model, name, color) : null;
+    const sprite = entity.kind === 'building' && !['turret', 'refinery', ...REALISM_BUILDINGS].includes(entity.type) && !this.game.map.future ? this.attachArchitecture(model, name, color) : null;
     const entrance = entity.kind === 'building' && ['barracks', 'factory', 'armory', 'airfield'].includes(entity.type) ? this.createEntrance(entity, model, scale) : null;
     const ring = new THREE.Mesh(this.selectionGeometry, entity.owner === 0 ? this.selectionMaterial : this.enemySelectionMaterial); ring.visible = false; this.scene.add(model, ring);
     const exhausts = [];
@@ -618,15 +634,15 @@ export class Renderer {
 
   effectHeight(type, x, y) {
     const tags = UNITS[type]?.tags || [];
-    return tags.includes('jet') ? 98 : tags.includes('drone') ? 29 : this.elevation(x, y) + (BUILDINGS[type] ? 28 : 18);
+    return tags.includes('jet') ? 98 : tags.includes('drone') ? 29 : this.elevation(x, y) + (BUILDINGS[type] ? 28 : type === 'tank' ? 21.3 : tags.includes('infantry') ? 15.5 : 18);
   }
 
   updateEffects() {
     this.trails = this.trails.filter(trail => {
       const age = this.game.time - trail.start;
       if (age > 1.6) { this.scene.remove(trail.sprite); trail.sprite.material.dispose(); return false; }
-      const size = trail.ship ? 25 + age * 13 : 13 + age * 12;
-      trail.sprite.scale.set(size, trail.ship ? 8 + age * 4 : size, 1); trail.sprite.material.opacity = (1 - age / 1.6) * (trail.damage ? .38 : .15);
+      const size = trail.explosionSize ? trail.explosionSize * (.6 + Math.max(0, age) * 1.2) : trail.muzzle ? 7 + age * 9 : trail.ship ? 25 + age * 13 : 13 + age * 12;
+      trail.sprite.scale.set(size, trail.ship ? 8 + age * 4 : size, 1); trail.sprite.material.opacity = Math.max(0, 1 - Math.max(0, age) / 1.6) * (trail.damage ? .38 : trail.muzzle ? .2 : .15);
       if (!trail.ship) trail.sprite.position.y = trail.baseY + age * (trail.damage ? 13 : 3);
       trail.sprite.visible = this.game.isVisibleFor(0, trail.sprite.position.x, trail.sprite.position.z); return true;
     });
@@ -639,17 +655,8 @@ export class Renderer {
       const t = effect.age / effect.duration; let group = this.effects.get(effect);
       if (!group) {
         group = new THREE.Group();
-        if (effect.type === 'shot') {
-          group.userData.fromHeight = this.effectHeight(effect.sourceType, effect.x, effect.y); group.userData.toHeight = this.effectHeight(effect.targetType, effect.toX, effect.toY);
-          const color = ['laser', 'robotPulse'].includes(effect.style) ? '#72edff' : effect.style === 'repair' ? '#6dffbd' : effect.style === 'elite' ? '#8ddff0' : '#ffd9a0';
-          group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([vector(effect.x, effect.y, group.userData.fromHeight), vector(effect.toX, effect.toY, group.userData.toHeight)]), new THREE.LineBasicMaterial({ color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })), this.effectSprite(color));
-        } else if (['hit', 'explosion'].includes(effect.type)) {
-          group.add(this.effectSprite('#ffc177'), this.effectSprite('#f47a34'), this.effectSprite('#465059', true));
-          const count = effect.type === 'explosion' ? 18 : 9, positions = new Float32Array(count * 3);
-          const sparks = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(positions, 3)), new THREE.PointsMaterial({ color: '#ffe3ab', size: 3, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); sparks.frustumCulled = false; group.add(sparks);
-          const waveGeometry = new THREE.RingGeometry(.86, 1, 48); waveGeometry.rotateX(-Math.PI / 2);
-          group.add(new THREE.Mesh(waveGeometry, new THREE.MeshBasicMaterial({ color: '#a4a5a1', transparent: true, depthWrite: false, side: THREE.DoubleSide })));
-        }
+        if (effect.type === 'shot') this.createWeaponEffect(effect, group);
+        else if (['hit', 'explosion'].includes(effect.type)) this.createImpactEffect(effect, group);
         else if (effect.type === 'supplyDrop') {
           const crate = new THREE.Mesh(new THREE.BoxGeometry(14, 11, 12), new THREE.MeshStandardMaterial({ color: '#69756a', roughness: .75, metalness: .25 })); crate.castShadow = true; group.add(crate);
           const canopy = new THREE.Mesh(new THREE.SphereGeometry(15, 20, 8, 0, TAU, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#d4ded6', roughness: .85, side: THREE.DoubleSide })); canopy.position.y = 27; group.add(canopy);
@@ -659,27 +666,15 @@ export class Renderer {
         group.position.set(effect.x, ['hit', 'explosion'].includes(effect.type) ? this.effectHeight(effect.targetType, effect.x, effect.y) : this.elevation(effect.x, effect.y) + 2, effect.y); this.scene.add(group); this.effects.set(effect, group);
         if (effect.type === 'sonar') group.position.y = 3;
       }
-      if (effect.type === 'shot') {
-        group.position.set(0, 0, 0);
-        const beam = ['laser', 'robotPulse', 'repair', 'railgun'].includes(effect.style), line = group.children[0], position = line.geometry.attributes.position;
-        const length = Math.hypot(effect.toX - effect.x, effect.toY - effect.y), muzzle = Math.min(.35, 35 / Math.max(1, length));
-        const head = muzzle + (1 - muzzle) * t, tail = Math.max(muzzle, head - .13);
-        for (const [index, progress] of [[0, beam ? muzzle : tail], [1, beam ? 1 : head]]) position.setXYZ(index, effect.x + (effect.toX - effect.x) * progress, group.userData.fromHeight + (group.userData.toHeight - group.userData.fromHeight) * progress, effect.y + (effect.toY - effect.y) * progress);
-        position.needsUpdate = true; line.material.opacity = (1 - t) * (beam ? .8 : .95);
-        const flash = group.children[1]; flash.position.set(effect.x + (effect.toX - effect.x) * muzzle, group.userData.fromHeight, effect.y + (effect.toY - effect.y) * muzzle); flash.scale.setScalar((['tank', 'railgun', 'elite'].includes(effect.sourceType) ? 23 : 11) * (1 - t)); flash.material.opacity = (1 - t) ** 3;
-      } else if (['hit', 'explosion'].includes(effect.type)) {
-        const size = effect.type === 'explosion' ? effect.size * 1.25 : 20;
-        group.children.slice(0, 3).forEach((sprite, i) => { const smoke = i === 2; sprite.position.set(Math.sin(i * 3.1) * size * t * .15, size * t * (smoke ? .65 : .22), Math.cos(i * 3.1) * size * t * .1); sprite.scale.setScalar(size * (.3 + t * (smoke ? 1.3 : .6))); sprite.material.opacity = smoke ? Math.sin(t * Math.PI) * .72 : (1 - t) ** 1.5; });
-        const sparks = group.children[3], positions = sparks.geometry.attributes.position;
-        for (let i = 0; i < positions.count; i++) { const angle = i * 2.399, speed = size * (.6 + hash(i, effect.x) * .9); positions.setXYZ(i, Math.cos(angle) * speed * t, speed * t * (.3 + hash(i, effect.y)) - size * t * t * .8, Math.sin(angle) * speed * t); }
-        positions.needsUpdate = true; sparks.material.opacity = (1 - t) ** 2;
-        const wave = group.children[4]; wave.position.y = -group.position.y + this.elevation(effect.x, effect.y) + 2.5; wave.scale.setScalar(size * (.3 + t * 1.8)); wave.material.opacity = (1 - t) ** 3 * .35;
-      } else if (effect.type === 'supplyDrop') {
+      if (effect.type === 'shot') this.animateWeaponEffect(effect, group);
+      else if (['hit', 'explosion'].includes(effect.type)) this.animateImpactEffect(effect, group);
+      else if (effect.type === 'supplyDrop') {
         group.position.y = 7 + (1 - t) * 80; group.rotation.y = Math.sin(t * 4) * .15;
         group.children.forEach(mesh => { mesh.material.transparent = true; mesh.material.opacity = t > .8 ? (1 - t) * 5 : 1; });
       } else if (group.children[0]) { const pulse = ['jam', 'sonar'].includes(effect.type), radius = pulse ? effect.size * t : effect.type === 'ability' ? 245 * Math.min(1, t * 2) : 10 + t * 24; group.children[0].scale.set(radius, 1, radius); group.children[0].material.opacity = (1 - t) * (pulse ? .3 : 1); }
     }
     for (const [effect, group] of this.effects) if (!current.has(effect)) { group.traverse(item => { if (item.geometry && item.geometry !== this.selectionGeometry) item.geometry.dispose(); if (item.material) item.material.dispose(); }); this.scene.remove(group); this.effects.delete(effect); }
+    this.updateCombatAtmosphere();
   }
 
   updateProjectileModels(now) {
@@ -872,3 +867,5 @@ export class Renderer {
     this.fireTexture.dispose(); this.smokeTexture.dispose(); this.overlayCanvas.remove(); this.webgl.dispose();
   }
 }
+
+Object.assign(Renderer.prototype, realisticEffects);

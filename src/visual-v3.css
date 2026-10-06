@@ -1,0 +1,104 @@
+.start-screen {
+  display: grid;
+  grid-template-rows: minmax(280px, 1fr) auto;
+  overflow: auto;
+  background: #181f1c;
+  letter-spacing: 0;
+}
+.start-screen .start-backdrop {
+  inset: 0;
+  background: url('../assets/battlefield-key-art-v2.png') center 36% / cover no-repeat;
+  transform: none;
+  filter: none;
+}
+.start-screen .start-shade {
+  background: linear-gradient(90deg, rgba(13,21,18,.7), transparent 65%), linear-gradient(0deg, rgba(13,21,18,.8), transparent 48%);
+}
+.start-screen .start-content {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 48px 48px 24px;
+  align-self: start;
+}
+.start-content h1 { margin: 24px 0 14px; font-size: 76px; line-height: 1.15; letter-spacing: 0; }
+.start-content h1 em { color: #e9efe8; font-style: normal; }
+.start-content .start-kicker { color: #c7d4cc; letter-spacing: 0; font-size: 13px; }
+.start-content .start-lede { margin: 0; max-width: 460px; font-size: 16px; color: #d1d9d2; }
+.start-content .menu-saves { margin-top: 28px; max-width: 420px; }
+.start-content .menu-save-actions { justify-content: flex-start; }
+.start-content .menu-saves small { color: #bbc6bd; }
+.start-content .secondary-btn, .start-content .icon-btn { background: rgba(18,29,23,.7); border-color: #69796c; }
+.start-screen .faction-picker {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  padding: 20px 48px 28px;
+  border: 0;
+  border-top: 1px solid #536357;
+  border-radius: 0;
+  background: rgba(16,24,20,.93);
+  box-shadow: none;
+  backdrop-filter: blur(12px);
+}
+.faction-picker .picker-heading { margin: 0 0 14px; display: flex; align-items: center; justify-content: space-between; }
+.picker-heading strong { font-size: 18px; }
+.picker-heading span { color: #aab6ac; font-size: 12px; }
+.faction-picker .faction-list { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 10px; margin: 0 0 22px; }
+.faction-picker .faction-option {
+  min-height: 92px;
+  width: 100%;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 26px minmax(0,1fr);
+  gap: 8px;
+  align-items: start;
+  background: #232d26;
+  border: 1px solid #465349;
+  border-radius: 4px;
+  text-align: left;
+}
+.faction-option .faction-symbol { width: 26px; height: 26px; padding: 3px; font-size: 16px; color: var(--faction-color); background: none; }
+.faction-symbol svg { width: 20px; height: 20px; }
+.faction-option strong { display: block; font-size: 15px; line-height: 1.4; }
+.faction-option small { display: block; margin-top: 4px; color: #b1beb4; font-size: 11px; line-height: 1.6; }
+.faction-option .faction-role { display: none; }
+.faction-picker .faction-option.active { background: #303b30; border-color: #b8cbaa; box-shadow: inset 0 2px #b8cbaa; }
+.faction-option:hover { border-color: #95a38f; background: #2c382e; }
+.faction-option:focus-visible, .victory-option:focus-visible { outline: 2px solid #e1ead9; outline-offset: 3px; }
+.deployment-controls { display: grid; grid-template-columns: minmax(170px,1.1fr) minmax(300px,2fr) minmax(140px,.8fr) minmax(100px,.6fr) minmax(150px,.9fr); gap: 16px; align-items: end; }
+.deployment-controls label, .deployment-controls .victory-picker { margin: 0; padding: 0; border: 0; display: grid; gap: 8px; color: #b7c3ba; font-size: 12px; }
+.deployment-controls select { height: 48px; width: 100%; border-color: #556456; background: #263029; border-radius: 4px; color: #f0f2ec; padding: 0 10px; }
+.deployment-controls .victory-options { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0; height: 48px; }
+.victory-options .victory-option { min-width: 0; padding: 6px 4px; margin: 0; border: 1px solid #556456; border-radius: 0; background: #263029; color: #c8d2c9; font-size: 12px; line-height: 1.25; }
+.victory-options .victory-option:first-child { border-radius: 4px 0 0 4px; }
+.victory-options .victory-option:last-child { border-radius: 0 4px 4px 0; }
+.victory-options .victory-option + .victory-option { border-left: 0; }
+.victory-options .victory-option small { font-size: 10px; color: #a6b4a8; margin-top: 3px; }
+.victory-options .victory-option.active { color: #f3f4ea; background: #45543c; border-color: #8f9d84; }
+.deployment-controls .primary-btn { height: 48px; margin: 0; padding: 0 16px; border: 1px solid #c66757; border-radius: 4px; background: #a74436; font-size: 15px; white-space: nowrap; box-shadow: none; }
+.deployment-controls .primary-btn:hover { background: #bf5141; }
+@media (max-width: 1300px) {
+  .start-screen .start-content { padding: 32px 32px 20px; }
+  .start-screen .faction-picker { padding: 18px 32px 22px; }
+  .start-content h1 { font-size: 64px; }
+  .deployment-controls { gap: 10px; grid-template-columns: minmax(165px,1fr) minmax(265px,1.7fr) minmax(125px,.8fr) minmax(80px,.5fr) minmax(140px,.8fr); }
+  .faction-picker .faction-option { padding: 10px; gap: 6px; }
+}
+@media (max-width: 1050px) {
+  .deployment-controls { grid-template-columns: 1fr 1.8fr 1fr; }
+  .deployment-controls .primary-btn { grid-column: 2 / 4; }
+  .faction-picker .faction-list { gap: 6px; }
+  .faction-picker .faction-option { grid-template-columns: 1fr; }
+  .faction-option .faction-symbol { display: none; }
+}
+@media (max-width: 700px) {
+  .start-screen .start-content { padding: 28px 20px; }
+  .start-content h1 { font-size: 48px; }
+  .start-screen .faction-picker { padding: 18px 20px; }
+  .faction-picker .faction-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .deployment-controls { grid-template-columns: 1fr 1fr; }
+  .deployment-controls .victory-picker { grid-column: 1 / 3; }
+  .deployment-controls .primary-btn { grid-column: 1 / 3; }
+}

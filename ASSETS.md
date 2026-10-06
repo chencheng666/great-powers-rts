@@ -6,6 +6,9 @@
 
 | 素材 | 文件与来源 | 编辑方式 |
 | --- | --- | --- |
+| 细化地表与首页 | `assets/terrain-material-v3.png`、`battlefield-key-art-v2.png`；2026-10-06 使用内置 image_gen.imagegen 生成 | 完整提示词保存在 `assets/asset-prompts.json`；地表按小尺度重复，首页为原创插画，不是实机截图 |
+| 细化三维模型 | `assets/models/realism-library.glb` / `.blend`，`scripts/build_realism_assets.py` | 17 个覆盖模板：五类常规设施、五类月表设施、五阵营坦克、两类飞机；维护走道、采光带、装甲紧固件、观瞄和航空挂架。兵工厂为独立装配模型，其余模板保留旧库 |
+| 画面升级实机截图 | `docs/images/visual-*.png` | `scripts/verify-visuals-browser.js` 布置桌面验收场景，分别展示首页、陆地／月表／海战；不是预渲染模型宣传图 |
 | 地表、建筑、植被 | `assets/terrain-valley-v2.png`、`buildings-realistic-v2.png`、`foliage-realistic-v2.png`、`armory-v1.png`；使用 AI 图像生成工具制作 | 复现提示词见 `assets/asset-prompts.json`，建筑和植被使用透明图集 |
 | 开场画面 | `assets/battlefield-key-art.png`；AI 生成的原创战场插画 | 不代表实际运行画质，游戏截图位于 `docs/images/` |
 | 军事模型 | `assets/models/military-library.glb` 与 `modern-library.glb`；本地 Blender 程序化建模 | 包含 `.blend` 源文件及 `scripts/build_*_assets.py` 生成脚本，共 34 类基础模型模板与 9 类现代单位模板 |

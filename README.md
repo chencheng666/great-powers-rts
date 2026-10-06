@@ -2,9 +2,21 @@
 
 原创、非官方的红警风格浏览器即时战略游戏。使用 JavaScript、Three.js 和 Blender，提供五阵营、六张地图、单机 AI 遭遇战，以及陆海空与现代支援单位。不是《红色警戒》官方续作，也不是其代码或美术资源的移植。
 
-![远洋战区基地](docs/images/ocean-base.png)
+![升级后的作战部署首页，背景为原创插画](docs/images/visual-menu-1600.png)
 
 [下载离线试玩包](https://github.com/chencheng666/great-powers-rts/releases/latest) · [掘金文章](docs/juejin-article.md) · [开发清单](ROADMAP.md) · [反馈问题](https://github.com/chencheng666/great-powers-rts/issues)
+
+## 画面与首页升级 v0.6.0
+
+核心基地设施改用立体模型，细化五阵营坦克和两类飞机，共 17 个模型模板；兵工厂与战车工厂外观分开。装甲接缝、观瞄、工业通风、检修走道、航空挂架与材质磨损增加细节，其他单位和设施继续逐步升级。
+
+常规地图换用小尺度地表材质，月壤重复密度、平滑岩石与道路磨损同步调整。增加轻微三维地表起伏，基地及主路保持平整；起伏只影响视觉，不增加隐含的寻路或伤害规则。
+
+枪口短闪、短段曳光、连续能量束、重力散射碎片、分层烟尘、地面焦痕和海面冲击各自表现。新首页采用全幅原创主视觉与底部作战部署区，继续战局、导入、三类胜利规则及所有地图保留。首页插画与实际游戏画质分开标注。
+
+![陆地基地与细化三维装备，桌面实机验收场景](docs/images/visual-valley.png)
+
+[v0.6.0 下载](https://github.com/chencheng666/great-powers-rts/releases/tag/v0.6.0) · [实机截图与更新说明](docs/releases/v0.6.0.md)
 
 ## 月表机器人版 v0.5.0
 
