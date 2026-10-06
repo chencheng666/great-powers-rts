@@ -59,14 +59,15 @@ def aircraft(name, transport=False):
             b.beam('弹舱挂架', (x, -.4, .42), (x, .4, .42), .04, 'light')
 
 
-landing()
-aircraft('bomber')
-aircraft('airlift', True)
-roots = [o for o in bpy.context.scene.objects if o.type == 'EMPTY' and o.parent is None]
-bpy.ops.object.select_all(action='DESELECT')
-for obj in bpy.context.scene.objects:
-    if obj.type in ['EMPTY', 'MESH']:
-        obj.select_set(True)
-bpy.ops.export_scene.gltf(filepath=os.path.join(b.OUT, 'logistics-library.glb'), export_format='GLB', use_selection=True, export_apply=True, export_extras=True)
-bpy.ops.wm.save_as_mainfile(filepath=os.path.join(b.OUT, 'logistics-library.blend'))
-print('补给运输模型库已生成：', len(roots), '类模型', flush=True)
+if __name__ == '__main__':
+    landing()
+    aircraft('bomber')
+    aircraft('airlift', True)
+    roots = [o for o in bpy.context.scene.objects if o.type == 'EMPTY' and o.parent is None]
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in bpy.context.scene.objects:
+        if obj.type in ['EMPTY', 'MESH']:
+            obj.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=os.path.join(b.OUT, 'logistics-library.glb'), export_format='GLB', use_selection=True, export_apply=True, export_extras=True)
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(b.OUT, 'logistics-library.blend'))
+    print('补给运输模型库已生成：', len(roots), '类模型', flush=True)

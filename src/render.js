@@ -9,6 +9,7 @@ import { healthVisual, showHealthBar, teamVisual } from './team-visuals.js';
 import { layoutHealthBars } from './health-layout.js';
 import { unitRadius } from './unit-spacing.js';
 import { equipmentModel } from './equipment.js';
+import { projectileFlightPose } from './projectile-flight.js';
 import { weatherState } from './tactical-rules.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -22,6 +23,8 @@ const SIN_ELEVATION = .819;
 const UNIT_SCALE = { rifle: 12, engineer: 12, scout: 12, tank: 10, harvester: 9.5, aa: 10, elite: 10, fighter: 11, strike: 11, drone: 10, ghost: 10, patrol: 10, frigate: 10 };
 Object.assign(UNIT_SCALE, { loiterer: 10, jammer: 10, laser: 10, rocket: 10, apc: 10, supply: 10, destroyer: 9, carrier: 8, submarine: 8 });
 Object.assign(UNIT_SCALE, { landing: 9, bomber: 11, airlift: 11 });
+Object.assign(UNIT_SCALE, { freightPlane: 9, containerShip: 8 });
+Object.assign(UNIT_SCALE, { navalFighter: 11, navalStrike: 11 });
 Object.assign(UNIT_SCALE, { railgun: 10, relay: 10, aegis: 11 });
 const vector = (x, z, y = 0) => new THREE.Vector3(x, y, z);
 const makeCanvas = (width, height) => { const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; return canvas; };
@@ -177,14 +180,28 @@ export class Renderer {
   }
 
   createShoreline() {
-    const water = this.game.map.water, geometries = [];
-    for (const [edge, side] of [[water.x1, 1], [water.x2, -1]]) for (let z = 24; z < this.world.height; z += 48) {
-      if (this.game.map.bridges.some(bridge => z >= bridge.y1 - 24 && z <= bridge.y2 + 24)) continue;
-      const width = 5 + hash(edge, z, 81) * 13, geometry = new THREE.PlaneGeometry(width, 43);
-      geometry.rotateX(-Math.PI / 2); geometry.translate(edge + side * width / 2, 1.1, z); geometries.push(geometry);
+    const water = this.game.map.water, canvas = makeCanvas(64, 256), ctx = canvas.getContext('2d');
+    const pixels = ctx.createImageData(64, 256);
+    for (let y = 0; y < 256; y++) for (let x = 0; x < 64; x++) {
+      const i = (y * 64 + x) * 4, crest = 27 + Math.sin(y * TAU / 256 * 3) * 4;
+      pixels.data[i] = 214; pixels.data[i + 1] = 230; pixels.data[i + 2] = 220;
+      pixels.data[i + 3] = Math.exp(-(((x - crest) / 11) ** 2)) * (130 + Math.sin(y * TAU / 256 * 5) * 45);
     }
-    this.shoreMaterial = this.track(new THREE.MeshBasicMaterial({ color: '#d9e7dc', transparent: true, opacity: .14, depthWrite: false }));
-    const shore = new THREE.Mesh(this.track(mergeGeometries(geometries)), this.shoreMaterial); this.scene.add(shore); geometries.forEach(geometry => geometry.dispose());
+    ctx.putImageData(pixels, 0, 0);
+    const texture = this.track(new THREE.CanvasTexture(canvas)); texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.y = this.world.height / 380;
+    this.shoreMaterial = this.track(new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
+    for (const [edge, side] of [[water.x1, 1], [water.x2, -1]]) {
+      const steps = Math.ceil(this.world.height / 16), positions = [], uv = [], indices = [];
+      for (let n = 0; n <= steps; n++) {
+        const z = n / steps * this.world.height, width = 22 + Math.sin(z * .025) * 3 + Math.sin(z * .009) * 5;
+        positions.push(edge - side * 9, 1.16, z, edge + side * width, 1.16, z);
+        uv.push(0, n / steps, 1, n / steps);
+        if (n < steps) { const a = n * 2; indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      }
+      const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geometry.setIndex(indices);
+      this.scene.add(new THREE.Mesh(this.track(geometry), this.shoreMaterial));
+    }
   }
 
   createWater() {
@@ -433,7 +450,7 @@ export class Renderer {
     const color = teamVisual(entity.owner).color, name = equipmentModel(this.game.players[entity.owner].faction, entity.type, this.game.map.future);
     const model = createModel(name, color), scale = entity.kind === 'building' ? entity.size / 7.2 : UNIT_SCALE[entity.type]; model.scale.setScalar(scale);
     model.userData.entity = entity;
-    const sprite = entity.kind === 'building' && entity.type !== 'turret' && !this.game.map.future ? this.attachArchitecture(model, name, color) : null;
+    const sprite = entity.kind === 'building' && !['turret', 'refinery'].includes(entity.type) && !this.game.map.future ? this.attachArchitecture(model, name, color) : null;
     const entrance = entity.kind === 'building' && ['barracks', 'factory', 'armory', 'airfield'].includes(entity.type) ? this.createEntrance(entity, model, scale) : null;
     const ring = new THREE.Mesh(this.selectionGeometry, entity.owner === 0 ? this.selectionMaterial : this.enemySelectionMaterial); ring.visible = false; this.scene.add(model, ring);
     const exhausts = [];
@@ -444,7 +461,7 @@ export class Renderer {
     const topHeight = new THREE.Box3().setFromObject(model).max.y;
     const rotors = []; model.traverse(object => { if (/^rotor_\d+_/.test(object.name)) rotors.push(object); });
     rotors.sort((a, b) => Number(a.name.split('_')[1]) - Number(b.name.split('_')[1]));
-    const value = { model, ring, entity, scale, sprite, entrance, exhausts, topHeight, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0 }; this.entities.set(entity.id, value); return value;
+    const value = { model, ring, entity, scale, sprite, entrance, exhausts, topHeight, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
   }
 
   createEntrance(building, model, scale) {
@@ -486,12 +503,21 @@ export class Renderer {
       if (entity.kind === 'unit') {
         const tags = UNITS[entity.type].tags;
         if (tags.includes('jet')) height = 95 * (entity.deployment ? Math.min(1, (this.game.time - entity.deployment.start) / 2.6) : 1) + Math.sin(now * .001 + entity.id) * 2;
+        if (entity.deckApproach) height = 15 + 80 * Math.max(0, (entity.deckApproach.until - this.game.time) / 2.4);
+        if (entity.embarkedIn) height = 15;
         else if (tags.includes('drone')) height = 23 + Math.sin(this.game.time * 3 + entity.id) * 1.5;
         if (entity.type === 'airlift' && !moving && this.game.transportGrounded(entity)) height = this.elevation(entity.x, entity.y) + 6;
         else if (tags.includes('ship')) height = 2 + Math.sin(now * .002 + entity.id) * .6;
         const turn = Math.atan2(Math.sin(entity.angle - entry.heading), Math.cos(entity.angle - entry.heading));
         entry.heading += turn * (1 - Math.exp(-dt * (tags.includes('infantry') ? 18 : 9)));
         entry.model.rotation.y = -entry.heading;
+        if (tags.includes('jet')) {
+          entry.bank += (clamp(turn * .65, -.4, .4) - entry.bank) * (1 - Math.exp(-dt * 5));
+          entry.model.rotation.x = entry.bank;
+          entry.flightHeight ??= height;
+          entry.flightHeight += (height - entry.flightHeight) * (1 - Math.exp(-dt * 5));
+          height = entry.flightHeight;
+        }
         if (entry.weapon) { entry.weapon.rotation.y = entry.heading - entity.turretAngle; entry.weapon.position.x = -.35 * Math.exp(-Math.max(0, this.game.time - (entity.lastFireAt ?? -100)) * 18); }
         if (tags.includes('infantry')) entry.model.rotation.z = moving ? Math.sin(entity.movePulse * 1.8) * .025 : 0;
         entry.legs.forEach((leg, index) => { leg.rotation.z = moving ? Math.sin(entity.movePulse * 2 + index * Math.PI) * .47 : 0; });
@@ -507,6 +533,18 @@ export class Renderer {
       } else if (entity.type === 'dock') entry.model.rotation.y = entity.x > this.world.width / 2 ? Math.PI : 0;
       else if (entity.type === 'turret') entry.model.rotation.y = -entity.angle;
       entry.model.position.set(entity.x, height, entity.y);
+      if (entity.type === 'carrier') {
+        const assigned = this.game.carrierAircraft(entity).length;
+        const flights = this.game.projectiles.filter(p => !p.finished && p.kind === 'wing' && p.sourceId === entity.id).length;
+        const parked = assigned ? entity.passengers.map(id => this.game.getEntity(id)).filter(p => p?.hp > 0) : Array.from({ length: Math.max(0, entity.wing - flights) }, (_, i) => ({ id: -i - 1, type: 'navalStrike' }));
+        const ids = new Set(parked.map(p => p.id));
+        for (const [id, plane] of entry.deckModels) if (!ids.has(id)) { entry.model.remove(plane); entry.deckModels.delete(id); }
+        parked.forEach((plane, i) => {
+          let mesh = entry.deckModels.get(plane.id);
+          if (!mesh) { mesh = createModel(equipmentModel(this.game.players[entity.owner].faction, plane.type), teamVisual(entity.owner).color); mesh.scale.setScalar(.3); entry.model.add(mesh); entry.deckModels.set(plane.id, mesh); }
+          mesh.position.set(-8 + i * 4.1, 1.3, -1.3);
+        });
+      }
       if (entry.entrance) {
         const age = this.game.time - ((entity.exitUntil || -10) - 2.6), open = entity.exitUntil > this.game.time ? Math.min(1, age / .3) : Math.max(0, 1 - (this.game.time - (entity.exitUntil || -10)) / .45);
         entry.entrance.door.scale.y = Math.max(.03, 1 - open); entry.entrance.door.position.y = entry.entrance.height - 2 - (entry.entrance.height - 4) * (1 - open) / 2;
@@ -611,6 +649,11 @@ export class Renderer {
           const waveGeometry = new THREE.RingGeometry(.86, 1, 48); waveGeometry.rotateX(-Math.PI / 2);
           group.add(new THREE.Mesh(waveGeometry, new THREE.MeshBasicMaterial({ color: '#a4a5a1', transparent: true, depthWrite: false, side: THREE.DoubleSide })));
         }
+        else if (effect.type === 'supplyDrop') {
+          const crate = new THREE.Mesh(new THREE.BoxGeometry(14, 11, 12), new THREE.MeshStandardMaterial({ color: '#69756a', roughness: .75, metalness: .25 })); crate.castShadow = true; group.add(crate);
+          const canopy = new THREE.Mesh(new THREE.SphereGeometry(15, 20, 8, 0, TAU, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#d4ded6', roughness: .85, side: THREE.DoubleSide })); canopy.position.y = 27; group.add(canopy);
+          for (const [x, z] of [[-10,-10],[-10,10],[10,-10],[10,10]]) group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, 27, z), new THREE.Vector3(x * .45, 6, z * .45)]), new THREE.LineBasicMaterial({ color: '#ccd7cf' })));
+        }
         else if (['order', 'build', 'capture', 'ability', 'jam', 'sonar'].includes(effect.type)) group.add(new THREE.Mesh(this.selectionGeometry, new THREE.MeshBasicMaterial({ color: effect.type === 'jam' ? '#c2a4ff' : effect.type === 'sonar' ? '#83ccd9' : effect.owner === 1 ? '#fb7968' : '#8cdff0', transparent: true, depthWrite: false })));
         group.position.set(effect.x, ['hit', 'explosion'].includes(effect.type) ? this.effectHeight(effect.targetType, effect.x, effect.y) : this.elevation(effect.x, effect.y) + 2, effect.y); this.scene.add(group); this.effects.set(effect, group);
         if (effect.type === 'sonar') group.position.y = 3;
@@ -630,6 +673,9 @@ export class Renderer {
         for (let i = 0; i < positions.count; i++) { const angle = i * 2.399, speed = size * (.6 + hash(i, effect.x) * .9); positions.setXYZ(i, Math.cos(angle) * speed * t, speed * t * (.3 + hash(i, effect.y)) - size * t * t * .8, Math.sin(angle) * speed * t); }
         positions.needsUpdate = true; sparks.material.opacity = (1 - t) ** 2;
         const wave = group.children[4]; wave.position.y = -group.position.y + this.elevation(effect.x, effect.y) + 2.5; wave.scale.setScalar(size * (.3 + t * 1.8)); wave.material.opacity = (1 - t) ** 3 * .35;
+      } else if (effect.type === 'supplyDrop') {
+        group.position.y = 7 + (1 - t) * 80; group.rotation.y = Math.sin(t * 4) * .15;
+        group.children.forEach(mesh => { mesh.material.transparent = true; mesh.material.opacity = t > .8 ? (1 - t) * 5 : 1; });
       } else if (group.children[0]) { const pulse = ['jam', 'sonar'].includes(effect.type), radius = pulse ? effect.size * t : effect.type === 'ability' ? 245 * Math.min(1, t * 2) : 10 + t * 24; group.children[0].scale.set(radius, 1, radius); group.children[0].material.opacity = (1 - t) * (pulse ? .3 : 1); }
     }
     for (const [effect, group] of this.effects) if (!current.has(effect)) { group.traverse(item => { if (item.geometry && item.geometry !== this.selectionGeometry) item.geometry.dispose(); if (item.material) item.material.dispose(); }); this.scene.remove(group); this.effects.delete(effect); }
@@ -662,9 +708,8 @@ export class Renderer {
         this.scene.add(model); this.projectileModels.set(p.id, model);
       }
       model.visible = p.owner === 0 || this.game.isVisibleFor(0, p.x, p.y);
-      const span = Math.hypot(p.toX - p.startX, p.toY - p.startY) || 1, progress = Math.min(1, Math.hypot(p.x - p.startX, p.y - p.startY) / span);
-      const height = p.kind === 'bomb' ? 95 * (1 - progress) + 4 : p.kind === 'wing' ? 88 + Math.sin(now * .004 + p.id) * 2 : p.kind === 'torpedo' ? 2 : p.kind === 'rocket' ? 22 + Math.sin(progress * Math.PI) * 135 : 35;
-      model.position.set(p.x, height, p.y); model.rotation.y = -p.angle;
+      const pose = projectileFlightPose(p), height = pose.height + (p.kind === 'wing' ? Math.sin(now * .004 + p.id) * 2 : 0);
+      model.position.set(p.x, height, p.y); model.rotation.y = -p.angle; model.rotation.z = pose.pitch;
       if (model.visible && ['rocket', 'missile'].includes(p.kind) && this.game.time >= (p.trailAt || 0) && this.trails.length < 100) {
         const sprite = this.effectSprite('#a7a9a7', true); sprite.position.set(p.x, height, p.y); sprite.scale.setScalar(8); sprite.material.opacity = .2;
         this.scene.add(sprite); this.trails.push({ sprite, baseY: height, start: this.game.time }); p.trailAt = this.game.time + .09;
@@ -695,7 +740,7 @@ export class Renderer {
       const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry'), ammo = UNITS[entity.type]?.ammo;
       const numeric = hovered || isSelected && selected.size === 1;
       const label = `${entity.owner === 1 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
-      const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.jammedUntil > this.game.time ? '干扰' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? '补给' : '';
+      const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.jammedUntil > this.game.time ? '干扰' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : '';
       ctx.font = '500 10px "Noto Sans SC",sans-serif';
       const width = Math.max(entity.kind === 'building' ? 76 : infantry ? 28 : 50, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0);
       bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner === 1 ? 2 : 1 });
@@ -741,7 +786,8 @@ export class Renderer {
     if (this.placement && this.placement.type !== type) { this.scene.remove(this.placement.model); this.placement = null; }
     if (!type || !this.pointer) { if (this.placement) this.placement.model.visible = false; return; }
     if (!this.placement) {
-      const model = createModel(type), sprite = type !== 'turret' ? this.attachArchitecture(model, type, '#59d7ec') : null;
+      const name = equipmentModel(this.game.players[0].faction, type, this.game.map.future);
+      const model = createModel(name), sprite = !this.game.map.future && !['turret', 'refinery'].includes(type) ? this.attachArchitecture(model, type, '#59d7ec') : null;
       if (sprite) sprite.material.opacity = .55;
       model.traverse(mesh => { if (!mesh.isMesh) return; if (!sprite) { mesh.material = this.track(mesh.material.clone()); mesh.material.transparent = true; mesh.material.opacity = .48; } mesh.castShadow = false; });
       model.scale.setScalar(BUILDINGS[type].size / 7.2); this.scene.add(model); this.placement = { type, model, sprite };
@@ -755,7 +801,7 @@ export class Renderer {
     this.updateEntities(now); this.updateEffects(); this.updateProjectileModels(now); this.updateTracks(); this.updatePlacement();
     if (now - this.lastFog >= 180) { this.updateFog(); this.lastFog = now; }
     if (this.waterNormal) this.waterNormal.offset.set(now * .000004, now * .000007);
-    if (this.shoreMaterial) this.shoreMaterial.opacity = .13 + Math.sin(now * .0012) * .035;
+    if (this.shoreMaterial) this.shoreMaterial.opacity = .4 + Math.sin(now * .0012) * .05;
     this.composer.render(); this.drawOverlay();
     if (now - this.lastMinimap >= 180) { this.drawMinimap(); this.lastMinimap = now; }
   }

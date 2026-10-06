@@ -1,0 +1,32 @@
+{
+  "file": "Great-Powers-RTS/PLAY.html",
+  "save": {
+    "mode": "convoy",
+    "routes": 2,
+    "ore": 0,
+    "miners": 0
+  },
+  "render": {
+    "colors": 3370,
+    "glError": 0,
+    "errors": [],
+    "externalRequests": [],
+    "voices": [
+      {
+        "duration": 73.846125,
+        "samples": 3544614,
+        "rms": 0.15726409592717336,
+        "context": "running"
+      },
+      {
+        "duration": 5.513916666666667,
+        "samples": 264668,
+        "rms": 0.12517858250835834,
+        "context": "running"
+      }
+    ],
+    "chineseSystemVoices": 0,
+    "overflow": 0
+  },
+  "restored": true
+}

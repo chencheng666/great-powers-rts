@@ -7,6 +7,7 @@ const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url
 const droneURL = new URL('../assets/models/drone-library.glb', import.meta.url).href;
 const equipmentURL = new URL('../assets/models/equipment-library.glb', import.meta.url).href;
 const logisticsURL = new URL('../assets/models/logistics-library.glb', import.meta.url).href;
+const convoyURL = new URL('../assets/models/convoy-library.glb', import.meta.url).href;
 const meridianURL = new URL('../assets/meridian-regolith-v2.png', import.meta.url).href;
 const groundURL = new URL('../assets/terrain-valley-v2.png', import.meta.url).href;
 const buildingsURL = new URL('../assets/buildings-realistic-v2.png', import.meta.url).href;
@@ -17,6 +18,7 @@ const names = ['hq', 'power', 'refinery', 'barracks', 'factory', 'dock', 'radar'
 names.push('loiterer', 'jammer', 'laser', 'rocket', 'apc', 'supply', 'destroyer', 'carrier', 'submarine');
 names.push('railgun', 'aegis', 'relay', ...['china','russia','nato','asia','middleeast'].flatMap(faction => [`tank_${faction}`, `rocket_${faction}`]), ...buildingNames.filter(name => name !== 'dock').map(name => `future_${name}`), 'future_beacon');
 names.push('landing', 'bomber', 'airlift');
+names.push('logistics_depot', 'containerShip', 'freightPlane', 'destroyer_china');
 let pending;
 let library;
 const variants = new Map();
@@ -47,19 +49,21 @@ ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothste
 }
 
 export function prepareVisualAssets() {
-  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL), new GLTFLoader().loadAsync(logisticsURL)]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics]) => {
+  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL), new GLTFLoader().loadAsync(logisticsURL), new GLTFLoader().loadAsync(convoyURL)]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics, convoy]) => {
     const models = new Map();
     gltf.scene.updateMatrixWorld(true);
     modern.scene.updateMatrixWorld(true);
     drones.scene.updateMatrixWorld(true);
     equipment.scene.updateMatrixWorld(true);
     logistics.scene.updateMatrixWorld(true);
+    convoy.scene.updateMatrixWorld(true);
     for (const name of names) {
-      const source = logistics.scene.getObjectByName(name) || equipment.scene.getObjectByName(name) || drones.scene.getObjectByName(name) || gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
+      const source = convoy.scene.getObjectByName(name) || logistics.scene.getObjectByName(name) || equipment.scene.getObjectByName(name) || drones.scene.getObjectByName(name) || gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
       if (!source) throw new Error(`缺少战场模型：${name}`);
       const batches = new Map();
       source.traverse(mesh => {
         if (!mesh.isMesh) return;
+        if (name === 'carrier' && /甲板停放机翼|甲板飞机/.test(mesh.name)) return;
         const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
         geometry.applyMatrix4(mesh.matrixWorld);
         for (const attr of Object.keys(geometry.attributes)) if (!['position', 'normal'].includes(attr)) geometry.deleteAttribute(attr);

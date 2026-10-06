@@ -88,25 +88,29 @@ export class GameAudio {
   setPaused(value) {
     if (this.paused === value) return;
     this.paused = value;
-    if (value) this.clearVoices();
+    if (value && !this.currentVoice?.preview) this.clearVoices();
     this.applySettings();
   }
 
-  say(key) {
-    if (!this.active || !this.context || this.settings.muted || !this.settings.master || !this.settings.voice || this.paused || !VOICE_LINES[key]) return false;
+  say(key, { preview = false } = {}) {
+    if (!this.active || !this.context || this.settings.muted || !this.settings.master || !this.settings.voice || this.paused && !preview || !VOICE_LINES[key]) return false;
     const now = this.context.currentTime, priority = VOICE_PRIORITY[key] || 0;
-    if (now - (this.cooldowns.get(key) ?? -Infinity) < (VOICE_COOLDOWN[key] || 1.7)) return false;
-    if (priority === 0 && now - this.lastSpeech < 1.1) return false;
-    this.cooldowns.set(key, now); this.lastSpeech = now;
+    // 手动试听允许在暂停时播放，不改变正常战斗播报的限频。
+    if (preview) this.clearVoices();
+    else {
+      if (now - (this.cooldowns.get(key) ?? -Infinity) < (VOICE_COOLDOWN[key] || 1.7)) return false;
+      if (priority === 0 && now - this.lastSpeech < 1.1) return false;
+      this.cooldowns.set(key, now); this.lastSpeech = now;
+    }
     const index = (this.variants.get(key) || 0) % VOICE_LINES[key].length; this.variants.set(key, index + 1);
     if (this.currentVoice && priority >= 3 && priority > this.currentVoice.priority) this.clearVoices();
     if (this.voiceQueue.some(line => line.key === key)) return false;
-    this.voiceQueue.push({ key, index, priority, time: now }); this.voiceQueue.sort((a, b) => b.priority - a.priority);
+    this.voiceQueue.push({ key, index, priority, time: now, preview }); this.voiceQueue.sort((a, b) => b.priority - a.priority);
     this.voiceQueue = this.voiceQueue.slice(0, 3); this.playNextVoice(); return true;
   }
 
   async playNextVoice() {
-    if (this.currentVoice || !this.voiceQueue.length || !this.active || this.paused) return;
+    if (this.currentVoice || !this.voiceQueue.length || !this.active || this.paused && !this.voiceQueue[0].preview) return;
     const line = this.voiceQueue.shift(), session = this.session;
     if (this.context.currentTime - line.time > 4) { this.playNextVoice(); return; }
     // 先占用通道，防止异步解码期间多个应答同时播放。
@@ -119,7 +123,7 @@ export class GameAudio {
     }
     try {
       const buffer = await this.buffer(voiceFile(line.key, line.index));
-      if (session !== this.session || this.currentVoice !== token || !this.active || this.paused || this.settings.muted || !this.settings.voice || !this.settings.master) { if (this.currentVoice === token) this.currentVoice = null; return; }
+      if (session !== this.session || this.currentVoice !== token || !this.active || this.paused && !token.preview || this.settings.muted || !this.settings.voice || !this.settings.master) { if (this.currentVoice === token) this.currentVoice = null; return; }
       const source = this.context.createBufferSource(); source.buffer = buffer; source.connect(COMMAND_LINES.has(line.key) ? this.radioFilter : this.voiceBus);
       source.onended = () => { source.disconnect(); if (this.currentVoice === token) { this.currentVoice = null; this.applySettings(); this.playNextVoice(); } };
       token.source = source; source.start(); this.applySettings();
@@ -130,7 +134,7 @@ export class GameAudio {
     const session = this.session, file = `portable/${token.key}-${token.index}.wav`;
     try {
       const buffer = await this.buffer(file);
-      if (session !== this.session || this.currentVoice !== token || !this.active || this.paused || this.settings.muted || !this.settings.voice || !this.settings.master) return;
+      if (session !== this.session || this.currentVoice !== token || !this.active || this.paused && !token.preview || this.settings.muted || !this.settings.voice || !this.settings.master) return;
       const source = this.context.createBufferSource(); source.buffer = buffer; source.connect(COMMAND_LINES.has(token.key) ? this.radioFilter : this.voiceBus);
       source.onended = () => { source.disconnect(); if (this.currentVoice === token) { this.currentVoice = null; this.applySettings(); this.playNextVoice(); } };
       token.source = source; source.start(); this.applySettings();
@@ -173,9 +177,9 @@ export class GameAudio {
     if (entity.kind === 'building') key = 'structureSelected';
     else if (entity.type === 'engineer') key = 'engineerSelected';
     else if (['tank','aa','harvester','elite','loiterer','jammer','laser','rocket','apc','supply'].includes(entity.type)) key = 'armorSelected';
-    else if (['fighter','strike','bomber','airlift','aegis'].includes(entity.type)) key = 'airSelected';
+    else if (['fighter','strike','bomber','airlift','aegis','navalFighter','navalStrike','freightPlane'].includes(entity.type)) key = 'airSelected';
     else if (['drone','ghost'].includes(entity.type)) key = 'droneSelected';
-    else if (['patrol','frigate','destroyer','carrier','submarine','landing'].includes(entity.type)) key = 'navySelected';
+    else if (['patrol','frigate','destroyer','carrier','submarine','landing','containerShip'].includes(entity.type)) key = 'navySelected';
     this.say(key);
   }
 

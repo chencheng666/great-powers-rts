@@ -36,7 +36,14 @@ export function equipmentProfile(faction, type) {
 }
 
 export function equipmentModel(faction, type, future = false) {
+  if (type === 'navalFighter') return 'fighter';
+  if (type === 'navalStrike') return 'strike';
+  if (type === 'refinery' && !future) return 'logistics_depot';
+  if (type === 'destroyer' && faction === 'china') return 'destroyer_china';
   if (type === 'tank' || type === 'rocket') return `${type}_${faction}`;
   if (future && !UNITS[type]) return `future_${type}`;
   return type === 'elite' ? `elite_${faction}` : type;
 }
+
+EQUIPMENT_SYSTEMS.china.destroyer = ['052D 导弹驱逐舰', '052D 公开外观参考：相控阵雷达、垂发甲板与直升机平台；原创简化模型，战力仍遵循统一平衡。', 'china-destroyer'];
+EQUIPMENT_SOURCES['china-destroyer'] = 'https://www.mod.gov.cn/djzx/4809824.html';

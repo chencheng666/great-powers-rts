@@ -1,0 +1,85 @@
+{
+  "checks": {
+    "port": {
+      "hp": 800,
+      "maxHp": 800,
+      "ammo": 8,
+      "paid": 131.87500000025466
+    },
+    "air": {
+      "income": 720,
+      "phase": "outbound",
+      "drops": 1
+    },
+    "sea": {
+      "income": 900,
+      "phase": "outbound"
+    },
+    "launch": {
+      "parked": 0,
+      "active": 2,
+      "moved": true
+    },
+    "satellite": {
+      "paid": 1000,
+      "visible": true,
+      "duration": 8
+    },
+    "save": {
+      "mode": "convoy",
+      "aircraft": 2,
+      "logistics": 2
+    }
+  },
+  "screenshots": [
+    {
+      "file": "01-port-repair.png",
+      "colors": 4812,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "02-airdrop-logistics.png",
+      "colors": 7338,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "03-container-convoy.png",
+      "colors": 2148,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "04-carrier-deck.png",
+      "colors": 226,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "05-carrier-launch.png",
+      "colors": 373,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "06-satellite-recon.png",
+      "colors": 393,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    },
+    {
+      "file": "07-desktop-compact.png",
+      "colors": 370,
+      "glError": 0,
+      "errors": [],
+      "overflow": 0
+    }
+  ]
+}

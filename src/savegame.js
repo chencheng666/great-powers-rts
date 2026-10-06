@@ -24,6 +24,7 @@ export function validateSave(save) {
   checkTree(save);
   const s = save.state, config = save.config;
   if (!object(s) || !object(config) || !known(MAPS, config.mapId) || !known(AI_DIFFICULTIES, config.difficulty) || !['quick', 'annihilation', 'control'].includes(config.victoryMode) || !finite(save.savedAt) || !finite(s.time) || s.time < 0) invalid();
+  if (config.economyMode !== undefined && !['mining', 'convoy'].includes(config.economyMode)) invalid();
   if (SNAPSHOT_FIELDS.some(key => !Object.hasOwn(s, key))) invalid();
   if (!Array.isArray(s.players) || s.players.length !== 2) invalid();
   const checkProduction = (queue, definitions) => {
@@ -32,6 +33,7 @@ export function validateSave(save) {
   for (const [side, player] of s.players.entries()) {
     if (!object(player) || player.side !== side || !known(FACTIONS, player.faction) || !['credits', 'abilityCharge', 'abilityCooldown', 'shieldUntil', 'controlScore', 'unitCount', 'aiPlanIndex', 'aiUnitCount', 'aiAirUnitCount', 'aiNavyUnitCount', 'aiEngineerRetryAt', 'aiScoutRetryAt', 'aiGhostRetryAt'].every(key => finite(player[key])) || player.credits < 0) invalid();
     checkProduction(player.buildQueue, BUILDINGS);
+    for (const key of ['satelliteUntil', 'satelliteReadyAt']) if (player[key] !== undefined && (!finite(player[key]) || player[key] < 0)) invalid();
   }
   const world = MAPS[config.mapId].world || WORLD, ids = new Set();
   const point = value => object(value) && finite(value.x) && finite(value.y);
@@ -53,7 +55,13 @@ export function validateSave(save) {
         if (entity.ammo !== null && (!Number.isSafeInteger(entity.ammo) || entity.ammo < 0 || !d.ammo || entity.ammo > d.ammo)) invalid();
         if (d.stock && (!finite(entity.stock) || entity.stock < 0 || entity.stock > d.stock)) invalid();
         if (entity.type === 'supply' && entity.autoSupply !== undefined && typeof entity.autoSupply !== 'boolean') invalid();
+        if (UNITS[entity.type].tags.includes('logistics')) {
+          const f = entity.freight;
+          if (!object(f) || !point(f.entry) || f.entry.x < 0 || f.entry.x > world.width || f.entry.y < 0 || f.entry.y > world.height || !['inbound', 'unloading', 'outbound'].includes(f.phase) || !finite(f.progress) || f.progress < 0 || !finite(f.value) || f.value < 0 || f.value > 900 || f.homeId !== null && !Number.isSafeInteger(f.homeId)) invalid();
+        }
         if (entity.deployment && (!point(entity.deployment) || !finite(entity.deployment.start) || !finite(entity.deployment.until) || !finite(entity.deployment.fromX) || !finite(entity.deployment.fromY))) invalid();
+        if (entity.homeCarrierId !== undefined && entity.homeCarrierId !== null && (!Number.isSafeInteger(entity.homeCarrierId) || !d.tags.includes('deck'))) invalid();
+        if (entity.deckApproach && (!object(entity.deckApproach) || !Number.isSafeInteger(entity.deckApproach.carrierId) || !finite(entity.deckApproach.start) || !finite(entity.deckApproach.until))) invalid();
       } else {
         if (!Array.isArray(entity.queue) || entity.queue.length > 1000 || entity.queue.some(type => !known(UNITS, type)) || !finite(entity.size) || entity.rallyPoint && !point(entity.rallyPoint)) invalid();
         checkProduction(entity.active, UNITS);
@@ -65,14 +73,23 @@ export function validateSave(save) {
     let weight = 0;
     for (const id of t.passengers) {
       const u = units.get(id);
-      if (!UNITS[t.type].capacity || !u || u === t || u.owner !== t.owner || u.embarkedIn !== t.id || transported.has(id) || UNITS[u.type].capacity || UNITS[u.type].tags.some(tag => ['air', 'ship'].includes(tag)) || t.type === 'apc' && !UNITS[u.type].tags.includes('infantry')) invalid();
-      transported.add(id); weight += UNITS[u.type].tags.includes('infantry') ? 1 : 4;
+      if (!UNITS[t.type].capacity || !u || u === t || u.owner !== t.owner || u.embarkedIn !== t.id || transported.has(id) || UNITS[u.type].capacity) invalid();
+      if (t.type === 'carrier' ? !UNITS[u.type].tags.includes('deck') || u.homeCarrierId !== t.id : UNITS[u.type].tags.some(tag => ['air', 'ship'].includes(tag)) || t.type === 'apc' && !UNITS[u.type].tags.includes('infantry')) invalid();
+      transported.add(id); weight += t.type === 'carrier' || UNITS[u.type].tags.includes('infantry') ? 1 : 4;
     }
     if (weight > (UNITS[t.type].capacity || 0)) invalid();
   }
   for (const u of s.units) if (u.embarkedIn && !transported.has(u.id)) invalid();
+  for (const u of s.units) if (u.homeCarrierId && units.has(u.homeCarrierId)) {
+    const t = units.get(u.homeCarrierId);
+    if (t.type !== 'carrier' || t.owner !== u.owner) invalid();
+  }
+  for (const t of s.units.filter(u => u.type === 'carrier')) {
+    const planes = s.units.filter(u => u.hp > 0 && u.homeCarrierId === t.id);
+    if (planes.length > UNITS.carrier.capacity || planes.some(u => u.owner !== t.owner)) invalid();
+  }
   for (const key of ['ore', 'oil', 'beacons']) {
-    if (!Array.isArray(s[key]) || s[key].length !== MAPS[config.mapId][key].length) invalid();
+    if (!Array.isArray(s[key]) || s[key].length !== (key === 'ore' && config.economyMode === 'convoy' ? 0 : MAPS[config.mapId][key].length)) invalid();
     for (const site of s[key]) {
       if (!object(site) || !finite(site.x) || !finite(site.y)) invalid();
       if (key === 'ore' ? !finite(site.amount) || site.amount < 0 || !finite(site.max) || site.max <= 0 || !['gold', 'gem'].includes(site.kind) : ![null, 0, 1].includes(site.owner)) invalid();
@@ -85,7 +102,12 @@ export function validateSave(save) {
   }
   if (!Array.isArray(s.selected) || s.selected.some(id => !Number.isSafeInteger(id)) || !Array.isArray(s.projectiles) || s.projectiles.length > 10000 || !Number.isSafeInteger(s.nextProjectileId) || ![s.aiTimer, s.aiWaveTimer, s.fogTimer].every(finite) || s.pendingBuilding !== null && !known(BUILDINGS, s.pendingBuilding) || typeof s.pendingAbility !== 'boolean') invalid();
   for (const projectile of s.projectiles) if (!object(projectile) || !['x', 'y', 'startX', 'startY', 'toX', 'toY', 'angle', 'age', 'amount', 'speed', 'hp', 'jam'].every(key => finite(projectile[key])) || projectile.speed <= 0 || ![0, 1].includes(projectile.owner) || !['wing', 'torpedo', 'rocket', 'missile', 'loitering', 'bomb'].includes(projectile.kind)) invalid();
+  for (const projectile of s.projectiles) for (const key of ['sourceHeight', 'targetHeight']) if (projectile[key] !== undefined && !finite(projectile[key])) invalid();
   if (save.view !== undefined && !object(save.view)) invalid();
+  if (s.logistics !== undefined) {
+    if (!Array.isArray(s.logistics) || s.logistics.length !== 2) invalid();
+    for (const [side, route] of s.logistics.entries()) if (!object(route) || route.side !== side || !['nextAir', 'nextSea', 'delivered', 'lost'].every(key => finite(route[key]) && route[key] >= 0)) invalid();
+  } else if (config.economyMode === 'convoy') invalid();
   return save;
 }
 
@@ -99,7 +121,7 @@ export function parseSave(text) {
 export function createSave(game, view = {}, savedAt = Date.now()) {
   if (!game?.running || game.winner !== null) throw new Error('只能保存尚未结束的战局');
   const difficulty = Object.entries(AI_DIFFICULTIES).find(([, value]) => value === game.difficulty)?.[0];
-  const save = { format: 'great-powers-rts', version: SAVE_VERSION, savedAt, config: { mapId: game.mapId, victoryMode: game.victoryMode, difficulty }, state: Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])), view };
+  const save = { format: 'great-powers-rts', version: SAVE_VERSION, savedAt, config: { mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])), logistics: game.logistics }, view };
   validateSave(save);
   return JSON.parse(JSON.stringify(save));
 }

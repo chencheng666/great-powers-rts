@@ -295,7 +295,7 @@ function updateSidebar(force = false) {
   const g = state.game; if (!g) return;
   const root = $('#sidebar-content');
   const queues = g.ownedBuildings(0).filter(b => PRODUCERS.includes(b.type)).map(b => `${b.type}:${b.active?.type || ''}:${b.queue.join(',')}`).join(';');
-  const key = `${state.tab}:${queues}:${g.players[0].buildQueue?.type || ''}:${g.pendingBuilding || ''}:${g.ownedBuildings(0).map(b => b.type).join(',')}:${g.players[0].abilityCharge >= 100}:${Math.floor(g.players[0].abilityCharge / 5)}:${g.players[0].abilityCooldown > 0}:${g.players[0].credits < 650}`;
+  const key = `${state.tab}:${queues}:${g.players[0].buildQueue?.type || ''}:${g.pendingBuilding || ''}:${g.ownedBuildings(0).map(b => b.type).join(',')}:${g.players[0].abilityCharge >= 100}:${Math.floor(g.players[0].abilityCharge / 5)}:${g.players[0].abilityCooldown > 0}:${g.players[0].credits < 650}:${g.players[0].credits < 1000}:${Math.ceil(Math.max(0, (g.players[0].satelliteReadyAt || 0) - g.time))}:${Math.ceil(Math.max(0, (g.players[0].satelliteUntil || 0) - g.time))}:${g.hasPower(0)}`;
   if (!force && root.dataset.renderKey === key) return;
   root.dataset.renderKey = key;
   const p = g.players[0], faction = FACTIONS[p.faction];
@@ -308,7 +308,7 @@ function updateSidebar(force = false) {
     root.querySelectorAll('[data-build]').forEach(button => button.addEventListener('click', () => { if (g.startBuild(0, button.dataset.build)) updateUI(true); }));
   } else if (state.tab === 'units') {
     root.innerHTML = PRODUCERS.map(producer => {
-      const types = UNIT_ORDER.filter(type => UNITS[type].producer === producer && (!UNITS[type].faction || UNITS[type].faction === p.faction) && (!UNITS[type].naval || g.map.water) && (!UNITS[type].map || UNITS[type].map === g.mapId));
+      const types = UNIT_ORDER.filter(type => (type !== 'harvester' || g.economyMode === 'mining') && UNITS[type].producer === producer && (!UNITS[type].faction || UNITS[type].faction === p.faction) && (!UNITS[type].naval || g.map.water) && (!UNITS[type].map || UNITS[type].map === g.mapId));
       if (!types.length) return '';
       const facilities = g.ownedBuildings(0, producer), count = facilities.reduce((sum,b) => sum + b.queue.length + (b.active ? 1 : 0),0);
       return `<section class="production-group" data-producer="${producer}"><h3><span>${BUILDINGS[producer].name}</span><small>${!facilities.length ? '未部署' : count ? `${count} 项生产任务` : '待命'}</small>${count ? `<button class="icon-btn" data-cancel-producer="${producer}" title="取消${BUILDINGS[producer].name}当前生产" aria-label="取消${BUILDINGS[producer].name}当前生产">${icon('x')}</button>` : ''}</h3><div class="action-list">${types.map(type => {
@@ -332,6 +332,11 @@ function updateSidebar(force = false) {
       else { g.pendingAbility = true; toast('左键选择已侦察的技能目标区域'); }
       updateUI(true);
     });
+    const cooldown = Math.ceil(Math.max(0, (p.satelliteReadyAt || 0) - g.time));
+    const satelliteReady = g.hasBuilding(0, 'radar') && g.hasBuilding(0, 'lab') && g.hasPower(0) && p.credits >= 1000 && !cooldown;
+    root.querySelector('.tactic-details').firstElementChild.textContent = g.economyMode === 'mining' ? '月表矿石：黄矿 1／宝石 2 资金' : '运输机：36 秒一班，720 资金；海运：60 秒一班，900 资金。卸货到账，航线需护卫。';
+    root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin', `<div class="ability-card"><div class="ability-card-header"><strong>侦察卫星</strong>${icon('satellite')}</div><p>全图视野 8 秒 · 潜航仍需声呐 · 冷却 120 秒</p><div class="ability-meta"><span>${(p.satelliteUntil || 0) > g.time ? '卫星过境中' : cooldown ? `冷却 ${cooldown} 秒` : '待命'}</span><span>¤ 1,000</span></div><button class="ability-button" id="satellite-button" ${satelliteReady ? '' : 'disabled'}>${icon('satellite')} ${satelliteReady ? '请求卫星侦察' : !g.hasBuilding(0, 'lab') || !g.hasBuilding(0, 'radar') ? '需要雷达站与实验室' : !g.hasPower(0) ? '电力不足' : cooldown ? '卫星重新部署中' : '资金不足'}</button></div>`);
+    $('#satellite-button').addEventListener('click', () => { g.activateSatellite(0); updateUI(true); });
   }
   refreshIcons();
 }
@@ -347,8 +352,14 @@ function updateSelection() {
   else if (selected.length === 1) {
     const e = selected[0], profile = e.kind === 'unit' ? equipmentProfile(g.players[e.owner].faction, e.type) : null, name = profile ? profile.name : BUILDINGS[e.type].name;
     const actions = e.kind === 'building' ? `<div class="selection-actions"><button type="button" data-action="repair" class="${e.repairing ? 'active' : ''}" title="${e.hp >= e.maxHp && !e.repairing ? '建筑完好' : e.repairing ? '停止维修' : '维修建筑'}" ${e.hp >= e.maxHp && !e.repairing ? 'disabled' : ''}>${icon('wrench')}</button>${e.type === 'hq' ? '' : `<button type="button" data-action="sell" title="出售建筑，返还一半造价">${icon('coins')}</button>`}</div>` : e.type === 'apc' ? `<div class="selection-actions"><button type="button" data-action="unload" title="乘员下车" aria-label="乘员下车">${icon('log-out')}</button></div>` : '';
-    const unitActions = e.kind === 'unit' && e.owner === 0 ? `<div class="selection-actions">${UNITS[e.type].capacity ? `<button type="button" data-action="unload" title="卸载部队" aria-label="卸载部队">${icon('log-out')}</button>` : ''}${UNITS[e.type].ammo || UNITS[e.type].tags.includes('air') ? `<button type="button" data-action="resupply" title="返回基地维修补给" aria-label="返回基地维修补给">${icon('fuel')}</button>` : ''}${e.type === 'supply' ? `<button type="button" data-action="auto-supply" class="${e.autoSupply !== false ? 'active' : ''}" aria-pressed="${e.autoSupply !== false}" title="自动寻找保障目标" aria-label="自动寻找保障目标">${icon('scan-search')}</button>` : ''}</div>` : '';
+    const unitActions = e.kind === 'unit' && e.owner === 0 && !UNITS[e.type].tags.includes('logistics') ? `<div class="selection-actions">${UNITS[e.type].capacity ? `<button type="button" data-action="unload" title="卸载部队" aria-label="卸载部队">${icon('log-out')}</button>` : ''}${UNITS[e.type].ammo || UNITS[e.type].tags.some(t => ['air', 'ship'].includes(t)) ? `<button type="button" data-action="resupply" title="返回基地维修补给" aria-label="返回基地维修补给">${icon('fuel')}</button>` : ''}${e.type === 'supply' ? `<button type="button" data-action="auto-supply" class="${e.autoSupply !== false ? 'active' : ''}" aria-pressed="${e.autoSupply !== false}" title="自动寻找保障目标" aria-label="自动寻找保障目标">${icon('scan-search')}</button>` : ''}</div>` : '';
     panel.innerHTML = `<span class="hud-label">当前选择${profile ? ` · ${profile.category}` : ''}</span><strong>${name}</strong><span class="selection-health">${selectionStatus(e)}</span>${profile ? `<span class="equipment-detail" title="${profile.description}">${profile.description}${inCover(g.map, e) ? ' · 掩体内' : ''}</span>` : ''}${e.kind === 'building' ? actions : unitActions}`;
+    if (e.type === 'carrier') {
+      panel.querySelector('.selection-health').textContent = `生命 ${Math.ceil(e.hp)} / ${e.maxHp} · 实体舰载机 ${g.carrierAircraft(e).length} / 3 · 甲板 ${e.passengers.length} 架${e.order?.type === 'rearm' ? ' · 返港整备' : ''}`;
+      const launch = panel.querySelector('[data-action="unload"]');
+      if (launch) { launch.title = '舰载机起飞'; launch.setAttribute('aria-label', '舰载机起飞'); launch.innerHTML = icon('plane-takeoff'); }
+    }
+    if (e.freight) panel.querySelector('.selection-health').textContent += ` · ${e.freight.phase === 'unloading' ? `卸货 ${Math.floor(e.freight.progress)} 秒` : e.freight.phase === 'outbound' ? '空载返航' : '物资运输中'} · 待交付 ¤ ${e.freight.value}`;
     panel.querySelector('[data-action="repair"]')?.addEventListener('click', () => { g.toggleRepair(0, e.id); updateSelection(); });
     panel.querySelector('[data-action="sell"]')?.addEventListener('click', () => { g.sellBuilding(0, e.id); updateUI(true); });
     panel.querySelector('[data-action="unload"]')?.addEventListener('click', () => { g.unloadTransport(e); updateSelection(); });
@@ -491,10 +502,11 @@ function locateAttack() {
 function showHelp() {
   if (state.game?.running) state.game.paused = true;
   gameAudio.setPaused(true);
-  showModal('操作说明', `<p>${VICTORY_MODES[state.game?.victoryMode || 'quick'].description}即可获胜。采矿车会自动采集，工程师可右键占领中立油井。步兵右键友方运输车上车，选中运输车点下车按钮或按 U。补给车停驻后自动维修补弹；火箭炮自动展开，潜艇需要声呐探测。</p>
+  showModal('操作说明', `<p>${VICTORY_MODES[state.game?.victoryMode || 'quick'].description}即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
     <div class="keyline"><span>选择 / 框选部队</span><kbd>左键 / 拖动</kbd></div>
     <div class="keyline"><span>移动 / 攻击目标</span><kbd>右键</kbd></div>
     <div class="keyline"><span>攻击移动 / 停止</span><kbd>A / S</kbd></div>
+    <div class="keyline"><span>返场整备 / 卸载或起飞</span><kbd>R / U</kbd></div>
     <div class="keyline"><span>选中所有作战单位</span><kbd>空格</kbd></div>
     <div class="keyline"><span>保存 / 选择编队</span><kbd>Ctrl+1~9 / 1~9</kbd></div>
     <div class="keyline"><span>平移 / 缩放</span><kbd>右键或中键拖动 / 滚轮</kbd></div>
@@ -702,7 +714,7 @@ function setupControls() {
     gameAudio.unlock().then(ok => { if (ok && state.game && !gameAudio.music) gameAudio.startBattle(); }).catch(() => {});
   });
   $('#audio-close').addEventListener('click', () => { $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false'); });
-  $('#audio-test').addEventListener('click', () => { gameAudio.unlock().then(ok => { if (ok) gameAudio.say('welcome'); }).catch(() => {}); });
+  $('#audio-test').addEventListener('click', () => { gameAudio.unlock().then(ok => { if (ok) gameAudio.say('welcome', { preview: true }); }).catch(() => {}); });
   $('#audio-muted').addEventListener('change', event => { gameAudio.setSettings({ muted: event.target.checked }); updateAudioControls(); });
   document.querySelectorAll('[data-audio]').forEach(slider => slider.addEventListener('input', () => { gameAudio.setSettings({ [slider.dataset.audio]: Number(slider.value) / 100 }); updateAudioControls(); }));
   document.addEventListener('pointerdown', event => { if (!event.target.closest('#audio-panel, #sound-btn')) { $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false'); } });

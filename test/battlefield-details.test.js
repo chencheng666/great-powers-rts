@@ -79,7 +79,7 @@ test('设施出口按双方方向镜像，兵营、工厂生产后先出门再�
 });
 
 test('采矿车在碰到前方车辆之前开始侧向绕行，不穿过障碍，持续采矿卸货', () => {
-  const game = quietGame(); game.units = [];
+  const game = quietGame('meridian'); game.units = [];
   const harvester = game.addUnit(0, 'harvester', 650, 450), blocker = game.addUnit(0, 'tank', 745, 450);
   blocker.stunUntil = 999;
   game.ore = [{ ...game.ore[0], x: 950, y: 450, amount: 6000 }];
@@ -87,7 +87,7 @@ test('采矿车在碰到前方车辆之前开始侧向绕行，不穿过障碍�
   advance(game, .3);
   assert.ok(Math.abs(harvester.y - 450) > 12, '应当提前侧向绕行');
   assert.ok(Math.hypot(harvester.x - blocker.x, harvester.y - blocker.y) > 65);
-  for (let frame = 0; frame < 1200; frame++) {
+  for (let frame = 0; frame < 1800; frame++) {
     game.update(.05);
     assert.ok(game.canOccupyUnit(harvester, harvester), '不得穿入建筑或不可通行地形');
   }
@@ -96,7 +96,7 @@ test('采矿车在碰到前方车辆之前开始侧向绕行，不穿过障碍�
 });
 
 test('多辆采矿车共享矿区与卸货区时，能持续生产收入且不会每帧切换矿区', () => {
-  const game = quietGame(); game.units = [];
+  const game = quietGame('meridian'); game.units = [];
   for (let index = 0; index < 6; index++) {
     const point = game.findSpawn(400, 940, 'harvester'); game.addUnit(0, 'harvester', point.x, point.y);
   }
@@ -123,7 +123,7 @@ test('动态绕行不预知迷雾敌军，只有已知同层单位影响绕行�
 });
 
 test('新建筑挡住采矿车缓存路线时，立即重新规划而不是等待原寻路计时', () => {
-  const game = quietGame(); game.units = [];
+  const game = quietGame('meridian'); game.units = [];
   const harvester = game.addUnit(0, 'harvester', 650, 450);
   game.ore = [{ ...game.ore[0], x: 950, y: 450 }];
   harvester.path = [{ x: 950, y: 450 }]; harvester.pathTimer = 10; harvester.pathGoal = '23,11';

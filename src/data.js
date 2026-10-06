@@ -24,11 +24,11 @@ export const FACTIONS = {
 export const BUILDINGS = {
   hq: { name: '指挥中心', cost: 1500, time: 45, hp: 1350, power: 0, size: 92, icon: 'castle', desc: '生产核心，失去后将无法继续建造。' },
   power: { name: '电力站', cost: 350, time: 14, hp: 560, power: 100, size: 66, icon: 'zap', desc: '提供 100 电力，保障全军运行。' },
-  refinery: { name: '精炼厂', cost: 650, time: 21, hp: 760, power: -20, size: 84, icon: 'factory', desc: '采矿车在此卸载矿石并兑换资金。' },
+  refinery: { name: '后勤中心', cost: 650, time: 21, hp: 760, power: -20, size: 84, icon: 'warehouse', desc: '接收外部运输机物资，完成卸货后到账；子午月表战区负责矿石精炼。' },
   barracks: { name: '兵营', cost: 450, time: 17, hp: 600, power: -15, size: 66, icon: 'users', desc: '训练步兵与工程师。' },
   factory: { name: '战车工厂', cost: 850, time: 27, hp: 850, power: -35, size: 88, icon: 'truck', desc: '生产坦克、运输车、维修补给车与采矿车，独立装甲生产线。', requires: 'refinery' },
   armory: { name: '兵工厂', cost: 780, time: 25, hp: 760, power: -25, size: 82, icon: 'warehouse', desc: '生产防空、无人机、电子战、远程火力与阵营装备，独立生产队列。', requires: 'factory' },
-  dock: { name: '海军船坞', cost: 850, time: 27, hp: 800, power: -25, size: 92, icon: 'anchor', desc: '沿岸生产舰艇，有电时为舰艇补弹并补充舰载机。', requires: 'factory', naval: true },
+  dock: { name: '海军港口', cost: 850, time: 27, hp: 800, power: -25, size: 92, icon: 'anchor', desc: '生产舰艇、接收集装箱物资；有电且脱战后维修舰艇和潜艇、补弹及补充舰载机。', requires: 'factory', naval: true },
   radar: { name: '雷达站', cost: 550, time: 22, hp: 580, power: -30, size: 68, icon: 'radar', desc: '扩大视野并解锁防空、特色单位。', requires: 'factory' },
   airfield: { name: '空军基地', cost: 980, time: 31, hp: 760, power: -45, size: 92, icon: 'plane', desc: '生产制空与对地战机；有电时可补充弹药。', requires: 'radar' },
   turret: { name: '防御炮塔', cost: 440, time: 16, hp: 600, power: -20, size: 56, icon: 'crosshair', desc: '自动攻击地面目标；高空战机需要防空车拦截。', requires: 'barracks' },
@@ -62,6 +62,10 @@ export const UNITS = {
 };
 
 Object.assign(UNITS, {
+  navalFighter: { ...UNITS.fighter, name: '舰载制空机', cost: 760, time: 29, hp: 225, ammo: 8, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'anti-air', 'deck'], desc: '通用游戏舰载型，仅制空；可编入本方航母，停航着舰，付费维修补弹，再次起飞护航。' },
+  navalStrike: { ...UNITS.strike, name: '舰载攻击机', cost: 880, time: 33, hp: 245, ammo: 4, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'bomber', 'deck'], desc: '通用游戏舰载型，对地与对舰；可编入航母，每舰最多三架真实机体，与自带攻击编组互斥。' },
+  freightPlane: { name: '后勤运输机', cost: 0, time: 1, hp: 290, speed: 160, range: 0, damage: 0, cooldown: 1, sight: 90, icon: 'package', tags: ['air', 'jet', 'logistics'], desc: '外部援助航班，按固定航线自动运抵后勤中心；无武装，可被防空和战机拦截，不受战斗指令控制。' },
+  containerShip: { name: '集装箱补给船', cost: 0, time: 1, hp: 620, speed: 92, range: 0, damage: 0, cooldown: 1, sight: 100, icon: 'container', tags: ['ship', 'naval', 'logistics'], desc: '沿海运路线自动回港卸货；无武装，可被舰艇和潜艇袭击，需要护航，不可载兵或刷补给资金。' },
   landing: { name: '坦克登陆舰', cost: 900, time: 36, hp: 850, speed: 59, range: 0, damage: 0, cooldown: 1, sight: 310, capacity: 12, icon: 'ship', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'transport'], desc: '12 格载重：步兵 1 格、陆地车辆 4 格；靠近海岸装卸，深海无法卸载，需舰队护航。' },
   bomber: { name: '远程轰炸机', cost: 1250, time: 44, hp: 320, speed: 142, range: 300, damage: 105, splash: 60, cooldown: 2.8, sight: 380, ammo: 4, rearmTime: 14, icon: 'plane', producer: 'airfield', requires: 'lab', tags: ['air', 'jet', 'bomber'], desc: '有限炸弹，对地范围打击；无法空战，友军免伤是游戏化规则，返场付费维修补弹。' },
   airlift: { name: '重型运输机', cost: 1000, time: 38, hp: 380, speed: 158, range: 0, damage: 0, cooldown: 1, sight: 360, capacity: 8, rearmTime: 10, icon: 'plane-takeoff', producer: 'airfield', requires: 'radar', tags: ['air', 'jet', 'transport'], desc: '8 格载重，可运 8 名步兵或 2 辆坦克；停驻在安全陆地上装卸，不能海上空投，无武装。' },
@@ -80,6 +84,9 @@ export const BUILD_ORDER = ['power', 'refinery', 'barracks', 'factory', 'armory'
 export const UNIT_ORDER = ['rifle', 'engineer', 'scout', 'tank', 'apc', 'supply', 'harvester', 'drone', 'ghost', 'aa', 'loiterer', 'jammer', 'laser', 'rocket', 'elite', 'fighter', 'strike', 'patrol', 'frigate', 'destroyer', 'carrier', 'submarine'];
 UNIT_ORDER.push('railgun', 'aegis', 'relay');
 UNIT_ORDER.push('landing', 'bomber', 'airlift');
+UNIT_ORDER.push('navalFighter', 'navalStrike');
+UNITS.carrier.capacity = 3;
+UNITS.carrier.desc = '可驻泊三架自行生产的兼容舰载机；停航着舰、维修补弹、弹射起飞。编入真实舰载机后不再同时出动自带攻击编组，需反潜护卫。';
 
 export const ORE_LAYOUT = [
   [330, 510, 2100, 'gold'], [330, 930, 2100, 'gold'],

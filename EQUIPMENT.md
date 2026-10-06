@@ -6,7 +6,7 @@
 
 | 游戏阵营 | 参考体系 | 主战坦克 | 火箭炮 | 其他已映射原型 |
 | --- | --- | --- | --- | --- |
-| 华夏防卫 | 中国 | 99A | PHL-03 | 歼-20 制空编组、红旗-17 |
+| 华夏防卫 | 中国 | 99A | PHL-03 | 歼-20 制空编组、红旗-17、052D 导弹驱逐舰 |
 | 北境联邦 | 俄系 | T-90MS 出口型号 | BM-30 龙卷风 | Su-35、BTR-82A 运输编组 |
 | 西陆同盟 | 北约／美系 | M1A2 艾布拉姆斯 | M142 HIMARS | F-22、F-35 对地编组、Stryker 运输编组 |
 | 东亚科技体 | 韩国 | K2 黑豹 | K239 天舞 | KF-16 制空编组 |
@@ -16,11 +16,12 @@
 
 多用途战机在游戏中按制空、对地任务拆分，不代表现实机型只能承担该任务；BTR-82A 在游戏中侧重载员，没有复刻其真实机炮。T-90MS 使用公开出口资料，不冒充俄军当前制式编制。
 
-其余步兵、补给车和舰艇等保留通用战术名称。激光车、电子战车、隐形侦察机、蜂群母机与阵营特色武器标为原创／概念，不能仅因现实存在相近技术就声称对应某个现役型号。
+v0.4.0 为华夏驱逐舰新增 052D 原创简化模型，依据公开舰桥、雷达、发射区与直升机甲板外形，不复制精确尺寸、设备布置或真实性能。其他舰艇和两类舰载机保留通用战术名称；舰载机使用通用外形，不将歼-20 改称现实舰载机。激光车、电子战车、隐形侦察机、蜂群母机与阵营特色武器标为原创／概念，不能仅因现实存在相近技术就声称对应某个现役型号。
 
 ## 公开资料
 
 - 中国：[99A 公开介绍](https://www.mod.gov.cn/gfbw/wzll/16144039.html)、[PHL-03](https://eng.mod.gov.cn/xb/Home/Focus/4845434.html)、[歼-20](https://www.81.cn/kt/10198589.html)、[红旗-17](https://tv.81.cn/zgjs/jskj/10183166.html)。
+- 舰艇：[国防部 052D 公开介绍](https://www.mod.gov.cn/djzx/4809824.html)。
 - 俄系：[出口装备手册，含 T-90MS、BTR-82A](https://roe.ru/upload/pdf/11402_post.pdf)、[出口资料，含火箭炮与航空装备](https://roe.ru/pdfs/pdf_2699.pdf)。
 - 美系：[GDLS 装备产品](https://www.gdls.com/)、[HIMARS](https://www.lockheedmartin.com/en-us/products/himars/media-kit.html)、[F-22](https://www.lockheedmartin.com/en-us/products/f-22.html)、[F-35](https://www.lockheedmartin.com/en-us/products/f-35/f-35-about.html)。
 - 韩国：[K2](https://www.hyundai-rotem.co.kr/en/business/defense/details.do?productCt03=defense0101)、[韩华 K239 历史记录](https://www.hanwhaaerospace.com/eng/whoweare/history.do)、[洛克希德韩国业务](https://www.lockheedmartin.com/en-kr/index.html)。
@@ -49,4 +50,4 @@
 1. 逐型号重做航空、防空、运输、舰艇与步兵模型，而不是仅增加名字；加入不同武器弹药形态、动画与中文应答。
 2. 增加城市街区和可驻军建筑、遮蔽与烟幕，再评估高低地和可破坏桥梁，避免引入无法反制的地形优势。
 3. 增加战报，记录经济、单位交换、占领、补给与伤害来源，用真实试玩样本调整价格、科技时机和克制。
-4. 增加存档、巡逻、连续命令与队列可视化，降低重复操作；再按联机方案接入局域网权威服务端。
+4. 在已有手动／自动存档上增加多存档槽、巡逻、连续命令与队列可视化；再按联机方案接入局域网权威服务端。

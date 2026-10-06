@@ -204,12 +204,16 @@ test('装载乘员不被范围技能二次命中，也不独立提供战争迷�
   assert.equal(scout.hp, scout.maxHp); assert.ok(transport.hp < transport.maxHp); assert.ok(attacker.hp > 0);
 });
 
-test('海图 AI 会付费扩充采矿，但把在产采矿车计入目标数量', () => {
+test('海图 AI 不再生产矿车，子午 AI 将在产矿车计入目标数量', () => {
   const g = new Game('china', 'russia', {}, { mapId: 'ocean' });
   const factory = g.ownedBuildings(1, 'factory')[0];
   for (let n = 0; n < 8; n++) g.updateAI();
-  assert.equal(factory.queue.filter(type => type === 'harvester').length, 1);
-  assert.equal(g.ownedUnits(1, 'harvester').length, 2);
+  assert.equal(factory.queue.filter(type => type === 'harvester').length, 0);
+  assert.equal(g.ownedUnits(1, 'harvester').length, 0);
+  const moon = new Game('china', 'russia', {}, { mapId: 'meridian' });
+  moon.ownedUnits(1, 'harvester')[0].hp = 0;
+  for (let n = 0; n < 8; n++) moon.updateAI();
+  assert.equal(moon.ownedBuildings(1, 'factory')[0].queue.filter(type => type === 'harvester').length, 1);
 });
 
 test('驱逐舰导弹能追上高速战机，不因弹速低于飞机而失去防空能力', () => {

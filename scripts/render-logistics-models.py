@@ -6,8 +6,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'docs', 'wechat-logistics-20261006', 'images')
 
 
-def render(name, filename, scale):
-    bpy.ops.wm.open_mainfile(filepath=os.path.join(ROOT, 'assets', 'models', 'logistics-library.blend'))
+def render(name, filename, scale, library='logistics-library', out=OUT):
+    os.makedirs(out, exist_ok=True)
+    bpy.ops.wm.open_mainfile(filepath=os.path.join(ROOT, 'assets', 'models', library + '.blend'))
     scene = bpy.context.scene
     root = bpy.data.objects[name]
     selected = {root, *root.children_recursive}
@@ -43,11 +44,12 @@ def render(name, filename, scale):
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = 'PNG'
     scene.view_settings.view_transform = 'AgX'
-    scene.render.filepath = os.path.join(OUT, filename)
+    scene.render.filepath = os.path.join(out, filename)
     # 展示实际游戏源模型，不写回模型库，不把摄影棚渲染称为游戏截图。
     bpy.ops.render.render(write_still=True)
 
 
-render('landing', '11-landing-model.png', 24)
-render('bomber', '12-bomber-model.png', 27)
-render('airlift', '13-airlift-model.png', 27)
+if __name__ == '__main__':
+    render('landing', '11-landing-model.png', 24)
+    render('bomber', '12-bomber-model.png', 27)
+    render('airlift', '13-airlift-model.png', 27)

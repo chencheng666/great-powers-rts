@@ -1,0 +1,47 @@
+[
+  {
+    "type": "image",
+    "file": "01-port-repair.png",
+    "caption": "桌面实机验收场景｜舰艇回港整备，实际消耗资金、恢复生命和弹药。为清晰展示功能布置单位，不是自然对局战报。"
+  },
+  {
+    "type": "image",
+    "file": "02-airdrop-logistics.png",
+    "caption": "桌面实机验收场景｜运输机盘旋投送补给箱，后勤中心完成接收后才结算收入。"
+  },
+  {
+    "type": "image",
+    "file": "03-container-convoy.png",
+    "caption": "桌面实机验收场景｜集装箱船是可被攻击的实际单位，护航与截断运输都能影响经济。"
+  },
+  {
+    "type": "image",
+    "file": "04-carrier-deck.png",
+    "caption": "桌面实机验收场景｜两架实际生产的适配舰载机停在甲板，机位随真实登舰数量变化。"
+  },
+  {
+    "type": "image",
+    "file": "05-carrier-launch.png",
+    "caption": "桌面实机验收场景｜真实飞机从甲板升高、向前起飞，出动的是同一架单位，不会复制飞机。"
+  },
+  {
+    "type": "image",
+    "file": "08-052d-source-model.png",
+    "caption": "Blender 源模型渲染，非游戏截图｜华夏阵营 052D 原创简化外形，细化舰桥、雷达、甲板和发射区。"
+  },
+  {
+    "type": "image",
+    "file": "09-carrier-source-model.png",
+    "caption": "Blender 源模型渲染，非游戏截图｜重制航母舰岛、桅杆、雷达罩、甲板标线、升降机和侧面细节。"
+  },
+  {
+    "type": "image",
+    "file": "10-container-source-model.png",
+    "caption": "Blender 源模型渲染，非游戏截图｜集装箱船的货箱波纹、舱门、驾驶室和救生艇。"
+  },
+  {
+    "type": "image",
+    "file": "06-satellite-recon.png",
+    "caption": "桌面实机验收场景｜战术面板启用侦察卫星，查看短时全图视野与冷却状态。"
+  }
+]

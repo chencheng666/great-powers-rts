@@ -36,7 +36,7 @@ test('生产、分期扣费、部署与单位寻路正常运作', () => {
   advance(game, 1);
   assert.ok(game.players[0].credits < 1550);
   advance(game, 8);
-  assert.equal(game.ownedUnits(0).length, 7);
+  assert.equal(game.ownedUnits(0, 'rifle').length, 4);
 
   assert.equal(game.startBuild(0, 'power'), true);
   advance(game, 15);
@@ -82,7 +82,7 @@ test('建造与单位生产可取消，已支付费用完整返还', () => {
   assert.equal(game.cancelUnitProduction(0, barracks.id), false);
 });
 
-test('地图矿区对称，采矿自动结算，AI 有开局集结期', () => {
+test('旧地图矿区资料对称，新对局由运输获得资源，AI 有开局集结期', () => {
   let winner = null;
   const game = new Game('asia', 'middleeast', { end: side => { winner = side; } });
   for (const [x, y, amount, kind] of ORE_LAYOUT) {
@@ -158,6 +158,7 @@ test('船坞只能在海岸部署，舰艇从水域下水并保持水域行动',
   const map = game.map;
   game.updateAI = () => {};
   game.aiWaveTimer = Infinity;
+  game.logistics.forEach(route => { route.nextAir = route.nextSea = 1e9; });
   // 本例验证下水与边界，不让出生后随机开火影响生命值断言。
   game.closestEnemy = () => null;
   assert.equal(game.canPlace(0, 'power', 1120, 720), false);
@@ -490,7 +491,7 @@ test('西陆重坦能对密集无人机造成范围压制', () => {
 });
 
 test('宝石矿产值为黄矿两倍，维修扣费，出售返还半价', () => {
-  const game = new Game('china', 'russia');
+  const game = new Game('china', 'russia', {}, { mapId: 'meridian' });
   const miner = game.ownedUnits(0, 'harvester')[0];
   const gem = game.ore.find(ore => ore.kind === 'gem');
   miner.x = gem.x; miner.y = gem.y;
@@ -602,7 +603,7 @@ test('AI 优先完成首架攻击机，再继续扩建基地', () => {
 });
 
 test('战车工厂与兵工厂分工明确，缺少兵工厂时不能借用战车工厂', () => {
-  const game = new Game('china', 'russia');
+  const game = new Game('china', 'russia', {}, { mapId: 'meridian' });
   assert.equal(game.canBuild(0, 'armory'), true);
   assert.equal(game.queueUnit(0, 'tank'), true);
   assert.equal(game.queueUnit(0, 'harvester'), true);
@@ -704,11 +705,12 @@ test('攻击机弹药耗尽后返场，断电暂停补给，恢复供电后继�
   game.updateFog();
   game.update(0.05);
   assert.equal(strike.ammo, 0);
-  assert.ok(target.hp < target.maxHp);
+  assert.equal(target.hp, target.maxHp, '飞弹发射不应立即命中');
   game.update(0.05);
   assert.equal(strike.order.type, 'rearm');
   assert.equal(game.hasPower(0), false);
   advance(game, 2);
+  assert.ok(target.hp < target.maxHp);
   assert.equal(strike.rearmProgress, 0);
   game.addBuilding(0, 'power', 660, 450);
   for (let i = 0; i < 350 && strike.order?.type === 'rearm'; i++) game.update(0.05);
