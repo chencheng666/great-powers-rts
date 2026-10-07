@@ -10,7 +10,7 @@ test('地表起伏保持基地和主路平整，双方横向镜像且高度有�
   assert.equal(terrainHeight(game, 1300, 1440), 0);
   for (let x = 0; x <= 4480; x += 80) for (let z = 0; z <= 2880; z += 120) {
     const h = terrainHeight(game, x, z);
-    assert.ok(Number.isFinite(h) && Math.abs(h) <= 3.5);
+    assert.ok(Number.isFinite(h) && Math.abs(h) <= 28);
     assert.equal(h, terrainHeight(game, 4480 - x, z));
   }
 });

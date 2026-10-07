@@ -5,6 +5,7 @@ export function projectileFlightPose(p) {
   const span = Math.max(1, Math.hypot(p.toX - p.startX, p.toY - p.startY));
   const progress = clamp(Math.hypot(p.x - p.startX, p.y - p.startY) / span, 0, 1);
   if (p.kind === 'rocket') return { height: 22 + Math.sin(progress * Math.PI) * 135, pitch: Math.atan2(135 * Math.PI * Math.cos(progress * Math.PI), span) };
+  if (p.kind === 'bomb' && p.fallDuration) return { height: 4 + (p.sourceHeight ?? 95) * (1 - clamp(p.age / p.fallDuration, 0, 1) ** 2), pitch: -Math.PI / 2 };
   if (p.kind === 'bomb') return { height: 95 * (1 - progress) + 4, pitch: Math.atan2(-95, span) };
   if (p.kind === 'torpedo') return { height: 2, pitch: 0 };
   if (p.kind === 'wing') return { height: 88, pitch: 0 };

@@ -1,5 +1,5 @@
 import { createIcons, icons } from 'lucide';
-import { BUILDINGS, BUILD_ORDER, FACTIONS, MAPS, PRODUCERS, UNITS, UNIT_ORDER, VICTORY_MODES } from './data.js';
+import { BUILDINGS, BUILD_ORDER, FACTIONS, MAPS, PRODUCERS, UNITS, UNIT_ORDER, VICTORY_MODES, supportsMap } from './data.js';
 import { Game } from './game.js';
 import { Renderer } from './render.js';
 import { modelThumbnail } from './visual-assets.js';
@@ -18,6 +18,7 @@ import './future.css';
 import { isLunarRobot, lunarBuildingProfile } from './lunar-robots.js';
 import './session.css';
 import './visual-v3.css';
+import './player-feedback.css';
 
 const $ = selector => document.querySelector(selector);
 const fmt = amount => Math.floor(amount).toLocaleString('zh-CN');
@@ -269,7 +270,7 @@ function updateUI(force = false) {
   const q = p.buildQueue;
   const activeProducer = g.ownedBuildings(0).find(b => b.active) || g.ownedBuildings(0).find(b => b.queue.length);
   if (g.pendingBuilding) {
-    $('#queue-title').textContent = lunarBuildingProfile(g.map.future, g.pendingBuilding, BUILDINGS[g.pendingBuilding]).name; $('#queue-time').textContent = '准备部署'; $('#queue-detail').textContent = '在基地附近的空地上左键放置'; $('#queue-progress').style.width = '100%';
+    $('#queue-title').textContent = lunarBuildingProfile(g.map.future, g.pendingBuilding, BUILDINGS[g.pendingBuilding]).name; $('#queue-time').textContent = '准备部署'; $('#queue-detail').textContent = g.placingBuilding ? '在基地附近的空地上左键放置' : '点击已完成的建筑，再选择部署位置'; $('#queue-progress').style.width = '100%';
   } else if (q) {
     const d = lunarBuildingProfile(g.map.future, q.type, BUILDINGS[q.type]); $('#queue-title').textContent = d.name; $('#queue-time').textContent = `${Math.ceil(d.time - q.progress)} 秒`;
     $('#queue-detail').textContent = p.credits < 5 ? '资金不足，建造暂停' : '建造中 · 资金随进度扣除'; $('#queue-progress').style.width = `${q.progress / d.time * 100}%`;
@@ -307,12 +308,16 @@ function updateSidebar(force = false) {
     root.innerHTML = `<p class="content-subhead">基地设施 · 按顺序解锁</p><div class="action-list">${BUILD_ORDER.filter(type => (!BUILDINGS[type].naval || g.map.water) && (!BUILDINGS[type].map || BUILDINGS[type].map === g.mapId)).map(type => {
       const d = lunarBuildingProfile(g.map.future, type, BUILDINGS[type]), locked = !g.canBuild(0, type), queued = p.buildQueue?.type === type || g.pendingBuilding === type;
       const label = locked ? `需要 ${lunarBuildingProfile(g.map.future, d.requires, BUILDINGS[d.requires])?.name || '指挥中心'}` : d.desc;
-      return `<button class="action-card ${locked ? 'locked' : ''} ${queued ? 'queued' : ''}" data-build="${type}" ${locked || p.buildQueue || g.pendingBuilding ? 'disabled' : ''} title="${d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${d.name}</strong><small>${label}</small></span><span class="action-cost">¤ ${fmt(d.cost)}<small>${d.time} 秒</small></span></button>`;
+      const ready = g.pendingBuilding === type;
+      return `<button class="action-card ${locked ? 'locked' : ''} ${queued ? 'queued' : ''}" data-build="${type}" ${!ready && (locked || p.buildQueue || g.pendingBuilding) ? 'disabled' : ''} title="${ready ? '建造完成，点击部署' : d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${d.name}</strong><small>${ready ? '已完成 · 点击部署' : label}</small></span><span class="action-cost">${ready ? '部署' : `¤ ${fmt(d.cost)}`}<small>${ready ? '待命' : `${d.time} 秒`}</small></span></button>`;
     }).join('')}</div>`;
-    root.querySelectorAll('[data-build]').forEach(button => button.addEventListener('click', () => { if (g.startBuild(0, button.dataset.build)) updateUI(true); }));
+    root.querySelectorAll('[data-build]').forEach(button => button.addEventListener('click', () => {
+      if (g.pendingBuilding === button.dataset.build) { g.placingBuilding = true; g.orderMode = null; clearOrderButtons(); updateUI(true); }
+      else if (g.startBuild(0, button.dataset.build)) updateUI(true);
+    }));
   } else if (state.tab === 'units') {
     root.innerHTML = PRODUCERS.map(producer => {
-      const types = UNIT_ORDER.filter(type => (type !== 'harvester' || g.economyMode === 'mining') && UNITS[type].producer === producer && (!UNITS[type].faction || UNITS[type].faction === p.faction) && (!UNITS[type].naval || g.map.water) && (!UNITS[type].map || UNITS[type].map === g.mapId));
+      const types = UNIT_ORDER.filter(type => (type !== 'harvester' || g.economyMode === 'mining') && UNITS[type].producer === producer && (!UNITS[type].faction || UNITS[type].faction === p.faction) && (!UNITS[type].naval || g.map.water) && supportsMap(UNITS[type].map, g.mapId));
       if (!types.length) return '';
       const facilities = g.ownedBuildings(0, producer), count = facilities.reduce((sum,b) => sum + b.queue.length + (b.active ? 1 : 0),0);
       const producerName = lunarBuildingProfile(g.map.future, producer, BUILDINGS[producer]).name;
@@ -349,6 +354,8 @@ function updateSidebar(force = false) {
 function updateSelection() {
   const g = state.game; if (!g) return;
   const selected = g.selected.map(id => g.getEntity(id)).filter(Boolean);
+  $('#unload-btn').hidden = !selected.some(e => e.kind === 'unit' && UNITS[e.type].capacity);
+  $('#resupply-btn').hidden = !selected.some(e => e.kind === 'unit' && !['harvester', 'supply'].includes(e.type) && !UNITS[e.type].tags.includes('logistics'));
   const selectionKey = selected.map(entity => entity.id).join(',');
   if (selectionKey !== state.lastSelection) { state.dismissedInspectorId = null; gameAudio.selection(selected); state.lastSelection = selectionKey; }
   const panel = $('#selection-panel');
@@ -366,6 +373,8 @@ function updateSelection() {
       if (launch) { launch.title = '舰载机起飞'; launch.setAttribute('aria-label', '舰载机起飞'); launch.innerHTML = icon('plane-takeoff'); }
     }
     if (e.freight) panel.querySelector('.selection-health').textContent += ` · ${e.freight.phase === 'unloading' ? `卸货 ${Math.floor(e.freight.progress)} 秒` : e.freight.phase === 'outbound' ? '空载返航' : '物资运输中'} · 待交付 ¤ ${e.freight.value}`;
+    if (e.type === 'harvester') panel.insertAdjacentHTML('beforeend', `<div class="selection-actions"><button type="button" data-action="recycle" title="回收矿车，按剩余生命返还一半造价" aria-label="回收矿车">${icon('coins')}</button></div>`);
+    panel.querySelector('[data-action="recycle"]')?.addEventListener('click', () => { g.sellHarvester(0, e.id); updateUI(true); });
     panel.querySelector('[data-action="repair"]')?.addEventListener('click', () => { g.toggleRepair(0, e.id); updateSelection(); });
     panel.querySelector('[data-action="sell"]')?.addEventListener('click', () => { g.sellBuilding(0, e.id); updateUI(true); });
     panel.querySelector('[data-action="unload"]')?.addEventListener('click', () => { g.unloadTransport(e); updateSelection(); });
@@ -383,7 +392,7 @@ function updatePanControl() {
 
 function updateBuildingInspector(now) {
   const g = state.game, r = state.renderer, panel = $('#building-info');
-  if (!g || !r || !$('#modal').classList.contains('hidden') || g.pendingBuilding || g.pendingAbility || state.panning || state.touchPan || state.touchPinching || state.drag?.moved) { panel.hidden = true; return; }
+  if (!g || !r || !$('#modal').classList.contains('hidden') || g.placingBuilding || g.pendingAbility || state.panning || state.touchPan || state.touchPinching || state.drag?.moved) { panel.hidden = true; return; }
   const selected = g.selected.length === 1 ? g.getEntity(g.selected[0]) : null;
   const hovered = now - (r.hoverChangedAt || now) > 350 ? g.getEntity(r.hoveredId) : null;
   const entity = selected?.kind === 'building' ? selected : hovered?.kind === 'building' ? hovered : null;
@@ -550,7 +559,7 @@ function closeModal() {
 }
 
 function canvasPoint(event) { const rect = $('#game-canvas').getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; }
-function clearOrderButtons() { $('#move-btn').classList.remove('active'); $('#attack-btn').classList.remove('active'); }
+function clearOrderButtons() { for (const id of ['move-btn', 'attack-btn', 'patrol-btn']) $(`#${id}`).classList.remove('active'); }
 
 function setupControls() {
   const canvas = $('#game-canvas');
@@ -568,7 +577,7 @@ function setupControls() {
         return;
       }
     }
-    if (event.pointerType !== 'touch' && (event.button === 2 || event.button === 1 || event.button === 0 && (event.altKey || state.cameraPanMode && !g.pendingBuilding && !g.pendingAbility && !g.orderMode))) { state.panning = { ...p, start: p, button: event.button, moved: false }; updatePanControl(); return; }
+    if (event.pointerType !== 'touch' && (event.button === 2 || event.button === 1 || event.button === 0 && (event.altKey || state.cameraPanMode && !g.placingBuilding && !g.pendingAbility && !g.orderMode))) { state.panning = { ...p, start: p, button: event.button, moved: false }; updatePanControl(); return; }
     if (g.paused) return;
     if (event.button === 0) { state.drag = { start: r.screenToWorld(p.x, p.y), end: r.screenToWorld(p.x, p.y), moved: false, additive: event.shiftKey }; }
   });
@@ -601,11 +610,11 @@ function setupControls() {
       if (state.panning.moved) { r.pan(state.panning.x - p.x, state.panning.y - p.y); state.panning.x = p.x; state.panning.y = p.y; }
       updatePanControl(); return;
     }
-    if (state.drag) { state.drag.end = r.pointer; state.drag.moved = Math.hypot(state.drag.end.x - state.drag.start.x, state.drag.end.y - state.drag.start.y) > 9; r.dragBox = state.drag.moved && !g.pendingBuilding && !g.pendingAbility && !g.orderMode ? state.drag : null; }
+    if (state.drag) { state.drag.end = r.pointer; state.drag.moved = Math.hypot(state.drag.end.x - state.drag.start.x, state.drag.end.y - state.drag.start.y) > 9; r.dragBox = state.drag.moved && !g.placingBuilding && !g.pendingAbility && !g.orderMode ? state.drag : null; }
   });
   canvas.addEventListener('pointerup', event => {
     const g = state.game, r = state.renderer; if (!g || !r || !g.running) return;
-    const p = canvasPoint(event), world = g.pendingBuilding || state.drag?.moved ? r.screenToWorld(p.x, p.y) : r.pickPoint(p.x, p.y);
+    const p = canvasPoint(event), world = g.placingBuilding || state.drag?.moved ? r.screenToWorld(p.x, p.y) : r.pickPoint(p.x, p.y);
     if (event.pointerType === 'touch') {
       state.touchPoints.delete(event.pointerId);
       if (state.touchPan || state.touchPinching) {
@@ -620,15 +629,15 @@ function setupControls() {
     if (event.button === 2) {
       if (g.pendingAbility) { g.pendingAbility = false; toast('已取消技能定位'); }
       else if (g.orderMode) { g.orderMode = null; clearOrderButtons(); }
-      else if (g.pendingBuilding) { toast('建筑等待部署，左键选择合适位置'); }
+      else if (g.placingBuilding) { g.placingBuilding = false; toast('已退出部署，建筑仍保留在建造面板'); }
       else g.command(world.x, world.y);
       updateUI(true); return;
     }
     if (event.button !== 0) return;
-    if (g.pendingBuilding) { if (!g.placeBuilding(0, g.pendingBuilding, world.x, world.y)) toast('此处无法部署，请靠近己方建筑并避开障碍', true); updateUI(true); }
+    if (g.pendingBuilding && g.placingBuilding) { if (!g.placeBuilding(0, g.pendingBuilding, world.x, world.y)) toast('此处无法部署，请靠近己方建筑并避开障碍', true); updateUI(true); }
     else if (g.pendingAbility) { if (!g.castAbility(world.x, world.y)) toast('技能未就绪，或目标区域尚未侦察', true); updateUI(true); }
     else if (g.orderMode === 'rally') { g.command(world.x, world.y); g.orderMode = null; }
-    else if (g.orderMode === 'attackMove' || g.orderMode === 'move') { g.command(world.x, world.y, g.orderMode === 'attackMove'); clearOrderButtons(); }
+    else if (['attackMove', 'move', 'patrol'].includes(g.orderMode)) { g.command(world.x, world.y, g.orderMode === 'attackMove'); clearOrderButtons(); }
     else if (state.drag?.moved) r.selectBox(state.drag.start, world, state.drag.additive);
     else { state.dismissedInspectorId = null; g.selectAt(world.x, world.y, event.shiftKey); }
     state.drag = null; r.dragBox = null;
@@ -649,13 +658,14 @@ function setupControls() {
     if (key === 'm' && !event.repeat) { event.preventDefault(); state.cameraPanMode = !state.cameraPanMode; updatePanControl(); return; }
     if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' '].includes(key)) event.preventDefault();
     if (key.startsWith('arrow')) state.keys.add(key);
-    if (key === 'escape') { if (!$('#modal').classList.contains('hidden')) closeModal(); else showPause(); return; }
+    if (key === 'escape') { if (g.placingBuilding) { g.placingBuilding = false; updateUI(true); } else if (g.orderMode) { g.orderMode = null; clearOrderButtons(); } else if (!$('#modal').classList.contains('hidden')) closeModal(); else showPause(); return; }
     if (!g.running || g.paused || !$('#modal').classList.contains('hidden')) return;
     if (key >= '1' && key <= '9') {
       if (event.ctrlKey || event.metaKey) { event.preventDefault(); state.groups[key] = [...g.selected]; toast(`编队 ${key} 已保存`); }
       else if (state.groups[key]) { g.selected = state.groups[key].filter(id => g.getEntity(id)?.owner === 0); updateSelection(); const target = g.getEntity(g.selected[0]); if (target && event.shiftKey) state.renderer.centerOn(target.x, target.y); }
     } else if (key === ' ') { g.selectAllCombat(); }
-    else if (key === 'a') { g.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('左键指定攻击移动目标'); }
+    else if (key === 'a') { g.placingBuilding = false; g.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('左键指定攻击移动目标'); }
+    else if (key === 'p') { g.placingBuilding = false; g.orderMode = 'patrol'; clearOrderButtons(); $('#patrol-btn').classList.add('active'); }
     else if (key === 's') { g.stopSelected(); clearOrderButtons(); }
     else if (key === 'h') state.renderer.centerOn(280, state.game.homeY);
     else if (key === 'u') { for (const id of state.game.selected) state.game.unloadTransport(state.game.getEntity(id)); updateSelection(); }
@@ -682,8 +692,18 @@ function setupControls() {
     if (action === 'rally') { g.selected = [id]; g.orderMode = 'rally'; state.cameraPanMode = false; updatePanControl(); }
     updateSelection(); updateUI(true);
   });
-  $('#move-btn').addEventListener('click', () => { if (!state.game) return; state.game.orderMode = 'move'; clearOrderButtons(); $('#move-btn').classList.add('active'); toast('在战场上指定移动目标'); });
-  $('#attack-btn').addEventListener('click', () => { if (!state.game) return; state.game.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('在战场上指定攻击移动目标'); });
+  $('#move-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'move'; clearOrderButtons(); $('#move-btn').classList.add('active'); toast('在战场上指定移动目标'); });
+  $('#attack-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('在战场上指定攻击移动目标'); });
+  $('#patrol-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'patrol'; clearOrderButtons(); $('#patrol-btn').classList.add('active'); });
+  $('#unload-btn').addEventListener('click', () => { const g = state.game; if (!g || g.paused) return; for (const id of [...g.selected]) g.unloadTransport(g.getEntity(id)); updateSelection(); });
+  $('#resupply-btn').addEventListener('click', () => { const g = state.game; if (!g || g.paused) return; for (const id of g.selected) g.requestResupply(g.getEntity(id)); updateSelection(); });
+  $('#toolbar-toggle').addEventListener('click', () => {
+    const collapsed = $('#command-toolbar').classList.toggle('collapsed');
+    $('#toolbar-toggle').setAttribute('aria-expanded', String(!collapsed));
+    $('#toolbar-toggle').setAttribute('aria-label', collapsed ? '展开部队指令' : '收起部队指令');
+    $('#toolbar-toggle').title = collapsed ? '展开部队指令' : '收起部队指令';
+    $('#toolbar-toggle').innerHTML = icon(collapsed ? 'chevron-left' : 'chevron-right'); refreshIcons();
+  });
   $('#all-btn').addEventListener('click', () => state.game?.selectAllCombat());
   $('#stop-btn').addEventListener('click', () => { state.game?.stopSelected(); clearOrderButtons(); });
   $('#home-btn').addEventListener('click', () => state.renderer?.centerOn(280, state.game.homeY));
@@ -721,6 +741,8 @@ function setupControls() {
   });
   $('#audio-close').addEventListener('click', () => { $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false'); });
   $('#audio-test').addEventListener('click', () => { gameAudio.unlock().then(ok => { if (ok) gameAudio.say('welcome', { preview: true }); }).catch(() => {}); });
+  $('#audio-voice').addEventListener('change', event => { gameAudio.setSettings({ voiceURI: event.target.value }); });
+  window.speechSynthesis?.addEventListener('voiceschanged', updateVoiceOptions);
   $('#audio-muted').addEventListener('change', event => { gameAudio.setSettings({ muted: event.target.checked }); updateAudioControls(); });
   document.querySelectorAll('[data-audio]').forEach(slider => slider.addEventListener('input', () => { gameAudio.setSettings({ [slider.dataset.audio]: Number(slider.value) / 100 }); updateAudioControls(); }));
   document.addEventListener('pointerdown', event => { if (!event.target.closest('#audio-panel, #sound-btn')) { $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false'); } });
@@ -765,10 +787,22 @@ function updateAudioControls() {
   document.querySelectorAll('[data-audio]').forEach(slider => { slider.value = Math.round(settings[slider.dataset.audio] * 100); });
   document.querySelectorAll('[data-audio-value]').forEach(output => { output.value = `${Math.round(settings[output.dataset.audioValue] * 100)}%`; });
   $('#sound-btn').innerHTML = icon(settings.muted || !settings.master ? 'volume-x' : 'volume-2'); refreshIcons();
+  updateVoiceOptions();
+}
+
+function updateVoiceOptions() {
+  const select = $('#audio-voice');
+  select.replaceChildren();
+  for (const [value, label] of [['auto', '系统默认中文'], ['portable', '内置中文电台'], ...(window.speechSynthesis?.getVoices() || []).filter(v => /^zh(?:-|_)/i.test(v.lang)).map(v => [v.voiceURI, v.name])]) {
+    const option = document.createElement('option'); option.value = value; option.textContent = label; select.append(option);
+  }
+  select.value = gameAudio.settings.voiceURI || 'auto';
+  if (select.selectedIndex < 0) select.value = 'auto';
 }
 
 drawFactionPicker();
 $('#map-select').innerHTML = Object.entries(MAPS).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
+$('#map-select').value = state.mapId;
 setupControls();
 try { setSidebarCollapsed(localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(false); }
 updateAudioControls();

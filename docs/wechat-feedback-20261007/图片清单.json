@@ -1,0 +1,47 @@
+[
+  {
+    "type": "image",
+    "file": "09-home.png",
+    "caption": "当前桌面首页｜全幅原创背景插画；背景不是实机战场，下文配图为桌面实机功能验收场景。"
+  },
+  {
+    "type": "image",
+    "file": "02-station-service.png",
+    "caption": "基地整备｜满弹伤车也能修，步兵与车辆使用不同设施；建筑维修有状态标识。"
+  },
+  {
+    "type": "image",
+    "file": "01-ready-building.png",
+    "caption": "完成不等于强制部署｜电力站已完成，仍可继续选择和指挥部队。"
+  },
+  {
+    "type": "image",
+    "file": "03-patrol-route.png",
+    "caption": "两点巡逻｜选中部队能看到巡逻路线，命令与整备恢复任务一同保存。"
+  },
+  {
+    "type": "image",
+    "file": "05-amphibious-fleet.png",
+    "caption": "跨海登陆战｜载车登陆舰、护航舰与潜航潜艇；该画面为受控功能验收场景。"
+  },
+  {
+    "type": "image",
+    "file": "07-electronic-bombing.png",
+    "caption": "空地协同验收｜电子机提供短时压制窗口，轰炸机飞临投弹；敌我血条与车辆标识分别显示。"
+  },
+  {
+    "type": "image",
+    "file": "06-lunar-aircraft.png",
+    "caption": "原创月表飞行器｜Three.js 模块化几何，运输、投弹、制空与电子模块有区别；仍是简化游戏模型。"
+  },
+  {
+    "type": "image",
+    "file": "04-chinese-voice.png",
+    "caption": "中文语音入口｜明确选择内置中文电台；如果系统提供其他中文音色，也可在这里选择。"
+  },
+  {
+    "type": "image",
+    "file": "08-desktop-1280.png",
+    "caption": "1280 × 800 桌面检查｜侧栏可收起，战场与右下指令仍可使用。"
+  }
+]

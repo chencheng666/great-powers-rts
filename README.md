@@ -1,10 +1,24 @@
 # 大国崛起
 
-原创、非官方的红警风格浏览器即时战略游戏。使用 JavaScript、Three.js 和 Blender，提供五阵营、六张地图、单机 AI 遭遇战，以及陆海空与现代支援单位。不是《红色警戒》官方续作，也不是其代码或美术资源的移植。
+原创、非官方的红警风格浏览器即时战略游戏。使用 JavaScript、Three.js 和 Blender，提供五阵营、七张地图、单机 AI 遭遇战，以及陆海空与现代支援单位。不是《红色警戒》官方续作，也不是其代码或美术资源的移植。
 
 ![升级后的作战部署首页，背景为原创插画](docs/images/visual-menu-1600.png)
 
 [下载离线试玩包](https://github.com/chencheng666/great-powers-rts/releases/latest) · [掘金文章](docs/juejin-article.md) · [开发清单](ROADMAP.md) · [反馈问题](https://github.com/chencheng666/great-powers-rts/issues)
+
+## 玩家反馈版 v0.7.0
+
+根据 CAI、林及其他玩家反馈修复兵营／工厂维修、满弹主动整备、空闲靠站补弹，增加往返巡逻、右下卸载与补给、指令工具栏折叠、建造完成点击部署、矿车手动移动和回收。轰炸机飞临目标垂直投弹后返航，机场整备飞机可受地面攻击。
+
+新增可反制的周期电子压制机、无桥“跨海登陆战”、月表专用原创飞行器；迷彩、防护网、敌我亮色标识、潜航外观、鱼雷尾迹、坡面姿态、海岸侧面和爆炸弹坑边缘同步优化。音色菜单可选已有系统中文音色或内置离线中文。
+
+[反馈与取舍清单](docs/公众号玩家反馈整理-20261007.md) · [版本说明](docs/releases/v0.7.0.md) · [公众号文章](docs/wechat-feedback-20261007/公众号文章.md)
+
+源代码：https://github.com/chencheng666/great-powers-rts
+
+离线 ZIP：https://github.com/chencheng666/great-powers-rts/releases/download/v0.7.0/Great-Powers-RTS-v0.7.0.zip
+
+目前仍是单机；国内下载服务器、双人局域网与公网对战平台尚未上线。
 
 ## 画面与首页升级 v0.6.0
 

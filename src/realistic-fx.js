@@ -24,6 +24,9 @@ export const realisticEffects = {
     const material = this.track(new THREE.MeshBasicMaterial({ map: texture, color: '#171a17', opacity: .65, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
     this.scorchMesh = new THREE.InstancedMesh(geometry, material, 80); this.scorchMesh.count = 0; this.scorchMesh.frustumCulled = false;
     this.scorchMarks = []; this.scorchCursor = 0; this.scorchDummy = new THREE.Object3D(); this.scene.add(this.scorchMesh);
+    const rim = this.track(new THREE.TorusGeometry(.46, .055, 6, 32)); rim.rotateX(-Math.PI / 2);
+    const earth = this.track(new THREE.MeshStandardMaterial({ color: '#63614e', roughness: 1 }));
+    this.craterMesh = new THREE.InstancedMesh(rim, earth, 80); this.craterMesh.count = 0; this.craterMesh.frustumCulled = false; this.craterMesh.receiveShadow = true; this.scene.add(this.craterMesh);
   },
 
   combatFlash(x, y, height, color, power, seconds) {
@@ -43,8 +46,10 @@ export const realisticEffects = {
       const d = this.scorchDummy; d.position.set(mark.x, this.elevation(mark.x, mark.y) + .2, mark.y);
       d.rotation.y = mark.angle; d.scale.set(mark.size * Math.min(1, (35 - age) / 8), 1, mark.size * .75); d.updateMatrix();
       this.scorchMesh.setMatrixAt(count++, d.matrix);
+      d.position.y += .25; d.scale.y = Math.min(5, mark.size * .06); d.updateMatrix(); this.craterMesh.setMatrixAt(count - 1, d.matrix);
     }
     this.scorchMesh.count = count; this.scorchMesh.instanceMatrix.needsUpdate = true;
+    this.craterMesh.count = count; this.craterMesh.instanceMatrix.needsUpdate = true;
   },
 
   createWeaponEffect(effect, group) {

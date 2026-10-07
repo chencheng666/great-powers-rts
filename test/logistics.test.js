@@ -110,6 +110,7 @@ test('无人机跨海移动不绕桥、不触发陆地碰撞，低空与高空�
 test('轰炸机炸弹有飞行时间和区域落点，不能追踪飞机、攻击潜艇或误伤友军', () => {
   const g = setup('frontier'), bomber = g.addUnit(0, 'bomber', 700, 900), target = g.addUnit(1, 'tank', 890, 900), near = g.addUnit(1, 'rifle', 900, 915), friend = g.addUnit(0, 'rifle', 910, 900), drone = g.addUnit(1, 'drone', 910, 920);
   assert.equal(g.canAttack(bomber, drone), false); assert.equal(g.canAttack(bomber, g.addUnit(1, 'submarine', 900, 900)), false);
+  bomber.x = target.x; bomber.y = target.y;
   g.fire(bomber, target, 100, 'bomber'); assert.equal(target.hp, target.maxHp); assert.equal(g.projectiles[0].kind, 'bomb');
   for (let n = 0; n < 30; n++) g.updateProjectiles(.05);
   assert.ok(target.hp < target.maxHp); assert.ok(near.hp < near.maxHp); assert.equal(friend.hp, friend.maxHp); assert.equal(drone.hp, drone.maxHp);

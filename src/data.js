@@ -62,6 +62,7 @@ export const UNITS = {
 };
 
 Object.assign(UNITS, {
+  ewPlane: { name: '电子压制机', cost: 1350, time: 43, hp: 185, speed: 168, range: 230, damage: 0, cooldown: 1, sight: 410, producer: 'airfield', requires: 'lab', tags: ['air', 'jet', 'support'], icon: 'radio-tower', desc: '原创概念：每 10 秒在 230 范围内压制敌方防空 2.5 秒；自身无武装，制空机与范围外防空可反制。' },
   navalFighter: { ...UNITS.fighter, name: '舰载制空机', cost: 760, time: 29, hp: 225, ammo: 8, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'anti-air', 'deck'], desc: '通用游戏舰载型，仅制空；可编入本方航母，停航着舰，付费维修补弹，再次起飞护航。' },
   navalStrike: { ...UNITS.strike, name: '舰载攻击机', cost: 880, time: 33, hp: 245, ammo: 4, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'bomber', 'deck'], desc: '通用游戏舰载型，对地与对舰；可编入航母，每舰最多三架真实机体，与自带攻击编组互斥。' },
   freightPlane: { name: '后勤运输机', cost: 0, time: 1, hp: 290, speed: 160, range: 0, damage: 0, cooldown: 1, sight: 90, icon: 'package', tags: ['air', 'jet', 'logistics'], desc: '外部援助航班，按固定航线自动运抵后勤中心；无武装，可被防空和战机拦截，不受战斗指令控制。' },
@@ -85,6 +86,8 @@ export const UNIT_ORDER = ['rifle', 'engineer', 'scout', 'tank', 'apc', 'supply'
 UNIT_ORDER.push('railgun', 'aegis', 'relay');
 UNIT_ORDER.push('landing', 'bomber', 'airlift');
 UNIT_ORDER.push('navalFighter', 'navalStrike');
+UNIT_ORDER.push('ewPlane');
+export const supportsMap = (required, mapId) => !required || required === mapId || required === 'ocean' && mapId === 'archipelago';
 UNITS.carrier.capacity = 3;
 UNITS.carrier.desc = '可驻泊三架自行生产的兼容舰载机；停航着舰、维修补弹、弹射起飞。编入真实舰载机后不再同时出动自带攻击编组，需反潜护卫。';
 
@@ -97,6 +100,15 @@ export const ORE_LAYOUT = [
 ];
 
 export const MAPS = {
+  archipelago: {
+    name: '跨海登陆战', sector: '战区 07 · 无桥海战', world: { width: 3520, height: 2240, cell: 40, fog: 80 },
+    ore: [], oil: [{ id: 'oil-a', x: 890, y: 240 }, { id: 'oil-b', x: 2630, y: 2000 }],
+    beacons: [{ id: 'beacon-west', x: 870, y: 700 }, { id: 'beacon-east', x: 2650, y: 1540 }],
+    barriers: [{ x1: 1040, y1: 0, x2: 2480, y2: 2240 }],
+    noBuild: [{ x1: 1000, y1: 0, x2: 2520, y2: 2240 }], bridges: [],
+    water: { x1: 1040, y1: 0, x2: 2480, y2: 2240 },
+    dockZones: [{ x1: 900, y1: 970, x2: 1000, y2: 1270 }, { x1: 2520, y1: 970, x2: 2620, y2: 1270 }]
+  },
   meridian: {
     name: '子午环阵', sector: '战区 06 · 原创科幻', future: true, world: { width: 3200, height: 2080, cell: 40, fog: 80 },
     ore: [[330,830,2700,'gold'],[330,1250,2700,'gold'],[870,400,2100,'gem'],[870,1680,2100,'gem'],[1150,1040,3100,'gold'],[2050,1040,3100,'gold'],[2330,400,2100,'gem'],[2330,1680,2100,'gem'],[2870,830,2700,'gold'],[2870,1250,2700,'gold']],

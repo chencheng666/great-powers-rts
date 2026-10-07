@@ -6,6 +6,7 @@
 
 | 素材 | 文件与来源 | 编辑方式 |
 | --- | --- | --- |
+| 玩家反馈版几何与截图 | `src/feedback-models.js`、`docs/wechat-feedback-20261007/images/` | Three.js 原创几何：七类月表飞行器模板、设施防护网；电子压制机基于本项目对地机加装原创吊舱。文章图片均为桌面实机功能验收场景，不是概念图；不使用《真实战争》或《红色警戒》的模型、音乐、警报录音 |
 | 细化地表与首页 | `assets/terrain-material-v3.png`、`battlefield-key-art-v2.png`；2026-10-06 使用内置 image_gen.imagegen 生成 | 完整提示词保存在 `assets/asset-prompts.json`；地表按小尺度重复，首页为原创插画，不是实机截图 |
 | 细化三维模型 | `assets/models/realism-library.glb` / `.blend`，`scripts/build_realism_assets.py` | 17 个覆盖模板：五类常规设施、五类月表设施、五阵营坦克、两类飞机；维护走道、采光带、装甲紧固件、观瞄和航空挂架。兵工厂为独立装配模型，其余模板保留旧库 |
 | 画面升级实机截图 | `docs/images/visual-*.png` | `scripts/verify-visuals-browser.js` 布置桌面验收场景，分别展示首页、陆地／月表／海战；不是预渲染模型宣传图 |

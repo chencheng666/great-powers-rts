@@ -115,6 +115,8 @@ export class GameAudio {
     if (this.context.currentTime - line.time > 4) { this.playNextVoice(); return; }
     // 先占用通道，防止异步解码期间多个应答同时播放。
     const token = { ...line, source: null }; this.currentVoice = token;
+    if (this.settings.voiceURI === 'portable') { await this.playPortableVoice(token); return; }
+    if (this.settings.voiceURI && this.settings.voiceURI !== 'auto' && window.speechSynthesis?.getVoices().some(v => v.voiceURI === this.settings.voiceURI && /^zh(?:-|_)/i.test(v.lang))) { this.playSpeech(token); return; }
     if (!assets[`../assets/audio/${voiceFile(line.key, line.index)}`]) {
       const chinese = window.speechSynthesis?.getVoices().some(voice => /^zh(?:-|_)/i.test(voice.lang));
       if (chinese) this.playSpeech(token);
@@ -150,7 +152,7 @@ export class GameAudio {
     const speech = new window.SpeechSynthesisUtterance(VOICE_LINES[token.key][token.index]);
     Object.assign(speech, speechOptions(this.settings, COMMAND_LINES.has(token.key)));
     const voices = synth.getVoices().filter(voice => /^zh(?:-|_)/i.test(voice.lang));
-    const voice = voices.find(item => item.localService) || voices[0];
+    const voice = voices.find(item => item.voiceURI === this.settings.voiceURI) || voices.find(item => item.localService) || voices[0];
     if (voice) speech.voice = voice;
     token.speech = speech;
     const finish = () => {

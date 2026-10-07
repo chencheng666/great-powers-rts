@@ -40,8 +40,9 @@ export function validateSave(save) {
   const point = value => object(value) && finite(value.x) && finite(value.y);
   const checkOrder = order => {
     if (order === null) return;
-    if (!object(order) || !['move', 'attackMove', 'attack', 'capture', 'board', 'rearm', 'restock'].includes(order.type)) invalid();
-    if (['move', 'attackMove', 'attack', 'capture'].includes(order.type) && !point(order)) invalid();
+    if (!object(order) || !['move', 'attackMove', 'attack', 'capture', 'board', 'rearm', 'restock', 'patrol'].includes(order.type)) invalid();
+    if (['move', 'attackMove', 'attack', 'capture', 'patrol'].includes(order.type) && !point(order)) invalid();
+    if (order.type === 'patrol' && (!finite(order.originX) || !finite(order.originY) || !finite(order.destinationX) || !finite(order.destinationY) || [order.x, order.originX, order.destinationX].some(x => x < 0 || x > world.width) || [order.y, order.originY, order.destinationY].some(y => y < 0 || y > world.height))) invalid();
     if (['attack', 'capture', 'board'].includes(order.type) && typeof order.targetId !== 'string' && !Number.isSafeInteger(order.targetId)) invalid();
   };
   for (const [key, definitions] of [['units', UNITS], ['buildings', BUILDINGS]]) {
@@ -104,7 +105,7 @@ export function validateSave(save) {
   }
   if (!Array.isArray(s.selected) || s.selected.some(id => !Number.isSafeInteger(id)) || !Array.isArray(s.projectiles) || s.projectiles.length > 10000 || !Number.isSafeInteger(s.nextProjectileId) || ![s.aiTimer, s.aiWaveTimer, s.fogTimer].every(finite) || s.pendingBuilding !== null && !known(BUILDINGS, s.pendingBuilding) || typeof s.pendingAbility !== 'boolean') invalid();
   for (const projectile of s.projectiles) if (!object(projectile) || !['x', 'y', 'startX', 'startY', 'toX', 'toY', 'angle', 'age', 'amount', 'speed', 'hp', 'jam'].every(key => finite(projectile[key])) || projectile.speed <= 0 || ![0, 1].includes(projectile.owner) || !['wing', 'torpedo', 'rocket', 'missile', 'loitering', 'bomb'].includes(projectile.kind)) invalid();
-  for (const projectile of s.projectiles) for (const key of ['sourceHeight', 'targetHeight']) if (projectile[key] !== undefined && !finite(projectile[key])) invalid();
+  for (const projectile of s.projectiles) for (const key of ['sourceHeight', 'targetHeight', 'fallDuration']) if (projectile[key] !== undefined && (!finite(projectile[key]) || key === 'fallDuration' && (projectile[key] <= 0 || projectile[key] > 10))) invalid();
   if (save.view !== undefined && !object(save.view)) invalid();
   if (s.logistics !== undefined) {
     if (!Array.isArray(s.logistics) || s.logistics.length !== 2) invalid();

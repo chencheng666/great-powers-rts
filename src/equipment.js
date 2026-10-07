@@ -32,13 +32,16 @@ export function equipmentProfile(faction, type, future = false) {
   const system = EQUIPMENT_SYSTEMS[faction], entry = system?.[type], data = UNITS[type];
   if (!data) return null;
   if (isLunarRobot(future, type)) { const robot = ROBOT_SPECS[type]; return { name: robot.name, description: robot.description, country: '原创月表无人体系', category: '原创／机器人', source: null }; }
+  if (future && ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane'].includes(type)) return { name: { fighter: '云隼制空穿梭机', strike: '月弧对地穿梭机', bomber: '月隼轨道轰炸机', airlift: '星舟战术运输机', freightPlane: '月表物资穿梭机' }[type], description: '原创科幻无人平台，推进舱、姿态喷口与功能模块；游戏职责和成本仍遵循双方统一规则。', country: '原创月表无人体系', category: '原创／科幻装备', source: null };
   if (entry) return { name: entry[0], description: entry[1], country: system.country, category: '现实原型', source: EQUIPMENT_SOURCES[entry[2]] };
-  const concept = ['elite', 'ghost', 'drone', 'jammer', 'laser', 'railgun', 'aegis', 'relay'].includes(type);
+  const concept = ['elite', 'ghost', 'drone', 'jammer', 'laser', 'railgun', 'aegis', 'relay', 'ewPlane'].includes(type);
   return { name: type === 'elite' ? FACTIONS[faction].elite : data.name, description: data.desc, country: system?.country || '通用体系', category: concept ? '原创／概念装备' : '通用战术单位', source: null };
 }
 
 export function equipmentModel(faction, type, future = false) {
   if (isLunarRobot(future, type)) return ROBOT_SPECS[type].model;
+  if (type === 'ewPlane') return future ? 'space_ewPlane' : 'ewPlane';
+  if (future && ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis'].includes(type)) return `space_${type}`;
   if (type === 'navalFighter') return 'fighter';
   if (type === 'navalStrike') return 'strike';
   if (type === 'refinery' && !future) return 'logistics_depot';

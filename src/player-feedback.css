@@ -1,0 +1,9 @@
+.command-toolbar { max-width:calc(100% - 355px); flex-wrap:wrap; justify-content:flex-end; }
+.command-toolbar .command-btn { width:48px; height:48px; }
+.command-toolbar .toolbar-toggle { width:28px; }
+.command-toolbar.collapsed .command-btn:not(.toolbar-toggle) { display:none; }
+.command-toolbar [hidden] { display:none; }
+.audio-voice { display:flex; flex-direction:column; gap:8px; font-size:12px; margin:12px 0; }
+.audio-voice select { width:100%; min-height:36px; padding:5px 8px; color:#e1eee7; border:1px solid #5d7469; background:#182720; }
+@media(max-width:1000px) { .command-toolbar { max-width:calc(100% - 295px); } }
+@media(max-width:700px) { .command-toolbar { max-width:calc(100% - 205px); } .command-toolbar .command-btn { width:38px; height:38px; } }

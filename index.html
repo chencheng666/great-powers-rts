@@ -27,6 +27,7 @@
         <label class="audio-level"><span>总音量</span><input type="range" min="0" max="100" step="1" data-audio="master" aria-label="总音量"><output data-audio-value="master"></output></label>
         <label class="audio-level"><span>背景音乐</span><input type="range" min="0" max="100" step="1" data-audio="music" aria-label="背景音乐音量"><output data-audio-value="music"></output></label>
         <label class="audio-level"><span>中文语音</span><input type="range" min="0" max="100" step="1" data-audio="voice" aria-label="中文语音音量"><output data-audio-value="voice"></output></label>
+        <label class="audio-voice"><span>播报音色</span><select id="audio-voice" aria-label="播报音色"><option value="auto">系统默认中文</option><option value="portable">内置中文电台</option></select></label>
         <label class="audio-level"><span>战场音效</span><input type="range" min="0" max="100" step="1" data-audio="effects" aria-label="战场音效音量"><output data-audio-value="effects"></output></label>
         <button id="audio-test" class="secondary-btn" title="试听中文播报"><i data-lucide="audio-lines"></i>试听中文</button>
       </section>
@@ -49,9 +50,13 @@
           <div class="command-toolbar" id="command-toolbar">
             <button class="command-btn" id="move-btn" title="移动部队"><i data-lucide="move-up-right"></i><span>移动</span></button>
             <button class="command-btn" id="attack-btn" title="攻击移动 A"><i data-lucide="crosshair"></i><span>攻击</span></button>
+            <button class="command-btn" id="patrol-btn" title="往返巡逻 P"><i data-lucide="route"></i><span>巡逻</span></button>
+            <button class="command-btn" id="unload-btn" title="卸载部队或舰载机起飞 U" hidden><i data-lucide="log-out"></i><span>卸载</span></button>
+            <button class="command-btn" id="resupply-btn" title="返回基地维修补给" hidden><i data-lucide="fuel"></i><span>补给</span></button>
             <button class="command-btn" id="all-btn" title="选择所有作战单位"><i data-lucide="users-round"></i><span>全军</span></button>
             <button class="command-btn" id="stop-btn" title="停止 S"><i data-lucide="hand"></i><span>停止</span></button>
             <button class="command-btn" id="home-btn" title="回到基地 H"><i data-lucide="house"></i><span>基地</span></button>
+            <button class="command-btn toolbar-toggle" id="toolbar-toggle" title="收起部队指令" aria-label="收起部队指令" aria-expanded="true"><i data-lucide="chevron-right"></i></button>
           </div>
           <div class="toast-container" id="toast-container"></div>
         </section>

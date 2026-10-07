@@ -9,7 +9,8 @@ export function terrainHeight(game, x, z) {
   if (!road || !base) return 0;
   const rolling = Math.sin(edge * .009) * Math.cos(z * .008) * 2.4 + Math.sin(z * .017 + edge * .006) * 1.1;
   // 只改变可视地表；不增加碰撞、掩体和伤害修正，基地及主路保持平整。
-  return rolling * road * base * (game.map.future ? 1.4 : 1);
+  const plateau = game.map.future ? 0 : (1 + Math.sin(edge * .004)) * (1 + Math.cos(z * .006)) * 6;
+  return (rolling * (game.map.future ? 1.4 : 1) + plateau) * road * base;
 }
 
 export function tracerEndpoints(effect) {

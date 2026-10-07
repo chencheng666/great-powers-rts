@@ -1,20 +1,19 @@
-const { root, taskSpaceId, mapId = 'ocean' } = globalThis.GAME_QA;
+const { root, taskSpaceId, mapId = 'ocean', pageLabel = 'p1' } = globalThis.GAME_QA;
 const robots = mapId === 'meridian', prefix = robots ? 'robots' : 'convoy';
 const fs = await import('node:fs/promises');
-const task = await taskSpace(taskSpaceId), page = task.page('p1');
+const task = await taskSpace(taskSpaceId), page = task.page(pageLabel);
 const names = (await fs.readdir(`${root}/releases`)).filter(name => /^\d{14}$/.test(name)).sort();
 if (!names.length) throw new Error('先运行 npm run package:offline');
 const file = `${root}/releases/${names.at(-1)}/Great-Powers-RTS/PLAY.html`;
 const report = { file: 'Great-Powers-RTS/PLAY.html' };
 const check = (ok, message) => { if (!ok) throw new Error(message); };
-const keys = ['great-powers-save-manual-v1', 'great-powers-save-auto-v1', 'great-powers-audio-v1'];
 await page.cdp('Network.enable');
 await page.cdp('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
 await page.cdp('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false });
 let backup;
 try {
   await page.goto(`file://${file}`);
-  backup = await page.evaluate(keys => Object.fromEntries(keys.map(key => [key, localStorage.getItem(key)])), keys);
+  backup = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter(key => key.startsWith('great-powers-')).map(key => [key, localStorage.getItem(key)])));
   await page.evaluate(() => {
     window.__offlineErrors = []; window.__decodedVoices = [];
     // 明确模拟目标 Linux 设备没有中文系统音色，验证随包 WAV 而非系统语音。
@@ -53,7 +52,7 @@ try {
       localStorage.setItem('great-powers-save-manual-v1', JSON.stringify(save));
     });
   } else check(report.save.mode === 'convoy' && report.save.routes === 2 && !report.save.ore && !report.save.miners, '离线包不是新版运输经济');
-  await page.click('#sound-btn'); await page.click('#audio-test');
+  await page.click('#sound-btn'); await page.selectOption('#audio-voice', 'portable'); await page.click('#audio-test');
   await page.waitForFunction(() => __decodedVoices.some(v => v.duration > .1 && v.duration < 15 && v.rms > .001), undefined, { timeout: 15000 });
   report.render = await page.evaluate(() => {
     const canvas = document.querySelector('#game-canvas'), gl = canvas.getContext('webgl2');
@@ -77,6 +76,6 @@ try {
   await fs.writeFile(`${root}/releases/${prefix}-offline-report.json`, `${JSON.stringify(report, null, 2)}\n`);
   console.log(report);
 } finally {
-  if (backup) await page.evaluate(values => { for (const [key, value] of Object.entries(values)) value === null ? localStorage.removeItem(key) : localStorage.setItem(key, value); }, backup);
+  if (backup) await page.evaluate(values => { for (const key of Object.keys(localStorage).filter(key=>key.startsWith('great-powers-'))) if(!Object.hasOwn(values,key)) localStorage.removeItem(key); for (const [key, value] of Object.entries(values)) localStorage.setItem(key, value); }, backup);
   await page.cdp('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
 }

@@ -35,8 +35,8 @@ await copyFile(join(root, 'LICENSE'), join(destination, 'LICENSE'));
 await copyFile(join(root, 'ASSETS.md'), join(destination, 'ASSETS.md'));
 await copyFile(join(root, 'EQUIPMENT.md'), join(destination, 'EQUIPMENT.md'));
 const voiceGuide = await readFile(join(root, 'docs/中文语音使用教程.md'), 'utf8');
-await writeFile(join(destination, '中文语音使用教程.md'), voiceGuide.replace('wechat-logistics-20261006/images/10-chinese-voice.png', '中文语音设置.png'));
-await copyFile(join(root, 'docs/wechat-logistics-20261006/images/10-chinese-voice.png'), join(destination, '中文语音设置.png'));
+await writeFile(join(destination, '中文语音使用教程.md'), voiceGuide.replace('wechat-feedback-20261007/images/04-chinese-voice.png', '中文语音设置.png'));
+await copyFile(join(root, 'docs/wechat-feedback-20261007/images/04-chinese-voice.png'), join(destination, '中文语音设置.png'));
 for (const name of ['启动游戏-Linux.sh', '安装到用户菜单-Linux.sh']) {
   await copyFile(join(root, 'packaging', name), join(destination, name));
   await chmod(join(destination, name), 0o755);

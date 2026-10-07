@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { createSpaceAircraft } from './feedback-models.js';
 
 const modelURL = new URL('../assets/models/military-library.glb', import.meta.url).href;
 const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url).href;
@@ -45,7 +46,7 @@ ${shader.fragmentShader}`.replace('#include <map_fragment>', `#include <map_frag
 float weather = surfaceNoise(vSurface * ${stone ? '9.0' : '35.0'});
 float patches = surfaceNoise(vSurface * ${stone ? '2.5' : '1.5'});
 diffuseColor.rgb *= ${stone ? '0.64 + weather * 0.52 + patches * 0.28' : '0.84 + weather * 0.24'};
-${material.name === '装甲钢' ? 'diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(.57,.61,.56), smoothstep(.51,.59,patches) * .8);' : ''}
+${['装甲钢', '建筑面板', '屋顶'].includes(material.name) ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.24,.15), smoothstep(.42,.49,patches) * .75); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.075,.10,.085), smoothstep(.59,.65,patches) * .8);' : ''}
 ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothstep(.69,.83,weather) * .35);' : ''}`)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (surfaceNoise(vSurface * 28.0) - .4) * .18, .28, 1.0);');
   };
@@ -108,6 +109,11 @@ export function prepareVisualAssets() {
       }
       models.set(name, template);
     }
+    for (const type of ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane']) models.set(`space_${type}`, createSpaceAircraft(type));
+    const electronic = models.get('strike').clone(); electronic.name = 'ewPlane';
+    const podMaterial = new THREE.MeshStandardMaterial({ color: '#687667', roughness: .65, metalness: .5 });
+    for (const z of [-2.3, 2.3]) { const pod = new THREE.Mesh(new THREE.CapsuleGeometry(.3, 2.2, 4, 12), podMaterial); pod.rotation.z = Math.PI / 2; pod.position.set(-.5, -.2, z); electronic.add(pod); }
+    models.set('ewPlane', electronic);
     ground.colorSpace = THREE.SRGBColorSpace; ground.wrapS = ground.wrapT = THREE.RepeatWrapping;
     meridian.colorSpace = THREE.SRGBColorSpace;
     library = { models, ground, buildings, foliage, armory, meridian }; return library;

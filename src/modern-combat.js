@@ -11,6 +11,48 @@ const alive = u => u.hp > 0 && !u.embarkedIn;
 export const modernCombat = {
   activeUnits(side, type) { return this.ownedUnits(side, type).filter(u => !u.embarkedIn); },
 
+  serviceReady(u) {
+    return this.hasPower(u.owner) && this.time - (u.lastDamageAt ?? -10) > 3 && this.time - (u.lastMovedAt ?? -10) >= .5;
+  },
+
+  aircraftGrounded(u) {
+    return !!UNITS[u.type]?.tags.includes('air') && !u.embarkedIn && !u.deployment && !u.deckApproach &&
+      !['move', 'attackMove', 'attack', 'patrol', 'board'].includes(u.order?.type) && this.time - (u.lastMovedAt ?? -10) >= .5 &&
+      this.ownedBuildings(u.owner, 'airfield').some(b => distance(b, u) <= b.size * .55 + 24);
+  },
+
+  serviceGroundUnit(u, dt, home = null) {
+    if (!this.serviceReady(u) || isLunarRobot(this.map, u.type) || UNITS[u.type].tags.some(t => ['air', 'ship', 'logistics'].includes(t))) return false;
+    const infantry = UNITS[u.type].tags.includes('infantry');
+    home ||= this.ownedBuildings(u.owner).find(b => (infantry ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type)) && distance(b, u) <= b.size * .55 + 40);
+    if (!home || home.hp <= 0 || home.owner !== u.owner || distance(home, u) > home.size * .55 + 40) return false;
+    const p = this.players[u.owner], repaired = Math.min((infantry ? 12 : 22) * dt, u.maxHp - u.hp, p.credits / .3);
+    u.hp += repaired; p.credits = Math.max(0, p.credits - repaired * .3);
+    if (repaired > 0 && this.time >= (u.serviceFXAt || 0)) {
+      u.serviceFXAt = this.time + .7;
+      this.effects.push({ type: 'shot', style: 'repair', x: home.x, y: home.y, toX: u.x, toY: u.y, targetType: u.type, owner: u.owner, age: 0, duration: .6 });
+    }
+    return true;
+  },
+
+  refillStationAmmo(u, dt) {
+    const d = UNITS[u.type];
+    if (!d.ammo || isLunarRobot(this.map, u.type) || u.ammo >= d.ammo || !this.serviceReady(u)) return;
+    u.rearmProgress += dt;
+    const cost = d.ammoCost ?? 10;
+    if (u.rearmProgress >= d.rearmTime / d.ammo && this.players[u.owner].credits >= cost) {
+      this.players[u.owner].credits -= cost; u.ammo++; u.rearmProgress = 0;
+    }
+  },
+
+  serviceIdleUnit(u, dt) {
+    if (u.order || !this.serviceReady(u)) return;
+    const tags = UNITS[u.type].tags;
+    const atStation = tags.includes('air') ? this.aircraftGrounded(u) : tags.includes('ship') ?
+      this.ownedBuildings(u.owner, 'dock').some(b => distance(u, this.navalGoal(b.x, b.y, unitRadius(u) + 10)) <= 115) : this.serviceGroundUnit(u, dt);
+    if (atStation) this.refillStationAmmo(u, dt);
+  },
+
   serviceAircraft(u, dt) {
     if (u.hp >= u.maxHp || this.time - (u.lastDamageAt ?? -10) <= 3 || this.time - (u.lastMovedAt ?? -10) < .5 || !this.hasPower(u.owner)) return;
     const home = this.ownedBuildings(u.owner, 'airfield').find(b => distance(b, u) <= b.size * .55 + 30);
@@ -24,7 +66,7 @@ export const modernCombat = {
   },
 
   requestResupply(u) {
-    if (!u || u.hp <= 0 || u.embarkedIn || UNITS[u.type].tags.includes('logistics') || !isLunarRobot(this.map, u.type) && !UNITS[u.type].ammo && !UNITS[u.type].tags.some(t => ['air', 'ship'].includes(t))) return false;
+    if (!u || u.hp <= 0 || u.embarkedIn || ['harvester', 'supply'].includes(u.type) || UNITS[u.type].tags.includes('logistics')) return false;
     if (u.order?.type !== 'rearm') { u.resumeOrder = u.order; u.order = { type: 'rearm' }; u.path = []; u.pathTimer = 0; }
     return true;
   },
@@ -66,6 +108,14 @@ export const modernCombat = {
         this.effects.push({ type: 'sonar', sourceId: u.id, x: u.x, y: u.y, size: UNITS[u.type].sonar, owner: u.owner, age: 0, duration: 1.5 });
       }
     }
+    for (const plane of this.units.filter(u => alive(u) && u.type === 'ewPlane' && this.time >= u.stunUntil && u.order?.type !== 'rearm' && !this.aircraftGrounded(u))) {
+      const active = this.time % 10 < 2.5;
+      if (!active) continue;
+      for (const target of this.activeUnits(1 - plane.owner)) {
+        if (['aa', 'frigate', 'destroyer'].includes(target.type) && distance(plane, target) <= UNITS.ewPlane.range && this.canSeeEntity(plane.owner, target)) target.ewSuppressedUntil = this.time + .15;
+      }
+      if (this.time >= (plane.pulseAt || 0)) { plane.pulseAt = this.time + 1; this.effects.push({ type: 'jam', x: plane.x, y: plane.y, size: UNITS.ewPlane.range, owner: plane.owner, age: 0, duration: .8 }); }
+    }
     for (const jammer of this.units.filter(u => alive(u) && u.type === 'jammer' && this.time >= u.stunUntil)) {
       const range = UNITS.jammer.range * (this.players[jammer.owner].faction === 'middleeast' ? 1.15 : 1);
       for (const u of this.activeUnits(1 - jammer.owner)) {
@@ -91,8 +141,9 @@ export const modernCombat = {
     const kind = style === 'bomber' ? 'bomb' : style === 'carrier' ? 'wing' : style === 'rocket' ? 'rocket' : style === 'submarine' ? 'torpedo' : style === 'loiterer' ? 'loitering' : 'missile';
     this.projectiles.push({ id: this.nextProjectileId++, kind, owner: source.owner, sourceId: source.id, targetId: target.id, targetType: target.type, x: source.x, y: source.y, startX: source.x, startY: source.y, toX: target.x, toY: target.y, angle: Math.atan2(target.y - source.y, target.x - source.x), age: 0, jam: 0, amount, hp: kind === 'wing' ? 90 : 38, speed: kind === 'wing' ? 185 : kind === 'torpedo' ? 155 : kind === 'rocket' ? 300 : kind === 'missile' ? 360 : 185, returning: false });
     const p = this.projectiles.at(-1);
-    p.sourceHeight = UNITS[source.type]?.tags.includes('jet') ? 95 : source.type === 'destroyer' ? 35 : 20;
-    p.targetHeight = UNITS[target.type]?.tags.includes('jet') ? 95 : UNITS[target.type]?.tags.includes('drone') ? 25 : 12;
+    p.sourceHeight = UNITS[source.type]?.tags.includes('jet') && !this.aircraftGrounded(source) ? 95 : source.type === 'destroyer' ? 35 : 20;
+    p.targetHeight = UNITS[target.type]?.tags.includes('jet') && !this.aircraftGrounded(target) ? 95 : UNITS[target.type]?.tags.includes('drone') ? 25 : 12;
+    if (kind === 'bomb') { p.toX = p.x; p.toY = p.y; p.fallDuration = 1.1; }
     if (style === 'submarine') source.exposedUntil = this.time + 4;
     this.events.shot?.(style, source.owner);
     return true;
@@ -103,7 +154,7 @@ export const modernCombat = {
     // 优先拦截入境弹药；与普通射击共享射击间隔及弹药，不能同时无限输出。
     for (const defender of this.units.filter(u => alive(u) && this.time >= u.stunUntil && u.fireTimer <= 0)) {
       const d = UNITS[defender.type];
-      if (!['laser', 'aa', 'frigate', 'destroyer', 'fighter', 'aegis', 'navalFighter'].includes(defender.type) || defender.overheated || d.ammo && defender.ammo <= 0 || defender.order?.type === 'rearm') continue;
+      if (!['laser', 'aa', 'frigate', 'destroyer', 'fighter', 'aegis', 'navalFighter'].includes(defender.type) || defender.ewSuppressedUntil > this.time || defender.overheated || d.ammo && defender.ammo <= 0 || defender.order?.type === 'rearm') continue;
       const target = list.filter(p => p.hp > 0 && p.owner !== defender.owner && !['rocket', 'torpedo', 'bomb'].includes(p.kind) && !(defender.type === 'laser' && p.kind === 'wing') && !(['fighter', 'aegis', 'navalFighter'].includes(defender.type) && p.kind !== 'wing') && distance(defender, p) <= d.range && this.isVisibleFor(defender.owner, p.x, p.y)).sort((a, b) => distance(defender, a) - distance(defender, b))[0];
       if (!target) continue;
       target.hp -= d.damage * (defender.type === 'laser' ? 1 : 1.8);
@@ -131,6 +182,7 @@ export const modernCombat = {
       const remaining = distance(p, { x: p.toX, y: p.toY }), step = p.speed * dt * (jammed ? .5 : 1);
       const heading = Math.atan2(p.toY - p.y, p.toX - p.x);
       p.angle = ['wing', 'missile', 'loitering'].includes(p.kind) ? turnToward(p.angle, heading, (p.kind === 'wing' ? 2.2 : 5) * dt) : heading;
+      if (p.kind === 'bomb' && p.fallDuration && p.age < p.fallDuration) continue;
       if (remaining > step + 8) { p.x += Math.cos(p.angle) * step; p.y += Math.sin(p.angle) * step; }
       else if (p.returning) this.finishProjectile(p, false);
       else {
@@ -140,7 +192,7 @@ export const modernCombat = {
         };
         if (['rocket', 'bomb'].includes(p.kind)) {
           for (const entity of [...this.units, ...this.buildings]) {
-            if (entity.owner === p.owner || !alive(entity) || entity.kind === 'unit' && UNITS[entity.type].tags.some(t => ['air', 'submerged'].includes(t))) continue;
+            if (entity.owner === p.owner || !alive(entity) || entity.kind === 'unit' && (UNITS[entity.type].tags.includes('submerged') || UNITS[entity.type].tags.includes('air') && !this.aircraftGrounded(entity))) continue;
             const gap = distance(entity, { x: p.toX, y: p.toY });
             if (gap <= (p.kind === 'bomb' ? UNITS.bomber.splash : 65)) {
               const record = { target: entity, amount: p.amount * (1 - gap / 100), side: p.owner, stun: 0 };
@@ -182,18 +234,14 @@ export const modernCombat = {
     if (distance(u, berth) > (naval ? 75 : home.size * .55 + 40)) { u.rearmProgress = 0; this.moveUnit(u, berth, dt, naval ? 48 : home.size * .55 + 24); return; }
     if (!this.hasPower(u.owner)) return;
     if (naval) this.serviceShip(u, dt, home);
-    if (naval && (this.time - (u.lastMovedAt ?? -10) < .5 || this.time - (u.lastDamageAt ?? -10) <= 3)) return;
-    u.rearmProgress += dt;
-    const interval = d.ammo ? d.rearmTime / d.ammo : Infinity;
-    const cost = d.ammoCost ?? 10;
-    if (u.rearmProgress >= interval && u.ammo < d.ammo && this.players[u.owner].credits >= cost) {
-      this.players[u.owner].credits -= cost; u.ammo++; u.rearmProgress = 0;
-    }
+    else this.serviceGroundUnit(u, dt, home);
+    if (!this.serviceReady(u)) return;
+    this.refillStationAmmo(u, dt);
     if (u.type === 'carrier' && !this.carrierAircraft(u).length && u.wing < d.wing && this.players[u.owner].credits >= 150) {
       u.wingRearm = (u.wingRearm || 0) + dt;
       if (u.wingRearm >= 8) { u.wing++; u.wingRearm = 0; this.players[u.owner].credits -= 150; }
     }
-    if ((!d.ammo || u.ammo === d.ammo) && (!naval || u.hp >= u.maxHp - .01) && (u.type !== 'carrier' || this.carrierAircraft(u).length || u.wing === d.wing)) {
+    if ((!d.ammo || u.ammo === d.ammo) && u.hp >= u.maxHp - .01 && (u.type !== 'carrier' || this.carrierAircraft(u).length || u.wing === d.wing)) {
       this.restoreCombatOrder(u);
       if (naval && !u.order) {
         // 空闲舰艇离开整备泊位，给后续伤舰留下进港空间。
@@ -261,7 +309,7 @@ export const modernCombat = {
     const stockCost = empty && UNITS[empty.type].tags.includes('infantry') ? 1 : empty && ['tank', 'aa', 'elite'].includes(empty.type) ? 4 : 8;
     if (empty && u.serviceTimer <= 0 && u.stock >= stockCost && p.credits >= cost) {
       u.stock -= stockCost; p.credits -= cost; empty.ammo++; u.serviceTimer = 1.5;
-      if (empty.order?.type === 'rearm' && empty.ammo >= Math.ceil(UNITS[empty.type].ammo / 2) && empty.type !== 'carrier') this.restoreCombatOrder(empty);
+      if (empty.order?.type === 'rearm' && empty.hp >= empty.maxHp - .01 && empty.ammo >= Math.ceil(UNITS[empty.type].ammo / 2) && empty.type !== 'carrier') this.restoreCombatOrder(empty);
     }
   },
 
