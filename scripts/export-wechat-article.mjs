@@ -37,7 +37,7 @@ const document = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 await writeFile(path.join(folder, 'article.html'), document);
 const imageBase = article.mediaBase ? `${article.mediaBase}images/` : article.localImages ? 'images/' : `https://raw.githubusercontent.com/chencheng666/great-powers-rts/main/${path.relative(root, folder).split(path.sep).map(encodeURIComponent).join('/')}/images/`;
 const markdown = [`# ${article.title}`, `${article.date} · 陈成`, ...article.blocks.map(block => {
-  if (block.type === 'image') return `![${block.caption.split('｜')[0]}](${imageBase}${block.file})\n\n*${block.caption}*`;
+  if (block.type === 'image') return `![${block.caption.split('｜')[0]}](${article.mediaBase ? mediaUrl(`images/${block.file}`) : `${imageBase}${block.file}`})\n\n*${block.caption}*`;
   if (block.type === 'video') return `![视频封面](${mediaUrl(block.poster)})\n\n[播放实机短视频](${mediaUrl(block.file)})\n\n*${block.caption}*`;
   if (block.type === 'h2') return `## ${block.text}`;
   if (block.type === 'h3') return `### ${block.text}`;

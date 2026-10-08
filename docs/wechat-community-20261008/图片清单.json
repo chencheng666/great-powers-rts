@@ -1,0 +1,92 @@
+[
+  {
+    "type": "image",
+    "file": "01-home.png",
+    "caption": "作战首页｜单机、联网、图鉴和荣誉档案集中在同一个入口，本文以电脑端体验为主。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/01-home.png"
+  },
+  {
+    "type": "image",
+    "file": "04-online-lobby.png",
+    "caption": "双人大厅｜本地两个独立游客身份的联机验收截图，展示房间码、阵营选择和双方准备状态。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/04-online-lobby.png"
+  },
+  {
+    "type": "image",
+    "file": "04b-online-battle.png",
+    "caption": "联网实机战局｜对手身份、敌我阵营和战场迷雾均来自服务端；这张不是单机模式冒充联网。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/04b-online-battle.png"
+  },
+  {
+    "type": "image",
+    "file": "02-singleplayer-base.png",
+    "caption": "单机基地与建筑信息｜兵营、战车工厂和兵工厂有各自职责，点击建筑可以查看状态。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/02-singleplayer-base.png"
+  },
+  {
+    "type": "image",
+    "file": "03-singleplayer-combat.png",
+    "caption": "装甲部队交火｜敌我血条与选中标识分色，命令引导线、受击提醒和补给单位一起服务战场判断。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/03-singleplayer-combat.png"
+  },
+  {
+    "type": "image",
+    "file": "05-catalog-tank.png",
+    "caption": "99A 原型主战坦克｜三维模型可旋转、缩放，旁边列出生产条件、战术用途和弱点。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/05-catalog-tank.png"
+  },
+  {
+    "type": "image",
+    "file": "06-catalog-personnel.png",
+    "caption": "人物图鉴｜当前突击兵实机模型。人物比例、关节与动作细节仍是后续优化重点，不包装成写实成品。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/06-catalog-personnel.png"
+  },
+  {
+    "type": "image",
+    "file": "07-catalog-robot.png",
+    "caption": "子午战区机器人｜用机械作战单位承接月表战场设定，相关装备明确属于科幻玩法。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/07-catalog-robot.png"
+  },
+  {
+    "type": "image",
+    "file": "08-catalog-ship.png",
+    "caption": "舰艇图鉴｜052D 原型导弹驱逐舰已经能查看，游戏参数不是现实军事参数。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/08-catalog-ship.png"
+  },
+  {
+    "type": "image",
+    "file": "11-moon-craters.png",
+    "caption": "待发布：子午月表三维陨石坑｜移除公路观感，增加连续坑壁与月表起伏；这些视觉地形尚不提供额外掩体加成。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/11-moon-craters.png"
+  },
+  {
+    "type": "image",
+    "file": "12-building-damage.png",
+    "caption": "待发布：建筑损伤表现｜受损阶段增加烟火、破损材质与碎屑，维修后外观会恢复。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/12-building-damage.png"
+  },
+  {
+    "type": "image",
+    "file": "13-ship-sinking.png",
+    "caption": "待发布：舰船侧倾下沉｜确认摧毁后播放限时视觉效果，不新增可阻挡路径或获得资源的沉船实体。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/13-ship-sinking.png"
+  },
+  {
+    "type": "image",
+    "file": "09-honor-current.png",
+    "caption": "当前荣誉档案｜这是现有游戏界面，不是新肩章已经上线的证明。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/09-honor-current.png"
+  },
+  {
+    "type": "image",
+    "file": "10-honor-rules.png",
+    "caption": "当前计分规则｜难度、模式和成就影响荣誉分，玩家可以直接在游戏里查看。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/10-honor-rules.png"
+  },
+  {
+    "type": "image",
+    "file": "14-honor-proposal.png",
+    "caption": "仅设计提案：八阶虚构肩章｜尚未改入游戏，保留现有积分和胜场，欢迎先评价是否清晰、是否有成就感。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/14-honor-proposal.png"
+  }
+]
