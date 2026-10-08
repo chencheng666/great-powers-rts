@@ -19,6 +19,17 @@ import { isLunarRobot, lunarBuildingProfile } from './lunar-robots.js';
 import './session.css';
 import './visual-v3.css';
 import './player-feedback.css';
+import { Catalog } from './catalog.js';
+import { CatalogSession } from './catalog-data.js';
+import './catalog.css';
+import { HONOR_KEY, readHonors, writeHonors, exportHonors, emptyHonors, honorProgress, settleHonors } from './player-honors.js';
+import { HonorPanel, honorBadge, honorResultHTML } from './honor-ui.js';
+import './honors.css';
+import { INTELLIGENCE_RULES } from './intelligence.js';
+import './intelligence.css';
+import { OnlineClient } from './online-client.js';
+import { OnlineGame } from './online-game.js';
+import './online.css';
 
 const $ = selector => document.querySelector(selector);
 const fmt = amount => Math.floor(amount).toLocaleString('zh-CN');
@@ -67,6 +78,62 @@ const state = {
   autoSaveFailed: false,
   alertId: null
 };
+
+function localHonorProfile() {
+  try { return {profile:readHonors(localStorage),error:''}; }
+  catch(error) { return {profile:emptyHonors(),error:error.message}; }
+}
+
+function updateHonorOverview() {
+  const {profile,error}=localHonorProfile(),{rank,next,pointsNeeded,winsNeeded}=honorProgress(profile);
+  $('#honor-btn').innerHTML=honorBadge(rank);
+  $('#honor-btn').title=`玩家荣誉 · ${rank.name}`;
+  $('#commander-title').textContent=`${rank.name} · 等级 ${rank.level}`;
+  $('#honor-profile-btn').innerHTML=`${honorBadge(rank)}<span><strong>${rank.name}</strong><small>${error?'荣誉暂不可读':`${fmt(profile.points)} 荣誉 · ${profile.wins} 场胜利`}</small><small>${error?'打开档案查看详情':next?`下一阶 ${next.name} · 还需 ${pointsNeeded} 分、${winsNeeded} 胜`:'最高称号已点亮 · 传奇仍在继续'}</small></span>${icon('chevron-right')}`;
+  refreshIcons();
+}
+
+const honorSession=new CatalogSession();
+const honorPanel=new HonorPanel($('#honor-dialog'),{refreshIcons,onImport:profile=>{writeHonors(localStorage,profile);updateHonorOverview();},onExport:profile=>{
+  const url=URL.createObjectURL(new Blob([JSON.stringify(exportHonors(profile),null,2)],{type:'application/json'}));
+  const link=document.createElement('a');link.href=url;link.download=`大国崛起-荣誉档案-${new Date().toISOString().slice(0,10)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+},onClose:()=>{
+  honorSession.close(state.game,document.hidden);
+  if(state.game?.running) { gameAudio.setPaused(state.game.paused);$('#pause-btn').innerHTML=icon(state.game.paused?'play':'pause');refreshIcons(); }
+}});
+
+function openHonors() {
+  if(state.loading||honorPanel.dialog.open||catalog.dialog.open)return;
+  const game=$('#start-screen').style.display==='none'?state.game:null;
+  honorSession.open(game);state.keys.clear();state.drag=null;state.panning=null;state.pointerPosition=null;
+  if(state.renderer)state.renderer.dragBox=null;
+  updatePanControl();$('#audio-panel').hidden=true;$('#sound-btn').setAttribute('aria-expanded','false');
+  if(game?.running)gameAudio.setPaused(true);
+  const {profile,error}=localHonorProfile();honorPanel.open(profile,error);
+}
+
+const catalogSession = new CatalogSession();
+const catalog = new Catalog($('#catalog-dialog'), { refreshIcons, onClose: () => {
+  catalogSession.close(state.game, document.hidden);
+  if (state.game?.running) {
+    gameAudio.setPaused(state.game.paused);
+    $('#pause-btn').innerHTML = icon(state.game.paused ? 'play' : 'pause');
+    refreshIcons();
+  }
+} });
+
+function openCatalog(entity = null) {
+  if (state.loading || catalog.dialog.open || honorPanel.dialog.open) return;
+  const game = $('#start-screen').style.display === 'none' ? state.game : null;
+  const selected = entity || game?.getEntity(game.selected[0]);
+  catalogSession.open(game);
+  state.keys.clear(); state.drag = null; state.panning = null; state.pointerPosition = null;
+  if (state.renderer) state.renderer.dragBox = null;
+  updatePanControl();
+  $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false');
+  if (game?.running) gameAudio.setPaused(true);
+  catalog.open({ faction: selected ? game.players[selected.owner].faction : game?.players[0].faction || state.faction, mapId: game?.mapId || $('#map-select').value, id: selected ? `${selected.kind}:${selected.type}` : 'unit:tank' });
+}
 
 function setSidebarCollapsed(collapsed) {
   state.sidebarCollapsed = collapsed;
@@ -132,7 +199,7 @@ function beep(style, owner = 0) {
   gameAudio.shot(style, owner);
 }
 
-async function startGame(save = null) {
+async function startGame(save = null, onlinePayload = null) {
   const button = $('#start-btn');
   if (state.loading) return;
   state.loading = true;
@@ -146,7 +213,7 @@ async function startGame(save = null) {
     toast(`战场素材载入失败：${error.message}`, true);
     button.disabled = false;
     state.loading = false;
-    button.innerHTML = `${icon('play')} 开始作战`;
+    button.innerHTML = `${icon('play')} 单机作战`;
     refreshIcons();
     return;
   }
@@ -159,11 +226,13 @@ async function startGame(save = null) {
   state.difficulty = $('#difficulty-select').value;
   state.mapId = $('#map-select').value;
   const events = { notice: toast, shot: beep, voice: key => gameAudio.say(key), selection: updateSelection, end: showResult };
-  state.game = save ? Game.fromSave(save, events) : new Game(state.faction, enemy, events, { victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId });
+  state.game = onlinePayload ? new OnlineGame(onlinePayload, events, onlineClient) : save ? Game.fromSave(save, events) : new Game(state.faction, enemy, events, { victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId,battlefieldScale:$('#expanded-map').checked?1.5:1 });
+  if (onlinePayload) { state.faction=state.game.players[0].faction;state.mapId=state.game.mapId;state.victoryMode=state.game.victoryMode;state.difficulty='standard'; }
   if (save) {
     state.faction = state.game.players[0].faction; state.mapId = save.config.mapId;
     state.victoryMode = save.config.victoryMode; state.difficulty = save.config.difficulty;
     $('#map-select').value = state.mapId; $('#difficulty-select').value = state.difficulty;
+    $('#expanded-map').checked=state.game.battlefieldScale===1.5;
     drawFactionPicker(); $('#enemy-select').value = state.game.players[1].faction;
     document.querySelectorAll('[data-victory]').forEach(option => option.classList.toggle('active', option.dataset.victory === state.victoryMode));
   }
@@ -175,19 +244,20 @@ async function startGame(save = null) {
     toast(`无法初始化三维战场，请检查浏览器硬件加速：${error.message}`, true);
     button.disabled = false;
     state.loading = false;
-    button.innerHTML = `${icon('play')} 开始作战`;
+    button.innerHTML = `${icon('play')} 单机作战`;
     refreshIcons();
     return;
   }
   button.disabled = false;
   state.loading = false;
-  button.innerHTML = `${icon('play')} 开始作战`;
+  button.innerHTML = `${icon('play')} 单机作战`;
   refreshIcons();
   $('#start-screen').style.display = 'none';
+  if (onlinePayload) state.renderer.centerOn(state.game.homeX,state.game.homeY);
   window.scrollTo(0, 0);
   $('#side-faction').textContent = FACTIONS[state.faction].name;
   $('#faction-short').textContent = `我方：${FACTIONS[state.faction].name}`;
-  $('#enemy-short').textContent = `敌方：${state.game.enemyFaction.name}`;
+  $('#enemy-short').textContent = `敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
   $('#battle-status').textContent = '战斗进行中';
   $('#battle-objective').textContent = VICTORY_MODES[state.victoryMode].description;
   $('.battlefield').classList.toggle('future', !!state.game.map.future);
@@ -220,6 +290,7 @@ async function startGame(save = null) {
   const token = ++state.loopToken;
   requestAnimationFrame(now => frame(now, token));
   if (save) showModal('战局已恢复', `<p>${state.game.map.name} · ${seconds(state.game.time)} · ${state.game.faction.name}</p>`, `<button class="primary-btn" data-modal="resume">${icon('play')} 继续作战</button><button class="secondary-btn" data-modal="menu">返回主界面</button>`);
+  if(onlinePayload&&!state.game.running)showResult(state.game.winner);
   refreshIcons();
 }
 
@@ -238,13 +309,14 @@ function frame(now, token) {
     if (dx || dy) state.renderer.pan(dx * 450 * dt, dy * 450 * dt);
   }
   state.game.update(dt);
-  if (state.game.running && !state.game.paused && state.game.time >= state.nextAutoAt) {
+  if (!state.game.online && state.game.running && !state.game.paused && state.game.time >= state.nextAutoAt) {
     saveProgress('auto', false); state.nextAutoAt = state.game.time + 45;
   }
   gameAudio.setPaused(state.game.paused || document.hidden);
   state.renderer.render(now);
   updateBuildingInspector(now);
   $('#zoom-level').textContent = `${Math.round(state.renderer.camera.zoom * 100)}%`;
+  $('#battle-view-btn').setAttribute('aria-pressed', String(state.renderer.viewMode === 'immersive'));
   if (now - state.lastUI > 180) { updateUI(); state.lastUI = now; }
   if (currentGame === state.game && (state.game.running || state.game.paused)) requestAnimationFrame(next => frame(next, token));
 }
@@ -254,7 +326,12 @@ function updateUI(force = false) {
   if (!g) return;
   const p = g.players[0];
   updateAttackAlert();
-  $('#save-btn').disabled = !g.running;
+  const incoming=g.players[1].cyberPending,ownPending=p.cyberPending,locked=g.isControlLocked(0),cyber=$('#cyber-status');
+  cyber.hidden=!incoming&&!ownPending&&!locked&&!g.hasBuilding(0,'super');
+  cyber.classList.toggle('hostile',!!incoming||locked);$('.topbar').classList.toggle('cyber-active',!cyber.hidden);$('.battlefield').classList.toggle('cyber-disrupted',locked);
+  cyber.textContent=locked?`链路干扰 ${Math.ceil(p.cyberLockedUntil-g.time)} 秒 · 自动还击保留`:incoming?`网络攻击预警 ${Math.ceil(incoming.executeAt-g.time)} 秒`:ownPending?`网络攻击排程 ${Math.ceil(ownPending.executeAt-g.time)} 秒`:!g.hasPower(0)?'网络战 · 供电中断':p.cyberCharge>=INTELLIGENCE_RULES.cyberCharge?'网络攻击已就绪':`网络战充能 ${Math.ceil(Math.max(0,INTELLIGENCE_RULES.cyberCharge-(p.cyberCharge||0)))} 秒`;
+  if(locked){state.drag=null;state.renderer.dragBox=null;}
+  $('#save-btn').disabled = !g.running || !!g.online;
   if (g.victoryMode === 'control') $('#battle-objective').textContent = `信标积分 ${Math.floor(p.controlScore)} : ${Math.floor(g.players[1].controlScore)} / 240`;
   const environmentStatus = $('#environment-status');
   environmentStatus.hidden = !g.map.future;
@@ -266,7 +343,7 @@ function updateUI(force = false) {
   if (p.credits < 5 && (p.buildQueue || g.ownedBuildings(0).some(b => b.active))) gameAudio.say('fundsLow');
   $('#army').textContent = g.ownedUnits(0).length;
   $('#clock').textContent = seconds(g.time);
-  $('#battle-status').textContent = !g.hasPower(0) ? '电力不足' : g.pendingBuilding ? '等待部署建筑' : g.pendingAbility ? '选择技能目标' : g.paused ? '战斗暂停' : '战斗进行中';
+  $('#battle-status').textContent = g.online && onlineClient.socket?.readyState !== WebSocket.OPEN ? '连接中断，正在重连' : g.online && g.paused ? `等待对手重连 ${Math.max(0,Math.ceil(((g.room?.deadline||Date.now())-Date.now())/1000))} 秒` : !g.hasPower(0) ? '电力不足' : g.pendingBuilding ? '等待部署建筑' : g.pendingAbility ? '选择技能目标' : g.paused ? '战斗暂停' : g.online ? '联网对战' : '战斗进行中';
   const q = p.buildQueue;
   const activeProducer = g.ownedBuildings(0).find(b => b.active) || g.ownedBuildings(0).find(b => b.queue.length);
   if (g.pendingBuilding) {
@@ -301,8 +378,10 @@ function updateSidebar(force = false) {
   const root = $('#sidebar-content');
   const queues = g.ownedBuildings(0).filter(b => PRODUCERS.includes(b.type)).map(b => `${b.type}:${b.active?.type || ''}:${b.queue.join(',')}`).join(';');
   const key = `${state.tab}:${queues}:${g.players[0].buildQueue?.type || ''}:${g.pendingBuilding || ''}:${g.ownedBuildings(0).map(b => b.type).join(',')}:${g.players[0].abilityCharge >= 100}:${Math.floor(g.players[0].abilityCharge / 5)}:${g.players[0].abilityCooldown > 0}:${g.players[0].credits < 650}:${g.players[0].credits < 1000}:${Math.ceil(Math.max(0, (g.players[0].satelliteReadyAt || 0) - g.time))}:${Math.ceil(Math.max(0, (g.players[0].satelliteUntil || 0) - g.time))}:${g.hasPower(0)}`;
-  if (!force && root.dataset.renderKey === key) return;
+  const intelligenceKey=`${Math.floor(g.players[0].cyberCharge||0)}:${!!g.players[0].cyberPending}:${g.isControlLocked(0)}`;
+  if (!force && root.dataset.renderKey === key&&root.dataset.intelligenceKey===intelligenceKey) return;
   root.dataset.renderKey = key;
+  root.dataset.intelligenceKey=intelligenceKey;
   const p = g.players[0], faction = FACTIONS[p.faction];
   if (state.tab === 'build') {
     root.innerHTML = `<p class="content-subhead">基地设施 · 按顺序解锁</p><div class="action-list">${BUILD_ORDER.filter(type => (!BUILDINGS[type].naval || g.map.water) && (!BUILDINGS[type].map || BUILDINGS[type].map === g.mapId)).map(type => {
@@ -336,7 +415,7 @@ function updateSidebar(force = false) {
     }));
   } else {
     const ready = g.hasBuilding(0, 'super') && g.hasPower(0) && p.abilityCharge >= 100 && p.abilityCooldown <= 0 && p.credits >= 650;
-    root.innerHTML = `<div class="tactic-panel" style="--faction-color:${faction.color}"><div class="tactic-banner"><strong>${faction.role}</strong><p>${faction.summary}<br>${faction.perk}</p></div><div class="ability-card"><div class="ability-card-header"><strong>${faction.ability}</strong>${icon('crosshair')}</div><p>${faction.abilityDesc}</p><div class="ability-charge"><div style="width:${p.abilityCharge}%"></div></div><div class="ability-meta"><span>充能 ${Math.floor(p.abilityCharge)}%</span><span>消耗 ¤ 650</span></div><button class="ability-button" id="ability-button" ${ready ? '' : 'disabled'}>${ready ? p.faction === 'china' ? '启动全域屏障' : '选择打击区域' : !g.hasBuilding(0, 'super') ? '需要战略武器站' : !g.hasPower(0) ? '电力不足' : p.abilityCooldown > 0 ? `冷却 ${Math.ceil(p.abilityCooldown)} 秒` : p.credits < 650 ? '资金不足' : '正在充能'}</button></div><div class="tactic-details"><div>黄矿：每份 1 资金 · 宝石：每份 2 资金</div><div>中立油井：每座 +11 资金/秒</div><div>雷达信标：占领后获得中央视野与小地图</div><div>断电：炮塔与雷达停用，高级生产减速</div><div>胜利目标：${VICTORY_MODES[g.victoryMode].description}</div></div></div>`;
+    root.innerHTML = `<div class="tactic-panel" style="--faction-color:${faction.color}"><div class="tactic-banner"><strong>${faction.role}</strong><p>${faction.summary}<br>${faction.perk}</p></div><div class="ability-card"><div class="ability-card-header"><strong>${faction.ability}</strong>${icon('crosshair')}</div><p>${faction.abilityDesc}</p><div class="ability-charge"><div style="width:${p.abilityCharge}%"></div></div><div class="ability-meta"><span>充能 ${Math.floor(p.abilityCharge)}%</span><span>消耗 ¤ 650</span></div><button class="ability-button" id="ability-button" ${ready ? '' : 'disabled'}>${ready ? p.faction === 'china' ? '启动协同电子防护' : '选择打击区域' : !g.hasBuilding(0, 'super') ? '需要战略武器站' : !g.hasPower(0) ? '电力不足' : p.abilityCooldown > 0 ? `冷却 ${Math.ceil(p.abilityCooldown)} 秒` : p.credits < 650 ? '资金不足' : '正在充能'}</button></div><div class="tactic-details"><div>黄矿：每份 1 资金 · 宝石：每份 2 资金</div><div>中立油井：每座 +11 资金/秒</div><div>雷达信标：占领后获得中央视野与小地图</div><div>断电：炮塔与雷达停用，高级生产减速</div><div>胜利目标：${VICTORY_MODES[g.victoryMode].description}</div></div></div>`;
     $('#ability-button').addEventListener('click', () => {
       if (p.faction === 'china') g.castAbility(0, 0);
       else { g.pendingAbility = true; toast('左键选择已侦察的技能目标区域'); }
@@ -347,6 +426,10 @@ function updateSidebar(force = false) {
     root.querySelector('.tactic-details').firstElementChild.textContent = g.economyMode === 'mining' ? '月表矿石：黄矿 1／宝石 2 资金' : '运输机：36 秒一班，720 资金；海运：60 秒一班，900 资金。卸货到账，航线需护卫。';
     root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin', `<div class="ability-card"><div class="ability-card-header"><strong>侦察卫星</strong>${icon('satellite')}</div><p>全图视野 8 秒 · 潜航仍需声呐 · 冷却 120 秒</p><div class="ability-meta"><span>${(p.satelliteUntil || 0) > g.time ? '卫星过境中' : cooldown ? `冷却 ${cooldown} 秒` : '待命'}</span><span>¤ 1,000</span></div><button class="ability-button" id="satellite-button" ${satelliteReady ? '' : 'disabled'}>${icon('satellite')} ${satelliteReady ? '请求卫星侦察' : !g.hasBuilding(0, 'lab') || !g.hasBuilding(0, 'radar') ? '需要雷达站与实验室' : !g.hasPower(0) ? '电力不足' : cooldown ? '卫星重新部署中' : '资金不足'}</button></div>`);
     $('#satellite-button').addEventListener('click', () => { g.activateSatellite(0); updateUI(true); });
+    const cyberReady=g.hasBuilding(0,'super')&&g.hasPower(0)&&!p.cyberPending&&(p.cyberCharge||0)>=INTELLIGENCE_RULES.cyberCharge&&p.credits>=INTELLIGENCE_RULES.cyberCost&&!g.isControlLocked(0);
+    root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin',`<div class="ability-card"><div class="ability-card-header"><strong>指令链路干扰</strong>${icon('network')}</div><p>120 秒充能 · 12 秒预警 · 干扰新指令 4 秒<br>部队仍自动还击；源站摧毁或断电立即解除。</p><div class="ability-meta"><span>${Math.floor(p.cyberCharge||0)} / 120 秒</span><span>¤ 500</span></div><button id="cyber-button" class="ability-button" ${cyberReady?'':'disabled'}>${icon('radio-tower')}${cyberReady?'排程网络攻击':p.cyberPending?'攻击已排程':!g.hasBuilding(0,'super')?'需要战略武器站':!g.hasPower(0)?'电力不足':p.credits<500?'资金不足':'网络系统充能中'}</button></div>`);
+    $('#cyber-button').addEventListener('click',()=>{g.launchCyber(0);updateUI(true);});
+    root.querySelector('.tactic-details').insertAdjacentHTML('beforeend','<div>物资箱：陆军回收 300；设备回收场：工程师／矿车／补给车回收 900。</div><div>能源仓：工程师接管，40 电力、有限 1800 库存，可作为扩建前哨。</div>');
   }
   refreshIcons();
 }
@@ -372,14 +455,17 @@ function updateSelection() {
       const launch = panel.querySelector('[data-action="unload"]');
       if (launch) { launch.title = '舰载机起飞'; launch.setAttribute('aria-label', '舰载机起飞'); launch.innerHTML = icon('plane-takeoff'); }
     }
-    if (e.freight) panel.querySelector('.selection-health').textContent += ` · ${e.freight.phase === 'unloading' ? `卸货 ${Math.floor(e.freight.progress)} 秒` : e.freight.phase === 'outbound' ? '空载返航' : '物资运输中'} · 待交付 ¤ ${e.freight.value}`;
+    if (e.freight) panel.querySelector('.selection-health').textContent += ` · ${e.freight.phase === 'unloading' ? `卸货 ${Math.floor(e.freight.progress)} 秒` : e.freight.phase === 'outbound' ? '空载返航' : e.freight.holding ? '等待接收航线' : '物资运输中'} · 待交付 ¤ ${e.freight.value}`;
     if (e.type === 'harvester') panel.insertAdjacentHTML('beforeend', `<div class="selection-actions"><button type="button" data-action="recycle" title="回收矿车，按剩余生命返还一半造价" aria-label="回收矿车">${icon('coins')}</button></div>`);
+    if (!panel.querySelector('.selection-actions')) panel.insertAdjacentHTML('beforeend', '<div class="selection-actions"></div>');
+    panel.querySelector('.selection-actions').insertAdjacentHTML('beforeend', `<button type="button" data-action="catalog" title="查看图鉴" aria-label="查看图鉴">${icon('book-open')}</button>`);
+    panel.querySelector('[data-action="catalog"]').addEventListener('click', () => openCatalog(e));
     panel.querySelector('[data-action="recycle"]')?.addEventListener('click', () => { g.sellHarvester(0, e.id); updateUI(true); });
     panel.querySelector('[data-action="repair"]')?.addEventListener('click', () => { g.toggleRepair(0, e.id); updateSelection(); });
     panel.querySelector('[data-action="sell"]')?.addEventListener('click', () => { g.sellBuilding(0, e.id); updateUI(true); });
     panel.querySelector('[data-action="unload"]')?.addEventListener('click', () => { g.unloadTransport(e); updateSelection(); });
     panel.querySelector('[data-action="resupply"]')?.addEventListener('click', () => { if (!g.paused) g.requestResupply(e); updateSelection(); });
-    panel.querySelector('[data-action="auto-supply"]')?.addEventListener('click', () => { if (!g.paused) { e.autoSupply = e.autoSupply === false; e.serviceTargetId = null; } updateSelection(); });
+    panel.querySelector('[data-action="auto-supply"]')?.addEventListener('click', () => { if (!g.paused) g.toggleAutoSupply(e); updateSelection(); });
     refreshIcons();
   } else panel.innerHTML = `<span class="hud-label">当前选择</span><strong>${selected.length} 个单位</strong><span>${touch ? '选择指令后轻点目标' : '右键移动或攻击 · A 攻击移动 · S 停止'}</span>`;
 }
@@ -419,12 +505,14 @@ function updateBuildingInspector(now) {
 
 function showModal(title, body, actions, kicker = '指挥系统') {
   state.modalMode = title;
+  $('#modal').classList.remove('victory-result');
   $('#modal-content').innerHTML = `<div class="modal-kicker">${kicker}</div><h2>${title}</h2>${body}<div class="modal-actions">${actions}</div>`;
   $('#modal').classList.remove('hidden');
   refreshIcons();
 }
 
 function saveProgress(slot = 'manual', feedback = true) {
+  if (state.game?.online) { if(feedback)toast('联网战局由服务器维护，刷新页面可重连');return false; }
   if (!state.game?.running) return false;
   try {
     const save = state.game.toSave({ center: { ...state.renderer.center }, zoom: state.renderer.camera.zoom, groups: state.groups });
@@ -482,12 +570,14 @@ function exportProgress() {
 }
 
 function requestMainMenu() {
+  if(state.game?.online&&state.game.running){showModal('退出联网对战','<p>退出将判定本局认输。战斗仍在继续。</p>','<button class="primary-btn" data-modal="resume">继续作战</button><button class="secondary-btn" data-modal="online-leave">认输并返回</button>');return;}
   if (!state.game?.running) { returnToMenu(); return; }
   state.game.paused = true; state.keys.clear(); gameAudio.setPaused(true);
   showModal('返回主界面', `<p>${state.game.map.name} · 当前进度 ${seconds(state.game.time)}</p><p>是否保存本次战局？</p>`, `<button class="primary-btn" data-modal="save-menu">${icon('save')} 保存并返回</button><button class="secondary-btn" data-modal="discard-menu">不保存返回</button><button class="secondary-btn" data-modal="resume">取消</button>`);
 }
 
 function returnToMenu() {
+  if(state.game?.online)onlineClient.leave();
   ++state.loopToken; state.keys.clear(); state.game = null;
   state.renderer?.dispose(); state.renderer = null; gameAudio.stopBattle();
   state.drag = state.panning = state.pointerPosition = null;
@@ -496,6 +586,7 @@ function returnToMenu() {
   $('#toast-container').replaceChildren(); $('#modal').classList.add('hidden'); state.modalMode = null;
   $('#start-screen').style.display = ''; $('#pause-btn').innerHTML = icon('pause');
   updateContinueControl(); refreshIcons();
+  updateHonorOverview();
 }
 
 function updateAttackAlert() {
@@ -532,6 +623,7 @@ function showHelp() {
 
 function showPause() {
   if (!state.game || !state.game.running) return;
+  if(state.game.online){showModal('联网对战','<p>战斗继续进行，双方只能在掉线重连期间共同暂停。</p>','<button class="primary-btn" data-modal="resume">返回战场</button><button class="secondary-btn" data-modal="menu">退出对战</button>');return;}
   state.game.paused = true;
   gameAudio.setPaused(true);
   $('#pause-btn').innerHTML = icon('play'); refreshIcons();
@@ -540,11 +632,23 @@ function showPause() {
 }
 
 function showResult(winner) {
-  const win = winner === 0;
-  const draw = winner === 'draw';
-  gameAudio.setPaused(false); gameAudio.say(draw ? 'draw' : win ? 'victory' : 'defeat');
+  const game=state.game,win=winner===0,draw=winner==='draw';
+  if(game.online){gameAudio.say(draw?'draw':win?'victory':'defeat');if(win)gameAudio.celebrate(false);showModal(draw?'战局平局':win?'对战胜利':'重整旗鼓',`<p>${game.map.name} · ${seconds(game.time)} · 战绩由服务器结算</p><p>每场交锋都是新的经验，下一场继续磨练战术。</p>`,'<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button><button class="secondary-btn" data-modal="menu">返回主界面</button>');return;}
+  let settlement,error='';
+  try {
+    settlement=settleHonors(localStorage,{battleId:game.battleId,winner,difficulty:state.difficulty,mode:game.victoryMode,mapId:game.mapId,faction:game.players[0].faction,time:game.time});
+  } catch(failure) { error=failure.message; }
+  if(state.lastResultBattleId!==game.battleId) {
+    state.lastResultBattleId=game.battleId;
+    gameAudio.setPaused(false);gameAudio.say(draw?'draw':win?'victory':'defeat');
+    if(win&&settlement?.status==='awarded')gameAudio.celebrate(settlement.toRank.index>settlement.fromRank.index);
+  }
   $('#battle-status').textContent = draw ? '双方平局' : win ? '任务完成' : '任务失败';
-  showModal(draw ? '战役平局' : win ? '战役胜利' : '战役失利', `<p>${draw ? '双方战力同时耗尽。' : win ? `敌方已失去继续作战的能力，${state.game.map.name}由你控制。` : '我方战力已耗尽。调整经济与部队组合，再来一局。'}</p><p>${state.game.map.name} · ${VICTORY_MODES[state.game.victoryMode].name} · ${state.game.difficulty.name}难度 · 作战时间 ${seconds(state.game.time)} · 剩余部队 ${state.game.ownedUnits(0).length} · 占领油井 ${state.game.oil.filter(o => o.owner === 0).length} · 信标 ${state.game.beacons.filter(site => site.owner === 0).length}</p>`, '<button class="primary-btn" data-modal="restart">再战一局</button><button class="secondary-btn" data-modal="menu">选择阵营</button>', draw ? '战局结束' : win ? '任务完成' : '战线告急');
+  const award=win&&settlement?honorResultHTML(settlement,game.victoryMode):`<p>${draw?'双方战力同时耗尽，战局以平局结束。':win?`${game.map.name}由你控制。这场胜利值得庆祝。`:'一场失利不会抹去你的战绩。整备部队，再次出发。'}</p>${!win?'<p>荣誉积分不会减少，已获得的称号始终保留。</p>':''}`;
+  showModal(draw?'战役平局':win?'战役胜利':'重整旗鼓',`${award}<p class="result-battle-summary">${game.map.name} · ${VICTORY_MODES[game.victoryMode].name} · ${game.difficulty.name}难度 · ${seconds(game.time)} · 剩余部队 ${game.ownedUnits(0).length} · 油井 ${game.oil.filter(o=>o.owner===0).length} · 信标 ${game.beacons.filter(site=>site.owner===0).length}</p>${error?'<p class="honor-warning" id="honor-save-warning" role="alert"></p>':''}`,`${error?`<button class="secondary-btn" data-modal="retry-honor">${icon('refresh-cw')} 重试保存荣誉</button>`:''}<button class="primary-btn" data-modal="restart">${icon('play')} 再战一局</button><button class="secondary-btn" data-modal="honors">${icon('award')} 荣誉档案</button><button class="secondary-btn" data-modal="menu">${icon('house')} 返回主界面</button>`,draw?'战局结束':win?'凯旋归来':'征途仍在继续');
+  if(error)$('#honor-save-warning').textContent=error;
+  if(win)$('#modal').classList.add('victory-result');
+  state.keys.clear();updateHonorOverview();
 }
 
 function closeModal() {
@@ -645,9 +749,14 @@ function setupControls() {
   canvas.addEventListener('pointercancel', event => { state.drag = null; state.panning = null; updatePanControl(); state.touchPoints.delete(event.pointerId); if (!state.touchPoints.size) { state.touchPan = false; state.touchPinching = false; } if (state.renderer) state.renderer.dragBox = null; });
   canvas.addEventListener('pointerleave', () => { state.pointerPosition = null; if (state.renderer) state.renderer.hoveredId = null; });
   canvas.addEventListener('wheel', event => { if (!state.renderer) return; event.preventDefault(); const p = canvasPoint(event); state.renderer.zoomAt(event.deltaY < 0 ? 1.09 : 1 / 1.09, p.x, p.y); }, { passive: false });
-  $('#minimap').addEventListener('pointerdown', event => { if (!state.renderer || !state.game?.hasRadarIntel(0)) return; const rect = event.currentTarget.getBoundingClientRect(); state.renderer.centerOn((event.clientX - rect.left) / rect.width * state.game.world.width, (event.clientY - rect.top) / rect.height * state.game.world.height); });
-  $('#minimap').addEventListener('pointermove', event => { if (!(event.buttons & 1) || !state.renderer || !state.game?.hasRadarIntel(0)) return; const rect = event.currentTarget.getBoundingClientRect(); state.renderer.centerOn((event.clientX - rect.left) / rect.width * state.game.world.width, (event.clientY - rect.top) / rect.height * state.game.world.height); });
+  $('#minimap').addEventListener('pointerdown', event => { if (!state.renderer || !state.game?.hasRadarIntel(0) || state.game.isControlLocked(0)) return; const rect = event.currentTarget.getBoundingClientRect(); state.renderer.centerOn((event.clientX - rect.left) / rect.width * state.game.world.width, (event.clientY - rect.top) / rect.height * state.game.world.height); });
+  $('#minimap').addEventListener('pointermove', event => { if (!(event.buttons & 1) || !state.renderer || !state.game?.hasRadarIntel(0) || state.game.isControlLocked(0)) return; const rect = event.currentTarget.getBoundingClientRect(); state.renderer.centerOn((event.clientX - rect.left) / rect.width * state.game.world.width, (event.clientY - rect.top) / rect.height * state.game.world.height); });
+  document.addEventListener('click',event=>{
+    const g=state.game;if(!g?.running||!g.isControlLocked(0)||$('#start-screen').style.display!=='none')return;
+    if(event.target.closest('[data-build],[data-unit],[data-cancel-producer],[data-action]:not([data-action="catalog"]),[data-inspect]:not([data-inspect="close"]),#move-btn,#attack-btn,#patrol-btn,#stop-btn,#unload-btn,#resupply-btn,#ability-button,#satellite-button,#cyber-button')){event.preventDefault();event.stopImmediatePropagation();toast('指令链路暂受干扰，部队仍自动还击',true);}
+  },true);
   window.addEventListener('keydown', event => {
+    if (catalog.dialog.open || honorPanel.dialog.open) return;
     if (event.target.closest('input, select, textarea, [contenteditable="true"]')) return;
     if ((event.ctrlKey || event.metaKey || event.altKey) && !/^[1-9]$/.test(event.key)) return;
     if (event.key === 'Escape' && (document.fullscreenElement || document.webkitFullscreenElement)) { event.preventDefault(); toggleFullscreen(); return; }
@@ -660,6 +769,7 @@ function setupControls() {
     if (key.startsWith('arrow')) state.keys.add(key);
     if (key === 'escape') { if (g.placingBuilding) { g.placingBuilding = false; updateUI(true); } else if (g.orderMode) { g.orderMode = null; clearOrderButtons(); } else if (!$('#modal').classList.contains('hidden')) closeModal(); else showPause(); return; }
     if (!g.running || g.paused || !$('#modal').classList.contains('hidden')) return;
+    if(g.isControlLocked(0)&&['a','p','s','u','r'].includes(key))return;
     if (key >= '1' && key <= '9') {
       if (event.ctrlKey || event.metaKey) { event.preventDefault(); state.groups[key] = [...g.selected]; toast(`编队 ${key} 已保存`); }
       else if (state.groups[key]) { g.selected = state.groups[key].filter(id => g.getEntity(id)?.owner === 0); updateSelection(); const target = g.getEntity(g.selected[0]); if (target && event.shiftKey) state.renderer.centerOn(target.x, target.y); }
@@ -667,7 +777,7 @@ function setupControls() {
     else if (key === 'a') { g.placingBuilding = false; g.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('左键指定攻击移动目标'); }
     else if (key === 'p') { g.placingBuilding = false; g.orderMode = 'patrol'; clearOrderButtons(); $('#patrol-btn').classList.add('active'); }
     else if (key === 's') { g.stopSelected(); clearOrderButtons(); }
-    else if (key === 'h') state.renderer.centerOn(280, state.game.homeY);
+    else if (key === 'h') state.renderer.centerOn(state.game.homeX||280, state.game.homeY);
     else if (key === 'u') { for (const id of state.game.selected) state.game.unloadTransport(state.game.getEntity(id)); updateSelection(); }
     else if (key === 'r') { for (const id of state.game.selected) state.game.requestResupply(state.game.getEntity(id)); updateSelection(); }
   });
@@ -678,10 +788,15 @@ function setupControls() {
   document.addEventListener('fullscreenchange', updateFullscreenControl);
   document.addEventListener('webkitfullscreenchange', updateFullscreenControl);
   $('#fullscreen-btn').addEventListener('click', toggleFullscreen);
+  $('#catalog-btn').addEventListener('click', () => openCatalog());
+  $('#menu-catalog-btn').addEventListener('click', () => openCatalog());
+  $('#honor-btn').addEventListener('click', openHonors);
+  $('#honor-profile-btn').addEventListener('click', openHonors);
   $('#sidebar-btn').addEventListener('click', () => setSidebarCollapsed(!state.sidebarCollapsed));
   $('#sidebar-close').addEventListener('click', () => setSidebarCollapsed(true));
   $('#pan-map-btn').addEventListener('click', () => { state.cameraPanMode = !state.cameraPanMode; updatePanControl(); });
   for (const [id, factor] of [['zoom-out-btn', 1 / 1.15], ['zoom-in-btn', 1.15]]) $( `#${id}`).addEventListener('click', () => { const r = state.renderer; if (r) r.zoomAt(factor, r.viewport.width / 2, r.viewport.height / 2); });
+  $('#battle-view-btn').addEventListener('click', () => { const r = state.renderer; if (r) r.setViewMode(r.viewMode === 'immersive' ? 'tactical' : 'immersive'); });
   $('#building-info').addEventListener('click', event => {
     const action = event.target.closest('[data-inspect]')?.dataset.inspect, g = state.game, id = state.inspectorId;
     if (action === 'close') { state.dismissedInspectorId = id; $('#building-info').hidden = true; return; }
@@ -706,7 +821,7 @@ function setupControls() {
   });
   $('#all-btn').addEventListener('click', () => state.game?.selectAllCombat());
   $('#stop-btn').addEventListener('click', () => { state.game?.stopSelected(); clearOrderButtons(); });
-  $('#home-btn').addEventListener('click', () => state.renderer?.centerOn(280, state.game.homeY));
+  $('#home-btn').addEventListener('click', () => state.renderer?.centerOn(state.game.homeX||280, state.game.homeY));
   $('#queue-cancel').addEventListener('click', () => {
     const g = state.game; if (!g) return;
     if (g.pendingBuilding || g.players[0].buildQueue) g.cancelBuilding(0);
@@ -758,6 +873,10 @@ function setupControls() {
     if (event.target === $('#modal')) closeModal();
     const action = event.target.closest('[data-modal]')?.dataset.modal; if (!action) return;
     if (action === 'resume') closeModal();
+    else if (action === 'online-leave') returnToMenu();
+    else if (action === 'online-lobby') { returnToMenu();onlineClient.open(); }
+    else if (action === 'honors') openHonors();
+    else if (action === 'retry-honor' && state.game && state.game.winner!==null) showResult(state.game.winner);
     else if (action === 'save') saveProgress();
     else if (action === 'load') showLoadMenu();
     else if (action?.startsWith('load-')) loadProgress(action.slice(5));
@@ -772,13 +891,14 @@ function setupControls() {
     else if (action === 'discard-menu') returnToMenu();
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && state.game?.running) {
+    if (document.hidden && state.game?.running && !state.game.online) {
       saveProgress('auto', false); state.game.paused = true; gameAudio.setPaused(true);
       $('#pause-btn').innerHTML = icon('play'); refreshIcons();
     }
     state.lastFrame = 0; state.keys.clear();
   });
   window.addEventListener('beforeunload', () => { if (state.game?.running) saveProgress('auto', false); });
+  window.addEventListener('storage',event=>{if(event.key===HONOR_KEY)updateHonorOverview();});
 }
 
 function updateAudioControls() {
@@ -793,19 +913,33 @@ function updateAudioControls() {
 function updateVoiceOptions() {
   const select = $('#audio-voice');
   select.replaceChildren();
-  for (const [value, label] of [['auto', '系统默认中文'], ['portable', '内置中文电台'], ...(window.speechSynthesis?.getVoices() || []).filter(v => /^zh(?:-|_)/i.test(v.lang)).map(v => [v.voiceURI, v.name])]) {
+  for (const [value, label] of [['auto', '系统默认中文'], ['portable', '内置男声电台（合成）'], ['portable-female','内置女声电台（合成）'], ...(window.speechSynthesis?.getVoices() || []).filter(v => /^zh(?:-|_)/i.test(v.lang)).map(v => [v.voiceURI, v.name])]) {
     const option = document.createElement('option'); option.value = value; option.textContent = label; select.append(option);
   }
   select.value = gameAudio.settings.voiceURI || 'auto';
   if (select.selectedIndex < 0) select.value = 'auto';
 }
 
+const onlineClient=new OnlineClient({
+  refreshIcons, prepare:()=>Renderer.prepare(),onNotice:toast,
+  onAck:action=>{const voice={build:'construction',train:'queued',place:'deployed',stop:'stopOrder',move:'moveOrder',cyber:'cyberLaunch',satellite:'ability'}[action];if(state.game?.online&&voice)gameAudio.say(voice);},
+  config:()=>({mapId:$('#map-select').value,victoryMode:state.victoryMode,faction:state.faction}),
+  onBattle:async payload=>{
+    if(state.game?.online&&state.game.battleId===payload.config.battleId){state.game.apply(payload);return;}
+    await startGame(null,payload);
+    if(state.game?.online&&onlineClient.latest?.config.battleId===state.game.battleId)state.game.apply(onlineClient.latest);
+  },
+  onSnapshot:payload=>{if(state.game?.online&&state.game.battleId===payload.config.battleId)state.game.apply(payload);},
+  onStatus:message=>{if(state.game?.online)$('#battle-status').textContent=message;},
+  onInterrupted:()=>{if(state.game?.online){state.game.running=false;showModal('战局已取消','<p>服务器维护或房间已过期，本局未记录胜负。</p>','<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button>');}}
+});
 drawFactionPicker();
 $('#map-select').innerHTML = Object.entries(MAPS).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
 $('#map-select').value = state.mapId;
 setupControls();
 try { setSidebarCollapsed(localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(false); }
 updateAudioControls();
+updateHonorOverview();
 updateContinueControl();
 refreshIcons();
 Renderer.prepare().catch(() => {});

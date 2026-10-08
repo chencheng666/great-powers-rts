@@ -1,3 +1,5 @@
+import { BUILDINGS } from './data.js';
+
 export const VOICE_LINES = {
   welcome: ['战区通信已接入。指挥官，部队等待您的命令。'],
   construction: ['开始建造。'], buildReady: ['建筑建造完成，等待部署。'], deployed: ['建筑已部署。'],
@@ -15,11 +17,19 @@ export const VOICE_LINES = {
   droneSelected: ['无人机链路已接通。'], navySelected: ['舰艇等待指令。'],
   moveOrder: ['收到，正在前往目标位置。', '开始机动。', '部队出发。'],
   attackOrder: ['确认目标，进入战斗。', '火力单元开始推进。'],
-  captureOrder: ['工程组出发，准备接管。'], stopOrder: ['停止机动，保持阵位。']
+  captureOrder: ['工程组出发，准备接管。'], stopOrder: ['停止机动，保持阵位。'],
+  spyPlanted:['潜入完成。定时破坏已启动。'],resourceRecovered:['现场物资已回收。'],
+  cyberWarning:['警报，敌方网络攻击将在十二秒后抵达。摧毁源站或切断敌方供电。'],
+  cyberLaunch:['网络攻击已排程。'],cyberDisrupted:['指令链路受到干扰。部队保持自动还击。'],cyberRestored:['指令链路已恢复。']
 };
+for(const [type,b]of Object.entries(BUILDINGS)){
+  VOICE_LINES[`spyInfiltrated_${type}`]=[`警报，我方${b.name}被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。`];
+  VOICE_LINES[`spyDefused_${type}`]=[`${b.name}的间谍破坏已解除。`];
+}
 
 export const COMMAND_LINES = new Set(['armorSelected','infantrySelected','engineerSelected','airSelected','droneSelected','navySelected','moveOrder','attackOrder','captureOrder','stopOrder']);
-export const VOICE_PRIORITY = { underAttack: 3, unitUnderAttack: 3, defeat: 4, victory: 4, draw: 4, buildingLost: 2, powerLow: 2, fundsLow: 2, unitReady: 1, buildReady: 1, oilCaptured: 1, beaconCaptured: 1, welcome: 2 };
+export const VOICE_PRIORITY = { underAttack: 3, unitUnderAttack: 3, defeat: 4, victory: 4, draw: 4, buildingLost: 2, powerLow: 2, fundsLow: 2, unitReady: 1, buildReady: 1, oilCaptured: 1, beaconCaptured: 1, welcome: 2,cyberWarning:3,cyberDisrupted:3,cyberRestored:2 };
+for(const type of Object.keys(BUILDINGS)){VOICE_PRIORITY[`spyInfiltrated_${type}`]=3;VOICE_PRIORITY[`spyDefused_${type}`]=2;}
 export const VOICE_COOLDOWN = { underAttack: 10, unitUnderAttack: 10, unitLost: 10, buildingLost: 6, fundsLow: 10, queued: 3, unitReady: 3, construction: 2, deployed: 2 };
 
 export function voiceFile(key, index = 0) { return `${key}-${index}.m4a`; }

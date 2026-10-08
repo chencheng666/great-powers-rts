@@ -14,7 +14,7 @@ export const AI_DIFFICULTIES = {
 };
 
 export const FACTIONS = {
-  china: { name: '华夏防卫', short: '华夏', color: '#57d7c2', accent: '#9bf4df', symbol: '盾', role: '防守反击', summary: '防空和阵地防御占优，推进速度偏慢。', perk: '防御建筑与防空单位生命 +15%', elite: '陆盾防空车', ability: '全域屏障', abilityDesc: '保护友军并削弱敌方远程攻击 12 秒。' },
+  china: { name: '华夏防卫', short: '华夏', color: '#57d7c2', accent: '#9bf4df', symbol: '盾', role: '防守反击', summary: '防空和阵地防御占优，推进速度偏慢。', perk: '防御建筑与防空单位生命 +15%', elite: '陆盾防空车', ability: '协同电子防护', abilityDesc: '友军获得 12 秒减伤。这是电子防御的游戏化抽象，并非真实能量护盾；网络攻击为独立战术。' },
   russia: { name: '北境联邦', short: '北境', color: '#e96558', accent: '#ffac8e', symbol: '焰', role: '攻坚突击', summary: '攻城火力强，但无人机与防空能力较弱。', perk: '对建筑伤害 +15%，防空伤害 -12%', elite: '破城火箭车', ability: '震荡轰击', abilityDesc: '轰击指定区域，重创建筑并压制步兵。' },
   nato: { name: '西陆同盟', short: '西陆', color: '#86a9ec', accent: '#c3d4ff', symbol: '钢', role: '重装推进', summary: '装甲正面强势，展开速度略慢。', perk: '坦克生命 +15%，重坦可压制无人机群', elite: '堡垒重坦', ability: '精确轰炸', abilityDesc: '快速轰炸指定区域，对轻甲尤其有效。' },
   asia: { name: '东亚科技体', short: '东亚', color: '#e8bc63', accent: '#ffe4a1', symbol: '蜂', role: '蜂群游击', summary: '无人机灵活廉价，无法承受持续火力。', perk: '无人机成本 -15%，生命 -15%', elite: '蜂群母机', ability: '蜂群突袭', abilityDesc: '向指定区域投放无人机群，持续袭扰。' },
@@ -33,13 +33,13 @@ export const BUILDINGS = {
   airfield: { name: '空军基地', cost: 980, time: 31, hp: 760, power: -45, size: 92, icon: 'plane', desc: '生产制空与对地战机；有电时可补充弹药。', requires: 'radar' },
   turret: { name: '防御炮塔', cost: 440, time: 16, hp: 600, power: -20, size: 56, icon: 'crosshair', desc: '自动攻击地面目标；高空战机需要防空车拦截。', requires: 'barracks' },
   lab: { name: '作战实验室', cost: 950, time: 33, hp: 680, power: -45, size: 70, icon: 'flask-conical', desc: '解锁阵营特色单位和终极技能。', requires: 'radar' },
-  super: { name: '战略武器站', cost: 1200, time: 38, hp: 700, power: -70, size: 74, icon: 'orbit', desc: '蓄能后释放阵营终极技能。', requires: 'lab' }
+  super: { name: '战略武器站', cost: 1200, time: 38, hp: 700, power: -70, size: 74, icon: 'orbit', desc: '蓄能后释放阵营终极技能；另有网络战：120 秒充能、500 资金，预警 12 秒后干扰敌方新指令 4 秒。摧毁源站或断电可解除。', requires: 'lab' }
 };
 
 export const UNITS = {
   rifle: { name: '突击兵', cost: 120, time: 8, hp: 110, speed: 82, range: 140, damage: 12, cooldown: 0.75, sight: 260, icon: 'user-round', producer: 'barracks', tags: ['infantry'], desc: '经济、可靠的基础作战单位。' },
-  engineer: { name: '工程师', cost: 220, time: 12, hp: 80, speed: 76, range: 0, damage: 0, cooldown: 1, sight: 230, icon: 'wrench', producer: 'barracks', tags: ['infantry', 'engineer'], desc: '占领中立油井，为部队增加稳定收入。' },
-  scout: { name: '侦察兵', cost: 160, time: 10, hp: 75, speed: 104, range: 0, damage: 0, cooldown: 1, sight: 480, icon: 'binoculars', producer: 'barracks', tags: ['infantry', 'scout'], desc: '无武装；开拓视野，并在 260 范围内识破隐形单位。' },
+  engineer: { name: '工程师', cost: 220, time: 12, hp: 80, speed: 76, range: 0, damage: 0, cooldown: 1, sight: 230, icon: 'wrench', producer: 'barracks', tags: ['infantry', 'engineer'], desc: '右键油井、信标或能源仓占领，成功后驻留；可回收物资。右键己方被潜入设施，停驻 3 秒拆弹，工程师保留。' },
+  scout: { name: '间谍', cost: 320, time: 16, hp: 75, speed: 104, range: 0, damage: 0, cooldown: 1, sight: 480, icon: 'binoculars', producer: 'barracks', tags: ['infantry', 'scout'], desc: '无武装，480 视野与 260 范围反隐；右键可见敌方设施一次性潜入，45 秒后引爆。敌方工程师可在 3 秒内拆弹；不伪装敌军，不隐身。' },
   tank: { name: '主战坦克', cost: 480, time: 20, hp: 380, speed: 62, range: 205, damage: 38, cooldown: 1.3, sight: 280, icon: 'shield', producer: 'factory', tags: ['armor'], desc: '重装核心，克制步兵和防空单位。' },
   drone: { name: '攻击无人机', cost: 260, time: 13, hp: 130, speed: 116, range: 180, damage: 20, cooldown: 0.85, sight: 330, icon: 'scan', producer: 'armory', tags: ['drone', 'air'], desc: '机动灵活，对装甲目标有额外伤害。' },
   ghost: { name: '隐形侦察无人机', cost: 340, time: 18, hp: 85, speed: 124, range: 0, damage: 0, cooldown: 1, sight: 450, icon: 'eye-off', producer: 'armory', requires: 'radar', faction: 'middleeast', tags: ['drone', 'air', 'scout', 'stealth'], desc: '新月专属；深入敌后提供视野，接近侦察兵、防空车或雷达信标会暴露。' },

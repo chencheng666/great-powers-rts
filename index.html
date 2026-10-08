@@ -5,21 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#171d1b" />
     <title>大国崛起 | 即时战略试玩版</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="app">
       <header class="topbar">
-        <div class="brand"><span class="brand-mark">R</span><div><strong>大国崛起</strong><small>战区指挥系统 · 试玩版</small></div></div>
-        <div class="mission"><span class="live-dot"></span><span id="mission-label">遭遇战 · 灰谷地带</span><span class="mission-separator"></span><span id="clock">00:00</span></div>
+        <div class="brand"><button id="honor-btn" class="brand-honor" title="玩家荣誉" aria-label="玩家荣誉"></button><div><strong>大国崛起</strong><small id="commander-title">预备指挥官 · 本机荣誉</small></div></div>
+        <div class="mission"><span class="live-dot"></span><span id="mission-label">遭遇战 · 灰谷地带</span><span class="mission-separator"></span><span id="clock">00:00</span></div><output id="cyber-status" class="cyber-status" hidden aria-live="polite"></output>
         <div class="resources">
           <div class="resource credits" title="资金"><i data-lucide="coins"></i><strong id="credits">0</strong></div>
           <div class="resource power" title="电力"><i data-lucide="zap"></i><strong id="power">0 / 0</strong></div>
           <div class="resource army" title="部队"><i data-lucide="users"></i><strong id="army">0</strong></div>
         </div>
-        <div class="top-actions"><button id="save-btn" class="icon-btn" title="保存进度" aria-label="保存进度"><i data-lucide="save"></i></button><button id="menu-btn" class="icon-btn" title="返回主界面" aria-label="返回主界面"><i data-lucide="house"></i></button><button id="fullscreen-btn" class="icon-btn" title="进入全屏" aria-label="进入全屏" aria-pressed="false"><i data-lucide="maximize"></i></button><button id="sidebar-btn" class="icon-btn" title="收起指挥面板" aria-label="收起指挥面板" aria-expanded="true" aria-controls="command-sidebar"><i data-lucide="panel-right-close"></i></button><button id="sound-btn" class="icon-btn" title="声音设置" aria-label="声音设置" aria-expanded="false" aria-controls="audio-panel"><i data-lucide="volume-2"></i></button><button id="help-btn" class="icon-btn" title="操作说明" aria-label="操作说明"><i data-lucide="circle-help"></i></button><button id="pause-btn" class="icon-btn" title="暂停游戏" aria-label="暂停游戏"><i data-lucide="pause"></i></button></div>
+        <div class="top-actions"><button id="save-btn" class="icon-btn" title="保存进度" aria-label="保存进度"><i data-lucide="save"></i></button><button id="menu-btn" class="icon-btn" title="返回主界面" aria-label="返回主界面"><i data-lucide="house"></i></button><button id="fullscreen-btn" class="icon-btn" title="进入全屏" aria-label="进入全屏" aria-pressed="false"><i data-lucide="maximize"></i></button><button id="sidebar-btn" class="icon-btn" title="收起指挥面板" aria-label="收起指挥面板" aria-expanded="true" aria-controls="command-sidebar"><i data-lucide="panel-right-close"></i></button><button id="sound-btn" class="icon-btn" title="声音设置" aria-label="声音设置" aria-expanded="false" aria-controls="audio-panel"><i data-lucide="volume-2"></i></button><button id="catalog-btn" class="icon-btn" title="装备图鉴" aria-label="装备图鉴"><i data-lucide="book-open"></i></button><button id="help-btn" class="icon-btn" title="操作说明" aria-label="操作说明"><i data-lucide="circle-help"></i></button><button id="pause-btn" class="icon-btn" title="暂停游戏" aria-label="暂停游戏"><i data-lucide="pause"></i></button></div>
       </header>
       <section id="audio-panel" class="audio-panel" aria-label="声音设置" hidden>
         <div class="audio-panel-heading"><strong>声音设置</strong><button id="audio-close" class="icon-btn" title="关闭声音设置" aria-label="关闭声音设置"><i data-lucide="x"></i></button></div>
@@ -27,7 +24,7 @@
         <label class="audio-level"><span>总音量</span><input type="range" min="0" max="100" step="1" data-audio="master" aria-label="总音量"><output data-audio-value="master"></output></label>
         <label class="audio-level"><span>背景音乐</span><input type="range" min="0" max="100" step="1" data-audio="music" aria-label="背景音乐音量"><output data-audio-value="music"></output></label>
         <label class="audio-level"><span>中文语音</span><input type="range" min="0" max="100" step="1" data-audio="voice" aria-label="中文语音音量"><output data-audio-value="voice"></output></label>
-        <label class="audio-voice"><span>播报音色</span><select id="audio-voice" aria-label="播报音色"><option value="auto">系统默认中文</option><option value="portable">内置中文电台</option></select></label>
+        <label class="audio-voice"><span>播报音色</span><select id="audio-voice" aria-label="播报音色"><option value="auto">系统默认中文</option><option value="portable">内置男声电台（合成）</option><option value="portable-female">内置女声电台（合成）</option></select></label>
         <label class="audio-level"><span>战场音效</span><input type="range" min="0" max="100" step="1" data-audio="effects" aria-label="战场音效音量"><output data-audio-value="effects"></output></label>
         <button id="audio-test" class="secondary-btn" title="试听中文播报"><i data-lucide="audio-lines"></i>试听中文</button>
       </section>
@@ -41,6 +38,7 @@
             <button id="zoom-out-btn" class="icon-btn" title="拉远镜头" aria-label="拉远镜头"><i data-lucide="minus"></i></button>
             <output id="zoom-level" aria-label="镜头缩放">100%</output>
             <button id="zoom-in-btn" class="icon-btn" title="拉近镜头" aria-label="拉近镜头"><i data-lucide="plus"></i></button>
+            <button id="battle-view-btn" class="icon-btn" title="立体视角" aria-label="立体视角" aria-pressed="true"><i data-lucide="box"></i></button>
           </div>
           <section id="building-info" class="building-info" aria-label="建筑信息" hidden></section>
           <button id="attack-alert" class="attack-alert" title="定位受袭区域" aria-label="定位受袭区域" hidden><i data-lucide="triangle-alert"></i><span><strong id="attack-alert-title">部队遭到攻击</strong><small id="attack-alert-detail">请求支援</small></span><i data-lucide="locate-fixed"></i></button>
@@ -73,26 +71,41 @@
       <div id="start-screen" class="start-screen">
         <div class="start-backdrop"></div>
         <div class="start-shade"></div>
+        <header class="menu-topline"><span>大国崛起 / 作战指挥中心</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
         <div class="start-content">
-          <div class="start-kicker"><span class="live-dot"></span> 现代即时战略 · 单机遭遇战</div>
+          <div class="start-kicker"><span class="live-dot"></span> 现代即时战略</div>
           <h1>大国<em>崛起</em></h1>
           <p class="start-lede">指挥你的部队，掌握战场主动权。</p>
-          <section class="menu-saves" aria-label="保存的战局"><div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="icon-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i></button></div><small id="save-summary">暂无保存的战局</small></section>
+          <button id="honor-profile-btn" class="commander-profile" title="打开荣誉档案" aria-label="打开荣誉档案"></button>
+          <section class="menu-saves" aria-label="保存的战局"><div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="icon-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i></button><button id="menu-catalog-btn" class="secondary-btn"><i data-lucide="book-open"></i> 装备图鉴</button></div><small id="save-summary">暂无保存的战局</small></section>
         </div>
         <div class="faction-picker">
           <div class="picker-heading"><strong>作战部署</strong><span>选择你的阵营</span></div>
           <div class="faction-list" id="faction-list"></div>
           <div class="deployment-controls">
-            <label class="map-select">战场 <select id="map-select"></select></label>
+            <div class="map-deployment"><label class="map-select">战场 <span class="select-shell"><select id="map-select"></select><i data-lucide="chevron-down"></i></span></label><input id="expanded-map" type="checkbox" checked hidden></div>
             <div class="victory-picker"><span>胜利规则</span><div class="victory-options" role="group" aria-label="胜利规则"><button type="button" class="victory-option active" data-victory="quick">快速对战<small>摧毁生产核心</small></button><button type="button" class="victory-option" data-victory="annihilation">全域歼灭<small>清除全部敌军</small></button><button type="button" class="victory-option" data-victory="control">据点控制<small>累计 240 分</small></button></div></div>
-            <label class="enemy-select">对手 <select id="enemy-select"><option value="random">随机阵营</option></select></label>
-            <label class="enemy-select">难度 <select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select></label>
-            <button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 开始作战</button>
+            <label class="enemy-select">对手 <span class="select-shell"><select id="enemy-select"><option value="random">随机阵营</option></select><i data-lucide="chevron-down"></i></span></label>
+            <label class="enemy-select">难度 <span class="select-shell"><select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select><i data-lucide="chevron-down"></i></span></label>
+            <div class="battle-entry"><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 单机作战</button><button id="online-btn" class="secondary-btn"><i data-lucide="network"></i> 联网对战</button></div>
           </div>
         </div>
       </div>
 
       <input id="save-file" type="file" accept=".json,application/json" hidden>
+      <dialog id="nickname-dialog" class="online-dialog" aria-labelledby="nickname-title"><form><div class="online-kicker">指挥官档案</div><h2 id="nickname-title">你的作战呼号</h2><label class="online-field">昵称<input autocomplete="nickname" maxlength="32" required placeholder="输入昵称" aria-label="昵称"></label><p role="alert" class="online-error"></p><button type="submit" class="primary-btn"><i data-lucide="arrow-right"></i> 进入指挥中心</button></form></dialog>
+      <dialog id="online-dialog" class="online-dialog" aria-labelledby="online-title">
+        <header><div><div class="online-kicker">联合作战网络</div><h2 id="online-title">双人对战</h2></div><button class="icon-btn" data-online="close" title="关闭大厅" aria-label="关闭大厅"><i data-lucide="x"></i></button></header>
+        <p id="online-welcome"></p><p id="online-status" role="status"></p><p id="online-error" role="alert" class="online-error"></p>
+        <div id="online-setup">
+          <button class="primary-btn" data-online="create" disabled><i data-lucide="plus"></i> 创建房间</button>
+          <form class="join-room" novalidate><label class="online-field">房间码<input id="join-code" inputmode="numeric" maxlength="32" autocomplete="off" enterkeyhint="go" placeholder="六位房间码" aria-describedby="online-error"></label><button type="submit" class="secondary-btn" data-online="join" disabled><i data-lucide="log-in"></i> 加入房间</button></form>
+          <button class="secondary-btn" data-online="connect"><i data-lucide="refresh-cw"></i> 重新连接</button>
+        </div>
+        <section id="online-room" hidden><div class="room-heading"><span>房间码</span><strong id="room-code"></strong></div><p id="room-map"></p><div id="room-members"></div><label class="online-field">我的阵营<span class="select-shell"><select id="online-faction"></select><i data-lucide="chevron-down"></i></span></label><footer><button class="secondary-btn" data-online="leave"><i data-lucide="log-out"></i> 退出房间</button><button class="secondary-btn" data-online="ready">准备作战</button><button class="primary-btn" data-online="start"><i data-lucide="swords"></i> 开始对战</button></footer></section>
+      </dialog>
+      <dialog id="catalog-dialog" class="catalog-dialog" aria-labelledby="catalog-title"></dialog>
+      <dialog id="honor-dialog" class="honor-dialog" aria-labelledby="honor-title"></dialog>
       <div id="menu-toast-container" class="menu-toast-container" role="status" aria-live="polite"></div>
       <div id="modal" class="modal hidden"><div class="modal-card"><button id="modal-close" class="modal-close icon-btn" title="关闭" aria-label="关闭"><i data-lucide="x"></i></button><div id="modal-content"></div></div></div>
     </div>

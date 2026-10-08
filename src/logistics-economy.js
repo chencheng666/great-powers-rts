@@ -44,32 +44,59 @@ export const logisticsEconomy = {
     }
   },
 
+  airFreightPattern(u, home, waiting = false) {
+    const radius = Math.max(150, unitRadius(u) * 2.4), margin = radius + 25;
+    const clamp = (v, size) => Math.max(margin, Math.min(size - margin, v));
+    const center = { x: clamp(home.x, this.world.width), y: clamp(home.y, this.world.height) };
+    if (waiting) {
+      const gap = radius * 2 + unitRadius(u) * 2 + 60;
+      const direction = center.x < this.world.width / 2 ? 1 : -1;
+      center.x = clamp(center.x + direction * gap, this.world.width);
+    }
+    return { center, radius };
+  },
+
+  flyFreightCircuit(u, home, dt, waiting) {
+    const f = u.freight, { center, radius } = this.airFreightPattern(u, home, waiting);
+    if (f.holding !== waiting) { f.holding = waiting; delete f.orbitAngle; }
+    if (distance(u, center) > radius + 45) {
+      this.moveUnit(u, center, dt, radius); return false;
+    }
+    f.orbitAngle = (f.orbitAngle ?? Math.atan2(u.y - center.y, u.x - center.x)) + dt * 128 / radius;
+    this.moveUnit(u, { x: center.x + Math.cos(f.orbitAngle + .35) * radius, y: center.y + Math.sin(f.orbitAngle + .35) * radius }, dt, 0);
+    return true;
+  },
+
   updateFreight(u, dt) {
     const f = u.freight;
     if (!f) { u.hp = 0; return; }
     const sea = u.type === 'containerShip', rule = SUPPLY_ROUTES[sea ? 'sea' : 'air'];
     if (this.time < u.stunUntil) return;
     if (f.phase === 'outbound') {
-      if (distance(u, f.entry) < 24) { u.hp = 0; return; }
-      this.moveUnit(u, f.entry, dt, 18); return;
+      const exit = sea ? f.entry : { ...f.entry, x: Math.max(90, Math.min(this.world.width - 90, f.entry.x + (u.owner ? -220 : 220))) };
+      if (distance(u, exit) < 24) { u.hp = 0; return; }
+      this.moveUnit(u, exit, dt, 18); return;
     }
     let home = this.getEntity(f.homeId);
     if (!home || home.hp <= 0 || home.owner !== u.owner) {
       home = this.freightDestination(u.owner, sea);
-      f.homeId = home?.id ?? null; f.progress = 0;
+      f.homeId = home?.id ?? null; f.progress = 0; delete f.orbitAngle;
       if (home?.type === 'hq') f.value = Math.min(f.value, 180);
     }
     if (!home) { f.phase = 'outbound'; return; }
-    const goal = sea ? this.navalGoal(home.x, home.y, unitRadius(u) + 12) : { x: home.x, y: home.y };
-    const reach = sea ? 95 : home.size * .5 + 25;
-    if (distance(u, goal) > reach) {
-      f.phase = 'inbound'; f.progress = 0; this.moveUnit(u, goal, dt, reach * .7); return;
+    if (!sea) {
+      // 接收点按到达批次串行服务，等待航线与卸货航线保持两倍翼展以上的间隔。
+      const first = this.activeUnits(u.owner, 'freightPlane').filter(other => other.freight?.homeId === home.id && other.freight.phase !== 'outbound').sort((a, b) => a.id - b.id)[0];
+      const waiting = first !== u, arrived = this.flyFreightCircuit(u, home, dt, waiting);
+      if (waiting || !arrived) { f.phase = 'inbound'; if (!waiting) f.progress = 0; return; }
+    } else {
+      const goal = this.navalGoal(home.x, home.y, unitRadius(u) + 12);
+      if (distance(u, goal) > 95) {
+        f.phase = 'inbound'; f.progress = 0; this.moveUnit(u, goal, dt, 66.5); return;
+      }
+      u.angle = u.owner ? -Math.PI / 2 : Math.PI / 2;
     }
     f.phase = 'unloading';
-    if (!sea) {
-      f.orbitAngle = (f.orbitAngle ?? Math.atan2(u.y - home.y, u.x - home.x)) + dt * 2.8;
-      this.moveUnit(u, { x: home.x + Math.cos(f.orbitAngle) * (home.size * .5 + 8), y: home.y + Math.sin(f.orbitAngle) * (home.size * .5 + 8) }, dt, 3);
-    }
     if (!this.hasPower(u.owner) || sea && this.time - (u.lastMovedAt ?? -10) < .5 || this.time - (u.lastDamageAt ?? -10) <= 3 || this.time - (home.lastDamageAt ?? -10) <= 3) return;
     if (!sea && this.time >= (f.dropFXAt || 0)) {
       f.dropFXAt = this.time + 2;

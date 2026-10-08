@@ -3,7 +3,12 @@
   "version": "0.7.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.16.0"
+  },
   "scripts": {
+    "server": "node server/index.mjs",
+    "server:lan": "node scripts/start-lan.mjs",
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
@@ -13,7 +18,8 @@
   "dependencies": {
     "lucide": "^0.468.0",
     "pathfinding": "^0.4.18",
-    "three": "^0.186.1"
+    "three": "^0.186.1",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "vite": "^7.0.0"

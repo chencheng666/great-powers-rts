@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { impactProfile, tracerEndpoints } from './visual-detail.js';
+import { createCraterDebris, conformGroundMark } from './community-visuals.js';
 
 const noise = (a, b) => { const n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return n - Math.floor(n); };
 const point = (x, y, h) => new THREE.Vector3(x, h, y);
@@ -14,18 +15,21 @@ export const realisticEffects = {
     const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
     const ctx = canvas.getContext('2d'), pixels = ctx.createImageData(128, 128);
     for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
-      const i = (y * 128 + x) * 4, r = Math.hypot(x - 64, y - 64) / 64;
+      const i = (y * 128 + x) * 4, angle = Math.atan2(y - 64, x - 64);
+      const edge = .85 + Math.sin(angle * 7) * .07 + Math.cos(angle * 11) * .06;
+      const r = Math.hypot(x - 64, y - 64) / (64 * edge);
       pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = 255;
-      pixels.data[i + 3] = Math.max(0, 1 - r) ** 1.4 * (noise(Math.floor(x / 4), Math.floor(y / 4)) * .6 + .4) * 210;
+      pixels.data[i + 3] = Math.max(0, 1 - r) ** .75 * (noise(Math.floor(x / 4), Math.floor(y / 4)) * .35 + .65) * 245;
     }
     ctx.putImageData(pixels, 0, 0);
     const texture = this.track(new THREE.CanvasTexture(canvas));
-    const geometry = this.track(new THREE.PlaneGeometry(1, 1)); geometry.rotateX(-Math.PI / 2);
-    const material = this.track(new THREE.MeshBasicMaterial({ map: texture, color: '#171a17', opacity: .65, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+    const geometry = this.track(new THREE.PlaneGeometry(1, 1, 8, 8)); geometry.rotateX(-Math.PI / 2);
+    // 网格焦痕沿真实地形高度投影，起伏地面也不会将平面贴花吞入地下。
+    const material = this.track(conformGroundMark(new THREE.MeshBasicMaterial({ map: texture, color: '#171a17', opacity: .85, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), this.game));
     this.scorchMesh = new THREE.InstancedMesh(geometry, material, 80); this.scorchMesh.count = 0; this.scorchMesh.frustumCulled = false;
     this.scorchMarks = []; this.scorchCursor = 0; this.scorchDummy = new THREE.Object3D(); this.scene.add(this.scorchMesh);
-    const rim = this.track(new THREE.TorusGeometry(.46, .055, 6, 32)); rim.rotateX(-Math.PI / 2);
-    const earth = this.track(new THREE.MeshStandardMaterial({ color: '#63614e', roughness: 1 }));
+    const rim = this.track(createCraterDebris());
+    const earth = this.track(new THREE.MeshStandardMaterial({ color: '#69685e', roughness: 1 }));
     this.craterMesh = new THREE.InstancedMesh(rim, earth, 80); this.craterMesh.count = 0; this.craterMesh.frustumCulled = false; this.craterMesh.receiveShadow = true; this.scene.add(this.craterMesh);
   },
 
@@ -46,7 +50,7 @@ export const realisticEffects = {
       const d = this.scorchDummy; d.position.set(mark.x, this.elevation(mark.x, mark.y) + .2, mark.y);
       d.rotation.y = mark.angle; d.scale.set(mark.size * Math.min(1, (35 - age) / 8), 1, mark.size * .75); d.updateMatrix();
       this.scorchMesh.setMatrixAt(count++, d.matrix);
-      d.position.y += .25; d.scale.y = Math.min(5, mark.size * .06); d.updateMatrix(); this.craterMesh.setMatrixAt(count - 1, d.matrix);
+      d.position.y += .15; d.scale.y = mark.size * .65; d.updateMatrix(); this.craterMesh.setMatrixAt(count - 1, d.matrix);
     }
     this.scorchMesh.count = count; this.scorchMesh.instanceMatrix.needsUpdate = true;
     this.craterMesh.count = count; this.craterMesh.instanceMatrix.needsUpdate = true;
@@ -93,7 +97,7 @@ export const realisticEffects = {
     this.combatFlash(effect.x, effect.y, this.effectHeight(effect.targetType, effect.x, effect.y), profile.fire, profile.explosion ? 16000 : 1400, profile.explosion ? .22 : .08);
     const tags = ['fighter', 'strike', 'drone', 'ghost', 'aegis', 'bomber', 'airlift', 'navalFighter', 'navalStrike', 'freightPlane'];
     if (profile.explosion && !profile.water && !tags.includes(effect.targetType)) {
-      this.scorchMarks[this.scorchCursor] = { x: effect.x, y: effect.y, size: profile.radius * 2.2, angle: noise(effect.x, effect.y) * Math.PI * 2, start: this.game.time };
+      this.scorchMarks[this.scorchCursor] = { x: effect.x, y: effect.y, size: Math.min(190, profile.radius * 1.65), angle: noise(effect.x, effect.y) * Math.PI * 2, start: this.game.time };
       this.scorchCursor = (this.scorchCursor + 1) % 80;
     }
     if (profile.explosion && this.trails.length < 100) for (let i = 0; i < 4; i++) {

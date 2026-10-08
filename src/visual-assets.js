@@ -2,6 +2,11 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createSpaceAircraft } from './feedback-models.js';
+import { createPersonnel,createResourceModel } from './personnel-models.js';
+import { createHarbor, refineFacility, COMMUNITY_3D_BUILDINGS } from './community-visuals.js';
+import { surfaceMaps } from './model-craft.js';
+import { refineEquipment, hasRefinedTracks } from './equipment-finishing.js';
+import { refineAirfieldRunway, refineAircraftCanopy } from './airfield-presentation.js';
 
 const modelURL = new URL('../assets/models/military-library.glb', import.meta.url).href;
 const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url).href;
@@ -31,9 +36,18 @@ const sprites = new Map();
 const thumbnails = new Map();
 let portraitRenderer;
 
-export function weatherMaterial(material) {
-  if (!['装甲钢', '浅色金属', '深色钢', '航空涂层', '建筑面板', '混凝土', '屋顶', '岩石', '矿石', '矿晶', '航天复合外墙', '航天浅色合金', '热防护屋面', '月表陶瓷装甲', '机器人钛合金'].includes(material.name)) return material;
+export function weatherMaterial(material, domain = 'land') {
+  if (!['装甲钢', '浅色金属', '深色钢', '航空涂层', '建筑面板', '混凝土', '屋顶', '岩石', '矿石', '矿晶', '航天复合外墙', '航天浅色合金', '热防护屋面', '月表陶瓷装甲', '机器人钛合金', '橡胶', '作战服'].includes(material.name)) return material;
   const result = material.clone(), stone = ['岩石', '矿石', '矿晶'].includes(material.name);
+  const fabric = material.name === '作战服', rubber = material.name === '橡胶';
+  if (!stone) {
+    const maps = surfaceMaps(fabric ? 'fabric' : rubber ? 'rubber' : 'coating');
+    for (const key of ['map', 'normalMap', 'roughnessMap']) if (!result[key]) result[key] = maps[key];
+    if (!material.normalMap) result.normalScale.setScalar(fabric ? .28 : .18);
+    if (fabric || rubber) { result.metalness = 0; result.roughness = .94; }
+    else if (['装甲钢', '航空涂层', '建筑面板', '屋顶'].includes(material.name)) { result.metalness = .23; result.roughness = .72; }
+  }
+  if (domain === 'naval' && ['装甲钢', '建筑面板', '屋顶', '浅色金属'].includes(material.name)) result.color.set(material.name === '屋顶' ? '#515b61' : '#929da4');
   result.onBeforeCompile = shader => {
     shader.vertexShader = `varying vec3 vSurface;\n${shader.vertexShader}`.replace('#include <begin_vertex>', '#include <begin_vertex>\nvSurface = position;');
     shader.fragmentShader = `varying vec3 vSurface;
@@ -46,11 +60,11 @@ ${shader.fragmentShader}`.replace('#include <map_fragment>', `#include <map_frag
 float weather = surfaceNoise(vSurface * ${stone ? '9.0' : '35.0'});
 float patches = surfaceNoise(vSurface * ${stone ? '2.5' : '1.5'});
 diffuseColor.rgb *= ${stone ? '0.64 + weather * 0.52 + patches * 0.28' : '0.84 + weather * 0.24'};
-${['装甲钢', '建筑面板', '屋顶'].includes(material.name) ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.24,.15), smoothstep(.42,.49,patches) * .75); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.075,.10,.085), smoothstep(.59,.65,patches) * .8);' : ''}
+${domain === 'land' && ['装甲钢', '建筑面板', '屋顶'].includes(material.name) ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.24,.15), smoothstep(.42,.49,patches) * .42); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.075,.10,.085), smoothstep(.59,.65,patches) * .48);' : ''}
 ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothstep(.69,.83,weather) * .35);' : ''}`)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (surfaceNoise(vSurface * 28.0) - .4) * .18, .28, 1.0);');
   };
-  result.customProgramCacheKey = () => `军用表面:${material.name}`;
+  result.customProgramCacheKey = () => `军用表面:${domain}:${material.name}`;
   return result;
 }
 
@@ -71,10 +85,12 @@ export function prepareVisualAssets() {
       const batches = new Map();
       source.traverse(mesh => {
         if (!mesh.isMesh) return;
+        if (hasRefinedTracks(name) && /^(履带|履带板|履带接地板)/.test(mesh.name)) return;
         if (name === 'carrier' && /甲板停放机翼|甲板飞机/.test(mesh.name)) return;
         const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
         geometry.applyMatrix4(mesh.matrixWorld);
-        for (const attr of Object.keys(geometry.attributes)) if (!['position', 'normal'].includes(attr)) geometry.deleteAttribute(attr);
+        for (const attr of Object.keys(geometry.attributes)) if (!['position', 'normal', 'uv'].includes(attr)) geometry.deleteAttribute(attr);
+        if (!geometry.attributes.uv) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(geometry.attributes.position.count * 2), 2));
         const material = mesh.material;
         const articulated = (['tank', 'elite_nato'].includes(name) || name.startsWith('tank_')) && /炮塔|滑膛炮|炮管|车长|舱盖|瞄准|反应装甲/.test(mesh.name) || name === 'railgun' && /炮塔|加速器|线圈|电容/.test(mesh.name);
         let limb = null;
@@ -88,8 +104,9 @@ export function prepareVisualAssets() {
           if (leg) { limb = `leg_${leg[1]}`; pivot = new THREE.Vector3().setFromMatrixPosition(parent.matrixWorld); break; }
           if (/^rotor_\d+_/.test(parent.name)) { limb = parent.name; pivot = new THREE.Vector3().setFromMatrixPosition(parent.matrixWorld); break; }
         }
-        const key = `${material.name}:${articulated}:${limb}`;
-        if (!batches.has(key)) batches.set(key, { material: weatherMaterial(material), geometries: [], articulated, limb, pivot });
+        const key = `${material.uuid}:${articulated}:${limb}`;
+        const domain = ['patrol', 'frigate', 'destroyer', 'destroyer_china', 'carrier', 'submarine', 'landing', 'containerShip'].includes(name) ? 'naval' : name.startsWith('future_') || name.startsWith('robot_') ? 'space' : 'land';
+        if (!batches.has(key)) batches.set(key, { material: weatherMaterial(material, domain), geometries: [], articulated, limb, pivot });
         batches.get(key).geometries.push(geometry);
       });
       const template = new THREE.Group(); template.name = name;
@@ -107,13 +124,20 @@ export function prepareVisualAssets() {
         mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh);
         geometries.forEach(item => item.dispose());
       }
+      refineEquipment(template, name);
       models.set(name, template);
     }
     for (const type of ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane']) models.set(`space_${type}`, createSpaceAircraft(type));
+    for(const type of ['rifle','engineer','scout'])models.set(type,createPersonnel(type));
+    for(const type of ['cache','salvage','depot'])models.set(`resource_${type}`,createResourceModel(type));
+    models.set('dock', createHarbor(weatherMaterial));
+    for (const type of COMMUNITY_3D_BUILDINGS.filter(type => type !== 'dock')) refineFacility(models.get(type), type, weatherMaterial);
     const electronic = models.get('strike').clone(); electronic.name = 'ewPlane';
     const podMaterial = new THREE.MeshStandardMaterial({ color: '#687667', roughness: .65, metalness: .5 });
     for (const z of [-2.3, 2.3]) { const pod = new THREE.Mesh(new THREE.CapsuleGeometry(.3, 2.2, 4, 12), podMaterial); pod.rotation.z = Math.PI / 2; pod.position.set(-.5, -.2, z); electronic.add(pod); }
     models.set('ewPlane', electronic);
+    refineAirfieldRunway(models.get('airfield'));
+    for (const name of ['fighter', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'ghost']) refineAircraftCanopy(models.get(name));
     ground.colorSpace = THREE.SRGBColorSpace; ground.wrapS = ground.wrapT = THREE.RepeatWrapping;
     meridian.colorSpace = THREE.SRGBColorSpace;
     library = { models, ground, buildings, foliage, armory, meridian }; return library;
@@ -153,7 +177,7 @@ export function spriteTexture(name, teamColor = '#59d7ec') {
 export function modelThumbnail(name, color) {
   const key = `${name}:${color}`;
   if (thumbnails.has(key)) return thumbnails.get(key);
-  if (buildingNames.includes(name) && !['hq', 'power', 'barracks', 'factory', 'armory'].includes(name)) {
+  if (buildingNames.includes(name) && !['hq', 'power', 'barracks', 'factory', 'armory', ...COMMUNITY_3D_BUILDINGS].includes(name)) {
     const url = spriteTexture(name, color).image.toDataURL(); thumbnails.set(key, url); return url;
   }
   portraitRenderer ||= new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });

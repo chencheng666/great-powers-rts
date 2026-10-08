@@ -12,6 +12,7 @@ export class GameAudio {
     this.context = null; this.buffers = new Map(); this.pending = new Map();
     this.active = false; this.paused = false; this.session = 0; this.music = null;
     this.voiceQueue = []; this.currentVoice = null; this.cooldowns = new Map(); this.variants = new Map(); this.lastSpeech = 0; this.lastShot = 0;
+    this.celebrationNodes = new Set();
   }
 
   async unlock() {
@@ -58,6 +59,8 @@ export class GameAudio {
 
   stopBattle() {
     this.session++; this.active = false; this.paused = false;
+    for (const node of this.celebrationNodes) node.stop();
+    this.celebrationNodes.clear();
     if (this.music) { this.music.stop(); this.music.disconnect(); this.music = null; }
     this.clearVoices(); this.cooldowns.clear(); this.lastSpeech = 0;
   }
@@ -115,7 +118,7 @@ export class GameAudio {
     if (this.context.currentTime - line.time > 4) { this.playNextVoice(); return; }
     // 先占用通道，防止异步解码期间多个应答同时播放。
     const token = { ...line, source: null }; this.currentVoice = token;
-    if (this.settings.voiceURI === 'portable') { await this.playPortableVoice(token); return; }
+    if (['portable','portable-female'].includes(this.settings.voiceURI)) { await this.playPortableVoice(token); return; }
     if (this.settings.voiceURI && this.settings.voiceURI !== 'auto' && window.speechSynthesis?.getVoices().some(v => v.voiceURI === this.settings.voiceURI && /^zh(?:-|_)/i.test(v.lang))) { this.playSpeech(token); return; }
     if (!assets[`../assets/audio/${voiceFile(line.key, line.index)}`]) {
       const chinese = window.speechSynthesis?.getVoices().some(voice => /^zh(?:-|_)/i.test(voice.lang));
@@ -133,7 +136,7 @@ export class GameAudio {
   }
 
   async playPortableVoice(token) {
-    const session = this.session, file = `portable/${token.key}-${token.index}.wav`;
+    const session = this.session, file = `portable/${this.settings.voiceURI==='portable-female'?'female-':''}${token.key}-${token.index}.wav`;
     try {
       const buffer = await this.buffer(file);
       if (session !== this.session || this.currentVoice !== token || !this.active || this.paused && !token.preview || this.settings.muted || !this.settings.voice || !this.settings.master) return;
@@ -183,6 +186,20 @@ export class GameAudio {
     else if (['drone','ghost'].includes(entity.type)) key = 'droneSelected';
     else if (['patrol','frigate','destroyer','carrier','submarine','landing','containerShip'].includes(entity.type)) key = 'navySelected';
     this.say(key);
+  }
+
+  celebrate(promoted = false) {
+    if (!this.active || !this.context || this.paused || this.settings.muted || !this.settings.master || !this.settings.effects) return;
+    const notes = promoted ? [523.25,659.25,783.99,1046.5,1318.51] : [523.25,659.25,783.99,1046.5];
+    const ctx = this.context;
+    notes.forEach((frequency, index) => {
+      const oscillator = ctx.createOscillator(), envelope = ctx.createGain(), start = ctx.currentTime + index * .16;
+      oscillator.type = 'sine'; oscillator.frequency.value = frequency;
+      envelope.gain.setValueAtTime(.0001,start); envelope.gain.exponentialRampToValueAtTime(.055,start+.02); envelope.gain.exponentialRampToValueAtTime(.0001,start+.45);
+      oscillator.connect(envelope); envelope.connect(this.effectsBus); this.celebrationNodes.add(oscillator);
+      oscillator.onended = () => { oscillator.disconnect(); envelope.disconnect(); this.celebrationNodes.delete(oscillator); };
+      oscillator.start(start); oscillator.stop(start+.46);
+    });
   }
 
   shot(style, owner = 0) {

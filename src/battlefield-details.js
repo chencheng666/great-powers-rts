@@ -23,7 +23,7 @@ export function buildingInformation(game, building) {
     faction: FACTIONS[game.players[building.owner].faction].name, own,
     health: Math.ceil(building.hp), maxHealth: Math.ceil(building.maxHp), ratio: building.hp / building.maxHp,
     power: data.power, cost: data.cost, time: data.time,
-    status: !own ? '敌方设施' : building.repairing ? '维修中' : !game.hasPower(0) && data.power < 0 ? '供电不足' : active ? '生产中' : producer ? '生产线待命' : '运行正常',
+    status: building.sabotage ? `定时破坏 ${Math.max(0,Math.ceil(building.sabotage.detonateAt-game.time))} 秒` : !own ? '敌方设施' : building.repairing ? '维修中' : !game.hasPower(0) && data.power < 0 ? '供电不足' : active ? '生产中' : producer ? '生产线待命' : '运行正常',
     producer, repairing: own && building.repairing,
     queue: own ? building.queue.length : null,
     production: active ? { name: equipmentProfile(game.players[building.owner].faction, active.type, game.map.future).name, progress: Math.min(1, active.progress / duration), remaining: Math.max(0, Math.ceil(duration - active.progress)) } : null,

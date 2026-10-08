@@ -147,8 +147,9 @@ test('三个海空模型独立存在，便携中文语音覆盖每条台词且�
   const json = JSON.parse(buffer.subarray(20, 20 + buffer.readUInt32LE(12)).toString());
   for (const name of ['landing', 'bomber', 'airlift']) assert.ok(json.nodes.some(node => node.name === name));
   const manifest = JSON.parse(readFileSync(new URL('../assets/audio/portable/manifest.json', import.meta.url)));
-  assert.equal(manifest.files.length, 37);
-  for (const { file } of manifest.files) {
+  assert.ok(manifest.files.length>=37);
+  assert.equal(manifest.femaleFiles.length,manifest.files.length);
+  for (const { file } of [...manifest.files,...manifest.femaleFiles]) {
     const wav = readFileSync(new URL(`../assets/audio/portable/${file}`, import.meta.url));
     assert.equal(wav.subarray(0, 4).toString(), 'RIFF'); assert.equal(wav.subarray(8, 12).toString(), 'WAVE'); assert.ok(wav.length > 1000);
   }

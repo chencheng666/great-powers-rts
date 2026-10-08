@@ -1,9 +1,10 @@
 {
   "generator": "eSpeak NG text-to-speech: 1.52.0  Data at: /opt/homebrew/Cellar/espeak-ng/1.52.0/share/espeak-ng-data",
-  "generatedOn": "2026-10-06",
+  "generatedOn": "2026-10-07",
   "source": "https://github.com/espeak-ng/espeak-ng",
   "license": "仅分发原创台词的合成音频，不捆绑 GPL 引擎、系统录音或第三方声音模型。",
   "voice": "cmn",
+  "femaleVoice": "cmn+f3",
   "files": [
     {
       "file": "welcome-0.wav",
@@ -226,6 +227,590 @@
       "key": "stopOrder",
       "index": 0,
       "text": "停止机动，保持阵位。"
+    },
+    {
+      "file": "spyPlanted-0.wav",
+      "key": "spyPlanted",
+      "index": 0,
+      "text": "潜入完成。定时破坏已启动。"
+    },
+    {
+      "file": "resourceRecovered-0.wav",
+      "key": "resourceRecovered",
+      "index": 0,
+      "text": "现场物资已回收。"
+    },
+    {
+      "file": "cyberWarning-0.wav",
+      "key": "cyberWarning",
+      "index": 0,
+      "text": "警报，敌方网络攻击将在十二秒后抵达。摧毁源站或切断敌方供电。"
+    },
+    {
+      "file": "cyberLaunch-0.wav",
+      "key": "cyberLaunch",
+      "index": 0,
+      "text": "网络攻击已排程。"
+    },
+    {
+      "file": "cyberDisrupted-0.wav",
+      "key": "cyberDisrupted",
+      "index": 0,
+      "text": "指令链路受到干扰。部队保持自动还击。"
+    },
+    {
+      "file": "cyberRestored-0.wav",
+      "key": "cyberRestored",
+      "index": 0,
+      "text": "指令链路已恢复。"
+    },
+    {
+      "file": "spyInfiltrated_hq-0.wav",
+      "key": "spyInfiltrated_hq",
+      "index": 0,
+      "text": "警报，我方指挥中心被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_hq-0.wav",
+      "key": "spyDefused_hq",
+      "index": 0,
+      "text": "指挥中心的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_power-0.wav",
+      "key": "spyInfiltrated_power",
+      "index": 0,
+      "text": "警报，我方电力站被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_power-0.wav",
+      "key": "spyDefused_power",
+      "index": 0,
+      "text": "电力站的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_refinery-0.wav",
+      "key": "spyInfiltrated_refinery",
+      "index": 0,
+      "text": "警报，我方后勤中心被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_refinery-0.wav",
+      "key": "spyDefused_refinery",
+      "index": 0,
+      "text": "后勤中心的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_barracks-0.wav",
+      "key": "spyInfiltrated_barracks",
+      "index": 0,
+      "text": "警报，我方兵营被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_barracks-0.wav",
+      "key": "spyDefused_barracks",
+      "index": 0,
+      "text": "兵营的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_factory-0.wav",
+      "key": "spyInfiltrated_factory",
+      "index": 0,
+      "text": "警报，我方战车工厂被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_factory-0.wav",
+      "key": "spyDefused_factory",
+      "index": 0,
+      "text": "战车工厂的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_armory-0.wav",
+      "key": "spyInfiltrated_armory",
+      "index": 0,
+      "text": "警报，我方兵工厂被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_armory-0.wav",
+      "key": "spyDefused_armory",
+      "index": 0,
+      "text": "兵工厂的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_dock-0.wav",
+      "key": "spyInfiltrated_dock",
+      "index": 0,
+      "text": "警报，我方海军港口被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_dock-0.wav",
+      "key": "spyDefused_dock",
+      "index": 0,
+      "text": "海军港口的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_radar-0.wav",
+      "key": "spyInfiltrated_radar",
+      "index": 0,
+      "text": "警报，我方雷达站被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_radar-0.wav",
+      "key": "spyDefused_radar",
+      "index": 0,
+      "text": "雷达站的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_airfield-0.wav",
+      "key": "spyInfiltrated_airfield",
+      "index": 0,
+      "text": "警报，我方空军基地被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_airfield-0.wav",
+      "key": "spyDefused_airfield",
+      "index": 0,
+      "text": "空军基地的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_turret-0.wav",
+      "key": "spyInfiltrated_turret",
+      "index": 0,
+      "text": "警报，我方防御炮塔被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_turret-0.wav",
+      "key": "spyDefused_turret",
+      "index": 0,
+      "text": "防御炮塔的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_lab-0.wav",
+      "key": "spyInfiltrated_lab",
+      "index": 0,
+      "text": "警报，我方作战实验室被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_lab-0.wav",
+      "key": "spyDefused_lab",
+      "index": 0,
+      "text": "作战实验室的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_super-0.wav",
+      "key": "spyInfiltrated_super",
+      "index": 0,
+      "text": "警报，我方战略武器站被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_super-0.wav",
+      "key": "spyDefused_super",
+      "index": 0,
+      "text": "战略武器站的间谍破坏已解除。"
+    }
+  ],
+  "femaleFiles": [
+    {
+      "file": "female-welcome-0.wav",
+      "key": "welcome",
+      "index": 0,
+      "text": "战区通信已接入。指挥官，部队等待您的命令。"
+    },
+    {
+      "file": "female-construction-0.wav",
+      "key": "construction",
+      "index": 0,
+      "text": "开始建造。"
+    },
+    {
+      "file": "female-buildReady-0.wav",
+      "key": "buildReady",
+      "index": 0,
+      "text": "建筑建造完成，等待部署。"
+    },
+    {
+      "file": "female-deployed-0.wav",
+      "key": "deployed",
+      "index": 0,
+      "text": "建筑已部署。"
+    },
+    {
+      "file": "female-queued-0.wav",
+      "key": "queued",
+      "index": 0,
+      "text": "生产任务已确认。"
+    },
+    {
+      "file": "female-unitReady-0.wav",
+      "key": "unitReady",
+      "index": 0,
+      "text": "新单位已就绪。"
+    },
+    {
+      "file": "female-powerLow-0.wav",
+      "key": "powerLow",
+      "index": 0,
+      "text": "电力不足。请增建电力站。"
+    },
+    {
+      "file": "female-powerRestored-0.wav",
+      "key": "powerRestored",
+      "index": 0,
+      "text": "供电已恢复。"
+    },
+    {
+      "file": "female-fundsLow-0.wav",
+      "key": "fundsLow",
+      "index": 0,
+      "text": "资金不足。"
+    },
+    {
+      "file": "female-underAttack-0.wav",
+      "key": "underAttack",
+      "index": 0,
+      "text": "警报！我方基地遭到攻击。"
+    },
+    {
+      "file": "female-unitUnderAttack-0.wav",
+      "key": "unitUnderAttack",
+      "index": 0,
+      "text": "警报！我方部队遭到攻击，请求支援。"
+    },
+    {
+      "file": "female-buildingLost-0.wav",
+      "key": "buildingLost",
+      "index": 0,
+      "text": "我方建筑被摧毁。"
+    },
+    {
+      "file": "female-unitLost-0.wav",
+      "key": "unitLost",
+      "index": 0,
+      "text": "我方单位损失。"
+    },
+    {
+      "file": "female-oilCaptured-0.wav",
+      "key": "oilCaptured",
+      "index": 0,
+      "text": "油井已占领，经济供给已接入。"
+    },
+    {
+      "file": "female-beaconCaptured-0.wav",
+      "key": "beaconCaptured",
+      "index": 0,
+      "text": "雷达信标已接入。"
+    },
+    {
+      "file": "female-ability-0.wav",
+      "key": "ability",
+      "index": 0,
+      "text": "战略系统已启动。"
+    },
+    {
+      "file": "female-victory-0.wav",
+      "key": "victory",
+      "index": 0,
+      "text": "战役胜利。战区已由我方控制。"
+    },
+    {
+      "file": "female-defeat-0.wav",
+      "key": "defeat",
+      "index": 0,
+      "text": "任务失败。部队撤离战区。"
+    },
+    {
+      "file": "female-draw-0.wav",
+      "key": "draw",
+      "index": 0,
+      "text": "战局结束。双方战力耗尽。"
+    },
+    {
+      "file": "female-structureSelected-0.wav",
+      "key": "structureSelected",
+      "index": 0,
+      "text": "指挥系统在线。"
+    },
+    {
+      "file": "female-armorSelected-0.wav",
+      "key": "armorSelected",
+      "index": 0,
+      "text": "装甲部队待命。"
+    },
+    {
+      "file": "female-armorSelected-1.wav",
+      "key": "armorSelected",
+      "index": 1,
+      "text": "车组就位，请指示。"
+    },
+    {
+      "file": "female-infantrySelected-0.wav",
+      "key": "infantrySelected",
+      "index": 0,
+      "text": "小队待命。"
+    },
+    {
+      "file": "female-infantrySelected-1.wav",
+      "key": "infantrySelected",
+      "index": 1,
+      "text": "收到，请下达命令。"
+    },
+    {
+      "file": "female-engineerSelected-0.wav",
+      "key": "engineerSelected",
+      "index": 0,
+      "text": "工程组就位。"
+    },
+    {
+      "file": "female-engineerSelected-1.wav",
+      "key": "engineerSelected",
+      "index": 1,
+      "text": "准备接管目标。"
+    },
+    {
+      "file": "female-airSelected-0.wav",
+      "key": "airSelected",
+      "index": 0,
+      "text": "空中编队就绪。"
+    },
+    {
+      "file": "female-airSelected-1.wav",
+      "key": "airSelected",
+      "index": 1,
+      "text": "航电系统正常。"
+    },
+    {
+      "file": "female-droneSelected-0.wav",
+      "key": "droneSelected",
+      "index": 0,
+      "text": "无人机链路已接通。"
+    },
+    {
+      "file": "female-navySelected-0.wav",
+      "key": "navySelected",
+      "index": 0,
+      "text": "舰艇等待指令。"
+    },
+    {
+      "file": "female-moveOrder-0.wav",
+      "key": "moveOrder",
+      "index": 0,
+      "text": "收到，正在前往目标位置。"
+    },
+    {
+      "file": "female-moveOrder-1.wav",
+      "key": "moveOrder",
+      "index": 1,
+      "text": "开始机动。"
+    },
+    {
+      "file": "female-moveOrder-2.wav",
+      "key": "moveOrder",
+      "index": 2,
+      "text": "部队出发。"
+    },
+    {
+      "file": "female-attackOrder-0.wav",
+      "key": "attackOrder",
+      "index": 0,
+      "text": "确认目标，进入战斗。"
+    },
+    {
+      "file": "female-attackOrder-1.wav",
+      "key": "attackOrder",
+      "index": 1,
+      "text": "火力单元开始推进。"
+    },
+    {
+      "file": "female-captureOrder-0.wav",
+      "key": "captureOrder",
+      "index": 0,
+      "text": "工程组出发，准备接管。"
+    },
+    {
+      "file": "female-stopOrder-0.wav",
+      "key": "stopOrder",
+      "index": 0,
+      "text": "停止机动，保持阵位。"
+    },
+    {
+      "file": "female-spyPlanted-0.wav",
+      "key": "spyPlanted",
+      "index": 0,
+      "text": "潜入完成。定时破坏已启动。"
+    },
+    {
+      "file": "female-resourceRecovered-0.wav",
+      "key": "resourceRecovered",
+      "index": 0,
+      "text": "现场物资已回收。"
+    },
+    {
+      "file": "female-cyberWarning-0.wav",
+      "key": "cyberWarning",
+      "index": 0,
+      "text": "警报，敌方网络攻击将在十二秒后抵达。摧毁源站或切断敌方供电。"
+    },
+    {
+      "file": "female-cyberLaunch-0.wav",
+      "key": "cyberLaunch",
+      "index": 0,
+      "text": "网络攻击已排程。"
+    },
+    {
+      "file": "female-cyberDisrupted-0.wav",
+      "key": "cyberDisrupted",
+      "index": 0,
+      "text": "指令链路受到干扰。部队保持自动还击。"
+    },
+    {
+      "file": "female-cyberRestored-0.wav",
+      "key": "cyberRestored",
+      "index": 0,
+      "text": "指令链路已恢复。"
+    },
+    {
+      "file": "female-spyInfiltrated_hq-0.wav",
+      "key": "spyInfiltrated_hq",
+      "index": 0,
+      "text": "警报，我方指挥中心被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_hq-0.wav",
+      "key": "spyDefused_hq",
+      "index": 0,
+      "text": "指挥中心的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_power-0.wav",
+      "key": "spyInfiltrated_power",
+      "index": 0,
+      "text": "警报，我方电力站被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_power-0.wav",
+      "key": "spyDefused_power",
+      "index": 0,
+      "text": "电力站的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_refinery-0.wav",
+      "key": "spyInfiltrated_refinery",
+      "index": 0,
+      "text": "警报，我方后勤中心被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_refinery-0.wav",
+      "key": "spyDefused_refinery",
+      "index": 0,
+      "text": "后勤中心的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_barracks-0.wav",
+      "key": "spyInfiltrated_barracks",
+      "index": 0,
+      "text": "警报，我方兵营被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_barracks-0.wav",
+      "key": "spyDefused_barracks",
+      "index": 0,
+      "text": "兵营的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_factory-0.wav",
+      "key": "spyInfiltrated_factory",
+      "index": 0,
+      "text": "警报，我方战车工厂被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_factory-0.wav",
+      "key": "spyDefused_factory",
+      "index": 0,
+      "text": "战车工厂的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_armory-0.wav",
+      "key": "spyInfiltrated_armory",
+      "index": 0,
+      "text": "警报，我方兵工厂被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_armory-0.wav",
+      "key": "spyDefused_armory",
+      "index": 0,
+      "text": "兵工厂的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_dock-0.wav",
+      "key": "spyInfiltrated_dock",
+      "index": 0,
+      "text": "警报，我方海军港口被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_dock-0.wav",
+      "key": "spyDefused_dock",
+      "index": 0,
+      "text": "海军港口的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_radar-0.wav",
+      "key": "spyInfiltrated_radar",
+      "index": 0,
+      "text": "警报，我方雷达站被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_radar-0.wav",
+      "key": "spyDefused_radar",
+      "index": 0,
+      "text": "雷达站的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_airfield-0.wav",
+      "key": "spyInfiltrated_airfield",
+      "index": 0,
+      "text": "警报，我方空军基地被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_airfield-0.wav",
+      "key": "spyDefused_airfield",
+      "index": 0,
+      "text": "空军基地的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_turret-0.wav",
+      "key": "spyInfiltrated_turret",
+      "index": 0,
+      "text": "警报，我方防御炮塔被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_turret-0.wav",
+      "key": "spyDefused_turret",
+      "index": 0,
+      "text": "防御炮塔的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_lab-0.wav",
+      "key": "spyInfiltrated_lab",
+      "index": 0,
+      "text": "警报，我方作战实验室被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_lab-0.wav",
+      "key": "spyDefused_lab",
+      "index": 0,
+      "text": "作战实验室的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_super-0.wav",
+      "key": "spyInfiltrated_super",
+      "index": 0,
+      "text": "警报，我方战略武器站被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_super-0.wav",
+      "key": "spyDefused_super",
+      "index": 0,
+      "text": "战略武器站的间谍破坏已解除。"
     }
   ]
 }

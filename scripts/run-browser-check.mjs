@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const [name, value] = process.argv.slice(2), taskSpaceId = Number(value);
-if (!['audio', 'visual', 'battlefield', 'modern', 'details', 'teams', 'future', 'session', 'logistics', 'convoy', 'offline-convoy', 'feedback'].includes(name) || !Number.isInteger(taskSpaceId) || taskSpaceId < 1) {
-  throw new Error('用法：node scripts/run-browser-check.mjs audio|visual|battlefield|modern|details|teams|future|session|logistics|convoy|offline-convoy|feedback 当前任务空间编号');
+if (!['audio', 'visual', 'battlefield', 'modern', 'details', 'teams', 'future', 'session', 'logistics', 'convoy', 'offline-convoy', 'feedback', 'catalog', 'honors', 'intelligence', 'community', 'model-polish'].includes(name) || !Number.isInteger(taskSpaceId) || taskSpaceId < 1) {
+  throw new Error('用法：node scripts/run-browser-check.mjs audio|visual|battlefield|modern|details|teams|future|session|logistics|convoy|offline-convoy|feedback|catalog|honors|intelligence|community|model-polish 当前任务空间编号');
 }
 // ego-browser 在独立进程执行，显式传递任务空间和输出目录。
 const source = readFileSync(join(root, `scripts/verify-${name}-browser.js`), 'utf8');

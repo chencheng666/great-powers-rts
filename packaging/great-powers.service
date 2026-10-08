@@ -1,0 +1,28 @@
+[Unit]
+Description=Great Powers RTS Battle Server
+After=network.target
+
+[Service]
+Type=simple
+User=great-powers
+Group=great-powers
+WorkingDirectory=/opt/great-powers/current
+ExecStart=/opt/great-powers/runtime/bin/node server/index.mjs
+Environment=NODE_ENV=production
+Environment=HOST=0.0.0.0
+Environment=PORT=8088
+Environment=PUBLIC_ORIGIN=http://43.135.186.21:8088
+Environment=DATA_DIRECTORY=/var/lib/great-powers
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/great-powers
+MemoryMax=768M
+CPUQuota=150%
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

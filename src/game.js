@@ -1,4 +1,6 @@
 import PF from 'pathfinding';
+import { createBattleId, legacyBattleId } from './battle-identity.js';
+import { unitCostFor, unitHealthFor } from './unit-specs.js';
 import { AI_DIFFICULTIES, BUILDINGS, CORE_BUILDINGS, FACTIONS, MAPS, ORE_VALUES, PRODUCERS, UNITS, WORLD, supportsMap } from './data.js';
 import { formationOffsets, separateUnits, UnitSpatialIndex, unitLayer, unitRadius } from './unit-spacing.js';
 import { modernCombat } from './modern-combat.js';
@@ -8,6 +10,8 @@ import { tacticalDamage } from './tactical-rules.js';
 import { createSave, SNAPSHOT_FIELDS, validateSave } from './savegame.js';
 import { FREIGHT_TYPES, logisticsEconomy } from './logistics-economy.js';
 import { isLunarRobot, lunarBuildingProfile, lunarRobots, ROBOT_ENERGY, ROBOT_SPECS } from './lunar-robots.js';
+import { battlefieldMap, resourceLayout } from './battlefield-expansion.js';
+import { intelligenceCombat } from './intelligence.js';
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -30,10 +34,13 @@ let nextId = 1;
 export class Game {
   constructor(playerFaction, enemyFaction, events = {}, options = {}) {
     this.events = events;
+    this.multiplayer = !!options.multiplayer;
+    this.battleId = createBattleId();
     this.victoryMode = ['annihilation', 'control'].includes(options.victoryMode) ? options.victoryMode : 'quick';
     this.difficulty = AI_DIFFICULTIES[options.difficulty] || AI_DIFFICULTIES.standard;
     this.mapId = MAPS[options.mapId] ? options.mapId : 'valley';
-    this.map = MAPS[this.mapId];
+    this.battlefieldScale = options.battlefieldScale === 1.5 ? 1.5 : 1;
+    this.map = battlefieldMap(this.mapId,this.battlefieldScale);
     this.world = this.map.world || WORLD;
     this.homeY = this.world.height / 2;
     this.economyMode = this.mapId === 'meridian' ? 'mining' : 'convoy';
@@ -48,6 +55,7 @@ export class Game {
     this.ore = this.economyMode === 'mining' ? this.map.ore.map(([x, y, amount, kind], index) => ({ id: `ore-${index}`, x, y, amount, max: amount, kind })) : [];
     this.oil = this.map.oil.map(site => ({ ...site, owner: null }));
     this.beacons = this.map.beacons.map(site => ({ ...site, owner: null }));
+    this.resourceSites = resourceLayout(this.map);
     this.effects = [];
     this.pendingHits = [];
     this.collectingHits = false;
@@ -87,10 +95,13 @@ export class Game {
     // 不重新部署基地，避免覆盖队列、迷雾或触发新对局通知。
     const game = Object.create(Game.prototype);
     game.events = events;
-    game.mapId = copy.config.mapId; game.map = MAPS[game.mapId]; game.world = game.map.world || WORLD;
+    game.battleId = copy.config.battleId || legacyBattleId(copy);
+    game.mapId = copy.config.mapId; game.battlefieldScale=copy.config.battlefieldScale||1;game.map = battlefieldMap(game.mapId,game.battlefieldScale); game.world = game.map.world || WORLD;
     game.homeY = game.world.height / 2; game.victoryMode = copy.config.victoryMode;
     game.difficulty = AI_DIFFICULTIES[copy.config.difficulty];
     for (const key of SNAPSHOT_FIELDS) game[key] = copy.state[key];
+    // 旧战局不凭空追加可领奖的物资；新局和新存档才包含资源争夺点。
+    game.resourceSites=copy.state.resourceSites||[];
     // 老版本战局保留原经济，避免已有矿车、货物与路线在读档时消失。
     game.economyMode = copy.config.economyMode || 'mining';
     game.logistics = copy.state.logistics;
@@ -110,7 +121,7 @@ export class Game {
     return game;
   }
   get enemyFaction() { return FACTIONS[this.players[1].faction]; }
-  getEntity(id) { return this.units.find(item => item.id === id) || this.buildings.find(item => item.id === id) || this.oil.find(item => item.id === id) || this.beacons.find(item => item.id === id); }
+  getEntity(id) { return this.units.find(item => item.id === id) || this.buildings.find(item => item.id === id) || this.oil.find(item => item.id === id) || this.beacons.find(item => item.id === id) || this.resourceSites?.find(item=>item.id===id); }
   ownedBuildings(side, type) { return this.buildings.filter(item => item.owner === side && item.hp > 0 && (!type || item.type === type)); }
   ownedUnits(side, type) { return this.units.filter(item => item.owner === side && item.hp > 0 && (!type || item.type === type)); }
   hasBuilding(side, type) { return this.ownedBuildings(side, type).length > 0; }
@@ -125,7 +136,7 @@ export class Game {
         ['barracks', 195, 875], ['factory', 460, 705],
         ...(this.map.water ? [['dock', ['ocean', 'archipelago'].includes(this.mapId) ? 950 : 850, 720]] : [])
       ]) {
-        const [bx, by] = mirror(x, y); this.addBuilding(side, type, bx, by);
+        const [bx, by] = type==='dock'&&this.battlefieldScale!==1 ? [(this.map.dockZones[side].x1+this.map.dockZones[side].x2)/2,this.homeY] : mirror(x, y); this.addBuilding(side, type, bx, by);
       }
       for (const [type, x, y] of [
         ...(this.economyMode === 'mining' ? [['harvester', 405, 940], ['harvester', 440, 485]] : []),
@@ -135,7 +146,7 @@ export class Game {
         const [ux, uy] = mirror(x, y); this.addUnit(side, type, ux, uy);
       }
       if (['ocean', 'archipelago'].includes(this.mapId)) {
-        const [x, y] = mirror(1160, 720);
+        const [x, y] = this.battlefieldScale!==1 ? [side?this.map.water.x2-120:this.map.water.x1+120,this.homeY] : mirror(1160, 720);
         this.addUnit(side, 'patrol', x, y);
         this.players[side].credits += 800;
       }
@@ -155,12 +166,7 @@ export class Game {
   addUnit(owner, type, x, y, temporary = false) {
     const d = UNITS[type];
     const p = this.players[owner];
-    let hp = d.hp;
-    if (type === 'tank' && p.faction === 'nato') hp *= 1.15;
-    if (type === 'drone' && p.faction === 'asia') hp *= 0.85;
-    if (type === 'aa' && p.faction === 'china') hp *= 1.15;
-    if (type === 'elite' && p.faction === 'nato') hp = 580;
-    if (type === 'elite' && p.faction === 'asia') hp = 250;
+    const hp = unitHealthFor(p.faction, type);
     const unit = { id: nextId++, kind: 'unit', owner, type, x, y, hp, maxHp: hp, angle: owner ? Math.PI : 0, turretAngle: owner ? Math.PI : 0, order: null, targetId: null, path: [], pathTimer: 0, fireTimer: random(0, 0.4), movePulse: 0, cargo: 0, cargoValue: 0, harvestState: 'find', ammo: d.ammo ?? null, rearmProgress: 0, resumeOrder: null, stunUntil: 0, temporaryUntil: temporary ? this.time + 27 : 0, selected: false };
     unit.passengers = []; unit.embarkedIn = null; unit.stock = d.stock ?? null;
     unit.wing = d.wing ?? null; unit.heat = 0; unit.deployProgress = 0;
@@ -182,6 +188,7 @@ export class Game {
         else p.powerOut -= power;
       }
       if (this.map.future) p.powerIn += this.beacons.filter(site => site.owner === p.side).length * 40;
+      p.powerIn += (this.resourceSites||[]).filter(site=>site.type==='depot'&&site.owner===p.side).length*40;
       p.robotChargeLoad = this.units.filter(u => u.owner === p.side && u.hp > 0 && !u.embarkedIn && isLunarRobot(this.map, u.type) && u.order?.type === 'rearm' && this.robotChargeSite(u)).length * ROBOT_ENERGY.chargeLoad;
       p.powerOut += p.robotChargeLoad;
     }
@@ -193,8 +200,9 @@ export class Game {
   }
 
   startBuild(side, type) {
+    if(this.isControlLocked(side))return false;
     const p = this.players[side];
-    if (!this.canBuild(side, type) || p.buildQueue || (side === 0 && this.pendingBuilding)) return false;
+    if (!this.canBuild(side, type) || p.buildQueue || p.readyBuilding || (side === 0 && this.pendingBuilding)) return false;
     p.buildQueue = { type, progress: 0, paid: 0 };
     if (side === 0) this.events.notice?.(`${lunarBuildingProfile(this.map.future, type, BUILDINGS[type]).name}开始建造`);
     if (side === 0) this.events.voice?.('construction');
@@ -202,11 +210,13 @@ export class Game {
   }
 
   cancelBuilding(side) {
+    if(this.isControlLocked(side))return false;
     const p = this.players[side];
-    const refund = p.buildQueue?.paid || (side === 0 && this.pendingBuilding ? BUILDINGS[this.pendingBuilding].cost : 0);
-    if (!p.buildQueue && !(side === 0 && this.pendingBuilding)) return false;
+    const refund = p.buildQueue?.paid || (p.readyBuilding ? BUILDINGS[p.readyBuilding].cost : side === 0 && this.pendingBuilding ? BUILDINGS[this.pendingBuilding].cost : 0);
+    if (!p.buildQueue && !p.readyBuilding && !(side === 0 && this.pendingBuilding)) return false;
     p.credits += refund;
     p.buildQueue = null;
+    p.readyBuilding = null;
     if (side === 0) {
       this.pendingBuilding = null;
       this.placingBuilding = false;
@@ -216,6 +226,7 @@ export class Game {
   }
 
   cancelUnitProduction(side, buildingId) {
+    if(this.isControlLocked(side))return false;
     const building = this.getEntity(buildingId);
     if (!building || building.kind !== 'building' || building.owner !== side || !PRODUCERS.includes(building.type)) return false;
     if (!building.active && !building.queue.length) return false;
@@ -236,13 +247,17 @@ export class Game {
     if (this.ore.some(o => o.amount > 0 && distance(o, { x, y }) < 95)) return false;
     if (this.oil.some(o => distance(o, { x, y }) < 95)) return false;
     if (this.beacons.some(site => distance(site, { x, y }) < 100)) return false;
+    if(this.resourceSites?.some(site=>distance(site,{x,y})<80))return false;
     if (this.buildings.some(b => b.hp > 0 && distance(b, { x, y }) < (b.size + size) * 0.63 + 20)) return false;
-    return type === 'dock' ? this.hasBuilding(side, 'factory') : this.ownedBuildings(side).some(b => distance(b, { x, y }) < 310);
+    return type === 'dock' ? this.hasBuilding(side, 'factory') : this.ownedBuildings(side).some(b => distance(b, { x, y }) < 310)||(this.resourceSites||[]).some(site=>site.type==='depot'&&site.owner===side&&distance(site,{x,y})<260);
   }
 
   placeBuilding(side, type, x, y) {
+    if(this.isControlLocked(side))return false;
+    if (this.multiplayer && this.players[side].readyBuilding !== type) return false;
     if (!this.canPlace(side, type, x, y)) return false;
     this.addBuilding(side, type, x, y);
+    this.players[side].readyBuilding = null;
     if (side === 0) {
       this.pendingBuilding = null;
       this.placingBuilding = false;
@@ -254,6 +269,7 @@ export class Game {
   }
 
   toggleRepair(side, id) {
+    if(this.isControlLocked(side))return false;
     const building = this.getEntity(id);
     if (!building || building.kind !== 'building' || building.owner !== side || building.hp <= 0) return false;
     if (building.hp >= building.maxHp && !building.repairing) return false;
@@ -263,6 +279,7 @@ export class Game {
   }
 
   sellBuilding(side, id) {
+    if(this.isControlLocked(side))return false;
     const building = this.getEntity(id);
     if (!building || building.kind !== 'building' || building.owner !== side || building.type === 'hq' || building.hp <= 0) return false;
     const refund = Math.floor(BUILDINGS[building.type].cost * .5);
@@ -279,6 +296,7 @@ export class Game {
   }
 
   sellHarvester(side, id) {
+    if(this.isControlLocked(side))return false;
     const u = this.getEntity(id);
     if (!u || u.kind !== 'unit' || u.type !== 'harvester' || u.owner !== side || u.hp <= 0 || u.embarkedIn) return false;
     const refund = Math.floor(this.unitCost(side, u.type) * .5 * u.hp / u.maxHp);
@@ -300,6 +318,7 @@ export class Game {
   }
 
   queueUnit(side, type) {
+    if(this.isControlLocked(side))return false;
     const d = UNITS[type];
     if (!d || FREIGHT_TYPES.includes(type) || type === 'harvester' && this.economyMode !== 'mining' || (d.naval && !this.map.water) || !supportsMap(d.map, this.mapId) || (d.faction && this.players[side].faction !== d.faction) || (d.requires && !this.hasBuilding(side, d.requires))) return false;
     const producer = this.ownedBuildings(side, d.producer).sort((a, b) => a.queue.length - b.queue.length)[0];
@@ -311,7 +330,7 @@ export class Game {
   }
 
   unitCost(side, type) {
-    return Math.round(UNITS[type].cost * (type === 'drone' && this.players[side].faction === 'asia' ? 0.85 : 1));
+    return unitCostFor(this.players[side].faction, type);
   }
 
   selectAt(x, y, additive = false) {
@@ -342,16 +361,19 @@ export class Game {
     this.events.selection?.();
   }
 
-  command(x, y, attackMove = false) {
+  command(x, y, attackMove = false, side = 0) {
+    if(this.isControlLocked(side))return false;
     const patrol = this.orderMode === 'patrol';
-    const selectedUnits = this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === 0 && !e.embarkedIn && !FREIGHT_TYPES.includes(e.type));
+    const selectedUnits = this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !e.embarkedIn && !FREIGHT_TYPES.includes(e.type));
     if (!selectedUnits.length) {
-      for (const id of this.selected) this.setRallyPoint(0, id, x, y);
+      for (const id of this.selected) this.setRallyPoint(side, id, x, y);
       return;
     }
-    const enemy = [...this.units, ...this.buildings].filter(e => e.owner === 1 && e.hp > 0 && this.canSeeEntity(0, e) && distance(e, { x, y }) < (e.kind === 'building' ? e.size * 0.55 : 25)).at(-1);
-    const site = [...this.oil, ...this.beacons].find(item => distance(item, { x, y }) < 40 && item.owner !== 0 && this.hasExploredFor(0, item.x, item.y));
-    const transport = !attackMove && this.activeUnits(0).find(v => UNITS[v.type].capacity && !this.selected.includes(v.id) && distance(v, { x, y }) < (v.type === 'carrier' ? 95 : v.type === 'landing' ? 75 : 45));
+    const enemy = [...this.units, ...this.buildings].filter(e => e.owner === 1-side && e.hp > 0 && this.canSeeEntity(side, e) && distance(e, { x, y }) < (e.kind === 'building' ? e.size * 0.55 : 25)).at(-1);
+    const site = [...this.oil, ...this.beacons, ...(this.resourceSites||[]).filter(s=>s.type==='depot')].find(item => distance(item, { x, y }) < 40 && item.owner !== side && this.hasExploredFor(side, item.x, item.y));
+    const cache=(this.resourceSites||[]).find(s=>s.type!=='depot'&&s.amount>0&&distance(s,{x,y})<45&&this.hasExploredFor(side,s.x,s.y));
+    const bomb=this.ownedBuildings(side).find(b=>b.sabotage&&distance(b,{x,y})<b.size*.55);
+    const transport = !attackMove && this.activeUnits(side).find(v => UNITS[v.type].capacity && !this.selected.includes(v.id) && distance(v, { x, y }) < (v.type === 'carrier' ? 95 : v.type === 'landing' ? 75 : 45));
     const offsets = formationOffsets(selectedUnits, { x, y });
     selectedUnits.forEach(u => {
       const offset = offsets.get(u.id);
@@ -360,26 +382,38 @@ export class Game {
         u.order = { type: 'patrol', ...goal, originX: u.x, originY: u.y, destinationX: goal.x, destinationY: goal.y };
       }
       else if (transport && this.canBoardTransport(u, transport)) u.order = { type: 'board', targetId: transport.id };
+      else if(!attackMove&&bomb&&u.type==='engineer')u.order={type:'defuse',targetId:bomb.id,x:bomb.x,y:bomb.y,progress:0};
+      else if(!attackMove&&enemy?.kind==='building'&&u.type==='scout'&&!enemy.sabotage)u.order={type:'infiltrate',targetId:enemy.id,x:enemy.x,y:enemy.y};
+      else if(!attackMove&&cache&&!UNITS[u.type].tags.some(t=>['air','ship'].includes(t))&&(cache.type==='cache'||['engineer','harvester','supply'].includes(u.type)))u.order={type:'collect',targetId:cache.id,x:cache.x,y:cache.y,progress:0};
       else if (site && u.type === 'engineer') u.order = { type: 'capture', targetId: site.id, x: site.x, y: site.y };
       else if (enemy && this.canAttack(u, enemy)) u.order = { type: 'attack', targetId: enemy.id, x: enemy.x, y: enemy.y };
       else {
         const goal = this.resolveMoveGoal(u, clamp(x + offset.x, 20, this.world.width - 20), clamp(y + offset.y, 20, this.world.height - 20));
         u.order = { type: attackMove ? 'attackMove' : 'move', ...goal };
       }
-      u.resumeOrder = null; u.path = []; u.pathTimer = 0; u.deployProgress = 0;
+      u.resumeOrder = null; u.path = []; u.pathTimer = 0; u.deployProgress = 0;u.avoidSide=0;u.avoidUntil=0;
     });
-    this.effects.push({ type: 'order', x, y, age: 0, duration: 0.6, owner: 0 });
+    this.effects.push({ type: 'order', x, y, age: 0, duration: 0.6, owner: side });
     this.events.voice?.(site && selectedUnits.some(u => u.type === 'engineer') ? 'captureOrder' : enemy || attackMove ? 'attackOrder' : 'moveOrder');
     this.orderMode = null;
   }
 
-  stopSelected() {
+  stopSelected(side = 0) {
+    if(this.isControlLocked(side))return false;
     if (this.selected.some(id => this.getEntity(id)?.kind === 'unit')) this.events.voice?.('stopOrder');
-    this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && !FREIGHT_TYPES.includes(e.type)).forEach(u => { u.order = null; u.resumeOrder = null; u.path = []; if (u.type === 'supply') u.autoSupply = false; });
+    this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !FREIGHT_TYPES.includes(e.type)).forEach(u => { u.order = null; u.resumeOrder = null; u.path = []; if (u.type === 'supply') u.autoSupply = false; });
     this.orderMode = null;
   }
 
+  toggleAutoSupply(unit) {
+    if (!unit || unit.type !== 'supply' || this.isControlLocked(unit.owner)) return false;
+    unit.autoSupply = unit.autoSupply === false;
+    unit.serviceTargetId = null;
+    return true;
+  }
+
   castAbility(x, y, side = 0) {
+    if(this.isControlLocked(side))return false;
     const p = this.players[side], targetSide = 1 - side;
     if (!this.hasBuilding(side, 'super') || !this.hasPower(side) || p.abilityCharge < 100 || p.abilityCooldown > 0 || p.credits < 650) return false;
     if (p.faction !== 'china' && !this.isVisibleFor(side, x, y)) return false;
@@ -389,7 +423,7 @@ export class Game {
     this.effects.push({ type: 'ability', faction, x, y, age: 0, duration: 2.5, owner: side });
     if (faction === 'china') {
       p.shieldUntil = this.time + 12;
-      if (side === 0) this.events.notice?.('全域屏障已展开：友军进入防护状态');
+      if (side === 0) this.events.notice?.('协同电子防护启动：友军获得 12 秒减伤');
     } else if (faction === 'middleeast') {
       this.ownedUnits(targetSide).filter(u => distance(u, { x, y }) < 290 && !UNITS[u.type].tags.includes('infantry')).forEach(u => { u.stunUntil = this.time + 8; });
       this.ownedBuildings(targetSide, 'turret').filter(b => distance(b, { x, y }) < 290).forEach(b => { b.stunUntil = this.time + 8; });
@@ -423,6 +457,7 @@ export class Game {
     dt = Math.max(0, Math.min(dt, 0.05));
     this.time += dt;
     this.recalculatePower();
+    this.updateIntelligence(dt);
     this.updateLogistics(dt);
     for (const p of this.players) {
       p.credits += this.oil.filter(o => o.owner === p.side).length * 11 * dt;
@@ -452,10 +487,12 @@ export class Game {
     this.effects = this.effects.filter(e => e.age < e.duration);
     this.fogTimer -= dt;
     if (this.fogTimer <= 0) { this.updateFog(); this.fogTimer = 0.22; }
+    if (!this.multiplayer) {
     this.aiTimer -= dt;
     if (this.aiTimer <= 0) { this.updateAI(); this.aiTimer = this.difficulty.thinkInterval; }
     this.aiWaveTimer -= dt;
     if (this.aiWaveTimer <= 0) { this.launchAIWave(); this.aiWaveTimer = this.difficulty.waveInterval + random(-4, 5); }
+    }
     if (this.selected.some(id => !this.getEntity(id) || this.getEntity(id).embarkedIn)) { this.selected = this.selected.filter(id => this.getEntity(id) && !this.getEntity(id).embarkedIn); this.events.selection?.(); }
     this.checkVictory();
   }
@@ -465,6 +502,7 @@ export class Game {
     if (!this.hasBuilding(p.side, 'hq')) {
       if (q) p.credits += q.paid * .5;
       p.buildQueue = null;
+      p.readyBuilding = null;
       if (p.side === 0) this.pendingBuilding = null;
       return;
     }
@@ -475,8 +513,9 @@ export class Game {
     p.credits -= need; q.paid += need; q.progress += dt;
     if (q.progress >= d.time || q.paid >= d.cost - 0.1) {
       p.buildQueue = null;
+      if (this.multiplayer) p.readyBuilding = q.type;
       if (p.side === 0) { this.pendingBuilding = q.type; this.events.notice?.(`${lunarBuildingProfile(this.map.future, q.type, d).name}建造完成，请在基地附近部署`); this.events.voice?.('buildReady'); }
-      else this.placeAIBuilding(q.type);
+      else if (!this.multiplayer) this.placeAIBuilding(q.type);
     }
   }
 
@@ -549,6 +588,7 @@ export class Game {
   }
 
   setRallyPoint(side, id, x, y) {
+    if(this.isControlLocked(side))return false;
     const building = this.getEntity(id);
     if (!building || building.kind !== 'building' || building.owner !== side || building.hp <= 0 || !PRODUCERS.includes(building.type) || !Number.isFinite(x) || !Number.isFinite(y)) return false;
     const point = { x: clamp(x, 30, this.world.width - 30), y: clamp(y, 30, this.world.height - 30) };
@@ -579,6 +619,7 @@ export class Game {
     }
     if (u.temporaryUntil && this.time >= u.temporaryUntil) { u.hp = 0; return; }
     if (FREIGHT_TYPES.includes(u.type)) { this.updateFreight(u, dt); return; }
+    if(this.time>=u.stunUntil&&this.updateSpecialOrder(u,dt))return;
     if (u.type === 'harvester') {
       if (u.order?.type === 'move' || u.order?.type === 'attackMove') {
         if (distance(u, u.order) > 12) this.moveUnit(u, u.order, dt, 8);
@@ -611,7 +652,7 @@ export class Game {
           this.recalculatePower();
           this.fogTimer = 0;
           this.effects.push({ type: 'capture', x: site.x, y: site.y, age: 0, duration: 1.2, owner: site.owner });
-          if (u.owner === 0) this.events.notice?.(site.id.startsWith('oil') ? '油井已占领：每秒增加 11 资金' : '雷达信标已占领：中央视野与小地图已接入');
+          if (u.owner === 0) this.events.notice?.(site.kind==='resource'?'能源仓已接管：40 电力、有限库存与前哨扩建已接入。':site.id.startsWith('oil') ? '油井已占领：每秒增加 11 资金' : '雷达信标已占领：中央视野与小地图已接入');
           if (u.owner === 0) this.events.voice?.(site.id.startsWith('oil') ? 'oilCaptured' : 'beaconCaptured');
         } else if (site) this.moveUnit(u, site, dt, 26);
       } else if (!this.patrolStep(u, dt) && u.order?.type === 'move') this.moveUnit(u, u.order, dt, 8);
@@ -911,6 +952,7 @@ export class Game {
   }
 
   moveUnit(u, goal, dt, stopDistance = 8) {
+    u.motionGoal={x:goal.x,y:goal.y};
     if (this.collectingMoves) {
       this.pendingMoves.push({ unit: u, goal: { x: goal.x, y: goal.y }, dt, stopDistance });
       return;
@@ -937,7 +979,7 @@ export class Game {
       const forward = dx * Math.cos(direction) + dy * Math.sin(direction), across = Math.abs(dx * Math.sin(direction) - dy * Math.cos(direction));
       return forward > 0 && forward < unitRadius(u) + radius + UNITS[u.type].speed * .65 && across < unitRadius(u) + radius + 5;
     };
-    const blockers = neighbors.filter(other => unitLayer(other) === unitLayer(u) && (u.type === 'harvester' || this.time - (other.lastMovedAt ?? -10) > .8) && distance(other, goal) > unitRadius(other) + stopDistance && (other.owner === u.owner || this.canSeeEntity(u.owner, other)) && blocksAhead(other, unitRadius(other)));
+    const blockers = neighbors.filter(other => unitLayer(other) === unitLayer(u) && distance(other, goal) > unitRadius(other) + stopDistance && (other.owner === u.owner || this.canSeeEntity(u.owner, other)) && blocksAhead(other, unitRadius(other)));
     const buildingAhead = this.buildings.some(b => b.hp > 0 && this.canSeeEntity(u.owner, b) && distance(b, goal) > b.size * .5 + stopDistance && blocksAhead(b, b.size * .45));
     if ((blockers.length || buildingAhead) && this.time >= (u.avoidRepathAt || 0)) { u.pathTimer = 0; u.avoidRepathAt = this.time + .3; }
     const goalCell = `${Math.floor(goal.x / this.world.cell)},${Math.floor(goal.y / this.world.cell)}`;
@@ -948,7 +990,7 @@ export class Game {
     }
     let point = u.path[0] || goal;
     if (distance(u, point) < 13 && u.path.length) { u.path.shift(); point = u.path[0] || goal; }
-    if (!this.moveWithAvoidance(u, point, dt, u.path.length ? 0 : stopDistance)) { u.pathTimer = 0; u.path = []; }
+    if (!this.moveWithAvoidance(u, point, dt, u.path.length ? 0 : stopDistance)&&this.time>=(u.blockedRepathAt||0)) { u.pathTimer = 0; u.path = [];u.blockedRepathAt=this.time+.35; }
   }
 
   canOccupyUnit(unit, point) {
@@ -969,7 +1011,9 @@ export class Game {
     for (const turn of [0, .35, -.35, .7, -.7, 1.1, -1.1, 1.5, -1.5, 2.1, -2.1]) {
       const heading = angle + turn, next = { x: unit.x + Math.cos(heading) * amount, y: unit.y + Math.sin(heading) * amount };
       if (!this.canOccupyUnit(unit, next)) continue;
+      if(unitLayer(unit)==='ground'&&neighbors.some(other=>{const separation=radius+unitRadius(other)+2;return distance(next,other)<separation-.01&&distance(next,other)<=distance(unit,other)+.001;}))continue;
       let score = distance(next, point) + Math.abs(turn) * amount * .08 + (turn < 0 ? amount * .015 : 0);
+      if(unitLayer(unit)==='ground'&&unit.avoidUntil>this.time&&turn*unit.avoidSide<-.1)score+=amount*.85;
       const look = { x: unit.x + Math.cos(heading) * Math.min(dist, amount + UNITS[unit.type].speed * .4), y: unit.y + Math.sin(heading) * Math.min(dist, amount + UNITS[unit.type].speed * .4) };
       for (const other of neighbors) {
         const minimum = radius + unitRadius(other) + 4;
@@ -979,6 +1023,8 @@ export class Game {
       if (score < bestScore) { best = { ...next, heading }; bestScore = score; }
     }
     if (!best) return false;
+    const chosenTurn=Math.atan2(Math.sin(best.heading-angle),Math.cos(best.heading-angle));
+    if(unitLayer(unit)==='ground'&&Math.abs(chosenTurn)>.3&&!(unit.avoidUntil>this.time)){unit.avoidSide=Math.sign(chosenTurn);unit.avoidUntil=this.time+1.25;}
     unit.x = best.x; unit.y = best.y; unit.angle = best.heading; unit.movePulse += dt * 7;
     unit.lastMovedAt = this.time; unit.deployProgress = 0;
     return true;
@@ -1004,7 +1050,8 @@ export class Game {
     for (const other of obstacles) {
       if (other === u || other.embarkedIn || other.hp <= 0 || unitLayer(other) !== unitLayer(u)) continue;
       if (other.owner !== u.owner && !this.canSeeEntity(u.owner, other)) continue;
-      const radius = unitRadius(u) + unitRadius(other) + 7;
+      // 网格中心保留半格余量；实际车距由局部避让约束，避免窄桥被粗网格误封死。
+      const radius = Math.max(unitRadius(other),unitRadius(u) + unitRadius(other) - this.world.cell * .45);
       if (distance(other, goal) < radius + stopDistance) continue;
       for (let y = Math.max(0, Math.floor((other.y - radius) / this.world.cell)); y <= Math.min(rows - 1, Math.floor((other.y + radius) / this.world.cell)); y++) {
         for (let x = Math.max(0, Math.floor((other.x - radius) / this.world.cell)); x <= Math.min(cols - 1, Math.floor((other.x + radius) / this.world.cell)); x++) {
@@ -1049,6 +1096,7 @@ export class Game {
         ...this.ownedBuildings(side).map(b => ({ x: b.x, y: b.y, sight: b.type === 'radar' && this.hasPower(side) ? 630 : b.type === 'hq' ? 400 : 310, overTerrain: b.type === 'radar' && this.hasPower(side) }))
       ];
       for (const beacon of this.beacons.filter(site => site.owner === side)) sources.push({ x: beacon.x, y: beacon.y, sight: 650, overTerrain: true });
+      for(const site of (this.resourceSites||[]).filter(s=>s.type==='depot'&&s.owner===side))sources.push({x:site.x,y:site.y,sight:220});
       for (const s of sources) {
         const minX = clamp(Math.floor((s.x - s.sight) / this.world.fog), 0, cols - 1), maxX = clamp(Math.floor((s.x + s.sight) / this.world.fog), 0, cols - 1);
         const minY = clamp(Math.floor((s.y - s.sight) / this.world.fog), 0, rows - 1), maxY = clamp(Math.floor((s.y + s.sight) / this.world.fog), 0, rows - 1);
@@ -1097,6 +1145,7 @@ export class Game {
   }
 
   updateAI() {
+    if(this.isControlLocked(1))return;
     const p = this.players[1];
     if (!this.ownedBuildings(1).length) return;
     if (p.credits > 1800) this.activateSatellite(1);
@@ -1128,12 +1177,13 @@ export class Game {
     const harvesters = this.ownedUnits(1, 'harvester').length;
     const pendingHarvesters = this.ownedBuildings(1, 'factory').reduce((count, b) => count + b.queue.filter(type => type === 'harvester').length + (b.active?.type === 'harvester' ? 1 : 0), 0);
     if (this.economyMode === 'mining' && harvesters + pendingHarvesters < 2 && p.credits > 450) this.queueAIUnit('harvester');
-    const knownSites = [...this.oil, ...this.beacons].filter(site => site.owner !== 1 && this.hasExploredFor(1, site.x, site.y));
+    this.updateIntelligenceAI();
+    const knownSites = [...this.oil, ...this.beacons, ...(this.resourceSites||[]).filter(s=>s.type==='depot')].filter(site => site.owner !== 1 && this.hasExploredFor(1, site.x, site.y));
     if (!fundingTech && knownSites.length && this.time >= p.aiEngineerRetryAt && !this.ownedUnits(1, 'engineer').length && p.credits > 380) {
       if (this.queueAIUnit('engineer')) p.aiEngineerRetryAt = this.time + 54;
     }
     for (const engineer of this.ownedUnits(1, 'engineer')) {
-      if (engineer.order?.type === 'capture') continue;
+      if (['capture','defuse','collect'].includes(engineer.order?.type)) continue;
       const site = knownSites.sort((a, b) => distance(a, engineer) - distance(b, engineer))[0];
       if (site) engineer.order = { type: 'capture', targetId: site.id, x: site.x, y: site.y };
     }
@@ -1236,6 +1286,7 @@ export class Game {
   }
 
   launchAIWave() {
+    if(this.isControlLocked(1))return;
     const combat = this.activeUnits(1).filter(u => (UNITS[u.type].damage > 0 || u.type === 'apc') && !UNITS[u.type].tags.includes('ship') && !UNITS[u.type].tags.includes('jet'));
     if (combat.length < 3) return;
     const wave = combat.filter(u => !['attackMove', 'rearm', 'board'].includes(u.order?.type)).slice(0, this.difficulty.waveSize);
@@ -1270,4 +1321,4 @@ export class Game {
   }
 }
 
-Object.assign(Game.prototype, modernCombat, logisticsEconomy, lunarRobots);
+Object.assign(Game.prototype, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat);

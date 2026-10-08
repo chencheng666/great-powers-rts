@@ -12,3 +12,9 @@ __pycache__/
 assets/audio/*.m4a
 !assets/audio/frontline-sequence.m4a
 assets/private-voices/
+server-data/
+/docs/wechat-community-20261008/videos/verify/
+/docs/wechat-community-20261008/videos/*原始录制.webm
+/docs/wechat-community-20261008/videos/*8秒.mp4
+/docs/wechat-community-20261008/videos/*30fps.mp4
+/docs/wechat-community-20261008/文章预览.png

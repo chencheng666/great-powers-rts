@@ -3,6 +3,15 @@
   "说明": "以下为素材复现提示词，核心建筑与移动单位采用本地 Blender 模型，其余常规设施和植被保留透明图集。首页插画不代表实机画质。",
   "素材": [
     {
+      "文件": "assets/player-ranks-v1.png",
+      "生成日期": "2026-10-07",
+      "工具": "内置 image_gen.imagegen",
+      "用途": "八阶玩家荣誉徽章；原创虚构标识，不是现实军衔或国家徽记",
+      "透明背景": true,
+      "尺寸": "1774 × 887，4 列 × 2 行",
+      "复现提示词": "Use case: stylized-concept. Asset type: ONE game UI rank badge sprite atlas, a single transparent PNG for an original modern military strategy game. Composition: wide 2:1 canvas, ideally 2048 by 1024 pixels, exactly four equal columns and two equal rows; eight discrete badges centered respectively at x=12.5%,37.5%,62.5%,87.5%, y=25% and 75%. Each badge entirely inside its cell with at least 15% empty transparent margins on ALL sides. Same apparent visual size, front view, centered, no perspective tilt. High-quality realistic embossed metal medals, refined brushed metal, bevels, enamel inlays, restrained technological accents. Top row left to right: 1 gunmetal shield with one small bronze chevron, humble trainee; 2 bronze shield with two chevrons and silver edge, rising frontline leader; 3 silver angular shield with single teal star and short geometric flanking bars, armor vanguard; 4 warm gold shield with three small stars and neat olive-metal laurels, tactics specialist. Bottom row left to right: 5 rich emerald enamel gold shield with central star and larger laurels, theater commander; 6 ruby enamel platinum crest with three stars and fan-shaped geometric plates, ace commander; 7 sapphire/cyan enamel platinum medal with central orbital diamond and sweeping geometric filigree, strategy master; 8 highest prestige white gold shield with a large gold five-point star, five small accent stars, luxurious balanced double laurel wreath and ruby jewel, legendary marshal. Crisp silhouette legible at 64 pixels, substantial tactile relief, premium serious PC game rewards, original fictional insignia NOT real military ranks or actual national emblems. Light gray neutral studio illumination from upper left, true transparent alpha outside each badge, NO background, NO floor, NO shadow halo, NO text, NO numbers, NO grid lines, NO labels, NO watermark, NO weapons, NO characters, NO flags. Only these 8 badges. This is a cohesive SINGLE sprite atlas, not a poster or mockup."
+    },
+    {
       "文件": "assets/terrain-material-v3.png",
       "生成日期": "2026-10-06",
       "工具": "内置 image_gen.imagegen",

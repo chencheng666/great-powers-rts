@@ -7,6 +7,8 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const quietGame = mapId => {
   const game = new Game('china', 'russia', {}, { mapId });
   game.units = []; game.aiTimer = Infinity; game.aiWaveTimer = Infinity;
+  // 移动验收隔离敌方火力及自动后勤，避免测试途中触发战斗返场。
+  game.buildings=game.buildings.filter(b=>b.owner===0);game.updateLogistics=()=>{};game.checkVictory=()=>{};
   return game;
 };
 
@@ -83,4 +85,32 @@ test('九个混合单位在三张地图行进并集结，不互相堵死或挤�
     assert.ok(units.every(unit => distance(unit, target) < 180), `${mapId} 未完成集结`);
     for (const a of units) for (const b of units) if (a.id < b.id) assert.ok(distance(a, b) >= unitRadius(a) + unitRadius(b) - 1, `${mapId} 单位仍在重叠`);
   }
+});
+
+test('后车遇到慢行前车主动绕行，不被碰撞分离反复推回', () => {
+  const game=quietGame('valley'),front=game.addUnit(0,'tank',690,350),rear=game.addUnit(0,'tank',620,350);
+  front.jammedUntil=100;for(const u of [front,rear])u.order={type:'move',x:960,y:350};
+  let idle=0,maxIdle=0,deviation=0;
+  for(let i=0;i<350;i++){
+    const before={x:rear.x,y:rear.y};game.update(.05);
+    deviation=Math.max(deviation,Math.abs(rear.y-350));
+    if(distance(rear,{x:960,y:350})>25&&distance(rear,before)<.1)idle++;else idle=0;
+    maxIdle=Math.max(maxIdle,idle);assert.ok(distance(front,rear)>=unitRadius(front)+unitRadius(rear)-1);
+  }
+  assert.ok(deviation>20,'后车没有绕过前车');assert.ok(maxIdle<12,'后车持续卡住超过半秒');
+  assert.ok(distance(rear,{x:960,y:350})<80);assert.ok(distance(front,{x:960,y:350})<80);
+});
+
+test('窄桥密集编队在十二种可复现寻路时序下完成集结',()=>{
+  const original=Math.random;
+  try{
+    for(let seed=1;seed<=12;seed++){
+      let value=seed;Math.random=()=>((value=(Math.imul(value,1664525)+1013904223)>>>0)/4294967296);
+      const game=quietGame('strait'),units=Array.from({length:9},(_,i)=>game.addUnit(0,i<6?'tank':'rifle',620,400));
+      game.selected=units.map(u=>u.id);game.command(1430,400);
+      for(let i=0;i<1600;i++)game.update(.05);
+      assert.ok(units.every(u=>distance(u,{x:1430,y:400})<180),`随机种子 ${seed} 未完成集结`);
+      assert.ok(units.every(u=>!game.isGroundBlocked(u.x,u.y,u.type==='rifle'?6:14)));
+    }
+  }finally{Math.random=original;}
 });

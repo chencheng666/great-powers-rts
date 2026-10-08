@@ -1,7 +1,7 @@
 export const ROBOT_SPECS = {
   rifle: { name: '月卫战斗机器人', model: 'robot_rifle', shotCost: 4, description: '原创月表无人战斗机体；电池驱动机动与脉冲武器，无需氧气、食物或常规弹药。低电量返场充电。' },
   engineer: { name: '天工工程机器人', model: 'robot_engineer', shotCost: 0, description: '原创月表工程机体；电池驱动，接管资源站与信标后驻留设施。无需氧气与食物。' },
-  scout: { name: '巡星侦察机器人', model: 'robot_scout', shotCost: 0, description: '原创月表侦察机体；无武装，保留侦察与反隐职责。电池驱动，低电量自动返场。' }
+  scout: { name: '巡星侦察机器人', model: 'robot_scout', shotCost: 0, description: '原创月表侦察机体；无武装，保留侦察、反隐与一次性潜入职责。45 秒定时破坏可被工程师拆除。电池驱动，低电量自动返场。' }
 };
 export const ROBOT_ENERGY = { capacity: 100, returnAt: 25, idleDrain: .08, moveDrain: .22, chargeRate: 12, chargeLoad: 4 };
 export const isLunarRobot = (map, type) => Boolean(map === true || map?.future) && Object.hasOwn(ROBOT_SPECS, type);

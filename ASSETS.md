@@ -6,6 +6,7 @@
 
 | 素材 | 文件与来源 | 编辑方式 |
 | --- | --- | --- |
+| 玩家等级徽章 | `assets/player-ranks-v1.png`；2026-10-07 使用内置 `image_gen.imagegen` 生成，1774 × 887、透明 4 × 2 图集 | 八阶原创虚构金属徽章，非现实军衔或国家标识；完整提示词见 `assets/asset-prompts.json`。CSS 按格取图，不修改透明像素；授勋音效由 Web Audio 原创合成，服从静音与音效音量设置 |
 | 玩家反馈版几何与截图 | `src/feedback-models.js`、`docs/wechat-feedback-20261007/images/` | Three.js 原创几何：七类月表飞行器模板、设施防护网；电子压制机基于本项目对地机加装原创吊舱。文章图片均为桌面实机功能验收场景，不是概念图；不使用《真实战争》或《红色警戒》的模型、音乐、警报录音 |
 | 细化地表与首页 | `assets/terrain-material-v3.png`、`battlefield-key-art-v2.png`；2026-10-06 使用内置 image_gen.imagegen 生成 | 完整提示词保存在 `assets/asset-prompts.json`；地表按小尺度重复，首页为原创插画，不是实机截图 |
 | 细化三维模型 | `assets/models/realism-library.glb` / `.blend`，`scripts/build_realism_assets.py` | 17 个覆盖模板：五类常规设施、五类月表设施、五阵营坦克、两类飞机；维护走道、采光带、装甲紧固件、观瞄和航空挂架。兵工厂为独立装配模型，其余模板保留旧库 |
@@ -18,8 +19,12 @@
 | 子午环阵地表 | `assets/meridian-regolith-v2.png`；内置 AI 图像生成工具制作的细颗粒俯视月壤纹理，旧 `v1` 保留 | 2026-10-04 更新；完整提示词见 `assets/asset-prompts.json`；道路、掩体、反应堆和基地由程序及三维模型叠加 |
 | 配乐 | `assets/audio/frontline-sequence.m4a`；程序编曲、合成的循环配乐《前线序列》 | `scripts/generate-audio.mjs`，约 74 秒，不使用官方游戏音乐 |
 | 战场音效 | `src/audio.js` 中 Web Audio 振荡器、噪声与滤波合成 | 修改频率、包络和滤波参数 |
-| 中文应答 | `src/audio-data.js` 中 37 条原创台词，包含部队与基地受袭警报 | 优先使用设备中文 Speech Synthesis，不分发系统语音录音 |
+| 中文应答 | `src/audio-data.js` 中 67 条原创台词，包含受袭、潜入／拆弹设施名称与网络预警 | 优先使用设备中文 Speech Synthesis，不分发系统语音录音 |
 | 离线兜底播报 | `assets/audio/portable/*.wav` 与 `manifest.json` | `scripts/generate-portable-voices.mjs` 使用 eSpeak NG 1.52.0 合成原创台词；缺少中文音色或播报失败时使用。声音为机械合成，不分发 eSpeak NG 引擎、库、词典或第三方声音模型 |
+| 内置女声 | `assets/audio/portable/female-*.wav`，67 条 | 普通话 `cmn+f3` 合成音色，与男声使用同一套原创台词，不是真人配音；无需系统安装女声 |
+| 常规人物与资源模型 | `src/personnel-models.js` | 原创 Three.js 程序建模：比例重制的突击兵、工程师、黑西装间谍及三类资源实体；按材质合批，双腿保留独立步态，不是现实装备精确复刻 |
+| 程序化工艺材质与装备细化 | `src/model-craft.js`、`src/equipment-finishing.js` | 原创代码生成涂层、织物、橡胶的 128×128 颜色／法线／粗糙度贴图；中空曲面履带、分节履带板、轮轴、炮口、喷口与座舱框。保留 UV 并按材质合批，不依赖 AI 工具或外部模型下载 |
+| 港口、设施细节与弹坑 | `src/community-visuals.js`、`src/realistic-fx.js` | 原创 Three.js 三维长码头与装卸设备；机场等设施的屋面、格栅、标线合批细节；不规则焦痕和低矮碎石。舰船海军灰材质与陆地迷彩分域，不使用其他游戏模型或贴图 |
 | 海空运输模型 | `assets/models/logistics-library.glb` / `.blend` | `scripts/build_logistics_assets.py` 原创建模，登陆舰、轰炸机、运输机；为通用游戏模型，不冒充某现役型号的精密复刻 |
 | 后勤与舰队模型 | `assets/models/convoy-library.glb` / `.blend` | `scripts/build_convoy_assets.py` 原创程序建模：后勤中心、补给运输机、集装箱船、052D 简化外形、重制航母，共五个模板；公开外形参考，不含现实参数与厂商网格 |
 | 月表机器人模型 | `assets/models/robot-library.glb` / `.blend` | `scripts/build_robot_assets.py` 原创程序建模：月卫、天工、巡星三类机体；封闭机舱、电池背包、机械关节、工具／传感器和双腿步态，不是官方南天门 IP 模型或现实装备复刻 |
@@ -41,4 +46,4 @@
 
 eSpeak NG 是生成声音的构建工具，不是随游戏分发的运行依赖。使用其内置普通话音色生成原创台词，不采用许可不明确的第三方神经声音模型。生成器许可与输出的区别参考 [eSpeak 官方许可说明](https://espeak.sourceforge.net/license.html)；将来替换音色或分发引擎前需重新核对许可。
 
-Three.js、PathFinding.js 及 heap.js 使用 MIT 许可；Lucide 使用 ISC 许可，部分继承自 Feather 的图标另有 MIT 声明。原始授权文本见 `THIRD-PARTY-NOTICES.txt`。开发工具及其他间接依赖的许可应同时查看其各自 npm 包；本文件不是对所有未来依赖的授权保证。
+Three.js、PathFinding.js、ws 使用 MIT 许可；heap.js 保留 PSF 许可文本；Lucide 使用 ISC 许可，部分继承自 Feather 的图标另有 MIT 声明。原始授权文本见 `THIRD-PARTY-NOTICES.txt`。开发工具及其他间接依赖的许可应同时查看其各自 npm 包；本文件不是对所有未来依赖的授权保证。
