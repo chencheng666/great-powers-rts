@@ -56,19 +56,19 @@
   {
     "type": "image",
     "file": "11-moon-craters.png",
-    "caption": "待发布：子午月表三维陨石坑｜移除公路观感，增加连续坑壁与月表起伏；这些视觉地形尚不提供额外掩体加成。",
+    "caption": "已上线：子午月表三维陨石坑｜移除公路观感，增加连续坑壁与月表起伏；这些视觉地形尚不提供额外掩体加成。",
     "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/11-moon-craters.png"
   },
   {
     "type": "image",
     "file": "12-building-damage.png",
-    "caption": "待发布：建筑损伤表现｜受损阶段增加烟火、破损材质与碎屑，维修后外观会恢复。",
+    "caption": "已上线：建筑损伤表现｜受损阶段增加烟火、破损材质与碎屑，维修后外观会恢复。",
     "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/12-building-damage.png"
   },
   {
     "type": "image",
     "file": "13-ship-sinking.png",
-    "caption": "待发布：舰船侧倾下沉｜确认摧毁后播放限时视觉效果，不新增可阻挡路径或获得资源的沉船实体。",
+    "caption": "已上线：舰船侧倾下沉｜确认摧毁后播放限时视觉效果，不新增可阻挡路径或获得资源的沉船实体。",
     "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/b7abdcb78fc27f112cfc1c18eed40ba063c9831f/docs/wechat-community-20261008/images/13-ship-sinking.png"
   },
   {
