@@ -51,7 +51,8 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
           const ip=req.socket.remoteAddress, now=Date.now(), entry=requests.get(ip);
           if(entry&&entry.until>now&&entry.count>=30)return json(429,{error:'操作过于频繁，请稍后再试'});
           requests.set(ip,entry&&entry.until>now?{...entry,count:entry.count+1}:{until:now+60000,count:1});
-          if(requests.size>1000)for(const [key,value]of requests)if(value.until<=now)requests.delete(key);
+          if(requests.size>1000){for(const [key,value]of requests)if(value.until<=now)requests.delete(key);
+            while(requests.size>1000)requests.delete(requests.keys().next().value);}
           let body = ''; for await (const chunk of req) { body += chunk; if (body.length > 1024) throw new Error('请求过大'); }
           const name = nickname(JSON.parse(body).name);
           if (user) { accounts.rename(user.id, name); user.name = name; }
