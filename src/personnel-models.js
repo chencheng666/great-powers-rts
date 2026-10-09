@@ -4,7 +4,9 @@ import { bodyLoft, craftedMaterial, mergeParts, roundedPart } from './model-craf
 const compact = mergeParts;
 
 export function createPersonnel(type) {
-  const group = new THREE.Group(); group.name = type;
+  const root = new THREE.Group(); root.name = type;
+  const group = new THREE.Group(); group.name = 'upper_body'; root.add(group);
+  const weaponPose = new THREE.Group(); weaponPose.name = 'weapon_pose'; group.add(weaponPose);
   const spy = type === 'scout', engineer = type === 'engineer';
   const fabric = craftedMaterial('战术织物', spy ? '#272b31' : engineer ? '#6c7762' : '#566650', 'fabric', .95, 0);
   const dark = craftedMaterial('皮革与橡胶', '#252b2d', 'rubber', .87, 0);
@@ -26,7 +28,7 @@ export function createPersonnel(type) {
   mesh(group, bodyLoft([[.88,.12,.16],[1.03,.145,.18],[1.18,.145,.19],[1.35,.15,.22],[1.45,.12,.24],[1.51,.075,.13]]), fabric, [0,0,0]);
   sphere(group, fabric, [-.015,.92,0], .15, [.8,.8,1.12]);
   box(group, dark, [0,.94,0], [.265,.055,.34]);
-  box(group, steel, [.145,.94,0], [.03,.035,.045]);
+  box(group, spy || engineer ? steel : dark, [.145,.94,0], [.03,.035,.045]);
   limb(group, skin, [0,1.51,0], [0,1.65,0], .058);
   sphere(group, skin, [.015,1.745,0], .126, [.86,1.11,.85]);
   sphere(group, skin, [.082,1.675,0], .056, [.6,.55,1]);
@@ -37,7 +39,7 @@ export function createPersonnel(type) {
       sphere(group, dark, [.117,1.762,side*.043], .012, [.35,.6,1]);
       box(group, dark, [.116,1.786,side*.044], [.012,.008,.034], [side*.1,0,0]);
     }
-    const leg = new THREE.Group(); leg.name = side < 0 ? 'leg_left' : 'leg_right'; leg.position.set(-.01,.91,side*.105); group.add(leg);
+    const leg = new THREE.Group(); leg.name = side < 0 ? 'leg_left' : 'leg_right'; leg.position.set(-.01,.91,side*.105); root.add(leg);
     mesh(leg, bodyLoft([[-.44,.067,.075],[-.32,.083,.085],[-.10,.095,.089],[0,.09,.085]]), fabric, [0,0,0]);
     const knee = new THREE.Group(); knee.name = side < 0 ? 'knee_left' : 'knee_right'; knee.position.y = -.43; leg.add(knee);
     mesh(knee, bodyLoft([[-.36,.045,.055],[-.25,.064,.06],[-.10,.072,.068],[.035,.065,.075]]), fabric, [0,0,0]);
@@ -51,12 +53,13 @@ export function createPersonnel(type) {
   }
   // 步枪手的前臂与手腕围绕枪托、握把和护木布置，避免武器悬空。
   for (const side of [-1,1]) {
+    const arm = spy || engineer ? group : weaponPose;
     const shoulder = [-.005,1.435,side*.245];
     const elbow = spy || engineer ? [.005,1.19,side*.27] : side < 0 ? [.15,1.245,-.285] : [-.025,1.17,.25];
     const hand = spy || engineer ? [.035,.97,side*.27] : side < 0 ? [.39,1.25,-.075] : [.16,1.225,.035];
-    sphere(group, fabric, shoulder, .078, [.88,.9,1]);
-    limb(group, fabric, shoulder, elbow, .066); limb(group, fabric, elbow, hand, .055);
-    sphere(group, spy ? skin : dark, hand, .049, [.85,.8,1]);
+    sphere(arm, fabric, shoulder, .078, [.88,.9,1]);
+    limb(arm, fabric, shoulder, elbow, .066); limb(arm, fabric, elbow, hand, .055);
+    sphere(arm, spy ? skin : dark, hand, .049, [.85,.8,1]);
     if (!spy) {
       box(group, team, [.02,1.405,side*.32], [.04,.065,.006]);
       box(group, armor, [-.002,1.30,side*.287], [.07,.09,.028]);
@@ -94,21 +97,23 @@ export function createPersonnel(type) {
       for (const z of [.18,.38]) box(group, steel, [.115,.76,z], [.012,.23,.018]);
       box(group, steel, [.045,.79,.435], [.055,.03,.008]);
     } else {
-      box(group, dark, [.275,1.26,-.01], [.29,.065,.061]);
-      box(group, dark, [.06,1.255,-.01], [.17,.10,.055], [0,0,-.13]);
-      box(group, dark, [.15,1.20,-.01], [.045,.09,.052], [0,0,-.20]);
-      box(group, dark, [.245,1.16,-.01], [.055,.14,.045], [0,0,.14]);
-      box(group, steel, [.447,1.257,-.01], [.15,.046,.048]);
-      limb(group, steel, [.50,1.26,-.01], [.73,1.26,-.01], .014);
-      limb(group, dark, [.725,1.26,-.01], [.77,1.26,-.01], .022);
-      for (let x = .37; x <= .51; x += .024) box(group, dark, [x,1.285,-.01], [.008,.012,.052]);
-      box(group, dark, [.30,1.319,-.01], [.06,.055,.055]);
-      box(group, steel, [.333,1.322,-.01], [.004,.025,.028]);
-      limb(group, armor, [-.01,1.26,.03], [.36,1.10,.03], .006);
+      box(weaponPose, dark, [.275,1.26,-.01], [.29,.065,.061]);
+      box(weaponPose, dark, [.06,1.255,-.01], [.17,.10,.055], [0,0,-.13]);
+      box(weaponPose, dark, [.15,1.20,-.01], [.045,.09,.052], [0,0,-.20]);
+      box(weaponPose, dark, [.245,1.16,-.01], [.055,.14,.045], [0,0,.14]);
+      box(weaponPose, steel, [.447,1.257,-.01], [.15,.046,.048]);
+      limb(weaponPose, steel, [.50,1.26,-.01], [.73,1.26,-.01], .014);
+      limb(weaponPose, dark, [.725,1.26,-.01], [.77,1.26,-.01], .022);
+      for (let x = .37; x <= .51; x += .024) box(weaponPose, dark, [x,1.285,-.01], [.008,.012,.052]);
+      box(weaponPose, dark, [.30,1.319,-.01], [.06,.055,.055]);
+      box(weaponPose, steel, [.333,1.322,-.01], [.004,.025,.028]);
+      limb(weaponPose, dark, [-.01,1.26,.03], [.36,1.10,.03], .006);
     }
   }
-  group.userData.detailVersion = 2;
-  return compact(group);
+  root.userData.detailVersion = 2;
+  compact(root); group.position.y = 1;
+  for (const child of group.children) child.position.y -= 1;
+  return root;
 }
 
 export function createResourceModel(type) {

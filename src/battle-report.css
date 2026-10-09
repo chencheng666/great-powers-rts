@@ -1,0 +1,13 @@
+.battle-report { margin-top: 22px; padding-top: 18px; border-top: 1px solid #40515a; }
+.battle-report h3 { margin: 0 0 12px; font-size: 16px; }
+.battle-report table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.battle-report th, .battle-report td { padding: 7px 10px; border-bottom: 1px solid #314049; text-align: right; }
+.battle-report th:first-child { text-align: left; width: 48%; font-weight: 500; }
+.battle-report thead th { color: #c6d9de; background: #17242b; }
+.battle-report tbody td:nth-child(2) { color: #87dedf; }
+.battle-report tbody td:nth-child(3) { color: #f0b29b; }
+.battle-report .report-note { margin: 12px 0; color: #becbd0; font-size: 12px; line-height: 1.8; }
+.battle-report summary { cursor: pointer; font-size: 12px; color: #d6e3e6; }
+.battle-report ol { margin: 10px 0 0; padding: 0; list-style: none; }
+.battle-report li { display: flex; gap: 14px; padding: 6px 0; font-size: 12px; }
+.battle-report time { color: #a2bac2; font-variant-numeric: tabular-nums; }

@@ -12,6 +12,8 @@ import { FREIGHT_TYPES, logisticsEconomy } from './logistics-economy.js';
 import { isLunarRobot, lunarBuildingProfile, lunarRobots, ROBOT_ENERGY, ROBOT_SPECS } from './lunar-robots.js';
 import { battlefieldMap, resourceLayout } from './battlefield-expansion.js';
 import { intelligenceCombat } from './intelligence.js';
+import { aiCounterUnit, retreatAIUnits } from './tactical-ai.js';
+import { createBattleStats, battleMetric, recordBattleDamage } from './battle-report.js';
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -48,6 +50,7 @@ export class Game {
     this.nextProjectileId = 1;
     this.time = 0;
     this.running = true;
+    this.battleStats = createBattleStats();
     this.paused = false;
     this.winner = null;
     this.units = [];
@@ -100,6 +103,7 @@ export class Game {
     game.homeY = game.world.height / 2; game.victoryMode = copy.config.victoryMode;
     game.difficulty = AI_DIFFICULTIES[copy.config.difficulty];
     for (const key of SNAPSHOT_FIELDS) game[key] = copy.state[key];
+    game.battleStats = copy.state.battleStats || createBattleStats(game.time);
     // 旧战局不凭空追加可领奖的物资；新局和新存档才包含资源争夺点。
     game.resourceSites=copy.state.resourceSites||[];
     // 老版本战局保留原经济，避免已有矿车、货物与路线在读档时消失。
@@ -374,6 +378,7 @@ export class Game {
     const cache=(this.resourceSites||[]).find(s=>s.type!=='depot'&&s.amount>0&&distance(s,{x,y})<45&&this.hasExploredFor(side,s.x,s.y));
     const bomb=this.ownedBuildings(side).find(b=>b.sabotage&&distance(b,{x,y})<b.size*.55);
     const transport = !attackMove && this.activeUnits(side).find(v => UNITS[v.type].capacity && !this.selected.includes(v.id) && distance(v, { x, y }) < (v.type === 'carrier' ? 95 : v.type === 'landing' ? 75 : 45));
+    const port = !attackMove && !patrol && this.ownedBuildings(side, 'dock').find(b => distance(b, { x, y }) <= b.size * .65);
     const offsets = formationOffsets(selectedUnits, { x, y });
     selectedUnits.forEach(u => {
       const offset = offsets.get(u.id);
@@ -381,6 +386,7 @@ export class Game {
         const goal = this.resolveMoveGoal(u, clamp(x + offset.x, 20, this.world.width - 20), clamp(y + offset.y, 20, this.world.height - 20));
         u.order = { type: 'patrol', ...goal, originX: u.x, originY: u.y, destinationX: goal.x, destinationY: goal.y };
       }
+      else if (port && UNITS[u.type].tags.includes('ship')) this.requestResupply(u, port);
       else if (transport && this.canBoardTransport(u, transport)) u.order = { type: 'board', targetId: transport.id };
       else if(!attackMove&&bomb&&u.type==='engineer')u.order={type:'defuse',targetId:bomb.id,x:bomb.x,y:bomb.y,progress:0};
       else if(!attackMove&&enemy?.kind==='building'&&u.type==='scout'&&!enemy.sabotage)u.order={type:'infiltrate',targetId:enemy.id,x:enemy.x,y:enemy.y};
@@ -460,6 +466,8 @@ export class Game {
     this.updateIntelligence(dt);
     this.updateLogistics(dt);
     for (const p of this.players) {
+      battleMetric(this, p.side, 'oilSeconds', this.oil.filter(o => o.owner === p.side).length * dt);
+      battleMetric(this, p.side, 'beaconSeconds', this.beacons.filter(o => o.owner === p.side).length * dt);
       p.credits += this.oil.filter(o => o.owner === p.side).length * 11 * dt;
       if (this.victoryMode === 'control') p.controlScore += this.beacons.filter(site => site.owner === p.side).length * dt;
       p.abilityCooldown = Math.max(0, p.abilityCooldown - dt);
@@ -524,7 +532,7 @@ export class Game {
     if (b.repairing) {
       const pricePerHp = BUILDINGS[b.type].cost * .5 / b.maxHp;
       const amount = Math.min(42 * dt, b.maxHp - b.hp, p.credits / pricePerHp);
-      if (amount > 0) { b.hp += amount; p.credits -= amount * pricePerHp; }
+      if (amount > 0) { b.hp += amount; p.credits -= amount * pricePerHp; battleMetric(this, b.owner, 'repairHP', amount); }
       if (b.hp >= b.maxHp - .01) { b.hp = b.maxHp; b.repairing = false; }
     }
     if (b.type === 'turret') {
@@ -549,6 +557,7 @@ export class Game {
       const exit = productionExit(b, b.active.type);
       const spawn = d.tags.includes('ship') ? this.findNavalSpawn(b, b.active.type) : this.findSpawn(exit.x, exit.y, b.active.type);
       const unit = this.addUnit(b.owner, b.active.type, spawn.x, spawn.y);
+      battleMetric(this, b.owner, 'unitsProduced', 1);
       const goal = d.tags.includes('ship') ? this.navalGoal(spawn.x + exit.side * exit.distance, spawn.y, unitRadius(unit)) : this.findSpawn(spawn.x + exit.side * exit.distance, spawn.y, unit.type);
       unit.deployment = { buildingId: b.id, start: this.time, until: this.time + 2.6, fromX: spawn.x, fromY: spawn.y, ...goal };
       unit.angle = unit.turretAngle = exit.angle;
@@ -882,6 +891,7 @@ export class Game {
     if (target.hp <= 0 || !Number.isFinite(amount) || amount <= 0) return;
     if (this.players[target.owner].shieldUntil > this.time) amount *= 0.48;
     if (target.kind === 'building' && this.players[target.owner].faction === 'china' && target.type === 'turret') amount *= 0.85;
+    recordBattleDamage(this, target, amount, attackerSide);
     target.hp -= amount;
     if (amount > 0) target.lastDamageAt = this.time;
     if (target.owner === 0 && attackerSide === 1) {
@@ -1007,18 +1017,31 @@ export class Game {
     if (amount <= .001) return true;
     const angle = Math.atan2(point.y - unit.y, point.x - unit.x), radius = unitRadius(unit);
     const neighbors = (this.unitIndex || new UnitSpatialIndex(this.units)).nearby(unit);
+    const layer = unitLayer(unit);
+    // 可见性、碰撞半径与当前间距每帧只计算一次，避免十一条候选方向反复查询。
+    const reach = Math.max(amount, Math.min(dist, amount + UNITS[unit.type].speed * .4)), nearby = [];
+    for (const other of neighbors) {
+      const otherRadius = unitRadius(other), minimum = radius + otherRadius + 4, separation = radius + otherRadius + 2;
+      const squared = (unit.x - other.x) ** 2 + (unit.y - other.y) ** 2;
+      if (squared > (minimum + reach) ** 2) continue;
+      nearby.push({ x: other.x, y: other.y, minimum, minimumSquared: minimum * minimum, collisionSquared: (separation - .01) ** 2,
+        previousSquared: (Math.sqrt(squared) + .001) ** 2, known: unitLayer(other) === layer && (other.owner === unit.owner || this.canSeeEntity(unit.owner, other)) });
+    }
     let best = null, bestScore = Infinity;
     for (const turn of [0, .35, -.35, .7, -.7, 1.1, -1.1, 1.5, -1.5, 2.1, -2.1]) {
       const heading = angle + turn, next = { x: unit.x + Math.cos(heading) * amount, y: unit.y + Math.sin(heading) * amount };
       if (!this.canOccupyUnit(unit, next)) continue;
-      if(unitLayer(unit)==='ground'&&neighbors.some(other=>{const separation=radius+unitRadius(other)+2;return distance(next,other)<separation-.01&&distance(next,other)<=distance(unit,other)+.001;}))continue;
+      if(layer==='ground'&&nearby.some(other=>{const squared=(next.x-other.x)**2+(next.y-other.y)**2;return squared<other.collisionSquared&&squared<=other.previousSquared;}))continue;
       let score = distance(next, point) + Math.abs(turn) * amount * .08 + (turn < 0 ? amount * .015 : 0);
       if(unitLayer(unit)==='ground'&&unit.avoidUntil>this.time&&turn*unit.avoidSide<-.1)score+=amount*.85;
       const look = { x: unit.x + Math.cos(heading) * Math.min(dist, amount + UNITS[unit.type].speed * .4), y: unit.y + Math.sin(heading) * Math.min(dist, amount + UNITS[unit.type].speed * .4) };
-      for (const other of neighbors) {
-        const minimum = radius + unitRadius(other) + 4;
-        score += Math.max(0, minimum - distance(next, other)) * (unit.type === 'harvester' ? 8 : 3);
-        if (unitLayer(unit) === unitLayer(other) && (other.owner === unit.owner || this.canSeeEntity(unit.owner, other))) score += Math.max(0, minimum - distance(look, other)) * amount * .12;
+      for (const other of nearby) {
+        const nextSquared = (next.x - other.x) ** 2 + (next.y - other.y) ** 2;
+        if (nextSquared < other.minimumSquared) score += (other.minimum - Math.sqrt(nextSquared)) * (unit.type === 'harvester' ? 8 : 3);
+        if (other.known) {
+          const lookSquared = (look.x - other.x) ** 2 + (look.y - other.y) ** 2;
+          if (lookSquared < other.minimumSquared) score += (other.minimum - Math.sqrt(lookSquared)) * amount * .12;
+        }
       }
       if (score < bestScore) { best = { ...next, heading }; bestScore = score; }
     }
@@ -1137,7 +1160,7 @@ export class Game {
     if (target.embarkedIn) return false;
     if (target.owner === side) return true;
     if (!this.isVisibleFor(side, target.x, target.y)) return false;
-    if (target.kind === 'unit' && UNITS[target.type].tags.includes('submerged')) return target.exposedUntil > this.time || this.activeUnits(side).some(u => UNITS[u.type].sonar && distance(u, target) <= UNITS[u.type].sonar);
+    if (target.kind === 'unit' && UNITS[target.type].tags.includes('submerged')) return this.submarineSurfaced(target) || target.exposedUntil > this.time || this.activeUnits(side).some(u => UNITS[u.type].sonar && distance(u, target) <= UNITS[u.type].sonar);
     if (target.kind !== 'unit' || !UNITS[target.type].tags.includes('stealth')) return true;
     if (this.activeUnits(side).some(u => distance(u, target) < this.detectionRange(side, u))) return true;
     if (this.beacons.some(site => site.owner === side && distance(site, target) < 330)) return true;
@@ -1149,7 +1172,7 @@ export class Game {
     const p = this.players[1];
     if (!this.ownedBuildings(1).length) return;
     if (p.credits > 1800) this.activateSatellite(1);
-    for (const ship of this.activeUnits(1).filter(u => UNITS[u.type].tags.includes('ship') && !FREIGHT_TYPES.includes(u.type) && u.hp < u.maxHp * .45 && this.time - (u.lastDamageAt ?? -10) > 3)) this.requestResupply(ship);
+    retreatAIUnits(this, 1);
     const airfield = this.ownedBuildings(1, 'airfield')[0];
     const dock = this.ownedBuildings(1, 'dock')[0];
     for (const plane of this.activeUnits(1, 'ewPlane').filter(u => u.order?.type !== 'rearm')) {
@@ -1199,7 +1222,7 @@ export class Game {
     if (!fundingTech && combat < this.difficulty.combatLimit) {
       const sequence = ['rifle', 'tank', 'drone', 'apc', 'supply', 'aa', 'loiterer', 'jammer', 'laser', 'rocket', 'elite', ...(this.map.future ? ['railgun','relay'] : [])];
       const available = sequence.filter(type => !UNITS[type].requires || this.hasBuilding(1, UNITS[type].requires));
-      const type = available[p.aiUnitCount % available.length];
+      const type = aiCounterUnit(this, 1, available) || available[p.aiUnitCount % available.length];
       if (p.credits > (this.unitCost(1, type) * 0.4)) {
         if (this.queueAIUnit(type)) p.aiUnitCount++;
       }
@@ -1209,7 +1232,7 @@ export class Game {
       const pending = airfield.queue.length + (airfield.active ? 1 : 0);
       if (airborne + pending < 4) {
         const carrier = this.ownedUnits(1, 'carrier').find(c => this.carrierAircraft(c).length < 3);
-        const type = this.hasBuilding(1, 'lab') && p.aiAirUnitCount % 6 === 5 ? 'ewPlane' : carrier && this.hasBuilding(1, 'lab') ? p.aiAirUnitCount % 2 ? 'navalFighter' : 'navalStrike' : this.hasBuilding(1, 'lab') && p.aiAirUnitCount % 4 === 2 ? 'bomber' : this.hasBuilding(1, 'radar') && p.aiAirUnitCount % 4 === 3 && !this.ownedUnits(1, 'airlift').length ? 'airlift' : this.map.future && this.hasBuilding(1, 'lab') && p.aiAirUnitCount % 3 === 2 ? 'aegis' : p.aiAirUnitCount % 2 === 0 ? 'strike' : 'fighter';
+        const type = aiCounterUnit(this, 1, carrier ? ['navalFighter', 'fighter'] : ['fighter'], 'air') || (this.hasBuilding(1, 'lab') && p.aiAirUnitCount % 6 === 5 ? 'ewPlane' : carrier && this.hasBuilding(1, 'lab') ? p.aiAirUnitCount % 2 ? 'navalFighter' : 'navalStrike' : this.hasBuilding(1, 'lab') && p.aiAirUnitCount % 4 === 2 ? 'bomber' : this.hasBuilding(1, 'radar') && p.aiAirUnitCount % 4 === 3 && !this.ownedUnits(1, 'airlift').length ? 'airlift' : this.map.future && this.hasBuilding(1, 'lab') && p.aiAirUnitCount % 3 === 2 ? 'aegis' : p.aiAirUnitCount % 2 === 0 ? 'strike' : 'fighter');
         if (this.queueAIUnit(type)) p.aiAirUnitCount++;
       }
     }
@@ -1220,7 +1243,7 @@ export class Game {
         const fleet = (['ocean', 'archipelago'].includes(this.mapId) ? ['patrol', 'frigate', 'destroyer', 'submarine', 'carrier', 'landing'] : ['patrol', 'frigate']).filter(type => !UNITS[type].requires || this.hasBuilding(1, UNITS[type].requires));
         const pendingTypes = [...dock.queue, ...(dock.active ? [dock.active.type] : [])];
         const missing = fleet.find(type => ['destroyer', 'submarine', 'carrier'].includes(type) && !this.ownedUnits(1, type).length && !pendingTypes.includes(type));
-        const type = missing || fleet[p.aiNavyUnitCount % fleet.length];
+        const type = aiCounterUnit(this, 1, fleet, 'naval') || missing || fleet[p.aiNavyUnitCount % fleet.length];
         if (this.queueAIUnit(type)) p.aiNavyUnitCount++;
       }
     }
@@ -1237,7 +1260,7 @@ export class Game {
     }
     for (const support of this.activeUnits(1).filter(u => ['supply', 'jammer', 'relay'].includes(u.type))) {
       if (support.type === 'supply') continue;
-      if (support.order?.type === 'restock') continue;
+      if (['restock', 'rearm'].includes(support.order?.type)) continue;
       const front = this.activeUnits(1).filter(u => ['tank', 'rocket', 'loiterer'].includes(u.type)).sort((a, b) => a.x - b.x)[0];
       if (front && distance(front, support) > 100) support.order = { type: 'move', x: front.x + 75, y: front.y + 30 };
       else support.order = null;

@@ -3,6 +3,7 @@ import { isLunarRobot, ROBOT_ENERGY } from './lunar-robots.js';
 import { validBattleId } from './battle-identity.js';
 import { battlefieldMap, resourceLayout, RESOURCE_TYPES } from './battlefield-expansion.js';
 import { INTELLIGENCE_RULES } from './intelligence.js';
+import { validateBattleStats } from './battle-report.js';
 
 export const SAVE_VERSION = 1;
 export const SAVE_LIMIT = 8 * 1024 * 1024;
@@ -54,6 +55,7 @@ export function validateSave(save) {
     if (order.type === 'patrol' && (!finite(order.originX) || !finite(order.originY) || !finite(order.destinationX) || !finite(order.destinationY) || [order.x, order.originX, order.destinationX].some(x => x < 0 || x > world.width) || [order.y, order.originY, order.destinationY].some(y => y < 0 || y > world.height))) invalid();
     if (['attack', 'capture', 'board','infiltrate','defuse','collect'].includes(order.type) && typeof order.targetId !== 'string' && !Number.isSafeInteger(order.targetId)) invalid();
     if(order.progress!==undefined&&(!finite(order.progress)||order.progress<0))invalid();
+    if (order.homeId !== undefined && (order.type !== 'rearm' || !Number.isSafeInteger(order.homeId) || order.homeId < 1)) invalid();
   };
   for (const [key, definitions] of [['units', UNITS], ['buildings', BUILDINGS]]) {
     if (!Array.isArray(s[key]) || s[key].length > 5000) invalid();
@@ -128,6 +130,7 @@ export function validateSave(save) {
   for (const projectile of s.projectiles) if (!object(projectile) || !['x', 'y', 'startX', 'startY', 'toX', 'toY', 'angle', 'age', 'amount', 'speed', 'hp', 'jam'].every(key => finite(projectile[key])) || projectile.speed <= 0 || ![0, 1].includes(projectile.owner) || !['wing', 'torpedo', 'rocket', 'missile', 'loitering', 'bomb'].includes(projectile.kind)) invalid();
   for (const projectile of s.projectiles) for (const key of ['sourceHeight', 'targetHeight', 'fallDuration']) if (projectile[key] !== undefined && (!finite(projectile[key]) || key === 'fallDuration' && (projectile[key] <= 0 || projectile[key] > 10))) invalid();
   if (save.view !== undefined && !object(save.view)) invalid();
+  if (s.battleStats !== undefined && !validateBattleStats(s.battleStats, s.time)) invalid();
   if (s.logistics !== undefined) {
     if (!Array.isArray(s.logistics) || s.logistics.length !== 2) invalid();
     for (const [side, route] of s.logistics.entries()) if (!object(route) || route.side !== side || !['nextAir', 'nextSea', 'delivered', 'lost'].every(key => finite(route[key]) && route[key] >= 0)) invalid();
@@ -145,7 +148,7 @@ export function parseSave(text) {
 export function createSave(game, view = {}, savedAt = Date.now()) {
   if (!game?.running || game.winner !== null) throw new Error('只能保存尚未结束的战局');
   const difficulty = Object.entries(AI_DIFFICULTIES).find(([, value]) => value === game.difficulty)?.[0];
-  const save = { format: 'great-powers-rts', version: SAVE_VERSION, savedAt, config: { battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])), logistics: game.logistics,resourceSites:game.resourceSites||[] }, view };
+  const save = { format: 'great-powers-rts', version: SAVE_VERSION, savedAt, config: { battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])), logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
   validateSave(save);
   return JSON.parse(JSON.stringify(save));
 }

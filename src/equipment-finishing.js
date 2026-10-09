@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { craftedMaterial, mergeParts, roundedPart } from './model-craft.js';
+import { createMovingTracks } from './track-motion.js';
 
 export const hasRefinedTracks = name => name === 'tank' || name === 'elite_nato' || name.startsWith('tank_');
 
@@ -32,14 +33,9 @@ export function refineEquipment(model, name) {
     const heavy = ['tank_nato','tank_middleeast','elite_nato'].includes(name), length = heavy ? 6.3 : 5.6, center = length / 2 - .49;
     // 用中空曲面履带取代整块橡胶盒；原负重轮、车体和可动炮塔保持原位。
     const outline = stadium(new THREE.Shape(), center, .56), hole = stadium(new THREE.Path(), center, .43); outline.holes.push(hole);
+    model.add(createMovingTracks(center, steel, rubber));
     for (const side of [-1,1]) {
       mesh(hull, new THREE.ExtrudeGeometry(outline, { depth: .55, bevelEnabled: false, curveSegments: 16 }), rubber, [0,0,side < 0 ? -1.755 : 1.205]);
-      const path = stadium(new THREE.Path(), center, .572), circumference = path.getLength();
-      for (let i = 0; i < Math.round(circumference / .24); i++) {
-        const t = i / Math.round(circumference / .24), point = path.getPointAt(t), tangent = path.getTangentAt(t);
-        mesh(hull, new THREE.BoxGeometry(.15,.035,.565), steel, [point.x,point.y,side*1.48], [0,0,Math.atan2(tangent.y,tangent.x)]);
-        mesh(hull, new THREE.BoxGeometry(.12,.052,.40), rubber, [point.x,point.y,side*1.48], [0,0,Math.atan2(tangent.y,tangent.x)]);
-      }
       for (const x of [-2.25,-1.36,-.45,.45,1.36,2.25]) {
         mesh(hull, new THREE.TorusGeometry(.325,.025,4,16), rubber, [x,.64,side*1.875]);
         for (let i=0;i<6;i++) {
@@ -58,9 +54,12 @@ export function refineEquipment(model, name) {
     box(mount,rubber,[-.71,2.98,.10],[.18,.14,.16]);
     box(mount,glass,[.949,2.54,.45],[.029,.09,.21]);
     const muzzle = heavy ? 6.8 : 6.2;
-    mesh(mount,new THREE.TorusGeometry(.091,.014,6,16),steel,[muzzle+.014,2.13,0],[0,Math.PI/2,0]);
-    mesh(mount,new THREE.CircleGeometry(.078,16),rubber,[muzzle+.01,2.13,0],[0,Math.PI/2,0]);
-    for (const x of [2.0,2.7,3.5]) mesh(mount,new THREE.TorusGeometry(.162,.012,6,16),steel,[x,2.13,0],[0,Math.PI/2,0]);
+    const barrel = model.getObjectByName('barrel') || mount;
+    const barrelDetail = new THREE.Group(); barrel.add(barrelDetail);
+    mesh(barrelDetail,new THREE.TorusGeometry(.091,.014,6,16),steel,[muzzle+.014,2.13,0],[0,Math.PI/2,0]);
+    mesh(barrelDetail,new THREE.CircleGeometry(.078,16),rubber,[muzzle+.01,2.13,0],[0,Math.PI/2,0]);
+    for (const x of [2.0,2.7,3.5]) mesh(barrelDetail,new THREE.TorusGeometry(.162,.012,6,16),steel,[x,2.13,0],[0,Math.PI/2,0]);
+    mergeParts(barrelDetail);
     mergeParts(mount);
   } else if (aircraft) {
     const wide = name === 'strike', rear = wide ? -4.5 : -4, span = wide ? 4.2 : 3.35;

@@ -7,6 +7,8 @@ import { createHarbor, refineFacility, COMMUNITY_3D_BUILDINGS } from './communit
 import { surfaceMaps } from './model-craft.js';
 import { refineEquipment, hasRefinedTracks } from './equipment-finishing.js';
 import { refineAirfieldRunway, refineAircraftCanopy } from './airfield-presentation.js';
+import { replacedNavalPart, refineNavalHull, refineTransportBody } from './naval-presentation.js';
+import { refinePowerFans } from './facility-motion.js';
 
 const modelURL = new URL('../assets/models/military-library.glb', import.meta.url).href;
 const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url).href;
@@ -37,6 +39,7 @@ const thumbnails = new Map();
 let portraitRenderer;
 
 export function weatherMaterial(material, domain = 'land') {
+  if (material.name === '玻璃') return new THREE.MeshPhysicalMaterial({ name: '玻璃', color: '#294953', roughness: .14, metalness: .03, transparent: true, opacity: .82, depthWrite: false, clearcoat: 1, clearcoatRoughness: .08, envMapIntensity: 1.2, map: material.map, normalMap: material.normalMap });
   if (!['装甲钢', '浅色金属', '深色钢', '航空涂层', '建筑面板', '混凝土', '屋顶', '岩石', '矿石', '矿晶', '航天复合外墙', '航天浅色合金', '热防护屋面', '月表陶瓷装甲', '机器人钛合金', '橡胶', '作战服'].includes(material.name)) return material;
   const result = material.clone(), stone = ['岩石', '矿石', '矿晶'].includes(material.name);
   const fabric = material.name === '作战服', rubber = material.name === '橡胶';
@@ -45,6 +48,7 @@ export function weatherMaterial(material, domain = 'land') {
     for (const key of ['map', 'normalMap', 'roughnessMap']) if (!result[key]) result[key] = maps[key];
     if (!material.normalMap) result.normalScale.setScalar(fabric ? .28 : .18);
     if (fabric || rubber) { result.metalness = 0; result.roughness = .94; }
+    else if (['浅色金属', '深色钢', '航天浅色合金', '机器人钛合金'].includes(material.name)) { result.metalness = .72; result.roughness = .42; }
     else if (['装甲钢', '航空涂层', '建筑面板', '屋顶'].includes(material.name)) { result.metalness = .23; result.roughness = .72; }
   }
   if (domain === 'naval' && ['装甲钢', '建筑面板', '屋顶', '浅色金属'].includes(material.name)) result.color.set(material.name === '屋顶' ? '#515b61' : '#929da4');
@@ -85,6 +89,7 @@ export function prepareVisualAssets() {
       const batches = new Map();
       source.traverse(mesh => {
         if (!mesh.isMesh) return;
+        if (replacedNavalPart(name, mesh.name) || ['airlift', 'freightPlane'].includes(name) && mesh.name.startsWith('气动机身') || name === 'power' && mesh.name.startsWith('散热顶盖')) return;
         if (hasRefinedTracks(name) && /^(履带|履带板|履带接地板)/.test(mesh.name)) return;
         if (name === 'carrier' && /甲板停放机翼|甲板飞机/.test(mesh.name)) return;
         const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
@@ -95,6 +100,8 @@ export function prepareVisualAssets() {
         const articulated = (['tank', 'elite_nato'].includes(name) || name.startsWith('tank_')) && /炮塔|滑膛炮|炮管|车长|舱盖|瞄准|反应装甲/.test(mesh.name) || name === 'railgun' && /炮塔|加速器|线圈|电容/.test(mesh.name);
         let limb = null;
         let pivot = null;
+        if (hasRefinedTracks(name) && /^(滑膛炮|炮管)/.test(mesh.name)) limb = 'barrel';
+        if (name === 'radar' && /^(相控阵雷达|雷达阵列|雷达波导)/.test(mesh.name)) { limb = 'facility_radar'; pivot = new THREE.Vector3(0, 4.1, -.5); }
         if (['rifle', 'engineer', 'scout'].includes(name) && /腿部|军靴/.test(mesh.name)) {
           geometry.computeBoundingBox();
           limb = geometry.boundingBox.getCenter(new THREE.Vector3()).z < 0 ? 'leg_left' : 'leg_right';
@@ -115,7 +122,7 @@ export function prepareVisualAssets() {
       for (const { material, geometries, articulated, limb, pivot } of batches.values()) {
         let parent = articulated ? weapon : template;
         if (limb) {
-          if (!legs.has(limb)) { const joint = new THREE.Group(); joint.name = limb; if (pivot) joint.position.copy(pivot); else joint.position.set(-.05, .88, limb === 'leg_left' ? -.15 : .15); template.add(joint); legs.set(limb, joint); }
+          if (!legs.has(limb)) { const joint = new THREE.Group(); joint.name = limb; if (pivot) joint.position.copy(pivot); else if (limb !== 'barrel') joint.position.set(-.05, .88, limb === 'leg_left' ? -.15 : .15); (limb === 'barrel' ? weapon : template).add(joint); legs.set(limb, joint); }
           parent = legs.get(limb);
         }
         const geometry = mergeGeometries(geometries, false);
@@ -125,6 +132,8 @@ export function prepareVisualAssets() {
         geometries.forEach(item => item.dispose());
       }
       refineEquipment(template, name);
+      refineNavalHull(template, name); refineTransportBody(template);
+      if (name === 'power') refinePowerFans(template);
       models.set(name, template);
     }
     for (const type of ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane']) models.set(`space_${type}`, createSpaceAircraft(type));

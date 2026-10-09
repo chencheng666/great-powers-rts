@@ -1,3 +1,5 @@
+import { battleMetric } from './battle-report.js';
+
 export const ROBOT_SPECS = {
   rifle: { name: '月卫战斗机器人', model: 'robot_rifle', shotCost: 4, description: '原创月表无人战斗机体；电池驱动机动与脉冲武器，无需氧气、食物或常规弹药。低电量返场充电。' },
   engineer: { name: '天工工程机器人', model: 'robot_engineer', shotCost: 0, description: '原创月表工程机体；电池驱动，接管资源站与信标后驻留设施。无需氧气与食物。' },
@@ -44,7 +46,7 @@ export const lunarRobots = {
     u.battery = Math.min(ROBOT_ENERGY.capacity, u.battery + ROBOT_ENERGY.chargeRate * dt);
     if (source.kind === 'building' && u.hp < u.maxHp) {
       const p = this.players[u.owner], repair = Math.min(12 * dt, u.maxHp - u.hp, p.credits / .3);
-      u.hp += repair; p.credits = Math.max(0, p.credits - repair * .3);
+      u.hp += repair; p.credits = Math.max(0, p.credits - repair * .3); battleMetric(this, u.owner, 'repairHP', repair);
     }
     if (u.battery > before && this.time >= (u.serviceFXAt || 0)) {
       u.serviceFXAt = this.time + .6;

@@ -3,6 +3,7 @@ import { unitLayer, unitRadius } from './unit-spacing.js';
 import { weatherState, hasSignalCover } from './tactical-rules.js';
 import { turnToward } from './projectile-flight.js';
 import { isLunarRobot } from './lunar-robots.js';
+import { battleMetric } from './battle-report.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const alive = u => u.hp > 0 && !u.embarkedIn;
@@ -27,7 +28,7 @@ export const modernCombat = {
     home ||= this.ownedBuildings(u.owner).find(b => (infantry ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type)) && distance(b, u) <= b.size * .55 + 40);
     if (!home || home.hp <= 0 || home.owner !== u.owner || distance(home, u) > home.size * .55 + 40) return false;
     const p = this.players[u.owner], repaired = Math.min((infantry ? 12 : 22) * dt, u.maxHp - u.hp, p.credits / .3);
-    u.hp += repaired; p.credits = Math.max(0, p.credits - repaired * .3);
+    u.hp += repaired; p.credits = Math.max(0, p.credits - repaired * .3); battleMetric(this, u.owner, 'repairHP', repaired);
     if (repaired > 0 && this.time >= (u.serviceFXAt || 0)) {
       u.serviceFXAt = this.time + .7;
       this.effects.push({ type: 'shot', style: 'repair', x: home.x, y: home.y, toX: u.x, toY: u.y, targetType: u.type, owner: u.owner, age: 0, duration: .6 });
@@ -58,21 +59,29 @@ export const modernCombat = {
     const home = this.ownedBuildings(u.owner, 'airfield').find(b => distance(b, u) <= b.size * .55 + 30);
     if (!home) return;
     const p = this.players[u.owner], repaired = Math.min(22 * dt, u.maxHp - u.hp, p.credits / .3);
-    u.hp += repaired; p.credits = Math.max(0, p.credits - repaired * .3);
+    u.hp += repaired; p.credits = Math.max(0, p.credits - repaired * .3); battleMetric(this, u.owner, 'repairHP', repaired);
     if (repaired > 0 && this.time >= (u.serviceFXAt || 0)) {
       u.serviceFXAt = this.time + .7;
       this.effects.push({ type: 'shot', style: 'repair', x: home.x, y: home.y, toX: u.x, toY: u.y, targetType: u.type, owner: u.owner, age: 0, duration: .6 });
     }
   },
 
-  requestResupply(u) {
+  requestResupply(u, home = null) {
     if (!u || u.hp <= 0 || u.embarkedIn || ['harvester', 'supply'].includes(u.type) || UNITS[u.type].tags.includes('logistics')) return false;
     if (u.order?.type !== 'rearm') { u.resumeOrder = u.order; u.order = { type: 'rearm' }; u.path = []; u.pathTimer = 0; }
+    if (home?.type === 'dock' && home.hp > 0 && home.owner === u.owner && UNITS[u.type].tags.includes('ship')) u.order.homeId = home.id;
     return true;
   },
 
+  submarineSurfaced(u) {
+    if (u.type !== 'submarine' || u.embarkedIn || u.hp <= 0) return false;
+    if (u.order && u.order.type !== 'rearm') return false;
+    return this.ownedBuildings(u.owner, 'dock').some(home =>
+      (!u.order?.homeId || u.order.homeId === home.id) && distance(u, u.order?.type === 'rearm' ? this.shipBerth(u, home) : this.navalGoal(home.x, home.y, unitRadius(u) + 10)) <= 95);
+  },
+
   shipBerth(u, home) {
-    const peers = this.activeUnits(u.owner).filter(v => UNITS[v.type].tags.includes('ship') && v.order?.type === 'rearm')
+    const peers = this.activeUnits(u.owner).filter(v => UNITS[v.type].tags.includes('ship') && v.order?.type === 'rearm' && (!v.order.homeId || v.order.homeId === home.id))
       .sort((a, b) => a.id - b.id);
     const slot = Math.max(0, peers.findIndex(v => v.id === u.id));
     const offset = slot === 0 ? 0 : Math.ceil(slot / 2) * 215 * (slot % 2 ? 1 : -1);
@@ -86,7 +95,7 @@ export const modernCombat = {
     // 港口泊位沿岸展开，维修不能在远海或持续交火中发生。
     if (distance(u, this.shipBerth(u, home)) > 95 && distance(u, this.navalGoal(home.x, home.y, unitRadius(u) + 10)) > 115) return;
     const p = this.players[u.owner], repair = Math.min(30 * dt, u.maxHp - u.hp, p.credits / .35);
-    u.hp += repair; p.credits = Math.max(0, p.credits - repair * .35);
+    u.hp += repair; p.credits = Math.max(0, p.credits - repair * .35); battleMetric(this, u.owner, 'repairHP', repair);
     if (repair > 0 && this.time >= (u.serviceFXAt || 0)) {
       u.serviceFXAt = this.time + .7;
       this.effects.push({ type: 'shot', style: 'repair', x: home.x, y: home.y, toX: u.x, toY: u.y, targetType: u.type, owner: u.owner, age: 0, duration: .6 });
@@ -141,6 +150,13 @@ export const modernCombat = {
     const kind = style === 'bomber' ? 'bomb' : style === 'carrier' ? 'wing' : style === 'rocket' ? 'rocket' : style === 'submarine' ? 'torpedo' : style === 'loiterer' ? 'loitering' : 'missile';
     this.projectiles.push({ id: this.nextProjectileId++, kind, owner: source.owner, sourceId: source.id, targetId: target.id, targetType: target.type, x: source.x, y: source.y, startX: source.x, startY: source.y, toX: target.x, toY: target.y, angle: Math.atan2(target.y - source.y, target.x - source.x), age: 0, jam: 0, amount, hp: kind === 'wing' ? 90 : 38, speed: kind === 'wing' ? 185 : kind === 'torpedo' ? 155 : kind === 'rocket' ? 300 : kind === 'missile' ? 360 : 185, returning: false });
     const p = this.projectiles.at(-1);
+    if (kind === 'torpedo') {
+      // 艇首沿当前艇身方向发射，然后按原有目标进行有限角速度转弯。
+      const offset = 6.2 * 8;
+      p.x = p.startX = Math.max(0, Math.min(this.world.width, source.x + Math.cos(source.angle) * offset));
+      p.y = p.startY = Math.max(0, Math.min(this.world.height, source.y + Math.sin(source.angle) * offset));
+      p.angle = source.angle;
+    }
     p.sourceHeight = UNITS[source.type]?.tags.includes('jet') && !this.aircraftGrounded(source) ? 95 : source.type === 'destroyer' ? 35 : 20;
     p.targetHeight = UNITS[target.type]?.tags.includes('jet') && !this.aircraftGrounded(target) ? 95 : UNITS[target.type]?.tags.includes('drone') ? 25 : 12;
     if (kind === 'bomb') { p.toX = p.x; p.toY = p.y; p.fallDuration = 1.1; }
@@ -181,7 +197,7 @@ export const modernCombat = {
       }
       const remaining = distance(p, { x: p.toX, y: p.toY }), step = p.speed * dt * (jammed ? .5 : 1);
       const heading = Math.atan2(p.toY - p.y, p.toX - p.x);
-      p.angle = ['wing', 'missile', 'loitering'].includes(p.kind) ? turnToward(p.angle, heading, (p.kind === 'wing' ? 2.2 : 5) * dt) : heading;
+      p.angle = ['wing', 'missile', 'loitering', 'torpedo'].includes(p.kind) ? turnToward(p.angle, heading, (p.kind === 'torpedo' ? 2 : p.kind === 'wing' ? 2.2 : 5) * dt) : heading;
       if (p.kind === 'bomb' && p.fallDuration && p.age < p.fallDuration) continue;
       if (remaining > step + 8) { p.x += Math.cos(p.angle) * step; p.y += Math.sin(p.angle) * step; }
       else if (p.returning) this.finishProjectile(p, false);
@@ -228,7 +244,8 @@ export const modernCombat = {
       if (truck) { this.moveUnit(u, truck, dt, 75); return; }
     }
     const homes = this.ownedBuildings(u.owner).filter(b => naval ? b.type === 'dock' : d.tags.includes('infantry') ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type));
-    const home = homes.sort((a, b) => distance(a, u) - distance(b, u))[0];
+    const home = homes.find(b => b.id === u.order?.homeId) || homes.sort((a, b) => distance(a, u) - distance(b, u))[0];
+    if (naval && u.order?.type === 'rearm' && home) u.order.homeId = home.id;
     if (!home) return;
     const berth = naval ? this.shipBerth(u, home) : home;
     if (distance(u, berth) > (naval ? 75 : home.size * .55 + 40)) { u.rearmProgress = 0; this.moveUnit(u, berth, dt, naval ? 48 : home.size * .55 + 24); return; }
@@ -253,6 +270,7 @@ export const modernCombat = {
   },
 
   restoreCombatOrder(u) {
+    battleMetric(this, u.owner, 'resupplies', 1);
     u.order = u.resumeOrder; u.resumeOrder = null; u.rearmProgress = 0;
   },
 
@@ -300,7 +318,7 @@ export const modernCombat = {
     const damaged = nearby.find(v => v.hp < v.maxHp && this.time - (v.lastDamageAt ?? -10) > 3);
     if (damaged) {
       const repair = Math.min(24 * dt, damaged.maxHp - damaged.hp, p.credits / .3, u.stock / .2);
-      damaged.hp += repair; p.credits -= repair * .3; u.stock -= repair * .2;
+      damaged.hp += repair; p.credits -= repair * .3; u.stock -= repair * .2; battleMetric(this, damaged.owner, 'repairHP', repair);
       if (repair > 0 && this.time > (u.serviceFXAt || 0)) { u.serviceFXAt = this.time + .6; this.effects.push({ type: 'shot', style: 'repair', x: u.x, y: u.y, toX: damaged.x, toY: damaged.y, sourceType: 'supply', targetType: damaged.type, owner: u.owner, age: 0, duration: .6 }); }
     }
     u.serviceTimer = Math.max(0, (u.serviceTimer || 0) - dt);
@@ -430,7 +448,7 @@ export const modernCombat = {
       const plane = this.getEntity(id); if (!plane || plane.hp <= 0) continue;
       const p = this.players[carrier.owner], d = UNITS[plane.type];
       const repair = Math.min(18 * dt, plane.maxHp - plane.hp, p.credits / .35);
-      plane.hp += repair; p.credits = Math.max(0, p.credits - repair * .35);
+      plane.hp += repair; p.credits = Math.max(0, p.credits - repair * .35); battleMetric(this, plane.owner, 'repairHP', repair);
       plane.rearmProgress += dt;
       if (plane.ammo < d.ammo && plane.rearmProgress >= d.rearmTime / d.ammo && p.credits >= 10) {
         p.credits -= 10; plane.ammo++; plane.rearmProgress = 0;

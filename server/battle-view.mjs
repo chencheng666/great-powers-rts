@@ -1,4 +1,5 @@
 import { packFog } from '../src/network-protocol.js';
+import { battleReport } from '../src/battle-report.js';
 const copy = value => JSON.parse(JSON.stringify(value));
 export function battleView(game, side, memory = new Map()) {
   const owner = value => value === null || value === undefined ? value : value === side ? 0 : 1;
@@ -7,6 +8,7 @@ export function battleView(game, side, memory = new Map()) {
   const ids = new Set(entities.map(e => e.id));
   function entityView(entity) {
     const e = copy(entity); e.owner = owner(e.owner);
+    if (entity.type === 'submarine') e.surfaced = game.submarineSurfaced(entity);
     if (e.sabotage) e.sabotage.owner = owner(e.sabotage.owner);
     if (e.owner === 1) {
       e.order = null; e.path = []; e.resumeOrder = null; e.targetId = null;
@@ -38,6 +40,7 @@ export function battleView(game, side, memory = new Map()) {
     cyberPending: game.players[s].cyberPending ? { executeAt: game.players[s].cyberPending.executeAt } : null
   });
   return {
+    battleReport: game.running ? null : (() => { const report = battleReport(game); return report ? { ...report, sides: [report.sides[side], report.sides[1 - side]], events: report.events.map(e => ({ ...e, owner: owner(e.owner) })) } : null; })(),
     time: game.time, running: game.running, paused: game.paused,
     winner: typeof game.winner === 'number' ? owner(game.winner) : game.winner,
     players, units: entities.map(entityView), buildings: [...game.ownedBuildings(side).map(entityView), ...[...memory].filter(([id]) => typeof id === 'number').map(([, b]) => copy(b))],

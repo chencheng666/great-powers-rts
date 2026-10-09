@@ -38,9 +38,10 @@ export const logisticsEconomy = {
     if (this.economyMode !== 'convoy') return;
     for (const route of this.logistics) for (const [channel, sea, type] of [['Air', false, 'freightPlane'], ['Sea', true, 'containerShip']]) {
       if (sea && !this.map.water || this.time < route[`next${channel}`]) continue;
-      // 积压不追补，且每条线路最多两艘/架，新增设施不能无限叠加收入。
+      // 同侧同类线路在上一班退出后才放行；延误不追补，不改变每批物资价值。
+      if (this.activeUnits(route.side, type).length) continue;
       route[`next${channel}`] = this.time + SUPPLY_ROUTES[sea ? 'sea' : 'air'].interval;
-      if (this.activeUnits(route.side, type).length < 2) this.launchFreight(route.side, sea);
+      this.launchFreight(route.side, sea);
     }
   },
 
@@ -86,10 +87,17 @@ export const logisticsEconomy = {
     if (!home) { f.phase = 'outbound'; return; }
     if (!sea) {
       // 接收点按到达批次串行服务，等待航线与卸货航线保持两倍翼展以上的间隔。
-      const first = this.activeUnits(u.owner, 'freightPlane').filter(other => other.freight?.homeId === home.id && other.freight.phase !== 'outbound').sort((a, b) => a.id - b.id)[0];
+      const first = this.activeUnits(u.owner, 'freightPlane').filter(other => other.freight?.homeId === home.id).sort((a, b) => a.id - b.id)[0];
       const waiting = first !== u, arrived = this.flyFreightCircuit(u, home, dt, waiting);
       if (waiting || !arrived) { f.phase = 'inbound'; if (!waiting) f.progress = 0; return; }
     } else {
+      // 兼容旧存档中的积压货船，后船在外海等待，不与前船争抢同一泊位。
+      const first = this.activeUnits(u.owner, 'containerShip').filter(other => other.freight?.homeId === home.id).sort((a, b) => a.id - b.id)[0];
+      f.holding = first !== u;
+      if (f.holding) {
+        const goal = this.navalGoal((this.map.water.x1 + this.map.water.x2) / 2, home.y + (u.owner ? 1 : -1) * 360, unitRadius(u) + 12);
+        f.phase = 'inbound'; this.moveUnit(u, goal, dt, 45); return;
+      }
       const goal = this.navalGoal(home.x, home.y, unitRadius(u) + 12);
       if (distance(u, goal) > 95) {
         f.phase = 'inbound'; f.progress = 0; this.moveUnit(u, goal, dt, 66.5); return;

@@ -2,6 +2,7 @@ import { Game } from './game.js';
 import { AI_DIFFICULTIES, BUILDINGS, UNITS, WORLD } from './data.js';
 import { battlefieldMap } from './battlefield-expansion.js';
 import { unpackFog } from './network-protocol.js';
+import { snapshotMotion, interpolateMotion } from './unit-animation.js';
 
 export class OnlineGame extends Game {
   constructor(payload, events, client) {
@@ -19,6 +20,8 @@ export class OnlineGame extends Game {
   get paused() { return !!this._serverPaused; }
   set paused(value) { /* 联机弹窗不暂停服务器；仅快照可修改暂停状态。 */ }
   isControlLocked(side) { return side === 0 && !!this.players[0].controlLocked; }
+  // 浮航是可见外观，依赖服务器判定，不从已隐藏的敌方指令推断。
+  submarineSurfaced(unit) { return unit?.type === 'submarine' && unit.hp > 0 && !unit.embarkedIn && unit.surfaced === true; }
   canPlace(side,type,x,y) {
     if(type!=='dock')return super.canPlace(side,type,x,y);
     const size=BUILDINGS.dock.size;
@@ -31,17 +34,21 @@ export class OnlineGame extends Game {
       const old=new Map((this[key]||[]).map(e=>[e.id,e]));
       this[key]=v[key].map(next=>{
         const e=old.get(next.id)||{};
-        if(interpolate&&Number.isFinite(e.x)) e._motion={x:e.x,y:e.y,toX:next.x,toY:next.y,age:0};
+        const motion = interpolate && Number.isFinite(e.x) ? snapshotMotion(e, next, v.time - this.time) : null;
         if(e.owner===0&&next.hp<e.hp) {
           this.attackAlerts.push({ id:next.id,type:next.type,building:next.kind==='building',x:next.x,y:next.y,at:v.time });
           if(v.time-this.lastAttackVoiceAt>10){this.events.voice?.(next.kind==='building'?'underAttack':'unitUnderAttack');this.lastAttackVoiceAt=v.time;}
         }
         for(const key of Object.keys(e))if(key!=='_motion'&&!Object.hasOwn(next,key))delete e[key];
-        Object.assign(e,next);return e;
+        Object.assign(e,next);
+        if (motion) { e._motion = motion; e.x = motion.x; e.y = motion.y; e.angle = motion.angle; e.turretAngle = motion.turret; }
+        else delete e._motion;
+        return e;
       });
     };
     sync('units',true);sync('buildings');for(const key of ['ore','oil','beacons','resourceSites'])sync(key);
     this.players=v.players; this.time=v.time; this._serverPaused=v.paused;this.room=payload.room;
+    this.battleReport = v.battleReport || null;
     this.fog=unpackFog(v.fog); this.fogs=[this.fog,{...this.fog,visible:Array(this.fog.visible.length).fill(false),explored:Array(this.fog.visible.length).fill(false)}];
     this.pendingBuilding=this.players[0].readyBuilding||null;if(!this.pendingBuilding)this.placingBuilding=false;
     if(!initial&&this.pendingBuilding&&pendingBefore!==this.pendingBuilding)this.events.voice?.('buildReady');
@@ -59,7 +66,7 @@ export class OnlineGame extends Game {
     if(!v.running&&!ended&&!initial)this.events.end?.(v.winner);
   }
   update(dt) {
-    if(!this.paused)for(const u of this.units){const m=u._motion;if(m){m.age+=dt;const t=Math.min(1,m.age/.1);u.x=m.x+(m.toX-m.x)*t;u.y=m.y+(m.toY-m.y)*t;}}
+    if(!this.paused)for(const u of this.units)interpolateMotion(u,dt);
     this.effects.forEach(e=>e.age+=dt);this.effects=this.effects.filter(e=>e.age<e.duration);
     this.attackAlerts=this.attackAlerts.filter(e=>this.time-e.at<8).slice(-12);
   }

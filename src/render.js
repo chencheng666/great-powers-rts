@@ -27,6 +27,11 @@ import { fixedWingHeight } from './airfield-presentation.js';
 import { lunarCraters } from './lunar-terrain.js';
 import { battleElevation } from './battle-camera.js';
 import { damagePresentation, damagedMaterial, structuralDamage, confirmedShipLoss, sinkingPose } from './damage-presentation.js';
+import { submarinePose } from './naval-presentation.js';
+import { animateFacility, drawRepairBadge } from './facility-motion.js';
+import { unitAnimation } from './unit-animation.js';
+import { animateTracks } from './track-motion.js';
+import { personnelLOD, syncPersonnelLOD } from './personnel-lod.js';
 
 const TAU = Math.PI * 2;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -250,7 +255,8 @@ export class Renderer {
     ctx.putImageData(pixels, 0, 0);
     const normal = this.track(new THREE.CanvasTexture(canvas)); normal.wrapS = normal.wrapT = THREE.RepeatWrapping; normal.repeat.set((this.game.map.water.x2 - this.game.map.water.x1) / 100, this.world.height / 120); this.waterNormal = normal;
     const water = this.game.map.water;
-    const mesh = new THREE.Mesh(this.track(new THREE.PlaneGeometry(water.x2 - water.x1, this.world.height)), this.track(new THREE.MeshStandardMaterial({ color: '#32626a', metalness: .45, roughness: .32, normalMap: normal, normalScale: new THREE.Vector2(.19, .19) })));
+    const mesh = new THREE.Mesh(this.track(new THREE.PlaneGeometry(water.x2 - water.x1, this.world.height)), this.track(new THREE.MeshStandardMaterial({ color: '#32626a', metalness: .45, roughness: .32, normalMap: normal, normalScale: new THREE.Vector2(.19, .19), transparent: true, opacity: .97, depthWrite: false })));
+    mesh.renderOrder = 1;
     mesh.rotation.x = -Math.PI / 2; mesh.position.set((water.x1 + water.x2) / 2, .8, this.world.height / 2); mesh.receiveShadow = true; this.scene.add(mesh);
   }
 
@@ -338,7 +344,7 @@ export class Renderer {
       const material = this.track(new THREE.MeshBasicMaterial({ map: texture, alphaTest: .18, side: THREE.DoubleSide, toneMapped: false }));
       const mesh = new THREE.InstancedMesh(geometry, material, transforms.length); mesh.castShadow = true; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       transforms.forEach(point => { point.height = point.scale * 6.5; point.width = point.height * texture.image.width / texture.image.height; });
-      transforms.forEach((point, index) => { dummy.position.set(point.x, point.height * .574 / 2, point.z - point.height * .819 / 2); dummy.rotation.set(-Math.atan2(1700, 1190), 0, 0); dummy.scale.set(point.width, point.height, 1); dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix); });
+      transforms.forEach((point, index) => { dummy.position.set(point.x, this.elevation(point.x, point.z) + point.height * Math.cos(this.cameraElevation) / 2, point.z - point.height * Math.sin(this.cameraElevation) / 2); dummy.rotation.set(-this.cameraElevation, 0, 0); dummy.scale.set(point.width, point.height, 1); dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix); });
       this.scene.add(mesh); this.environment.push({ mesh, transforms, foliage: true });
     }
   }
@@ -442,6 +448,14 @@ export class Renderer {
     this.viewMode = mode === 'tactical' ? 'tactical' : 'immersive'; this.cameraElevation = battleElevation(this.viewMode);
     try { localStorage.setItem('great-powers-battle-view', this.viewMode); } catch { /* 当前视角仍会立即生效。 */ }
     this.clampCamera(); this.updateCamera();
+    const dummy = new THREE.Object3D();
+    for (const { mesh, transforms, foliage } of this.environment) if (foliage) {
+      transforms.forEach((p, i) => {
+        dummy.position.set(p.x, this.elevation(p.x, p.z) + p.height * Math.cos(this.cameraElevation) / 2, p.z - p.height * Math.sin(this.cameraElevation) / 2);
+        dummy.rotation.set(-this.cameraElevation, 0, 0); dummy.scale.set(p.width, p.height, 1); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   clampCamera() {
@@ -552,12 +566,22 @@ export class Renderer {
     let submergedMaterials = null;
     if (entity.type === 'submarine') {
       submergedMaterials = [];
-      model.traverse(mesh => { if (!mesh.isMesh) return; const original = mesh.material, hidden = this.track(new THREE.MeshBasicMaterial({ color: '#153f63', transparent: true, opacity: .5, depthWrite: false })); submergedMaterials.push({ mesh, original, hidden }); });
+      model.traverse(mesh => { if (!mesh.isMesh) return; const original = mesh.material, hidden = this.track(new THREE.MeshBasicMaterial({ color: '#549bb9', transparent: true, opacity: .36, depthWrite: false, depthTest: true })); submergedMaterials.push({ mesh, original, hidden }); });
     }
     rotors.sort((a, b) => Number(a.name.split('_')[1]) - Number(b.name.split('_')[1]));
+    let distantPersonnel = null, lodJoints = [];
+    if (['rifle', 'engineer', 'scout'].includes(name)) {
+      this.personnelTemplates ||= new Map();
+      const key = `${name}:${entity.owner}`;
+      if (!this.personnelTemplates.has(key)) this.personnelTemplates.set(key, personnelLOD(model, value => this.track(value)));
+      distantPersonnel = this.personnelTemplates.get(key).clone(true); distantPersonnel.visible = false;
+      lodJoints = ['upper_body', 'weapon_pose', 'leg_left', 'leg_right', 'knee_left', 'knee_right'].map(joint => [model.getObjectByName(joint), distantPersonnel.getObjectByName(joint)]).filter(pair => pair.every(Boolean));
+      model.add(distantPersonnel);
+    }
     const damageMeshes = [];
     model.traverse(mesh => { if (mesh.isMesh) damageMeshes.push({ mesh, original: mesh.material }); });
-    const value = { model, ring, identity, entity, scale, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
+    const tracks = []; model.traverse(object => { if (object.isInstancedMesh && object.name.startsWith('track_belt_')) tracks.push(object); });
+    const value = { model, ring, identity, entity, scale, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
   }
 
   setDamageStage(entry, stage) {
@@ -646,7 +670,7 @@ export class Renderer {
   entityAnchor(entity) {
     const entry = this.entities.get(entity.id);
     if (!entry) return this.worldToScreen(entity.x, entity.y);
-    if (!entry.sprite) return this.worldToScreen(entity.x, entity.y, entry.model.position.y + entry.topHeight + 9);
+    if (!entry.sprite) return this.worldToScreen(entity.x, entity.y, entry.model.position.y + (entry.displayTopHeight ?? entry.topHeight) + 9);
     const point = this.worldToScreen(entity.x, entity.y + entry.sprite.position.z * entry.scale, entry.model.position.y + entry.sprite.position.y * entry.scale);
     point.y -= entry.sprite.scale.y * entry.scale * this.camera.zoom / 2;
     return point;
@@ -665,6 +689,7 @@ export class Renderer {
       let height = this.elevation(entity.x, entity.y);
       if (entity.kind === 'unit') {
         const tags = UNITS[entity.type].tags;
+        const animation = unitAnimation(entry, entity, dt, this.game.time);
         if (tags.includes('jet')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x, entity.y) + 4 : 95 * (entity.deployment ? Math.min(1, (this.game.time - entity.deployment.start) / 2.6) : 1) + Math.sin(now * .001 + entity.id) * 2;
         if (entity.deckApproach) height = 15 + 80 * Math.max(0, (entity.deckApproach.until - this.game.time) / 2.4);
         if (entity.embarkedIn) height = 15;
@@ -672,10 +697,16 @@ export class Renderer {
         if (entity.type === 'airlift' && !moving && this.game.transportGrounded(entity)) height = this.elevation(entity.x, entity.y) + 6;
         else if (tags.includes('ship')) height = 2 + Math.sin(now * .002 + entity.id) * .6;
         if (entry.submergedMaterials) {
-          const detected = (entity.exposedUntil || 0) > this.game.time || this.game.activeUnits(1 - entity.owner).some(u => UNITS[u.type].sonar && Math.hypot(u.x - entity.x, u.y - entity.y) <= UNITS[u.type].sonar);
-          entry.submergedMaterials.forEach(({ mesh, original, hidden }) => { mesh.material = detected ? original : hidden; mesh.castShadow = detected; });
+          const pose = submarinePose(this.game, entity, now); height = pose.height;
+          entry.model.scale.y = entry.scale * pose.verticalScale; entry.displayTopHeight = entry.topHeight * pose.verticalScale;
+          entry.submergedMaterials.forEach(({ mesh, original, hidden }) => { mesh.material = pose.detected ? original : hidden; mesh.castShadow = pose.detected; mesh.renderOrder = pose.detected ? 0 : 2; });
         }
-        const turn = Math.atan2(Math.sin(entity.angle - entry.heading), Math.cos(entity.angle - entry.heading));
+        let bodyHeading = entity.angle;
+        if (entry.upperBody) {
+          const aimDelta = Math.atan2(Math.sin(entity.angle - animation.turret), Math.cos(entity.angle - animation.turret));
+          bodyHeading = animation.turret + (animation.speed > .1 ? clamp(aimDelta, -1.05, 1.05) : 0);
+        }
+        const turn = Math.atan2(Math.sin(bodyHeading - entry.heading), Math.cos(bodyHeading - entry.heading));
         entry.heading += turn * (1 - Math.exp(-dt * (tags.includes('infantry') ? 18 : 9)));
         entry.model.rotation.y = -entry.heading;
         if (!tags.some(t => ['air', 'ship', 'infantry'].includes(t))) {
@@ -695,13 +726,22 @@ export class Renderer {
           entry.flightHeight += (height - entry.flightHeight) * (1 - Math.exp(-dt * 5));
           height = entry.flightHeight;
         }
-        if (entry.weapon) { entry.weapon.rotation.y = entry.heading - entity.turretAngle; entry.weapon.position.x = -.35 * Math.exp(-Math.max(0, this.game.time - (entity.lastFireAt ?? -100)) * 18); }
-        if (tags.includes('infantry')) entry.model.rotation.z = moving ? Math.sin(entity.movePulse * 1.8) * .025 : 0;
+        if (entry.weapon) { entry.weapon.rotation.y = entry.heading - animation.turret; entry.weapon.position.x = 0; }
+        if (entry.barrel) entry.barrel.position.x = -.32 * (animation.recoil || 0);
+        if (entry.upperBody) {
+          entry.upperBody.rotation.y = clamp(Math.atan2(Math.sin(entry.heading - animation.turret), Math.cos(entry.heading - animation.turret)), -1.1, 1.1);
+          entry.upperBody.rotation.z = -.018 * (animation.recoil || 0);
+        }
+        if (entry.weaponPose && entity.type === 'rifle') entry.weaponPose.position.x = -.028 * (animation.recoil || 0);
+        if (tags.includes('infantry')) entry.model.rotation.z = Math.sin(animation.phase) * .018 * animation.speed;
+        for (const track of entry.tracks) track.visible = this.camera.zoom >= 1.4;
+        if (visible && entry.tracks.length && this.camera.zoom >= 1.4) animateTracks(entry.tracks, animation.travel);
         entry.legs.forEach((leg, index) => {
-          const phase = entity.movePulse * 2 + index * Math.PI, knee = leg.getObjectByName(index === 0 ? 'knee_left' : 'knee_right');
-          leg.rotation.z = moving ? Math.sin(phase) * (knee ? .35 : .47) : 0;
-          if (knee) knee.rotation.z = moving ? -Math.max(0, -Math.sin(phase)) * .62 : 0;
+          const phase = animation.phase + index * Math.PI, knee = leg.getObjectByName(index === 0 ? 'knee_left' : 'knee_right');
+          leg.rotation.z = Math.sin(phase) * (knee ? .35 : .47) * animation.speed;
+          if (knee) knee.rotation.z = -Math.max(0, -Math.sin(phase)) * .62 * animation.speed;
         });
+        syncPersonnelLOD(entry, this.camera.zoom < 1.7);
         if (tags.includes('drone') || entry.rotors.length) {
           const activeFlight = this.game.time >= entity.stunUntil;
           entry.rotors.forEach((rotor, index) => { rotor.rotation.y += dt * (activeFlight ? 47 : 7) * (index % 2 ? -1 : 1); });
@@ -713,6 +753,7 @@ export class Renderer {
         }
       } else if (entity.type === 'dock') entry.model.rotation.y = entity.x > this.world.width / 2 ? Math.PI : 0;
       else if (entity.type === 'turret') entry.model.rotation.y = -entity.angle;
+      animateFacility(entry.model, entity, this.game);
       entry.model.position.set(entity.x, height, entity.y);
       const submerged = entity.type === 'submarine' && entry.submergedMaterials?.[0]?.mesh.material === entry.submergedMaterials?.[0]?.hidden;
       entry.identity.visible = identityVisible(entity, visible, submerged);
@@ -916,7 +957,7 @@ export class Renderer {
       if (!showHealthBar(entity, model.visible, isSelected, hovered, this.game.time - (entity.lastDamageAt ?? -100) < 2)) continue;
       let screen;
       if (sprite) { screen = this.entityAnchor(entity); screen.y -= 7; }
-      else screen = this.worldToScreen(entity.x, entity.y, model.position.y + entry.topHeight + 9);
+      else screen = this.worldToScreen(entity.x, entity.y, model.position.y + (entry.displayTopHeight ?? entry.topHeight) + 9);
       if (screen.x < 0 || screen.x > this.viewport.width || screen.y < 0 || screen.y > this.viewport.height) continue;
       const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry'), robot = entity.kind === 'unit' && isLunarRobot(this.game.map, entity.type), ammo = robot ? 10 : UNITS[entity.type]?.ammo;
       const numeric = hovered || isSelected && selected.size === 1;
@@ -926,7 +967,12 @@ export class Renderer {
       const width = Math.max(entity.kind === 'building' ? 76 : infantry ? 28 : 50, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0);
       bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner === 1 ? 2 : 1 });
     }
-    this.healthBars = layoutHealthBars(bars, this.viewport, obstacles);
+    const repairs = this.game.ownedBuildings(0).filter(b => b.repairing && b.hp < b.maxHp).map(building => {
+      const point = this.entityAnchor(building);
+      return { id: building.id, anchorX: point.x + 55, anchorY: point.y - 7, width: 30, height: 30, priority: 5 };
+    });
+    this.repairBadges = layoutHealthBars(repairs, this.viewport, obstacles);
+    this.healthBars = layoutHealthBars(bars, this.viewport, [...obstacles, ...this.repairBadges]);
     for (const bar of this.healthBars) {
       const { entity, x, y, width, numeric, ammo } = bar, top = y + (numeric ? 12 : 0), style = healthVisual(entity.owner, bar.ratio);
       if (Math.abs(x + width / 2 - bar.anchorX) > 2 || Math.abs(y + bar.height - bar.anchorY) > 2) {
@@ -956,11 +1002,7 @@ export class Renderer {
     for (const effect of this.game.effects) if (effect.type === 'income' && this.game.isVisibleFor(0, effect.x, effect.y)) {
       const point = this.worldToScreen(effect.x, effect.y, 20 + effect.age / effect.duration * 32); ctx.font = '600 13px "Noto Sans SC",sans-serif'; ctx.fillStyle = '#e9cd90'; ctx.textAlign = 'center'; ctx.fillText(`+${effect.amount}`, point.x, point.y);
     }
-    for (const building of this.game.ownedBuildings(0).filter(b => b.repairing && b.hp < b.maxHp)) {
-      const point = this.entityAnchor(building); ctx.save(); ctx.globalAlpha = .6 + Math.sin(this.game.time * 5) * .3;
-      ctx.strokeStyle = '#a8edc6'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.arc(point.x + 3, point.y - 18, 5, -.5, Math.PI + .5); ctx.moveTo(point.x, point.y - 14); ctx.lineTo(point.x - 8, point.y - 6); ctx.stroke(); ctx.restore();
-    }
+    for (const badge of this.repairBadges) drawRepairBadge(ctx, { x: badge.x + 15, y: badge.y + 37 }, this.game.time, this.game.players[0].credits <= 0);
     for (const unit of this.game.activeUnits(0).filter(u => selected.has(u.id) && u.order?.type === 'patrol')) {
       const order = unit.order, a = this.worldToScreen(order.originX, order.originY), b = this.worldToScreen(order.destinationX, order.destinationY);
       ctx.save(); ctx.strokeStyle = '#a1deca'; ctx.setLineDash([5, 6]); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]);

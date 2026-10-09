@@ -14,6 +14,10 @@ let backup;
 try {
   await page.goto(`file://${file}`);
   backup = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter(key => key.startsWith('great-powers-')).map(key => [key, localStorage.getItem(key)])));
+  if (await page.evaluate(() => document.querySelector('#nickname-dialog')?.open)) {
+    await page.fill('#nickname-dialog input', '离线验收');
+    await page.click('#nickname-dialog button[type="submit"]');
+  }
   await page.evaluate(() => {
     window.__offlineErrors = []; window.__decodedVoices = [];
     // 明确模拟目标 Linux 设备没有中文系统音色，验证随包 WAV 而非系统语音。
@@ -54,6 +58,10 @@ try {
   } else check(report.save.mode === 'convoy' && report.save.routes === 2 && !report.save.ore && !report.save.miners, '离线包不是新版运输经济');
   await page.click('#sound-btn'); await page.selectOption('#audio-voice', 'portable'); await page.click('#audio-test');
   await page.waitForFunction(() => __decodedVoices.some(v => v.duration > .1 && v.duration < 15 && v.rms > .001), undefined, { timeout: 15000 });
+  const maleSamples = await page.evaluate(() => __decodedVoices.length);
+  await page.selectOption('#audio-voice', 'portable-female'); await page.click('#audio-test');
+  await page.waitForFunction(count => __decodedVoices.length > count, maleSamples, { timeout: 15000 });
+  report.offlineVoices = ['内置男声', '内置女声'];
   report.render = await page.evaluate(() => {
     const canvas = document.querySelector('#game-canvas'), gl = canvas.getContext('webgl2');
     const pixels = new Uint8Array(canvas.width * canvas.height * 4);

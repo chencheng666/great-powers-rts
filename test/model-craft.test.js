@@ -38,13 +38,14 @@ test('人体截面法线向外，合批保留纹理且不混合同名的不同�
   mergeParts(group); assert.equal(group.children.length,2); assert.equal(group.children[0].geometry.attributes.uv.count,72);
 });
 
-test('装备工艺细节幂等、随原炮塔转动，新增网格不超过六个且面数受控', () => {
+test('装备工艺细节幂等、随原炮塔转动，独立履带后新增网格不超过九个且面数受控', () => {
   for (const name of ['tank_china','tank_nato','tank_middleeast','fighter','strike','rocket_china','supply']) {
     const model = new THREE.Group(), weapon = new THREE.Group(); weapon.name='weapon'; model.add(weapon);
     refineEquipment(model,name); const count=model.children.length;
     assert.equal(refineEquipment(model,name),model); assert.equal(model.children.length,count);
     let calls=0,triangles=0;model.traverse(m=>{if(m.isMesh){calls++;triangles+=m.geometry.attributes.position.count/3;assert.ok(m.geometry.attributes.uv);}});
-    assert.ok(calls<=6);assert.ok(triangles<10000);
+    assert.ok(calls <= (hasRefinedTracks(name) ? 9 : 6));assert.ok(triangles<10000);
+    if(hasRefinedTracks(name)) assert.equal(model.getObjectByName('track_belt_1').isInstancedMesh, true);
     if(hasRefinedTracks(name))assert.ok(weapon.getObjectByName('炮塔工艺细节'));
   }
   const model=new THREE.Group();refineEquipment(model,'robot_rifle');assert.equal(model.children.length,0);
