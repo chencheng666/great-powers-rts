@@ -65,6 +65,8 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
       if (req.method !== 'GET' && req.method !== 'HEAD') return json(405, { error:'不支持的请求' });
       let file = resolve(root, '.'+decodeURIComponent(url.pathname));
       if (!file.startsWith(root+sep) && file !== root) return json(403, { error:'禁止访问' });
+      if (url.pathname === '/downloads') { res.writeHead(302, { Location:'/downloads/', 'Cache-Control':'no-cache' }); return res.end(); }
+      if (url.pathname === '/downloads/') file = resolve(root,'downloads/index.html');
       if (file === root) file = resolve(root,'index.html');
       const info = await stat(file); if (!info.isFile()) return json(404, { error:'文件不存在' });
       const types = { '.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.glb':'model/gltf-binary','.wav':'audio/wav','.mp3':'audio/mpeg','.json':'application/json','.zip':'application/zip' };
