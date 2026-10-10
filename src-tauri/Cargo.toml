@@ -9,3 +9,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 serde_json = "1"
+
+[features]
+# Tauri release builds enable this feature; dev builds keep the local Vite URL.
+custom-protocol = ["tauri/custom-protocol"]
