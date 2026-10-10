@@ -15,3 +15,22 @@ test('发行内嵌本地资源，只有主窗口权限，Windows安装不依赖�
  assert.equal(config.build.frontendDist,'../dist');assert.equal(config.bundle.windows.webviewInstallMode.type,'offlineInstaller');
  assert.deepEqual(cap.windows,['main']);assert.equal(cap.remote,undefined);assert.ok(!cap.permissions.some(x=>typeof x==='string'&&x.startsWith('fs:')));
 });
+
+test('桌面联网失败可重试并保持单机返回入口，重复点击不会并发创建窗口',async t=>{
+ const {OnlineClient}=await import('../src/online-client.js');
+ const oldDocument=globalThis.document,oldInternal=globalThis.__TAURI_INTERNALS__,oldWindow=globalThis.window;
+ t.after(()=>{globalThis.document=oldDocument;globalThis.__TAURI_INTERNALS__=oldInternal;globalThis.window=oldWindow;});
+ const elements=new Map(['[data-desktop-retry]','[role=status]','[role=alert]'].map(k=>[k,{disabled:false,textContent:''}]));
+ const dialog={open:false,querySelector:k=>elements.get(k),showModal(){this.open=true;},close(){this.open=false;}};
+ globalThis.document={querySelector:()=>dialog};
+ globalThis.window=globalThis;let calls=0,reject;globalThis.__TAURI_INTERNALS__={invoke:()=>{calls++;return new Promise((_,r)=>reject=r);}};
+ const client={desktopOpening:false};
+ const first=OnlineClient.prototype.openDesktop.call(client);
+ assert.equal(dialog.open,true);assert.equal(elements.get('[data-desktop-retry]').disabled,true);
+ await OnlineClient.prototype.openDesktop.call(client);assert.equal(calls,1);
+ reject('服务器证书无效');await first;
+ assert.equal(dialog.open,true);assert.equal(elements.get('[role=alert]').textContent,'服务器证书无效');
+ assert.equal(elements.get('[data-desktop-retry]').disabled,false);assert.equal(client.desktopOpening,false);
+ globalThis.__TAURI_INTERNALS__={invoke:async()=>{calls++;}};
+ await OnlineClient.prototype.openDesktop.call(client);assert.equal(calls,2);assert.equal(dialog.open,false);
+});

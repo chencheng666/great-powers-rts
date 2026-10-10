@@ -61,7 +61,7 @@ jobs:
         with:
           tagName: desktop-v__VERSION__
           releaseName: '大国崛起 桌面版 v__VERSION__'
-          releaseBody: '内嵌单机资源，联网需要网络。实验发行：macOS ad-hoc签名，未公证；Windows未代码签名。Linux需要WebKitGTK 4.1和WebGL2，麒麟/UOS及具体CPU/GPU须实机验证。下载后请核对SHA256。'
+          releaseBody: '内嵌单机资源。桌面联网暂未开放，等待HTTPS域名配置。实验发行：macOS ad-hoc签名，未公证；Windows未代码签名。Linux需要WebKitGTK 4.1和WebGL2，麒麟/UOS及具体CPU/GPU须实机验证。下载后请核对SHA256。'
           releaseDraft: true
           prerelease: true
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} -- --locked

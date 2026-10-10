@@ -38,10 +38,29 @@ export class OnlineClient {
     this.user=data.user;return data;
   }
   async open(){
-    if (isDesktop()) { try { await desktopInvoke('desktop_online'); } catch(e) { this.onNotice(String(e), true); } return; }
+    if (isDesktop()) { await this.openDesktop(); return; }
     if(!this.name){this.editName();return;}
     this.dialog.showModal();this.showError('');this.render();this.dialog.querySelector('#online-status').textContent='正在连接战区…';
     try{await this.session();await this.connect();this.render();}catch(e){this.showError(e.message);this.render();}
+  }
+  async openDesktop(){
+    if(this.desktopOpening)return;
+    this.desktopOpening=true;
+    let dialog=document.querySelector('#desktop-online-dialog');
+    if(!dialog){
+      dialog=document.createElement('dialog');dialog.id='desktop-online-dialog';dialog.className='online-dialog';
+      dialog.setAttribute('aria-labelledby','desktop-online-title');
+      dialog.innerHTML='<h2 id="desktop-online-title">联网对战</h2><p role="status"></p><p role="alert" class="online-error"></p><footer><button class="secondary-btn" data-desktop-retry>重试连接</button><button class="secondary-btn" data-desktop-return>返回单机</button></footer>';
+      document.body.append(dialog);
+      dialog.querySelector('[data-desktop-retry]').addEventListener('click',()=>this.openDesktop());
+      dialog.querySelector('[data-desktop-return]').addEventListener('click',()=>dialog.close());
+    }
+    const retry=dialog.querySelector('[data-desktop-retry]');retry.disabled=true;
+    dialog.querySelector('[role=status]').textContent='正在加载独立联网窗口，最长等待20秒…';
+    dialog.querySelector('[role=alert]').textContent='';if(!dialog.open)dialog.showModal();
+    try{await desktopInvoke('desktop_online');dialog.close();}
+    catch(e){dialog.querySelector('[role=status]').textContent='联网窗口未能打开';dialog.querySelector('[role=alert]').textContent=String(e);}
+    finally{this.desktopOpening=false;retry.disabled=false;}
   }
   connect(){
     if(this.socket?.readyState===WebSocket.OPEN)return Promise.resolve();

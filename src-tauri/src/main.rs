@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use tauri::{Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl};
 use tauri_plugin_dialog::DialogExt;
-use std::{fs, io::Read, sync::Mutex};
+use std::{fs, io::Read, sync::{Mutex, mpsc}, time::Duration};
 const LIMIT: usize = 8 * 1024 * 1024;
 fn local_url(scheme: &str, host: &str, port: Option<u16>, development: bool) -> bool {
  (scheme=="tauri" && host=="localhost" && port.is_none())
@@ -22,15 +22,33 @@ fn desktop_fullscreen(window: WebviewWindow) -> Result<bool,String> {
  local(&window)?; let next=!window.is_fullscreen().map_err(|e|e.to_string())?;
  window.set_fullscreen(next).map_err(|e|e.to_string())?;Ok(next)
 }
+const ONLINE_URL: &str = "http://43.135.186.21:8088/";
+fn online_transport_allowed(scheme: &str) -> bool {
+ scheme == "https"
+}
 #[tauri::command]
-fn desktop_online(app: tauri::AppHandle, window: WebviewWindow) -> Result<(),String> {
+async fn desktop_online(app: tauri::AppHandle, window: WebviewWindow) -> Result<(),String> {
  local(&window)?;
  if let Some(w)=app.get_webview_window("online") {w.show().map_err(|e|e.to_string())?;return w.set_focus().map_err(|e|e.to_string())}
- let url="http://43.135.186.21:8088/".parse().map_err(|_|"服务器地址无效")?;
- WebviewWindowBuilder::new(&app,"online",WebviewUrl::External(url))
- .title("大国崛起 · 联网窗口（需要网络）").inner_size(1440.,900.)
- .on_navigation(|u|u.scheme()=="http" && u.host_str()==Some("43.135.186.21") && u.port()==Some(8088))
- .build().map_err(|e|e.to_string())?;Ok(())
+ let url: tauri::Url=ONLINE_URL.parse().map_err(|_|"服务器地址无效")?;
+ // 不关闭 ATS；在部署有效 HTTPS 前明确解释原因，避免创建白屏窗口。
+ if !online_transport_allowed(url.scheme()) {
+  return Err("桌面联网暂未开放，等待 HTTPS 域名配置。离线单机、存档与全屏功能仍可使用；后续版本配置安全入口后再开放联网。".into());
+ }
+ let expected=url.clone();let navigation=url.clone();
+ let (sender,receiver)=mpsc::sync_channel(1);
+ let online=WebviewWindowBuilder::new(&app,"online",WebviewUrl::External(url))
+ .title("大国崛起 · 联网窗口（需要网络）").inner_size(1440.,900.).visible(false)
+ .on_navigation(move |u|u.origin()==navigation.origin())
+ .on_page_load(move |_,payload| {
+  if payload.event()==tauri::webview::PageLoadEvent::Finished && payload.url().origin()==expected.origin() {
+   let _=sender.try_send(());
+  }
+ })
+ .build().map_err(|e|e.to_string())?;
+ let loaded=tauri::async_runtime::spawn_blocking(move ||receiver.recv_timeout(Duration::from_secs(20))).await.map_err(|e|e.to_string())?;
+ if loaded.is_err() {let _=online.close();return Err("联网页面未能在20秒内加载。请检查网络、服务器和证书后重试；离线单机仍可使用。".into());}
+ online.show().map_err(|e|e.to_string())?;online.set_focus().map_err(|e|e.to_string())?;Ok(())
 }
 #[tauri::command]
 fn desktop_backup(app: tauri::AppHandle, window: WebviewWindow, slot: String, contents: String, lock: tauri::State<Mutex<()>>) -> Result<(),String> {
@@ -74,6 +92,10 @@ fn main() {
  assert!(!local_url("http","127.0.0.1",Some(4187),false));assert!(local_url("http","127.0.0.1",Some(4187),true));
  }
 
+ #[test] fn desktop_requires_https_without_transport_exceptions() {
+ assert!(online_transport_allowed("https"));assert!(!online_transport_allowed("http"));
+ assert!(!online_transport_allowed("file"));
+ }
  #[test] fn save_payload_is_bounded_json_object() {
  assert!(validate("{}").is_ok());assert!(validate("[]").is_err());assert!(validate("bad").is_err());assert!(validate(&" ".repeat(LIMIT+1)).is_err());
  }
