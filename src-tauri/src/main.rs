@@ -3,12 +3,14 @@ use tauri::{Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl};
 use tauri_plugin_dialog::DialogExt;
 use std::{fs, io::Read, sync::Mutex};
 const LIMIT: usize = 8 * 1024 * 1024;
+fn local_url(scheme: &str, host: &str, port: Option<u16>, development: bool) -> bool {
+ (scheme=="tauri" && host=="localhost" && port.is_none())
+ || (["http","https"].contains(&scheme) && host=="tauri.localhost" && port.is_none())
+ || (development && scheme=="http" && host=="127.0.0.1" && port==Some(4187))
+}
 fn local(window: &WebviewWindow) -> Result<(), String> {
  let url = window.url().map_err(|e|e.to_string())?;
- let host=url.host_str().unwrap_or("");
- let embedded=(url.scheme()=="tauri" && host=="localhost") || (["http","https"].contains(&url.scheme()) && host=="tauri.localhost" && url.port().is_none());
- let development=cfg!(debug_assertions) && url.scheme()=="http" && host=="127.0.0.1" && url.port()==Some(4187);
- if window.label() != "main" || !(embedded||development) {return Err("仅本地游戏窗口可使用桌面功能".into())} Ok(())
+ if window.label() != "main" || !local_url(url.scheme(),url.host_str().unwrap_or(""),url.port(),cfg!(debug_assertions)) {return Err("仅本地游戏窗口可使用桌面功能".into())} Ok(())
 }
 fn validate(contents: &str) -> Result<(), String> {
  if contents.len() > LIMIT { return Err("存档不能超过8MB".into()) }
@@ -66,6 +68,12 @@ fn main() {
 
 #[cfg(test)] mod tests {
  use super::*;
+ #[test] fn native_commands_reject_remote_pages_and_release_dev_origin() {
+ assert!(local_url("tauri","localhost",None,false));assert!(local_url("http","tauri.localhost",None,false));assert!(local_url("https","tauri.localhost",None,false));
+ assert!(!local_url("http","43.135.186.21",Some(8088),true));assert!(!local_url("http","tauri.localhost",Some(9000),true));assert!(!local_url("tauri","localhost",Some(9000),true));
+ assert!(!local_url("http","127.0.0.1",Some(4187),false));assert!(local_url("http","127.0.0.1",Some(4187),true));
+ }
+
  #[test] fn save_payload_is_bounded_json_object() {
  assert!(validate("{}").is_ok());assert!(validate("[]").is_err());assert!(validate("bad").is_err());assert!(validate(&" ".repeat(LIMIT+1)).is_err());
  }

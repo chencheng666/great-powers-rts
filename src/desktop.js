@@ -1,5 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
-export const isDesktop = () => Boolean(globalThis.__TAURI_INTERNALS__);
+export const isDesktop = () => {
+ if (!globalThis.__TAURI_INTERNALS__ || !globalThis.location) return false;
+ const {protocol,hostname,port}=globalThis.location;
+ return protocol==='tauri:' && hostname==='localhost' && !port
+  || ['http:','https:'].includes(protocol) && hostname==='tauri.localhost' && !port
+  || import.meta.env?.DEV===true && protocol==='http:' && hostname==='127.0.0.1' && port==='4187';
+};
 export const desktopInvoke = (command, args) => invoke(command, args);
 export function desktopNotice() {
  if (!isDesktop()) return;

@@ -2,7 +2,7 @@
 name = "great-powers-desktop"
 version = "0.9.0"
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.90"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 [dependencies]
