@@ -179,7 +179,11 @@ npm run dev
 npm test                 # 规则与展示逻辑测试
 npm run build            # 常规网页构建
 npm run package:offline  # 生成单文件 HTML 与 ZIP
+npm run desktop:dev      # Tauri 原生开发，需要 Rust 与系统依赖
+npm run desktop:build    # 为当前系统生成安装包
 ```
+
+桌面架构目标、WebGL2与系统依赖、签名及实机验证边界见 [桌面版构建与兼容性](docs/桌面版构建与兼容性.md)。配置文件已准备不等于所有平台安装包已经交付。
 
 ## 已实现玩法
 

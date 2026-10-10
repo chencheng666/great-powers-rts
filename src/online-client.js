@@ -56,7 +56,7 @@ export class OnlineClient {
       ws.onmessage=async e=>{
         const m=JSON.parse(e.data);
         if(m.type==='hello'){
-          if(m.protocol!==PROTOCOL_VERSION){fail('游戏与服务版本不一致，请刷新页面');ws.close();return;}
+          if(m.protocol!==PROTOCOL_VERSION){fail('游戏与服务版本不一致，请刷新网页或更新桌面版');ws.close();return;}
           welcomed=true;clearTimeout(timeout);this.user=m.user;this.room=m.room;this.retries=0;
           if(this.inBattle&&!m.room){this.inBattle=false;this.onInterrupted?.();}this.render();this.onStatus('已连接');resolve();
         }

@@ -5,7 +5,10 @@ use std::{fs, io::Read, sync::Mutex};
 const LIMIT: usize = 8 * 1024 * 1024;
 fn local(window: &WebviewWindow) -> Result<(), String> {
  let url = window.url().map_err(|e|e.to_string())?;
- if window.label() != "main" || !["localhost", "tauri.localhost", "127.0.0.1"].contains(&url.host_str().unwrap_or("")) {return Err("仅本地游戏窗口可使用桌面功能".into())} Ok(())
+ let host=url.host_str().unwrap_or("");
+ let embedded=(url.scheme()=="tauri" && host=="localhost") || (["http","https"].contains(&url.scheme()) && host=="tauri.localhost" && url.port().is_none());
+ let development=cfg!(debug_assertions) && url.scheme()=="http" && host=="127.0.0.1" && url.port()==Some(4187);
+ if window.label() != "main" || !(embedded||development) {return Err("仅本地游戏窗口可使用桌面功能".into())} Ok(())
 }
 fn validate(contents: &str) -> Result<(), String> {
  if contents.len() > LIMIT { return Err("存档不能超过8MB".into()) }
@@ -59,4 +62,11 @@ fn main() {
  tauri::Builder::default().manage(Mutex::new(())).plugin(tauri_plugin_dialog::init())
  .invoke_handler(tauri::generate_handler![desktop_fullscreen,desktop_online,desktop_backup,desktop_export,desktop_import])
  .run(tauri::generate_context!()).expect("桌面应用启动失败");
+}
+
+#[cfg(test)] mod tests {
+ use super::*;
+ #[test] fn save_payload_is_bounded_json_object() {
+ assert!(validate("{}").is_ok());assert!(validate("[]").is_err());assert!(validate("bad").is_err());assert!(validate(&" ".repeat(LIMIT+1)).is_err());
+ }
 }
