@@ -32,8 +32,10 @@
 <p>Linux 构建目标为 x86_64 与 aarch64 的 GNU 平台，不能由“ARM64”推导出所有国产 CPU 或系统都适配。若某一麒麟/UOS版本没有对应的 WebKitGTK 4.1 包或图形驱动不能提供 WebGL2，仍需单独适配和实测。</p>
 <p>macOS 实验包使用 ad-hoc 签名，未经过 Apple 公证；Windows 未代码签名。不要关闭系统安全保护。安装前请核对文件名、架构和 SHA256。</p>
 <h2>下载、试玩与源码</h2>
-<p id="download-status">服务器下载资源正在准备，匿名 GET/HEAD、大小与 SHA256 通过后再补充下载状态。当前不把构建配置或未校验文件写成已交付。</p>
+<p id="download-status">Mac Apple Silicon 安装包已在现有服务器提供下载，大小 45,532,066 字节。匿名 HEAD 返回 200；服务器经公网地址与本机 HTTP 完整读取的 SHA256 均通过。外部 Mac 已读取部分字节并核对一致，未完成整包下载。其他四平台安装器已由 CI 构建，目前保留在 GitHub 草稿中，公开下载尚待批准。</p>
 <p><a href="http://43.135.186.21:8088/">现有网页试玩与联机入口</a> · <a href="http://43.135.186.21:8088/downloads/">服务器下载中心</a> · <a href="https://github.com/chencheng666/great-powers-rts/tree/codex/desktop-v090">桌面版源码分支</a> · <a href="https://github.com/chencheng666/great-powers-rts/actions/runs/38060331297">本轮跨平台构建记录</a></p>
-<p id="test-status">网页回归 282/282 通过，Rust 3/3 通过，网页构建通过；五平台 CI 均已成功并生成产物。Mac ARM64 app/DMG 已在本机构建并校验签名完整性。</p>
+<figure><img src="assets/download-center.png" alt="服务器真实下载中心"><figcaption>真实浏览器截图：现有服务器已列出 Mac Apple Silicon 安装器、大小、SHA256 与适用范围。</figcaption></figure>
+<p>Mac ARM64 安装包 SHA256：<code>065e6bc368c429c27f4983c3f5864f96c77501d692b57dda1a2a6a649aa64b81</code></p>
+<p id="test-status">网页回归 283/283 通过，Rust 3/3 通过，网页构建通过；五平台 CI 均已成功并生成产物。Mac ARM64 app/DMG 已在本机构建并校验签名完整性。</p>
 <p>游戏会继续完善，欢迎带着系统版本、处理器架构、显卡和复现步骤反馈问题。桌面端这一步的价值，是把单机体验、窗口能力和可带走的存档做扎实；联网和各系统兼容则按实际验收逐项开放。</p>
 <p class="status">此文件仅为公众号草稿，没有群发或发布到公众号。</p></html>
