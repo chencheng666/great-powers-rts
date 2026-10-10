@@ -57,3 +57,13 @@ test('材质增强保留已有纹理，涂装与橡胶的物性不同且阵营�
   const rubber=weatherMaterial(new THREE.MeshStandardMaterial({name:'橡胶'}));assert.equal(rubber.metalness,0);assert.ok(rubber.roughness>.9);
   const team=new THREE.MeshStandardMaterial({name:'阵营标识'});assert.equal(weatherMaterial(team),team);
 });
+
+
+test('华夏坦克双油桶合入车体，其他阵营不增加此附件或绘制调用', () => {
+  const make = name => { const m = new THREE.Group(), w = new THREE.Group(); w.name='weapon'; m.add(w); refineEquipment(m,name); return m; };
+  const china=make('tank_china'), other=make('tank_russia');
+  const rear = model => { const result=[]; model.getObjectByName('车体工艺细节').traverse(m=>{ if (!m.isMesh) return; const p=m.geometry.attributes.position; for(let i=0;i<p.count;i++) if(p.getX(i)<-2.95 && p.getY(i)>1.3) result.push([p.getX(i),p.getY(i),p.getZ(i)]); }); return result; };
+  const points=rear(china); assert.ok(points.some(p=>p[2]>.5)); assert.ok(points.some(p=>p[2]<-.5)); assert.equal(rear(other).length,0);
+  assert.equal(china.getObjectByName('车体工艺细节').children.length,other.getObjectByName('车体工艺细节').children.length);
+  const count=points.length; refineEquipment(china,'tank_china'); assert.equal(rear(china).length,count);
+});

@@ -1,6 +1,7 @@
 import PF from 'pathfinding';
 import { createBattleId, legacyBattleId } from './battle-identity.js';
 import { unitCostFor, unitHealthFor } from './unit-specs.js';
+import { bridgeBlocksDirectShot } from './bridge-fire.js';
 import { AI_DIFFICULTIES, BUILDINGS, CORE_BUILDINGS, FACTIONS, MAPS, ORE_VALUES, PRODUCERS, UNITS, WORLD, supportsMap } from './data.js';
 import { formationOffsets, separateUnits, UnitSpatialIndex, unitLayer, unitRadius } from './unit-spacing.js';
 import { modernCombat } from './modern-combat.js';
@@ -749,6 +750,7 @@ export class Game {
     if (source.kind === 'building') return target.kind === 'building' || this.aircraftGrounded(target) || !UNITS[target.type].tags.includes('jet');
     const type = source.type;
     if (!UNITS[type]?.damage) return false;
+    if (bridgeBlocksDirectShot(this.map, source, target, UNITS)) return false;
     if (type === 'carrier' && this.carrierAircraft(source).length) return false;
     const tags = target.kind === 'unit' ? UNITS[target.type].tags.filter(t => !this.aircraftGrounded(target) || !['air', 'jet', 'drone'].includes(t)) : [];
     if (type === 'aa') return tags.includes('air');

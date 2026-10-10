@@ -11,7 +11,15 @@ export function fixedWingPresentation(type, future = false) {
 
 export function glideProfile(distance, groundRadius) {
   const fraction = clamp((distance - groundRadius) / 260);
-  return { fraction, pitch: fraction > .03 && fraction < .98 ? -.07 : 0 };
+  // 最后约 78 世界单位逐渐拉平，接地时回到水平；仅改变表现姿态。
+  const smooth = value => value * value * (3 - 2 * value);
+  let pitch = 0;
+  if (fraction > 0 && fraction < .3) {
+    const flare = smooth(clamp(fraction / .1));
+    const descent = smooth(clamp((fraction - .1) / .2));
+    pitch = .06 * flare * (1 - descent) - .07 * descent;
+  } else if (fraction >= .3) pitch = -.07 * (1 - smooth(clamp((fraction - .85) / .15)));
+  return { fraction, pitch: pitch || 0 };
 }
 
 export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight) {

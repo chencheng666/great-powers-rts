@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Great Powers",
+  "version": "0.9.0",
+  "identifier": "cn.greatpowers.rts",
+  "build": {
+    "beforeDevCommand": "npm run dev:desktop",
+    "devUrl": "http://127.0.0.1:4187",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "大国崛起 · 桌面版",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1000,
+        "minHeight": 650
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' asset: http://asset.localhost; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; media-src 'self' asset: http://asset.localhost blob:; connect-src 'self' ipc: http://ipc.localhost; worker-src 'self' blob:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app",
+      "dmg",
+      "deb",
+      "appimage",
+      "nsis"
+    ],
+    "shortDescription": "即时战略单机与在线对战",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "offlineInstaller"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "12.0",
+      "signingIdentity": "-"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "great-powers-rts",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -10,18 +10,23 @@
     "server": "node server/index.mjs",
     "server:lan": "node scripts/start-lan.mjs",
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "vite build --configLoader native",
     "preview": "vite preview --host 0.0.0.0",
     "package:offline": "node scripts/package-offline.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "dev:desktop": "vite --host 127.0.0.1 --port 4187 --strictPort --configLoader native",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.12.2",
     "lucide": "^0.468.0",
     "pathfinding": "^0.4.18",
     "three": "^0.186.1",
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.12.1",
     "vite": "^7.0.0"
   }
 }

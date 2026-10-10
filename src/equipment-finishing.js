@@ -46,6 +46,14 @@ export function refineEquipment(model, name) {
       for (const x of [-2.1,-1.6,-1.1]) box(hull, rubber, [x,1.58,side*.7], [.22,.022,.032]);
       const hook = mesh(hull,new THREE.TorusGeometry(.095,.024,6,16),steel,[length/2+.16,1.1,side*.63],[0,Math.PI/2,0]); hook.scale.y=.8;
     }
+    if (name === 'tank_china') {
+      // 私信指出的车尾双附加油桶：原创简化装饰，合入既有车体材质批次。
+      for (const side of [-1, 1]) {
+        mesh(hull, new THREE.CylinderGeometry(.28, .28, 1.12, 12), steel, [-3.08, 1.48, side * .65], [Math.PI / 2, 0, 0]);
+        for (const offset of [-.34, .34]) mesh(hull, new THREE.TorusGeometry(.287, .018, 4, 12), rubber, [-3.08, 1.48, side * .65 + offset]);
+        box(hull, rubber, [-2.84, 1.24, side * .65], [.20, .10, .72]);
+      }
+    }
     const mount = new THREE.Group(); mount.name = '炮塔工艺细节'; (model.getObjectByName('weapon') || model).add(mount);
     box(mount,rubber,[-.63,2.80,-.02],[.25,.10,.30]);
     beam(mount,steel,[-.63,2.79,-.02],[-.63,3.00,-.02],.045);

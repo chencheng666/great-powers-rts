@@ -3,7 +3,7 @@ import { bodyLoft, craftedMaterial, mergeParts, roundedPart } from './model-craf
 
 const compact = mergeParts;
 
-export function createPersonnel(type) {
+export function createPersonnel(type, { distant = false } = {}) {
   const root = new THREE.Group(); root.name = type;
   const group = new THREE.Group(); group.name = 'upper_body'; root.add(group);
   const weaponPose = new THREE.Group(); weaponPose.name = 'weapon_pose'; group.add(weaponPose);
@@ -18,14 +18,14 @@ export function createPersonnel(type) {
   const mesh = (parent, geometry, material, position, rotation) => {
     const m = new THREE.Mesh(geometry, material); m.position.set(...position); if (rotation) m.rotation.set(...rotation); parent.add(m); return m;
   };
-  const box = (parent, mat, pos, size, rotation) => mesh(parent, roundedPart(size, .02), mat, pos, rotation);
-  const sphere = (parent, mat, pos, radius, scale = [1, 1, 1]) => { const m = mesh(parent, new THREE.SphereGeometry(radius, 16, 12), mat, pos); m.scale.set(...scale); return m; };
+  const box = (parent, mat, pos, size, rotation) => mesh(parent, distant ? new THREE.BoxGeometry(...size) : roundedPart(size, .02), mat, pos, rotation);
+  const sphere = (parent, mat, pos, radius, scale = [1, 1, 1]) => { const m = mesh(parent, new THREE.SphereGeometry(radius, distant ? 8 : 16, distant ? 6 : 12), mat, pos); m.scale.set(...scale); return m; };
   const limb = (parent, mat, from, to, radius) => {
     const a = new THREE.Vector3(...from), b = new THREE.Vector3(...to), length = a.distanceTo(b);
-    const m = mesh(parent, new THREE.CapsuleGeometry(radius, Math.max(.01, length - radius * 2), 5, 12), mat, a.clone().add(b).multiplyScalar(.5).toArray());
+    const m = mesh(parent, new THREE.CapsuleGeometry(radius, Math.max(.01, length - radius * 2), distant ? 1 : 5, distant ? 6 : 12), mat, a.clone().add(b).multiplyScalar(.5).toArray());
     m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.sub(a).normalize()); return m;
   };
-  mesh(group, bodyLoft([[.88,.12,.16],[1.03,.145,.18],[1.18,.145,.19],[1.35,.15,.22],[1.45,.12,.24],[1.51,.075,.13]]), fabric, [0,0,0]);
+  mesh(group, bodyLoft([[.88,.12,.16],[1.03,.145,.18],[1.18,.145,.19],[1.35,.15,.22],[1.45,.12,.24],[1.51,.075,.13]], distant ? 8 : 20), fabric, [0,0,0]);
   sphere(group, fabric, [-.015,.92,0], .15, [.8,.8,1.12]);
   box(group, dark, [0,.94,0], [.265,.055,.34]);
   box(group, spy || engineer ? steel : dark, [.145,.94,0], [.03,.035,.045]);
@@ -40,9 +40,9 @@ export function createPersonnel(type) {
       box(group, dark, [.116,1.786,side*.044], [.012,.008,.034], [side*.1,0,0]);
     }
     const leg = new THREE.Group(); leg.name = side < 0 ? 'leg_left' : 'leg_right'; leg.position.set(-.01,.91,side*.105); root.add(leg);
-    mesh(leg, bodyLoft([[-.44,.067,.075],[-.32,.083,.085],[-.10,.095,.089],[0,.09,.085]]), fabric, [0,0,0]);
+    mesh(leg, bodyLoft([[-.44,.067,.075],[-.32,.083,.085],[-.10,.095,.089],[0,.09,.085]], distant ? 8 : 20), fabric, [0,0,0]);
     const knee = new THREE.Group(); knee.name = side < 0 ? 'knee_left' : 'knee_right'; knee.position.y = -.43; leg.add(knee);
-    mesh(knee, bodyLoft([[-.36,.045,.055],[-.25,.064,.06],[-.10,.072,.068],[.035,.065,.075]]), fabric, [0,0,0]);
+    mesh(knee, bodyLoft([[-.36,.045,.055],[-.25,.064,.06],[-.10,.072,.068],[.035,.065,.075]], distant ? 8 : 20), fabric, [0,0,0]);
     box(knee, dark, [.033,-.375,0], [.205,.12,.138]);
     box(knee, dark, [.033,-.437,0], [.21,.02,.142]);
     for (const x of [-.025,.015,.055,.085]) box(knee, dark, [x,-.45,0], [.015,.011,.14]);
@@ -68,7 +68,7 @@ export function createPersonnel(type) {
   if (spy) {
     box(group, shirt, [.135,1.35,0], [.025,.25,.12]); box(group, dark, [.154,1.34,0], [.015,.23,.023]);
     for (const side of [-1,1]) box(group, fabric, [.133,1.40,side*.079], [.035,.18,.075], [side*.22,0,0]);
-    const hair = mesh(group, new THREE.SphereGeometry(.13,20,12,0,Math.PI*2,0,Math.PI*.48), dark, [.003,1.76,0]); hair.scale.set(.86,1.09,.89);
+    const hair = mesh(group, new THREE.SphereGeometry(.13,distant ? 8 : 20,distant ? 6 : 12,0,Math.PI*2,0,Math.PI*.48), dark, [.003,1.76,0]); hair.scale.set(.86,1.09,.89);
     for (const side of [-1,1]) box(group, dark, [.12,1.764,side*.049], [.022,.041,.061]);
     box(group, steel, [.13,1.766,0], [.015,.007,.039]);
     box(group, dark, [.04,.76,.28], [.11,.29,.33]); box(group, steel, [.10,.79,.28], [.01,.022,.028]);
@@ -76,8 +76,8 @@ export function createPersonnel(type) {
     limb(group, dark, [.035,.91,.225], [.035,.96,.225], .012); limb(group, dark, [.035,.91,.335], [.035,.96,.335], .012);
     limb(group, dark, [.035,.96,.225], [.035,.96,.335], .012);
   } else {
-    const helmet = mesh(group, new THREE.SphereGeometry(.14,20,12,0,Math.PI*2,0,Math.PI*.59), engineer ? shirt : armor, [0,1.79,0]); helmet.scale.set(1,.82,1.02);
-    const rim = mesh(group, new THREE.TorusGeometry(.137,.009,6,28), dark, [0,1.783,0], [Math.PI/2,0,0]); rim.scale.y=1.02;
+    const helmet = mesh(group, new THREE.SphereGeometry(.14,distant ? 8 : 20,distant ? 6 : 12,0,Math.PI*2,0,Math.PI*.59), engineer ? shirt : armor, [0,1.79,0]); helmet.scale.set(1,.82,1.02);
+    const rim = mesh(group, new THREE.TorusGeometry(.137,.009,distant ? 3 : 6,distant ? 8 : 28), dark, [0,1.783,0], [Math.PI/2,0,0]); rim.scale.y=1.02;
     for (const side of [-1,1]) {
       limb(group, dark, [-.015,1.77,side*.115], [.08,1.64,side*.048], .007);
       box(group, armor, [.105,1.31,side*.135], [.05,.37,.055], [0,side*.1,0]);

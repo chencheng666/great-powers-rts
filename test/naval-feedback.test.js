@@ -136,7 +136,8 @@ test('运输机宽体流线机身有体积，不放大翼展或其他武器模�
 test('发电机风扇与雷达部件可动，暂停时间不动、断电雷达停扫，统一四十五度视角', () => {
   const model = refinePowerFans(new THREE.Group()), radar = new THREE.Group(); radar.name = 'facility_radar'; model.add(radar);
   const game = { time: 3, hasPower: () => true }, entity = { kind: 'building', type: 'radar', owner: 0, hp: 100 };
-  animateFacility(model, entity, game); assert.ok(radar.rotation.y > 0);
+  animateFacility(model, entity, game); assert.equal(radar.rotation.y, 0);
+  game.time += .1; animateFacility(model, entity, game); assert.ok(radar.rotation.y > 0);
   const angle = radar.rotation.y; animateFacility(model, entity, game); assert.equal(radar.rotation.y, angle);
   game.time = 5; game.hasPower = () => false; animateFacility(model, entity, game); assert.equal(radar.rotation.y, angle);
   assert.ok(model.getObjectByName('facility_fan_-1.65').rotation.y > 0); assert.equal(BATTLE_VIEWS.immersive, Math.PI / 4);

@@ -24,12 +24,13 @@ import { RESOURCE_TYPES } from './battlefield-expansion.js';
 import { COMMUNITY_3D_BUILDINGS } from './community-visuals.js';
 import { BATTLE_READABILITY, readableMaterial, identityRadius, identityVisible } from './battle-readability.js';
 import { fixedWingHeight } from './airfield-presentation.js';
+import { animateIdleGun } from './idle-gun.js';
 import { lunarCraters } from './lunar-terrain.js';
 import { battleElevation } from './battle-camera.js';
 import { damagePresentation, damagedMaterial, structuralDamage, confirmedShipLoss, sinkingPose } from './damage-presentation.js';
 import { submarinePose } from './naval-presentation.js';
 import { animateFacility, drawRepairBadge } from './facility-motion.js';
-import { unitAnimation } from './unit-animation.js';
+import { unitAnimation, weaponElevation } from './unit-animation.js';
 import { animateTracks } from './track-motion.js';
 import { personnelLOD, syncPersonnelLOD } from './personnel-lod.js';
 
@@ -679,6 +680,7 @@ export class Renderer {
   updateEntities(now) {
     const dt = this.game.paused ? 0 : Math.min(.05, Math.max(0, (now - (this.lastEntityFrame ?? now)) / 1000)); this.lastEntityFrame = now;
     const active = new Set();
+    const shotAims = new Map(this.game.effects.filter(effect => effect.type === 'shot').map(effect => [effect.sourceId, effect]));
     const targeted = new Set(this.game.selected.map(id => this.game.getEntity(id)).filter(entity => entity?.owner === 0).map(entity => entity.order?.targetId || entity.targetId).filter(Boolean));
     for (const entity of [...this.game.buildings, ...this.game.units]) {
       if (entity.hp <= 0) continue; active.add(entity.id);
@@ -690,6 +692,19 @@ export class Renderer {
       if (entity.kind === 'unit') {
         const tags = UNITS[entity.type].tags;
         const animation = unitAnimation(entry, entity, dt, this.game.time);
+        if (entry.upperBody && entity.type === 'rifle') {
+          const aimTarget = this.game.getEntity(entity.order?.type === 'attack' ? entity.order.targetId : entity.targetId);
+          const shot = shotAims.get(entity.id);
+          if (shot) { entry.shotAim = shot; entry.shotAimAt = this.game.time; }
+          const shotAim = this.game.time - (entry.shotAimAt ?? -10) < .5 ? entry.shotAim : null;
+          const targetTags = UNITS[aimTarget?.type || shotAim?.targetType]?.tags || [];
+          const airborne = aimTarget && !this.game.aircraftGrounded(aimTarget) && !aimTarget.embarkedIn;
+          const targetHeight = aimTarget ? this.elevation(aimTarget.x, aimTarget.y) + (airborne && targetTags.includes('jet') ? 95 : airborne && targetTags.includes('drone') ? 23 : 3) : height;
+          const aimPitch = aimTarget && this.game.canSeeEntity(0, aimTarget)
+            ? weaponElevation(Math.hypot(aimTarget.x - entity.x, aimTarget.y - entity.y), targetHeight - height)
+            : shotAim ? weaponElevation(Math.hypot(shotAim.toX - entity.x, shotAim.toY - entity.y), targetTags.includes('jet') ? 95 : targetTags.includes('drone') ? 23 : 0) : 0;
+          animation.aimPitch += (aimPitch - animation.aimPitch) * (1 - Math.exp(-dt * 9));
+        }
         if (tags.includes('jet')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x, entity.y) + 4 : 95 * (entity.deployment ? Math.min(1, (this.game.time - entity.deployment.start) / 2.6) : 1) + Math.sin(now * .001 + entity.id) * 2;
         if (entity.deckApproach) height = 15 + 80 * Math.max(0, (entity.deckApproach.until - this.game.time) / 2.4);
         if (entity.embarkedIn) height = 15;
@@ -727,15 +742,18 @@ export class Renderer {
           height = entry.flightHeight;
         }
         if (entry.weapon) { entry.weapon.rotation.y = entry.heading - animation.turret; entry.weapon.position.x = 0; }
-        if (entry.barrel) entry.barrel.position.x = -.32 * (animation.recoil || 0);
+        if (entry.barrel) animateIdleGun(entry, animation, dt);
         if (entry.upperBody) {
           entry.upperBody.rotation.y = clamp(Math.atan2(Math.sin(entry.heading - animation.turret), Math.cos(entry.heading - animation.turret)), -1.1, 1.1);
-          entry.upperBody.rotation.z = -.018 * (animation.recoil || 0);
+          entry.upperBody.rotation.z = animation.aimPitch - .018 * (animation.recoil || 0);
         }
-        if (entry.weaponPose && entity.type === 'rifle') entry.weaponPose.position.x = -.028 * (animation.recoil || 0);
+        if (entry.weaponPose && entity.type === 'rifle') {
+          entry.weaponPose.position.x = -.028 * (animation.recoil || 0);
+          entry.weaponPose.rotation.z = Math.sin(this.game.time * 2.2 + entity.id) * .008 * (1 - animation.speed);
+        }
         if (tags.includes('infantry')) entry.model.rotation.z = Math.sin(animation.phase) * .018 * animation.speed;
         for (const track of entry.tracks) track.visible = this.camera.zoom >= 1.4;
-        if (visible && entry.tracks.length && this.camera.zoom >= 1.4) animateTracks(entry.tracks, animation.travel);
+        if (visible && entry.tracks.length && this.camera.zoom >= 1.4) animateTracks(entry.tracks, animation.travel, animation.turnTravel);
         entry.legs.forEach((leg, index) => {
           const phase = animation.phase + index * Math.PI, knee = leg.getObjectByName(index === 0 ? 'knee_left' : 'knee_right');
           leg.rotation.z = Math.sin(phase) * (knee ? .35 : .47) * animation.speed;

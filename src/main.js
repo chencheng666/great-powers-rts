@@ -1,3 +1,4 @@
+import { isDesktop, desktopInvoke, desktopNotice } from './desktop.js';
 import { createIcons, icons } from 'lucide';
 import { BUILDINGS, BUILD_ORDER, FACTIONS, MAPS, PRODUCERS, UNITS, UNIT_ORDER, VICTORY_MODES, supportsMap } from './data.js';
 import { Game } from './game.js';
@@ -165,6 +166,7 @@ function updateFullscreenControl() {
 async function toggleFullscreen() {
   const app = $('#app');
   try {
+    if (isDesktop()) { const active = await desktopInvoke('desktop_fullscreen'); $('#fullscreen-btn').setAttribute('aria-pressed', String(active)); $('#fullscreen-btn').ariaLabel = active ? '退出全屏' : '进入全屏'; $('#fullscreen-btn').innerHTML = icon(active ? 'minimize' : 'maximize'); refreshIcons(); state.keys.clear(); requestAnimationFrame(() => state.renderer?.resize()); return; }
     if (document.fullscreenElement || document.webkitFullscreenElement) {
       if (document.exitFullscreen) await document.exitFullscreen();
       else document.webkitExitFullscreen();
@@ -519,6 +521,7 @@ function saveProgress(slot = 'manual', feedback = true) {
   try {
     const save = state.game.toSave({ center: { ...state.renderer.center }, zoom: state.renderer.camera.zoom, groups: state.groups });
     writeSave(localStorage, slot, save);
+    if (isDesktop()) desktopInvoke('desktop_backup', { slot, contents: JSON.stringify(save) }).catch(e => toast(`本地备份失败：${e}`, true));
     if (feedback) toast(`进度已保存 · ${seconds(save.state.time)}`);
     state.autoSaveFailed = false; updateContinueControl();
     return true;
@@ -559,10 +562,11 @@ async function loadProgress(slot) {
   } catch (error) { toast(error.message, true); }
 }
 
-function exportProgress() {
+async function exportProgress() {
   if (!state.game?.running) return;
   try {
     const save = state.game.toSave({ center: { ...state.renderer.center }, zoom: state.renderer.camera.zoom, groups: state.groups });
+    if (isDesktop()) { if (await desktopInvoke('desktop_export', { contents: JSON.stringify(save) })) toast('存档文件已导出'); return; }
     const url = URL.createObjectURL(new Blob([JSON.stringify(save)], { type: 'application/json' }));
     const anchor = document.createElement('a'); anchor.href = url;
     anchor.download = `Great-Powers-save-${Date.now()}.json`; anchor.click();
@@ -762,7 +766,7 @@ function setupControls() {
     if (catalog.dialog.open || honorPanel.dialog.open) return;
     if (event.target.closest('input, select, textarea, [contenteditable="true"]')) return;
     if ((event.ctrlKey || event.metaKey || event.altKey) && !/^[1-9]$/.test(event.key)) return;
-    if (event.key === 'Escape' && (document.fullscreenElement || document.webkitFullscreenElement)) { event.preventDefault(); toggleFullscreen(); return; }
+    if (event.key === 'Escape' && (document.fullscreenElement || document.webkitFullscreenElement || isDesktop() && $('#fullscreen-btn').getAttribute('aria-pressed') === 'true')) { event.preventDefault(); toggleFullscreen(); return; }
     const g = state.game; if (!g || $('#start-screen').style.display !== 'none') return;
     const key = event.key.toLowerCase();
     if (key === 'f' && !event.repeat) { event.preventDefault(); toggleFullscreen(); return; }
@@ -840,7 +844,7 @@ function setupControls() {
   $('#save-btn').addEventListener('click', () => saveProgress());
   $('#menu-btn').addEventListener('click', requestMainMenu);
   $('#continue-btn').addEventListener('click', showLoadMenu);
-  $('#import-btn').addEventListener('click', () => $('#save-file').click());
+  $('#import-btn').addEventListener('click', importDesktopOrWeb);
   $('#attack-alert').addEventListener('click', locateAttack);
   $('#save-file').addEventListener('change', async event => {
     const file = event.target.files[0]; event.target.value = '';
@@ -884,7 +888,7 @@ function setupControls() {
     else if (action === 'load') showLoadMenu();
     else if (action?.startsWith('load-')) loadProgress(action.slice(5));
     else if (action === 'export') exportProgress();
-    else if (action === 'import') $('#save-file').click();
+    else if (action === 'import') importDesktopOrWeb();
     else if (action === 'restart') {
       if (!state.game?.running) startGame();
       else showModal('重新开始', '<p>当前战局将备份到自动存档，然后重新部署。</p>', '<button class="primary-btn" data-modal="confirm-restart">保存后重新开始</button><button class="secondary-btn" data-modal="resume">取消</button>');
@@ -946,3 +950,10 @@ updateHonorOverview();
 updateContinueControl();
 refreshIcons();
 Renderer.prepare().catch(() => {});
+
+async function importDesktopOrWeb() {
+ if (!isDesktop()) { $('#save-file').click(); return; }
+ if (state.loading) return;
+ try { const text = await desktopInvoke('desktop_import'); if (!text) return; const save = parseSave(text); if (state.game?.running && !saveProgress('auto', true)) return; await startGame(save); } catch (e) { toast(String(e), true); }
+}
+desktopNotice();

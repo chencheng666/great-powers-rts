@@ -12,7 +12,7 @@ test('固定翼表现不影响垂直起降运输机、无人机、航天器和�
 
 test('下滑高度有界且随返场距离连续下降，地面不出现负高度', () => {
   const far = glideProfile(400, 60), near = glideProfile(120, 60), landed = glideProfile(40, 60);
-  assert.equal(far.fraction, 1); assert.ok(near.fraction > 0 && near.fraction < 1 && near.pitch < 0);
+  assert.equal(far.fraction, 1); assert.ok(near.fraction > 0 && near.fraction < 1 && Number.isFinite(near.pitch));
   assert.equal(landed.fraction, 0);
   const entity = { type: 'fighter', x: 100, y: 0, owner: 0, order: { type: 'rearm' } };
   const game = { map: {}, aircraftGrounded: () => false, ownedBuildings: () => [{ x: 0, y: 0, size: 72 }] };
@@ -51,4 +51,13 @@ test('座舱使用透明玻璃，原素材与无人机不受污染，内部细�
   assert.equal(source.name, '玻璃'); assert.equal(source.transmission, undefined);
   assert.equal(model.children.length, 2); assert.ok(model.getObjectByName('座舱内部'));
   const drone = new THREE.Group(); drone.name = 'drone'; refineAircraftCanopy(drone); assert.equal(drone.children.length, 0);
+});
+
+
+test('返场末段平滑抬头拉平，接地及巡航水平且边界连续', () => {
+  const radius = 60, pitch = f => glideProfile(radius + 260 * f, radius).pitch;
+  assert.ok(pitch(.1) > 0); assert.ok(pitch(.5) < 0);
+  assert.equal(pitch(0), 0); assert.equal(pitch(1), 0);
+  for (const f of [0, .1, .3, .85, 1]) assert.ok(Math.abs(pitch(f - .00001) - pitch(f + .00001)) < .0001);
+  for (let f = 0; f <= 1; f += .01) assert.ok(pitch(f) >= -.070001 && pitch(f) <= .060001);
 });
