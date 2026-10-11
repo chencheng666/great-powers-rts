@@ -1,0 +1,62 @@
+{
+  "url": "https://github.com/chencheng666/great-powers-rts/releases/tag/desktop-v0.9.0",
+  "draft": false,
+  "prerelease": true,
+  "target": "c9ef67592cc4b7ec6632b2ab3843663256acc9e2",
+  "assets": [
+    {
+      "name": "Great.Powers_0.9.0_aarch64.app.tar.gz",
+      "size": 45468727,
+      "digest": "sha256:26c3c1033945dc8d5c0b4707d448e195c92d00e75e5c0668aefa660acaabd442",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_aarch64.app.tar.gz"
+    },
+    {
+      "name": "Great.Powers_0.9.0_aarch64.AppImage",
+      "size": 122092040,
+      "digest": "sha256:f884cf50f1d74f0266937a9c30ffef4bf19d45595ff7ad34ff86110811720224",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_aarch64.AppImage"
+    },
+    {
+      "name": "Great.Powers_0.9.0_aarch64.dmg",
+      "size": 45534407,
+      "digest": "sha256:24334ee4f9c2c731ea6bb38da3aea5c165c7e24f85cdf57b80116607076e5035",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_aarch64.dmg"
+    },
+    {
+      "name": "Great.Powers_0.9.0_amd64.AppImage",
+      "size": 123947512,
+      "digest": "sha256:3451b7002222a71c4c9b1f75eb7ee2a2012e69bb5514bf8092855a981a7055cc",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_amd64.AppImage"
+    },
+    {
+      "name": "Great.Powers_0.9.0_amd64.deb",
+      "size": 45576306,
+      "digest": "sha256:bbb64decf858f7ef69e148730ab0c6fdf00c1c82918e3d735ab95b63470f3b68",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_amd64.deb"
+    },
+    {
+      "name": "Great.Powers_0.9.0_arm64.deb",
+      "size": 45619324,
+      "digest": "sha256:cf5b9ceae9dc5b8ce8cc234d039712911e8ff97d0d412487fce008177b74f5fb",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_arm64.deb"
+    },
+    {
+      "name": "Great.Powers_0.9.0_x64-setup.exe",
+      "size": 261529332,
+      "digest": "sha256:41fcc2206555c552669d8b031e02c379d57a5380769255cb02a4da7df693b676",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_x64-setup.exe"
+    },
+    {
+      "name": "Great.Powers_0.9.0_x64.app.tar.gz",
+      "size": 45921334,
+      "digest": "sha256:f82914d2c5df3b2cfa7d1631e6d9db2de31b75991d7fec5168e5b4224b811fa9",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_x64.app.tar.gz"
+    },
+    {
+      "name": "Great.Powers_0.9.0_x64.dmg",
+      "size": 45986153,
+      "digest": "sha256:f05a0a1c875ff7b6c9ea19da69e05b48510b49fb71fba0190547992a61581ab3",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_x64.dmg"
+    }
+  ]
+}
