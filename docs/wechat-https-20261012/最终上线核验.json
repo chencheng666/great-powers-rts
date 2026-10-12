@@ -7,7 +7,7 @@
   "externalAnonymousHEAD": 200,
   "externalAnonymousFullGET": "大小与SHA256通过",
   "serverFullHTTPSGET": "SHA256通过",
-  "downloadEntries": 11,
+  "downloadEntries": 20,
   "UIReconnect": "同Mac原生关闭重开窗口；浏览器暂停等待；原生恢复同房战局、资金2990、时间推进",
   "healthAfterCleanup": {
     "rooms": 0,
@@ -23,5 +23,13 @@
     "guests": 19,
     "matches": 6
   },
-  "limitation": "新增测试游客战绩保留；非双物理设备/非系统断网；Mac未公证；其他平台未实机验收；GitHub0.9.1仍草稿"
+  "limitation": "新增测试游客战绩保留；非双物理设备/非系统断网；Mac未公证；其他平台未实机验收",
+  "GitHubRelease": {
+    "url": "https://github.com/chencheng666/great-powers-rts/releases/tag/desktop-v0.9.1",
+    "draft": false,
+    "prerelease": true,
+    "assets": 9,
+    "anonymousHEADs": "全部200且大小一致",
+    "SHA256": "公开发行元数据核对，不声称九包全部本机GET"
+  }
 }
