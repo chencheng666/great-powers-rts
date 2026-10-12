@@ -12,10 +12,11 @@ import { Accounts } from './accounts.mjs';
 import { executeCommand } from './commands.mjs';
 import { battleView } from './battle-view.mjs';
 
-export function createBattleServer({ directory = process.env.DATA_DIRECTORY || resolve('server-data'), root = resolve('dist'), origin = process.env.PUBLIC_ORIGIN || '', dev = process.env.NODE_ENV !== 'production' } = {}) {
+export function createBattleServer({ directory = process.env.DATA_DIRECTORY || resolve('server-data'), root = resolve('dist'), origin = process.env.PUBLIC_ORIGIN || '', additionalOrigins = process.env.PUBLIC_ORIGINS || '', dev = process.env.NODE_ENV !== 'production' } = {}) {
   const accounts = new Accounts(directory), rooms = new Map(), peers = new Map(), requests = new Map();
   const send = (ws, value) => { if (ws?.readyState === WebSocket.OPEN && ws.bufferedAmount < 512*1024) ws.send(JSON.stringify(value)); };
-  const allowed = req => req.headers.origin === (origin || `http://${req.headers.host}`) || dev && ['http://localhost:4173','http://127.0.0.1:4173'].includes(req.headers.origin);
+  const extraOrigins = new Set(additionalOrigins.split(',').map(value=>value.trim()).filter(value=>{try{const u=new URL(value);return ['http:','https:'].includes(u.protocol)&&u.origin===value;}catch{return false;}}));
+  const allowed = req => req.headers.origin === (origin || `http://${req.headers.host}`) || extraOrigins.has(req.headers.origin) || dev && ['http://localhost:4173','http://127.0.0.1:4173'].includes(req.headers.origin);
   const userRoom = id => [...rooms.values()].find(r => r.members.some(m => m?.user.id === id));
   const publicRoom = r => ({ code: r.code, host: r.host, config: r.config, status: r.game ? r.game.running ? 'playing' : 'ended' : 'waiting', reason: r.reason || '', deadline: r.deadline || null, members: r.members.map(m => m ? { id: m.user.id, name: m.user.name, faction: m.faction, ready: m.ready, connected: !!peers.get(m.user.id) } : null) });
   const roomNotice = r => r.members.forEach(m => m && send(peers.get(m.user.id), { type: 'room', room: publicRoom(r) }));
@@ -57,7 +58,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
           if (user) { accounts.rename(user.id, name); user.name = name; }
           else {
             const created = accounts.create(name); user = created.user;
-            res.setHeader('Set-Cookie', `gp_guest=${created.token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith('https:') ? '; Secure' : ''}`);
+            res.setHeader('Set-Cookie', `gp_guest=${created.token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${(origin.startsWith('https:') || extraOrigins.has(req.headers.origin) && req.headers.origin.startsWith('https:')) ? '; Secure' : ''}`);
           }
         } else if (req.method !== 'GET') return json(405, { error:'不支持的请求' });
         return json(200, { user, room: user ? publicRoom(userRoom(user.id) || { code:null, config:null, members:[], host:0 }) : null });

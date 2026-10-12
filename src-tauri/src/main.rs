@@ -22,7 +22,7 @@ fn desktop_fullscreen(window: WebviewWindow) -> Result<bool,String> {
  local(&window)?; let next=!window.is_fullscreen().map_err(|e|e.to_string())?;
  window.set_fullscreen(next).map_err(|e|e.to_string())?;Ok(next)
 }
-const ONLINE_URL: &str = "http://43.135.186.21:8088/";
+const ONLINE_URL: &str = "https://43.135.186.21:8443/";
 fn online_transport_allowed(scheme: &str) -> bool {
  scheme == "https"
 }
@@ -31,7 +31,7 @@ async fn desktop_online(app: tauri::AppHandle, window: WebviewWindow) -> Result<
  local(&window)?;
  if let Some(w)=app.get_webview_window("online") {w.show().map_err(|e|e.to_string())?;return w.set_focus().map_err(|e|e.to_string())}
  let url: tauri::Url=ONLINE_URL.parse().map_err(|_|"服务器地址无效")?;
- // 不关闭 ATS；在部署有效 HTTPS 前明确解释原因，避免创建白屏窗口。
+ // 仅允许可信 HTTPS；远程窗口不具有本地原生能力。
  if !online_transport_allowed(url.scheme()) {
   return Err("桌面联网暂未开放，等待 HTTPS 域名配置。离线单机、存档与全屏功能仍可使用；后续版本配置安全入口后再开放联网。".into());
  }

@@ -79,3 +79,13 @@ test('两个游客建房准备、权威对战、重连暂停和认输只结算�
   assert.equal(app.accounts.db.prepare('SELECT count(*) n FROM matches').get().n,1);
   assert.equal((await fetch(`${origin}/api/session`,{method:'POST',headers:{Origin:'http://evil.test'},body:'{}'})).status,403);
 });
+
+test('指定HTTPS入口可建立Secure会话，旧HTTP仍可用，伪造代理头不扩大Origin',async t=>{
+ const directory=await mkdtemp(join(tmpdir(),'gp-https-origins-'));t.after(()=>rm(directory,{recursive:true,force:true}));
+ const legacy='http://43.135.186.21:8088',secure='https://43.135.186.21:8443';
+ const {server}=createBattleServer({directory,origin:legacy,additionalOrigins:secure,dev:false});await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
+ const base=`http://127.0.0.1:${server.address().port}`;
+ for(const [Origin,status] of [[legacy,200],[secure,200],['https://evil.example',403],['https://43.135.186.21:8444',403]]){
+  const r=await fetch(base+'/api/session',{method:'POST',headers:{Origin,'Content-Type':'application/json','X-Forwarded-Proto':'https','X-Forwarded-Host':'43.135.186.21:8443'},body:JSON.stringify({name:'安全入口验收'})});assert.equal(r.status,status);if(status===200)assert.equal(r.headers.get('set-cookie').includes('; Secure'),Origin===secure);
+ }
+});
