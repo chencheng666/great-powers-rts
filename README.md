@@ -8,9 +8,9 @@
 
 ## 10 月 12 日 HTTPS 桌面实验版 v0.9.1
 
-可信 HTTPS/WSS 入口：https://43.135.186.21:8443/ 。现有 HTTP、443 代理及数据库保留。0.9.1 本机 Mac 原生联网窗口与浏览器实际双席位大厅、开局、建造指令通过；协议层双独立会话同步、断线暂停与重连通过，完整 UI 重连仍待补测。远程页面不授予本地原生权限。
+可信 HTTPS/WSS 入口：https://43.135.186.21:8443/ 。现有 HTTP、443 代理及数据库保留。0.9.1 本机 Mac 原生联网窗口与浏览器实际双席位大厅、开局、建造指令通过；协议层双独立会话同步、断线暂停与重连通过，原生关闭重开联网窗口的 UI 重连已通过（同Mac双客户端）。远程页面不授予本地原生权限。
 
-五平台 CI 均成功，九项新桌面资产仍是待批准公开的草稿；旧0.9.0继续保留。Mac实验包未公证、Windows未签名，其他平台和麒麟/UOS具体系统硬件未实测。[构建记录](https://github.com/chencheng666/great-powers-rts/actions/runs/38195369859) · [十一图Markdown稿](docs/wechat-https-20261012/公众号文章.md) · [校验值](docs/wechat-https-20261012/草稿发行九项校验.json)
+五平台 CI 均成功，九项新桌面资产仍是待批准公开的草稿；旧0.9.0继续保留。Mac实验包未公证、Windows未签名，其他平台和麒麟/UOS具体系统硬件未实测。[构建记录](https://github.com/chencheng666/great-powers-rts/actions/runs/38195369859) · [十三图Markdown稿](docs/wechat-https-20261012/公众号文章.md) · [校验值](docs/wechat-https-20261012/草稿发行九项校验.json)
 
 ## 10 月 9 日反馈改进 v0.8.0
 

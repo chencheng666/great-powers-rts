@@ -1,8 +1,15 @@
 {
-  "version": "0.9.0",
-  "codeCommit": "c9ef67592cc4b7ec6632b2ab3843663256acc9e2",
-  "desktopOnline": "暂未开放，等待HTTPS域名配置",
+  "version": "0.9.1",
+  "codeCommit": "5b5b83deefb166f56211aebc7c6eb63c9126ca9b",
+  "desktopOnline": "0.9.1使用可信HTTPS/WSS；0.9.0旧桌面包仍待更新",
   "files": [
+    {
+      "name": "packages/Great-Powers_0.9.1_aarch64.dmg",
+      "label": "服务器本地包 · macOS Apple Silicon · v0.9.1 HTTPS联网",
+      "size": 45531609,
+      "sha256": "d6f7e6cd40feddf9b2979e53bc5a059d67d6c9d8394e88cc8472d322ed5c32cb",
+      "status": "本机Mac原生HTTPS大厅、与浏览器开局、命令及关闭重开联网窗口恢复战局已实测；ad-hoc、未Apple公证。其他0.9.1平台CI构建成功，GitHub草稿待批准公开。"
+    },
     {
       "name": "packages/Great-Powers_0.9.0_aarch64.dmg",
       "label": "服务器本地包 · macOS Apple Silicon · v0.9.0",

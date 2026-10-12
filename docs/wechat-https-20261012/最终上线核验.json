@@ -1,0 +1,27 @@
+{
+  "HTTPS": "https://43.135.186.21:8443/",
+  "downloadURL": "https://43.135.186.21:8443/downloads/packages/Great-Powers_0.9.1_aarch64.dmg",
+  "version": "0.9.1",
+  "size": 45531609,
+  "sha256": "d6f7e6cd40feddf9b2979e53bc5a059d67d6c9d8394e88cc8472d322ed5c32cb",
+  "externalAnonymousHEAD": 200,
+  "externalAnonymousFullGET": "大小与SHA256通过",
+  "serverFullHTTPSGET": "SHA256通过",
+  "downloadEntries": 11,
+  "UIReconnect": "同Mac原生关闭重开窗口；浏览器暂停等待；原生恢复同房战局、资金2990、时间推进",
+  "healthAfterCleanup": {
+    "rooms": 0,
+    "battles": 0
+  },
+  "services": "great-powers/great-powers-https/clash-subscription/xray/renew.timer全部active",
+  "SQLiteIntegrity": "backup与当前均ok",
+  "backupCounts": {
+    "guests": 16,
+    "matches": 3
+  },
+  "currentCounts": {
+    "guests": 19,
+    "matches": 6
+  },
+  "limitation": "新增测试游客战绩保留；非双物理设备/非系统断网；Mac未公证；其他平台未实机验收；GitHub0.9.1仍草稿"
+}

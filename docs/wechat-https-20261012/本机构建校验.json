@@ -4,5 +4,5 @@
   "name": "Great-Powers_0.9.1_aarch64.dmg",
   "size": 45531609,
   "sha256": "d6f7e6cd40feddf9b2979e53bc5a059d67d6c9d8394e88cc8472d322ed5c32cb",
-  "status": "本机构建Mac ARM64；未公证、ad-hoc；原生联网大厅与战局已实测；尚未上传服务器"
+  "status": "本机Mac ARM64；原生HTTPS开局命令及关闭重开恢复通过；已发布服务器并完整匿名GET验证；ad-hoc未公证"
 }
