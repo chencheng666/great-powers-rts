@@ -1,3 +1,4 @@
+import {sixPlayerMap} from './six-player-map.js';
 export const WORLD = { width: 2240, height: 1440, cell: 40, fog: 80 };
 export const CORE_BUILDINGS = ['hq', 'refinery', 'barracks', 'factory', 'armory', 'airfield', 'dock'];
 export const PRODUCERS = ['barracks', 'factory', 'armory', 'airfield', 'dock'];
@@ -100,6 +101,7 @@ export const ORE_LAYOUT = [
 ];
 
 export const MAPS = {
+  sixfront: sixPlayerMap(),
   archipelago: {
     name: '跨海登陆战', sector: '战区 07 · 无桥海战', world: { width: 3520, height: 2240, cell: 40, fog: 80 },
     ore: [], oil: [{ id: 'oil-a', x: 890, y: 240 }, { id: 'oil-b', x: 2630, y: 2000 }],

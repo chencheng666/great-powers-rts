@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-10-12T09:29:56.378Z",
+  "method": "anonymous HEAD, follow redirects",
+  "results": [
+    {
+      "url": "https://43.135.186.21:8443/downloads/packages/Great-Powers_0.9.1_aarch64.dmg",
+      "status": 200,
+      "size": 45531609,
+      "type": "application/octet-stream"
+    },
+    {
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_x64.dmg",
+      "status": 200,
+      "size": 45987094,
+      "type": "application/octet-stream"
+    },
+    {
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_x64-setup.exe",
+      "status": 200,
+      "size": 261517739,
+      "type": "application/octet-stream"
+    },
+    {
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_amd64.deb",
+      "status": 200,
+      "size": 45578366,
+      "type": "application/octet-stream"
+    },
+    {
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_arm64.deb",
+      "status": 200,
+      "size": 45620068,
+      "type": "application/octet-stream"
+    },
+    {
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_amd64.AppImage",
+      "status": 200,
+      "size": 123951608,
+      "type": "application/octet-stream"
+    },
+    {
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_aarch64.AppImage",
+      "status": 200,
+      "size": 122100232,
+      "type": "application/octet-stream"
+    }
+  ]
+}

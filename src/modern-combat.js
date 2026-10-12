@@ -120,14 +120,14 @@ export const modernCombat = {
     for (const plane of this.units.filter(u => alive(u) && u.type === 'ewPlane' && this.time >= u.stunUntil && u.order?.type !== 'rearm' && !this.aircraftGrounded(u))) {
       const active = this.time % 10 < 2.5;
       if (!active) continue;
-      for (const target of this.activeUnits(1 - plane.owner)) {
+      for (const target of this.enemyUnits(plane.owner)) {
         if (['aa', 'frigate', 'destroyer'].includes(target.type) && distance(plane, target) <= UNITS.ewPlane.range && this.canSeeEntity(plane.owner, target)) target.ewSuppressedUntil = this.time + .15;
       }
       if (this.time >= (plane.pulseAt || 0)) { plane.pulseAt = this.time + 1; this.effects.push({ type: 'jam', x: plane.x, y: plane.y, size: UNITS.ewPlane.range, owner: plane.owner, age: 0, duration: .8 }); }
     }
     for (const jammer of this.units.filter(u => alive(u) && u.type === 'jammer' && this.time >= u.stunUntil)) {
       const range = UNITS.jammer.range * (this.players[jammer.owner].faction === 'middleeast' ? 1.15 : 1);
-      for (const u of this.activeUnits(1 - jammer.owner)) {
+      for (const u of this.enemyUnits(jammer.owner)) {
         if (UNITS[u.type].tags.includes('drone') && distance(jammer, u) <= range) u.jammedUntil = this.time + .3;
       }
       if (this.time >= (jammer.pulseAt || 0)) {
@@ -185,7 +185,7 @@ export const modernCombat = {
       p.age += dt;
       if (p.hp <= 0) { this.finishProjectile(p, true); continue; }
       const source = this.getEntity(p.sourceId), target = this.getEntity(p.targetId);
-      const jammed = ['loitering', 'missile', 'wing'].includes(p.kind) && (weatherState(this.map, this.time).phase === 'storm' && !hasSignalCover(this, p.owner, p) || this.activeUnits(1 - p.owner, 'jammer').some(u => this.time >= u.stunUntil && distance(u, p) <= UNITS.jammer.range * (this.players[u.owner].faction === 'middleeast' ? 1.15 : 1)));
+      const jammed = ['loitering', 'missile', 'wing'].includes(p.kind) && (weatherState(this.map, this.time).phase === 'storm' && !hasSignalCover(this, p.owner, p) || this.enemyUnits(p.owner, 'jammer').some(u => this.time >= u.stunUntil && distance(u, p) <= UNITS.jammer.range * (this.players[u.owner].faction === 'middleeast' ? 1.15 : 1)));
       if (jammed) p.jam += dt;
       else p.jam = Math.max(0, p.jam - dt * .25);
       if (p.jam >= 1.1 && p.kind !== 'wing') { this.finishProjectile(p, true); continue; }
@@ -263,7 +263,8 @@ export const modernCombat = {
       if (naval && !u.order) {
         // 空闲舰艇离开整备泊位，给后续伤舰留下进港空间。
         const goal = this.navalGoal(berth.x + (u.owner ? -1 : 1) * 300, home.y + (u.id % 5 - 2) * 210, unitRadius(u));
-        u.order = { type: 'move', ...this.findSpawn(goal.x, goal.y, u.type) };
+        const exit=this.findSpawn(goal.x,goal.y,u.type);
+        u.order=exit?{type:'move',...exit}:null;
         u.path = []; u.pathTimer = 0;
       }
     }
@@ -399,7 +400,7 @@ export const modernCombat = {
       if (!spot && !emergency) continue;
       passenger.embarkedIn = null;
       if (spot) { passenger.x = spot.x; passenger.y = spot.y; if (emergency) { passenger.hp *= .5; passenger.lastDamageAt = this.time; } unloaded++; }
-      else this.damage(passenger, passenger.maxHp * 3, 1 - transport.owner);
+      else this.damage(passenger, passenger.maxHp * 3, transport.lastAttacker ?? null);
       transport.passengers = transport.passengers.filter(value => value !== id);
     }
     if (unloaded) { this.fogTimer = 0; this.events.selection?.(); }
@@ -462,12 +463,12 @@ export const modernCombat = {
     }
   },
 
-  updateAITransports() {
-    for (const t of this.activeUnits(1).filter(u => ['landing', 'airlift'].includes(u.type))) {
+  updateAITransports(side=1) {
+    for (const t of this.activeUnits(side).filter(u => ['landing', 'airlift'].includes(u.type))) {
       if (t.order?.type === 'rearm' || t.deployment) continue;
       const water = this.map.water;
-      const home = { x: t.type === 'landing' ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 };
-      const shore = { x: t.type === 'landing' ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 };
+      const home = this.playerCount===6?this.map.spawns[side]:{ x: t.type === 'landing' ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 };
+      const shore = this.playerCount===6?this.enemyObjective(side):{ x: t.type === 'landing' ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 };
       t.transportStage ||= 'load';
       const goal = ['load', 'return'].includes(t.transportStage) ? home : shore;
       if (distance(t, goal) > 20) { t.order = { type: 'move', ...goal }; continue; }
@@ -476,7 +477,7 @@ export const modernCombat = {
       if (t.transportStage === 'load') {
         t.loadStartedAt ??= this.time;
         if (this.transportLoad(t) >= 4 && this.time - t.loadStartedAt > 12) { t.transportStage = 'depart'; continue; }
-        for (const unit of this.activeUnits(1).filter(u => ['rifle', 'tank'].includes(u.type) && !['board', 'rearm'].includes(u.order?.type) && distance(u, t) < 900)) {
+        for (const unit of this.activeUnits(side).filter(u => ['rifle', 'tank'].includes(u.type) && !['board', 'rearm'].includes(u.order?.type) && distance(u, t) < 900)) {
           if (this.canBoardTransport(unit, t)) unit.order = { type: 'board', targetId: t.id };
         }
       } else {

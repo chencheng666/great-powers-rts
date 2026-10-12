@@ -2,8 +2,9 @@ const FRIENDLY = Object.freeze({ color: '#68d9f2', damaged: '#43b7d3', critical:
 const HOSTILE = Object.freeze({ color: '#ff7668', damaged: '#ec5649', critical: '#c43b35', echo: '#ffc0ac', frame: '#ff9f91', line: '#ff766899', marker: 'diamond', label: '敌方' });
 const NEUTRAL = Object.freeze({ color: '#e4c67e', frame: '#f0d8a5', marker: 'circle', label: '中立' });
 
+const MULTI_COLORS=['#ff7668','#efbe5c','#be99ef','#8dcc82','#f39abb'];
 export function teamVisual(owner, localPlayer = 0) {
-  return owner === null || owner === undefined ? NEUTRAL : owner === localPlayer ? FRIENDLY : HOSTILE;
+  return owner === null || owner === undefined ? NEUTRAL : owner === localPlayer ? FRIENDLY : Number.isInteger(owner)&&owner>=2&&owner<=5?{...HOSTILE,color:MULTI_COLORS[owner-1],frame:MULTI_COLORS[owner-1],line:MULTI_COLORS[owner-1]+'99',label:`敌方${owner}`} : HOSTILE;
 }
 
 export function healthVisual(owner, ratio, localPlayer = 0) {

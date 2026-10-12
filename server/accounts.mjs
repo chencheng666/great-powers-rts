@@ -11,6 +11,10 @@ export class Accounts {
     const file = join(directory, 'guests.sqlite'); this.db = new Database(file); chmodSync(file, 0o600);
     this.db.exec(`PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS guests(id TEXT PRIMARY KEY, name TEXT NOT NULL, token TEXT UNIQUE NOT NULL, expires INTEGER NOT NULL, wins INTEGER DEFAULT 0, losses INTEGER DEFAULT 0, draws INTEGER DEFAULT 0); CREATE TABLE IF NOT EXISTS matches(id TEXT PRIMARY KEY, a TEXT, b TEXT, winner TEXT, at INTEGER);`);
   }
+  settleMany(id,users,winner){
+    this.db.exec(`CREATE TABLE IF NOT EXISTS multi_matches(id TEXT PRIMARY KEY,winner TEXT NOT NULL,at INTEGER NOT NULL);CREATE TABLE IF NOT EXISTS match_members(match_id TEXT NOT NULL,seat INTEGER NOT NULL,guest TEXT NOT NULL,control_type TEXT NOT NULL,PRIMARY KEY(match_id,seat));`);
+    this.db.exec('BEGIN');try{const result=this.db.prepare('INSERT OR IGNORE INTO multi_matches VALUES(?,?,?)').run(id,String(winner),Date.now());if(result.changes)users.forEach((u,side)=>{this.db.prepare('INSERT INTO match_members VALUES(?,?,?,?)').run(id,side,u.id,u.controlType||'human');if(u.controlType!=='ai'){const field=winner==='draw'?'draws':winner===side?'wins':'losses';this.db.prepare(`UPDATE guests SET ${field}=${field}+1 WHERE id=?`).run(u.id);}});this.db.exec('COMMIT');return !!result.changes;}catch(e){this.db.exec('ROLLBACK');throw e;}
+  }
   find(cookie = '') {
     const token = cookie.split(';').map(s => s.trim()).find(s => s.startsWith('gp_guest='))?.slice(9);
     return token ? this.db.prepare('SELECT id,name,wins,losses,draws FROM guests WHERE token=? AND expires>?').get(hash(token), Date.now()) : null;

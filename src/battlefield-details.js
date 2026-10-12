@@ -6,6 +6,7 @@ import { lunarBuildingProfile } from './lunar-robots.js';
 export function productionExit(building, type) {
   const side = building.owner === 0 ? 1 : -1, tags = UNITS[type].tags;
   const reach = building.size * .45 + (tags.includes('infantry') ? 10 : 21);
+  if(Number.isFinite(building.spawnAngle)){const angle=building.spawnAngle,c=Math.cos(angle),s=Math.sin(angle);return{x:building.x+c*reach-s*building.size*.2,y:building.y+s*reach+c*building.size*.2,angle,side,forwardX:c,forwardY:s,distance:tags.includes('infantry')?62:Math.max(82,unitRadius({type})*2+22)};}
   return { x: building.x + side * reach, y: building.y + side * building.size * .2, angle: side > 0 ? 0 : Math.PI, side, distance: tags.includes('infantry') ? 62 : Math.max(82, unitRadius({ type }) * 2 + 22) };
 }
 

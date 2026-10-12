@@ -261,7 +261,7 @@ async function startGame(save = null, onlinePayload = null) {
   window.scrollTo(0, 0);
   $('#side-faction').textContent = FACTIONS[state.faction].name;
   $('#faction-short').textContent = `我方：${FACTIONS[state.faction].name}`;
-  $('#enemy-short').textContent = `敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
+  $('#enemy-short').textContent = state.game.players.length>2?`其他 ${state.game.players.length-1} 方 · 六方自由对战`:`敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
   $('#battle-status').textContent = '战斗进行中';
   $('#battle-objective').textContent = VICTORY_MODES[state.victoryMode].description;
   $('.battlefield').classList.toggle('future', !!state.game.map.future);
@@ -754,7 +754,8 @@ function setupControls() {
     state.drag = null; r.dragBox = null;
   });
   canvas.addEventListener('pointercancel', event => { state.drag = null; state.panning = null; updatePanControl(); state.touchPoints.delete(event.pointerId); if (!state.touchPoints.size) { state.touchPan = false; state.touchPinching = false; } if (state.renderer) state.renderer.dragBox = null; });
-  canvas.addEventListener('pointerleave', () => { state.pointerPosition = null; if (state.renderer) state.renderer.hoveredId = null; });
+  canvas.addEventListener('pointerleave', event => { state.pointerPosition = null; if(event.relatedTarget?.closest?.('#building-info'))return; if (state.renderer) state.renderer.hoveredId = null; });
+  $('#building-info').addEventListener('pointerleave',event=>{if(event.relatedTarget!==canvas&&state.renderer)state.renderer.hoveredId=null;});
   canvas.addEventListener('wheel', event => { if (!state.renderer) return; event.preventDefault(); const p = canvasPoint(event); state.renderer.zoomAt(event.deltaY < 0 ? 1.09 : 1 / 1.09, p.x, p.y); }, { passive: false });
   $('#minimap').addEventListener('pointerdown', event => { if (!state.renderer || !state.game?.hasRadarIntel(0) || state.game.isControlLocked(0)) return; const rect = event.currentTarget.getBoundingClientRect(); state.renderer.centerOn((event.clientX - rect.left) / rect.width * state.game.world.width, (event.clientY - rect.top) / rect.height * state.game.world.height); });
   $('#minimap').addEventListener('pointermove', event => { if (!(event.buttons & 1) || !state.renderer || !state.game?.hasRadarIntel(0) || state.game.isControlLocked(0)) return; const rect = event.currentTarget.getBoundingClientRect(); state.renderer.centerOn((event.clientX - rect.left) / rect.width * state.game.world.width, (event.clientY - rect.top) / rect.height * state.game.world.height); });
@@ -784,7 +785,7 @@ function setupControls() {
     else if (key === 'a') { g.placingBuilding = false; g.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('左键指定攻击移动目标'); }
     else if (key === 'p') { g.placingBuilding = false; g.orderMode = 'patrol'; clearOrderButtons(); $('#patrol-btn').classList.add('active'); }
     else if (key === 's') { g.stopSelected(); clearOrderButtons(); }
-    else if (key === 'h') state.renderer.centerOn(state.game.homeX||280, state.game.homeY);
+    else if (key === 'h') state.renderer.centerOn(state.game.homeX||state.game.map.spawns?.[0]?.x||280,state.game.online?state.game.homeY:state.game.map.spawns?.[0]?.y||state.game.homeY);
     else if (key === 'u') { for (const id of state.game.selected) state.game.unloadTransport(state.game.getEntity(id)); updateSelection(); }
     else if (key === 'r') { for (const id of state.game.selected) state.game.requestResupply(state.game.getEntity(id)); updateSelection(); }
   });
@@ -828,7 +829,7 @@ function setupControls() {
   });
   $('#all-btn').addEventListener('click', () => state.game?.selectAllCombat());
   $('#stop-btn').addEventListener('click', () => { state.game?.stopSelected(); clearOrderButtons(); });
-  $('#home-btn').addEventListener('click', () => state.renderer?.centerOn(state.game.homeX||280, state.game.homeY));
+  $('#home-btn').addEventListener('click', () => state.renderer?.centerOn(state.game.homeX||state.game.map.spawns?.[0]?.x||280,state.game.online?state.game.homeY:state.game.map.spawns?.[0]?.y||state.game.homeY));
   $('#queue-cancel').addEventListener('click', () => {
     const g = state.game; if (!g) return;
     if (g.pendingBuilding || g.players[0].buildQueue) g.cancelBuilding(0);

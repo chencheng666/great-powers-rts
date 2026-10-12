@@ -10,7 +10,7 @@ export const SUPPLY_ROUTES = {
 // 外部后勤与战斗运输分离，避免用载兵运输机反复卸货刷资金。
 export const logisticsEconomy = {
   initLogistics() {
-    this.logistics = [0, 1].map(side => ({ side, nextAir: this.time + 3, nextSea: this.time + 10, delivered: 0, lost: 0 }));
+    this.logistics = this.players.map(({side}) => ({ side, nextAir: this.time + 3, nextSea: this.time + 10, delivered: 0, lost: 0 }));
   },
 
   freightDestination(side, sea = false) {

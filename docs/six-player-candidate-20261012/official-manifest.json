@@ -1,0 +1,47 @@
+[
+  {
+    "path": "assets/battle-6s.mp4",
+    "size": 1718123,
+    "sha256": "75aba8f40d8abe214360908301e372f7c0db222fb2f77974f3dbebf007e7db0d"
+  },
+  {
+    "path": "assets/battle.jpg",
+    "size": 1569691,
+    "sha256": "ada8b03e12a68e3032bb646da1962edcd73b5448adc6628ca7a675e807138348"
+  },
+  {
+    "path": "assets/lobby.jpg",
+    "size": 268516,
+    "sha256": "c6e3027b78ff8bf10812934b78687524fde2a06f243e83a2a5b5607abe83e6f0"
+  },
+  {
+    "path": "assets/ocean.png",
+    "size": 810643,
+    "sha256": "613c8c9545139f132b04df86d78091a04146e4bd7ce13648677ed208cdef4232"
+  },
+  {
+    "path": "assets/wechat-official.jpg",
+    "size": 40993,
+    "sha256": "0a0cc622832dbb8617a2b740e93dbbdd035a7ca99b218ebb1cab26b010d08226"
+  },
+  {
+    "path": "index.html",
+    "size": 10386,
+    "sha256": "04162bc799affc26f7f349f4d30e4be8b716c1446f02a38aac4689b72e7b6942"
+  },
+  {
+    "path": "site.js",
+    "size": 996,
+    "sha256": "fdfa40db480eadd76611197074b2d0c71566cdce0d6723862f36a2a4952bf53c"
+  },
+  {
+    "path": "site.json",
+    "size": 339,
+    "sha256": "26ae6179c701c2c23c30b419716b2d52fb2c7f4440a1d4db05cbf04e9a5076ee"
+  },
+  {
+    "path": "style.css",
+    "size": 12156,
+    "sha256": "074cbd2e61b7c8060f92a323e32f57bfe7ed26587a7949ef149a8ba16a4b4331"
+  }
+]

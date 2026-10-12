@@ -1,8 +1,9 @@
 import { packFog } from '../src/network-protocol.js';
 import { battleReport } from '../src/battle-report.js';
 const copy = value => JSON.parse(JSON.stringify(value));
-export function battleView(game, side, memory = new Map()) {
-  const owner = value => value === null || value === undefined ? value : value === side ? 0 : 1;
+export function battleView(game, side, memory = new Map(), {spectator=false}={}) {
+  const order=[side,...game.players.map(p=>p.side).filter(s=>s!==side)],mapping=new Map(order.map((s,i)=>[s,i]));
+  const owner=value=>value===null||value===undefined?value:mapping.get(value);
   const visible = entity => game.canSeeEntity(side, entity);
   const entities = game.units.filter(e => e.owner === side || !e.embarkedIn && visible(e));
   const ids = new Set(entities.map(e => e.id));
@@ -10,7 +11,7 @@ export function battleView(game, side, memory = new Map()) {
     const e = copy(entity); e.owner = owner(e.owner);
     if (entity.type === 'submarine') e.surfaced = game.submarineSurfaced(entity);
     if (e.sabotage) e.sabotage.owner = owner(e.sabotage.owner);
-    if (e.owner === 1) {
+    if (e.owner !== 0 || spectator) {
       e.order = null; e.path = []; e.resumeOrder = null; e.targetId = null;
       e.passengers = []; e.embarkedIn = null; e.homeCarrierId = null;
       e.queue = []; e.active = null; e.rallyPoint = null; delete e.freight;
@@ -34,14 +35,10 @@ export function battleView(game, side, memory = new Map()) {
       return copy(memory.get(site.id));
     });
   }
-  const players = [side, 1-side].map((s, index) => index === 0 ? { ...copy(game.players[s]), side: 0, controlLocked: game.isControlLocked(s) } : {
-    side: 1, faction: game.players[s].faction, credits: 0, powerIn: 0, powerOut: 0,
-    controlScore: game.players[s].controlScore, buildQueue: null, abilityCharge: 0, abilityCooldown: 0,
-    cyberPending: game.players[s].cyberPending ? { executeAt: game.players[s].cyberPending.executeAt } : null
-  });
+  const players=order.map((s,index)=>index===0&&!spectator?{...copy(game.players[s]),side:0,actualSide:s,controlLocked:game.isControlLocked(s)}:{side:index,actualSide:s,faction:game.players[s].faction,eliminated:!!game.players[s].eliminated,controlType:game.players[s].controlType,credits:0,powerIn:0,powerOut:0,controlScore:game.players[s].controlScore,buildQueue:null,readyBuilding:null,abilityCharge:0,abilityCooldown:0,cyberPending:game.players[s].cyberPending?{executeAt:game.players[s].cyberPending.executeAt}:null});
   return {
-    battleReport: game.running ? null : (() => { const report = battleReport(game); return report ? { ...report, sides: [report.sides[side], report.sides[1 - side]], events: report.events.map(e => ({ ...e, owner: owner(e.owner) })) } : null; })(),
-    time: game.time, running: game.running, paused: game.paused,
+    battleReport: game.running ? null : (() => { const report = battleReport(game); return report ? { ...report, sides: order.map(s=>report.sides[s]), events: report.events.map(e => ({ ...e, owner: owner(e.owner) })) } : null; })(),
+    spectator,seatOrder:order,time: game.time, running: game.running, paused: game.paused,
     winner: typeof game.winner === 'number' ? owner(game.winner) : game.winner,
     players, units: entities.map(entityView), buildings: [...game.ownedBuildings(side).map(entityView), ...[...memory].filter(([id]) => typeof id === 'number').map(([, b]) => copy(b))],
     ore: sites('ore'), oil: sites('oil'), beacons: sites('beacons'), resourceSites: sites('resourceSites'), fog: packFog(game.fogs[side]),

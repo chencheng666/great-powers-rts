@@ -10,7 +10,7 @@ export class OnlineGame extends Game {
     super(payload.view.players[0].faction, payload.view.players[1].faction, {}, { ...payload.config, multiplayer:true });
     this.online=true; this.client=client; this.events=events; this.seat=payload.seat;
     this.mapId=payload.config.mapId; this.map=battlefieldMap(this.mapId,1.5); this.world=this.map.world||WORLD;
-    this.homeY=this.world.height/2; this.homeX=this.seat?this.world.width-470:470;
+    this.homeY=this.map.spawns?.[this.seat]?.y??this.world.height/2; this.homeX=this.map.spawns?.[this.seat]?.x??(this.seat?this.world.width-470:470);
     this.battleId=payload.config.battleId; this.victoryMode=payload.config.victoryMode;
     this.difficulty=AI_DIFFICULTIES.standard; this.battlefieldScale=1.5;
     this.units=[];this.buildings=[];this.ore=[];this.oil=[];this.beacons=[];this.resourceSites=[];
@@ -47,9 +47,9 @@ export class OnlineGame extends Game {
       });
     };
     sync('units',true);sync('buildings');for(const key of ['ore','oil','beacons','resourceSites'])sync(key);
-    this.players=v.players; this.time=v.time; this._serverPaused=v.paused;this.room=payload.room;
+    this.players=v.players;this.spectator=!!v.spectator; this.time=v.time; this._serverPaused=v.paused;this.room=payload.room;
     this.battleReport = v.battleReport || null;
-    this.fog=unpackFog(v.fog); this.fogs=[this.fog,{...this.fog,visible:Array(this.fog.visible.length).fill(false),explored:Array(this.fog.visible.length).fill(false)}];
+    this.fog=unpackFog(v.fog); this.fogs=this.players.map((_,i)=>i===0?this.fog:{...this.fog,visible:Array(this.fog.visible.length).fill(false),explored:Array(this.fog.visible.length).fill(false)});
     this.pendingBuilding=this.players[0].readyBuilding||null;if(!this.pendingBuilding)this.placingBuilding=false;
     if(!initial&&this.pendingBuilding&&pendingBefore!==this.pendingBuilding)this.events.voice?.('buildReady');
     if(!initial&&this.units.some(u=>u.owner===0&&!before.has(u.id)&&!UNITS[u.type].tags.includes('logistics')))this.events.voice?.('unitReady');
@@ -70,9 +70,9 @@ export class OnlineGame extends Game {
     this.effects.forEach(e=>e.age+=dt);this.effects=this.effects.filter(e=>e.age<e.duration);
     this.attackAlerts=this.attackAlerts.filter(e=>this.time-e.at<8).slice(-12);
   }
-  issue(action, data={}) { if(!this.running||this.paused)return false;const {type:unitType,...args}=data;return this.client.send({type:'command',action,unitType,...args}); }
+  issue(action, data={}) { if(this.spectator||this.players[0]?.eliminated||!this.running||this.paused)return false;const {type:unitType,...args}=data;return this.client.send({type:'command',action,unitType,...args}); }
   batch(action,unit) {
-    if(!this.running||this.paused||unit?.kind!=='unit'||unit.owner!==0)return false;
+    if(this.spectator||this.players[0]?.eliminated||!this.running||this.paused||unit?.kind!=='unit'||unit.owner!==0)return false;
     this.batches??=new Map();let ids=this.batches.get(action);
     if(!ids){ids=new Set();this.batches.set(action,ids);queueMicrotask(()=>{this.batches.delete(action);this.issue(`group-${action}`,{selected:[...ids]});});}
     ids.add(unit.id);return true;

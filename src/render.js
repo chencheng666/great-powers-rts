@@ -99,7 +99,7 @@ export class Renderer {
     this.createTerrain(); this.createBridges(); this.createEnvironment(); this.createFutureStructures(); this.createSites(); this.createFog(); this.createOverlays();
     this.createTracks(); this.createCombatAtmosphere();
     this.createPostprocessing();
-    this.resize(); this.centerOn(innerWidth < 700 ? 400 : 470, game.homeY);
+    this.resize(); this.centerOn(game.map.maxPlayers===6?(game.homeX??game.map.spawns[0].x):innerWidth<700?400:470,game.map.maxPlayers===6?(game.online?game.homeY:game.map.spawns[0].y):game.homeY);
   }
 
   track(resource) { this.ownedResources.push(resource); return resource; }
@@ -979,11 +979,11 @@ export class Renderer {
       if (screen.x < 0 || screen.x > this.viewport.width || screen.y < 0 || screen.y > this.viewport.height) continue;
       const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry'), robot = entity.kind === 'unit' && isLunarRobot(this.game.map, entity.type), ammo = robot ? 10 : UNITS[entity.type]?.ammo;
       const numeric = hovered || isSelected && selected.size === 1;
-      const label = `${entity.owner === 1 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
+      const label = `${entity.owner !== 0 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
       const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : '';
       ctx.font = '500 10px "Noto Sans SC",sans-serif';
       const width = Math.max(entity.kind === 'building' ? 76 : infantry ? 28 : 50, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0);
-      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner === 1 ? 2 : 1 });
+      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner !== 0 ? 2 : 1 });
     }
     const repairs = this.game.ownedBuildings(0).filter(b => b.repairing && b.hp < b.maxHp).map(building => {
       const point = this.entityAnchor(building);

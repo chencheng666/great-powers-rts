@@ -1,7 +1,7 @@
 import { BUILDINGS, UNITS } from '../src/data.js';
 export function executeCommand(game, side, message) {
   const type = message.unitType;
-  if (!game.running || game.paused || game.isControlLocked(side)) return false;
+  if (!Number.isInteger(side)||!game.players[side]||game.players[side].eliminated||!game.running || game.paused || game.isControlLocked(side)) return false;
   const own = id => { const e = game.getEntity(id); return e?.owner === side && e.hp > 0 ? e : null; };
   const point = () => Number.isFinite(message.x) && Number.isFinite(message.y) && message.x >= 0 && message.y >= 0 && message.x <= game.world.width && message.y <= game.world.height;
   const selected = Array.isArray(message.selected) && message.selected.length <= 120 ? message.selected.filter(id => Number.isSafeInteger(id) && own(id)) : [];

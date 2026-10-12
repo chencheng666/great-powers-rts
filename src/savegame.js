@@ -25,26 +25,29 @@ function checkTree(value, depth = 0) {
 }
 
 export function validateSave(save) {
-  if (save?.format !== 'great-powers-rts' || save.version !== SAVE_VERSION) throw new Error('无法读取此存档：文件类型或存档版本不兼容');
+  if (save?.format !== 'great-powers-rts' || ![1,2].includes(save.version)) throw new Error('无法读取此存档：文件类型或存档版本不兼容');
   checkTree(save);
   const s = save.state, config = save.config;
+  const count=save.version===2?6:2,owners=Array.from({length:count},(_,i)=>i);
+  if(save.version===2&&(config?.playerCount!==6||MAPS[config?.mapId]?.maxPlayers!==6))invalid();
   if (!object(s) || !object(config) || !known(MAPS, config.mapId) || !known(AI_DIFFICULTIES, config.difficulty) || !['quick', 'annihilation', 'control'].includes(config.victoryMode) || !finite(save.savedAt) || !finite(s.time) || s.time < 0) invalid();
   if (config.economyMode !== undefined && !['mining', 'convoy'].includes(config.economyMode)) invalid();
   if (config.battleId !== undefined && !validBattleId(config.battleId)) invalid();
   if(config.battlefieldScale!==undefined&&![1,1.5].includes(config.battlefieldScale))invalid();
   if (SNAPSHOT_FIELDS.some(key => !Object.hasOwn(s, key))) invalid();
-  if (!Array.isArray(s.players) || s.players.length !== 2) invalid();
+  if (!Array.isArray(s.players) || s.players.length !== count) invalid();
   const checkProduction = (queue, definitions) => {
     if (queue !== null && (!object(queue) || !known(definitions, queue.type) || !finite(queue.progress) || queue.progress < 0 || !finite(queue.paid) || queue.paid < 0)) invalid();
   };
   for (const [side, player] of s.players.entries()) {
     if (!object(player) || player.side !== side || !known(FACTIONS, player.faction) || !['credits', 'abilityCharge', 'abilityCooldown', 'shieldUntil', 'controlScore', 'unitCount', 'aiPlanIndex', 'aiUnitCount', 'aiAirUnitCount', 'aiNavyUnitCount', 'aiEngineerRetryAt', 'aiScoutRetryAt', 'aiGhostRetryAt'].every(key => finite(player[key])) || player.credits < 0) invalid();
+    if(count===6&&(!["human","ai"].includes(player.controlType)||typeof player.eliminated!=="boolean"))invalid();
     checkProduction(player.buildQueue, BUILDINGS);
     for (const key of ['satelliteUntil', 'satelliteReadyAt']) if (player[key] !== undefined && (!finite(player[key]) || player[key] < 0)) invalid();
     if(player.cyberCharge!==undefined&&(!finite(player.cyberCharge)||player.cyberCharge<0||player.cyberCharge>INTELLIGENCE_RULES.cyberCharge))invalid();
     if(player.cyberLockedUntil!==undefined&&(!finite(player.cyberLockedUntil)||player.cyberLockedUntil<0||player.cyberLockedUntil>s.time+INTELLIGENCE_RULES.cyberDuration+.01))invalid();
     if(player.cyberSourceId!==undefined&&player.cyberSourceId!==null&&!Number.isSafeInteger(player.cyberSourceId))invalid();
-    if(player.cyberPending!==undefined&&player.cyberPending!==null&&(!object(player.cyberPending)||!Number.isSafeInteger(player.cyberPending.sourceId)||!finite(player.cyberPending.executeAt)||player.cyberPending.executeAt<0||player.cyberPending.executeAt>s.time+INTELLIGENCE_RULES.cyberWarning+.01))invalid();
+    if(player.cyberPending!==undefined&&player.cyberPending!==null&&(!object(player.cyberPending)||!Number.isSafeInteger(player.cyberPending.sourceId)||(player.cyberPending.targetSide!==undefined&&(!Number.isInteger(player.cyberPending.targetSide)||player.cyberPending.targetSide<0||player.cyberPending.targetSide>=count||player.cyberPending.targetSide===side))||!finite(player.cyberPending.executeAt)||player.cyberPending.executeAt<0||player.cyberPending.executeAt>s.time+INTELLIGENCE_RULES.cyberWarning+.01))invalid();
   }
   const map=battlefieldMap(config.mapId,config.battlefieldScale||1),world = map.world || WORLD, ids = new Set();
   const point = value => object(value) && finite(value.x) && finite(value.y);
@@ -60,7 +63,7 @@ export function validateSave(save) {
   for (const [key, definitions] of [['units', UNITS], ['buildings', BUILDINGS]]) {
     if (!Array.isArray(s[key]) || s[key].length > 5000) invalid();
     for (const entity of s[key]) {
-      if (!object(entity) || !Number.isSafeInteger(entity.id) || entity.id < 1 || ids.has(entity.id) || entity.kind !== (key === 'units' ? 'unit' : 'building') || !known(definitions, entity.type) || ![0, 1].includes(entity.owner) || !point(entity) || entity.x < 0 || entity.x > world.width || entity.y < 0 || entity.y > world.height || !finite(entity.hp) || !finite(entity.maxHp) || entity.maxHp <= 0 || !finite(entity.angle) || !finite(entity.fireTimer)) invalid();
+      if (!object(entity) || !Number.isSafeInteger(entity.id) || entity.id < 1 || ids.has(entity.id) || entity.kind !== (key === 'units' ? 'unit' : 'building') || !known(definitions, entity.type) || !owners.includes(entity.owner) || !point(entity) || entity.x < 0 || entity.x > world.width || entity.y < 0 || entity.y > world.height || !finite(entity.hp) || !finite(entity.maxHp) || entity.maxHp <= 0 || !finite(entity.angle) || !finite(entity.fireTimer)) invalid();
       ids.add(entity.id);
       if (key === 'units') {
         if (!Array.isArray(entity.path) || entity.path.some(p => !point(p)) || !Array.isArray(entity.passengers) || entity.passengers.some(id => !Number.isSafeInteger(id)) || !['pathTimer', 'stunUntil', 'turretAngle', 'cargo', 'cargoValue', 'rearmProgress', 'temporaryUntil', 'movePulse', 'heat', 'deployProgress'].every(key => finite(entity[key]))) invalid();
@@ -79,7 +82,7 @@ export function validateSave(save) {
         if (entity.homeCarrierId !== undefined && entity.homeCarrierId !== null && (!Number.isSafeInteger(entity.homeCarrierId) || !d.tags.includes('deck'))) invalid();
         if (entity.deckApproach && (!object(entity.deckApproach) || !Number.isSafeInteger(entity.deckApproach.carrierId) || !finite(entity.deckApproach.start) || !finite(entity.deckApproach.until))) invalid();
       } else {
-        if(entity.sabotage&&(!object(entity.sabotage)||entity.sabotage.owner!==1-entity.owner||!finite(entity.sabotage.plantedAt)||!finite(entity.sabotage.detonateAt)||entity.sabotage.plantedAt<0||entity.sabotage.detonateAt!==entity.sabotage.plantedAt+INTELLIGENCE_RULES.bombDelay||entity.sabotage.plantedAt>s.time+.01))invalid();
+        if(entity.sabotage&&(!object(entity.sabotage)||(!owners.includes(entity.sabotage.owner)||entity.sabotage.owner===entity.owner)||!finite(entity.sabotage.plantedAt)||!finite(entity.sabotage.detonateAt)||entity.sabotage.plantedAt<0||entity.sabotage.detonateAt!==entity.sabotage.plantedAt+INTELLIGENCE_RULES.bombDelay||entity.sabotage.plantedAt>s.time+.01))invalid();
         if (!Array.isArray(entity.queue) || entity.queue.length > 1000 || entity.queue.some(type => !known(UNITS, type)) || !finite(entity.size) || entity.rallyPoint && !point(entity.rallyPoint)) invalid();
         checkProduction(entity.active, UNITS);
       }
@@ -109,30 +112,30 @@ export function validateSave(save) {
     if (!Array.isArray(s[key]) || s[key].length !== (key === 'ore' && config.economyMode === 'convoy' ? 0 : MAPS[config.mapId][key].length)) invalid();
     for (const site of s[key]) {
       if (!object(site) || !finite(site.x) || !finite(site.y)) invalid();
-      if (key === 'ore' ? !finite(site.amount) || site.amount < 0 || !finite(site.max) || site.max <= 0 || !['gold', 'gem'].includes(site.kind) : ![null, 0, 1].includes(site.owner)) invalid();
+      if (key === 'ore' ? !finite(site.amount) || site.amount < 0 || !finite(site.max) || site.max <= 0 || !['gold', 'gem'].includes(site.kind) : ![null,...owners].includes(site.owner)) invalid();
     }
   }
   if(s.resourceSites!==undefined){
-    if(!Array.isArray(s.resourceSites)||s.resourceSites.length!==0&&s.resourceSites.length!==6)invalid();
+    if(!Array.isArray(s.resourceSites)||s.resourceSites.length!==0&&s.resourceSites.length!==resourceLayout(map).length)invalid();
     const layout=resourceLayout(map),seen=new Set();
     for(const site of s.resourceSites){
       const expected=layout.find(v=>v.id===site?.id);
-      if(!expected||seen.has(site.id)||site.kind!=='resource'||site.type!==expected.type||site.x!==expected.x||site.y!==expected.y||!known(RESOURCE_TYPES,site.type)||site.max!==expected.max||!finite(site.amount)||site.amount<0||site.amount>site.max||!finite(site.progress)||site.progress<0||![null,0,1].includes(site.owner)||site.type!=='depot'&&site.owner!==null)invalid();
+      if(!expected||seen.has(site.id)||site.kind!=='resource'||site.type!==expected.type||site.x!==expected.x||site.y!==expected.y||!known(RESOURCE_TYPES,site.type)||site.max!==expected.max||!finite(site.amount)||site.amount<0||site.amount>site.max||!finite(site.progress)||site.progress<0||![null,...owners].includes(site.owner)||site.type!=='depot'&&site.owner!==null)invalid();
       seen.add(site.id);
     }
   }
-  if (!Array.isArray(s.fogs) || s.fogs.length !== 2) invalid();
+  if (!Array.isArray(s.fogs) || s.fogs.length !== count) invalid();
   for (const fog of s.fogs) {
     if (fog.cols !== world.width / world.fog || fog.rows !== world.height / world.fog) invalid();
     for (const key of ['visible', 'explored']) if (!Array.isArray(fog[key]) || fog[key].length !== fog.cols * fog.rows || fog[key].some(value => typeof value !== 'boolean')) invalid();
   }
   if (!Array.isArray(s.selected) || s.selected.some(id => !Number.isSafeInteger(id)) || !Array.isArray(s.projectiles) || s.projectiles.length > 10000 || !Number.isSafeInteger(s.nextProjectileId) || ![s.aiTimer, s.aiWaveTimer, s.fogTimer].every(finite) || s.pendingBuilding !== null && !known(BUILDINGS, s.pendingBuilding) || typeof s.pendingAbility !== 'boolean') invalid();
-  for (const projectile of s.projectiles) if (!object(projectile) || !['x', 'y', 'startX', 'startY', 'toX', 'toY', 'angle', 'age', 'amount', 'speed', 'hp', 'jam'].every(key => finite(projectile[key])) || projectile.speed <= 0 || ![0, 1].includes(projectile.owner) || !['wing', 'torpedo', 'rocket', 'missile', 'loitering', 'bomb'].includes(projectile.kind)) invalid();
+  for (const projectile of s.projectiles) if (!object(projectile) || !['x', 'y', 'startX', 'startY', 'toX', 'toY', 'angle', 'age', 'amount', 'speed', 'hp', 'jam'].every(key => finite(projectile[key])) || projectile.speed <= 0 || !owners.includes(projectile.owner) || !['wing', 'torpedo', 'rocket', 'missile', 'loitering', 'bomb'].includes(projectile.kind)) invalid();
   for (const projectile of s.projectiles) for (const key of ['sourceHeight', 'targetHeight', 'fallDuration']) if (projectile[key] !== undefined && (!finite(projectile[key]) || key === 'fallDuration' && (projectile[key] <= 0 || projectile[key] > 10))) invalid();
   if (save.view !== undefined && !object(save.view)) invalid();
-  if (s.battleStats !== undefined && !validateBattleStats(s.battleStats, s.time)) invalid();
+  if (s.battleStats !== undefined && !validateBattleStats(s.battleStats, s.time,count)) invalid();
   if (s.logistics !== undefined) {
-    if (!Array.isArray(s.logistics) || s.logistics.length !== 2) invalid();
+    if (!Array.isArray(s.logistics) || s.logistics.length !== count) invalid();
     for (const [side, route] of s.logistics.entries()) if (!object(route) || route.side !== side || !['nextAir', 'nextSea', 'delivered', 'lost'].every(key => finite(route[key]) && route[key] >= 0)) invalid();
   } else if (config.economyMode === 'convoy') invalid();
   return save;
@@ -148,7 +151,7 @@ export function parseSave(text) {
 export function createSave(game, view = {}, savedAt = Date.now()) {
   if (!game?.running || game.winner !== null) throw new Error('只能保存尚未结束的战局');
   const difficulty = Object.entries(AI_DIFFICULTIES).find(([, value]) => value === game.difficulty)?.[0];
-  const save = { format: 'great-powers-rts', version: SAVE_VERSION, savedAt, config: { battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])), logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
+  const save = { format: 'great-powers-rts', version: game.playerCount===6?2:SAVE_VERSION, savedAt, config: { ...(game.playerCount===6?{playerCount:6}:{}),battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])), logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
   validateSave(save);
   return JSON.parse(JSON.stringify(save));
 }
