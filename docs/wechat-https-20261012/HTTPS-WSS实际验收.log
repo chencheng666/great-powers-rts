@@ -1,0 +1,2 @@
+{"HTTPS":"可信TLS通过","WSS":"通过","protocol":2,"twoSeats":"通过","start":"同一battleId","command":"第二席位建造ack及快照通过","disconnect":"暂停","reconnect":"同一战局恢复","environment":"同一Mac Node两独立会话，非双物理设备"}
+health { ok: true, protocol: 2, rooms: 0, battles: 0 }
