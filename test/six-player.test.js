@@ -21,3 +21,8 @@ test('六方混合AI仅执行AI席位计划，生产上限40包含排队单位',
  for(let i=0;i<650;i++)g.update(.05);for(const p of g.players)if(p.controlType==='human')assert.equal(p.aiPlanIndex,0);else assert(p.aiPlanIndex>0);
  const factory=g.ownedBuildings(0,'factory')[0];while(g.ownedUnits(0).length<40)g.addUnit(0,'tank',1500+g.units.length*2,1500);assert.equal(g.queueUnit(0,'tank'),false);
 });
+
+test('六方蜂群计入生产预留名额，旧双人超过40仍可排队',()=>{
+ const g=new Game('asia','china',{}, {mapId:'sixfront',multiplayer:true}),factory=g.ownedBuildings(0,'factory')[0];while(g.ownedUnits(0).length<35)g.addUnit(0,'tank',1800+g.units.length*2,1800);factory.queue.push('tank');g.addBuilding(0,'super',2800,1000);g.addBuilding(0,'power',2600,1000);g.addBuilding(0,'power',2400,1000);g.recalculatePower();g.players[0].abilityCharge=100;const credits=g.players[0].credits;assert.equal(g.castAbility(2880,960),false);assert.equal(g.players[0].credits,credits);assert.equal(g.players[0].abilityCharge,100);
+ const old=new Game('china','nato');while(old.ownedUnits(0).length<41)old.addUnit(0,'tank',1000+old.units.length*2,500);assert.equal(old.queueUnit(0,'tank'),true);
+});

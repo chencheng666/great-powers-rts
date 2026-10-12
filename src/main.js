@@ -34,6 +34,7 @@ import './online.css';
 import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
 
+const candidateMode=/^\/candidate(?:\/|$)/.test(location.pathname);
 const $ = selector => document.querySelector(selector);
 const fmt = amount => Math.floor(amount).toLocaleString('zh-CN');
 const seconds = value => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
@@ -49,7 +50,7 @@ const state = {
   game: null,
   renderer: null,
   faction: 'china',
-  mapId: 'valley',
+  mapId: candidateMode?'sixfront':'valley',
   victoryMode: 'quick',
   difficulty: 'standard',
   tab: 'build',
@@ -261,7 +262,7 @@ async function startGame(save = null, onlinePayload = null) {
   window.scrollTo(0, 0);
   $('#side-faction').textContent = FACTIONS[state.faction].name;
   $('#faction-short').textContent = `我方：${FACTIONS[state.faction].name}`;
-  $('#enemy-short').textContent = state.game.players.length>2?`其他 ${state.game.players.length-1} 方 · 六方自由对战`:`敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
+  $('#enemy-short').textContent = state.game.players.length>2?`其他 ${state.game.players.length-1} 方 · 六方实验 · 每席40单位`:`敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
   $('#battle-status').textContent = '战斗进行中';
   $('#battle-objective').textContent = VICTORY_MODES[state.victoryMode].description;
   $('.battlefield').classList.toggle('future', !!state.game.map.future);
@@ -942,7 +943,7 @@ const onlineClient=new OnlineClient({
   onInterrupted:()=>{if(state.game?.online){state.game.running=false;showModal('战局已取消','<p>服务器维护或房间已过期，本局未记录胜负。</p>','<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button>');}}
 });
 drawFactionPicker();
-$('#map-select').innerHTML = Object.entries(MAPS).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
+$('#map-select').innerHTML = Object.entries(MAPS).filter(([,map])=>!candidateMode||map.maxPlayers===6).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
 $('#map-select').value = state.mapId;
 setupControls();
 try { setSidebarCollapsed(localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(false); }

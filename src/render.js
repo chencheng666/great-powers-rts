@@ -70,6 +70,8 @@ export class Renderer {
 
   constructor(canvas, minimap, game) {
     this.canvas = canvas; this.minimap = minimap; this.mctx = minimap.getContext('2d'); this.game = game;
+    this.quality=game.map.maxPlayers===6?'standard':'high';
+    try { const saved=localStorage.getItem('great-powers-quality');if(['standard','high'].includes(saved))this.quality=saved; } catch { /* 无存储时按模式选默认画质。 */ }
     this.world = game.world;
     this.projectileModels = new Map();
     this.munitionTemplates = new Map();
@@ -79,10 +81,10 @@ export class Renderer {
     this.cameraElevation = battleElevation(this.viewMode); this.wrecks = []; this.damageMaterials = new Map(); this.damageTemplates = new Map();
     this.pointer = null; this.dragBox = null; this.lastMinimap = 0; this.lastFog = -1000;
     this.entities = new Map(); this.effects = new Map(); this.environment = []; this.bridges = []; this.trails = []; this.ownedResources = [];
-    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: !(game.map.maxPlayers===6&&this.quality==='standard'), alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
     // 返回菜单或读档时复用同一画布，先清理上一渲染器遗留的 WebGL 绑定。
     this.webgl.resetState();
-    this.webgl.setPixelRatio(Math.min(devicePixelRatio, innerWidth < 700 ? 1.5 : 2));
+    this.webgl.setPixelRatio(game.map.maxPlayers===6&&this.quality==='standard'?1:Math.min(devicePixelRatio,innerWidth<700?1.5:2));
     this.webgl.shadowMap.enabled = true; this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
     this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = 1.06;
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color('#10181d');
@@ -92,7 +94,7 @@ export class Renderer {
     const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .58; room.dispose(); pmrem.dispose();
     this.scene.add(new THREE.HemisphereLight('#d7e8ef', game.map.future ? '#3e434c' : '#3b4739', .95));
     const sun = new THREE.DirectionalLight(game.map.future ? '#e8f2ff' : '#ffedd4', 3.05); sun.position.set(this.world.width / 2 - 1750, 2450, this.world.height / 2 - 1520); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true; this.sun = sun;
-    const shadowSize = innerWidth < 700 ? 2048 : 4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
+    const shadowSize=game.map.maxPlayers===6&&this.quality==='standard'?1024:innerWidth<700?2048:4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
     Object.assign(sun.shadow.camera, { left: -this.world.width * .7, right: this.world.width * .7, top: this.world.height * .85, bottom: -this.world.height * .85, near: 10, far: 6000 });
     sun.shadow.bias = -.00015; sun.shadow.normalBias = .24; sun.shadow.radius = 2; this.scene.add(sun, sun.target);
     this.fireTexture = particleTexture(); this.smokeTexture = particleTexture(true);
@@ -120,13 +122,14 @@ export class Renderer {
       try { render(...args); } finally { hidden.forEach(object => { object.visible = true; }); }
     };
     this.composer.addPass(this.ambientPass); this.composer.addPass(new OutputPass());
-    this.quality = 'high';
-    try { this.quality = localStorage.getItem('great-powers-quality') === 'standard' ? 'standard' : 'high'; } catch { /* 无本地存储时使用默认画质。 */ }
     this.ambientPass.enabled = this.quality === 'high';
   }
 
   setQuality(value) {
     this.quality = value === 'standard' ? 'standard' : 'high'; this.ambientPass.enabled = this.quality === 'high';
+    this.webgl.setPixelRatio(this.game.map.maxPlayers===6&&this.quality==='standard'?1:Math.min(devicePixelRatio,innerWidth<700?1.5:2));
+    const shadowSize=this.game.map.maxPlayers===6&&this.quality==='standard'?1024:innerWidth<700?2048:4096;
+    if(this.sun.shadow.mapSize.x!==shadowSize){this.sun.shadow.mapSize.set(shadowSize,shadowSize);this.sun.shadow.map?.dispose();this.sun.shadow.map=null;}
     try { localStorage.setItem('great-powers-quality', this.quality); } catch { /* 当前战局仍可切换画质。 */ }
     this.resize();
   }

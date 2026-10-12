@@ -1,0 +1,6 @@
+{
+  "rootStatus": 200,
+  "helloProtocol": 2,
+  "pong": true,
+  "roomCreated": false
+}

@@ -1,0 +1,15 @@
+{
+  "time": 131.59999999999567,
+  "producedTank": true,
+  "moved": 353.25772836144,
+  "ownUnits": 6,
+  "roles": [
+    "human",
+    "ai",
+    "ai",
+    "ai",
+    "ai",
+    "ai"
+  ],
+  "glError": 0
+}

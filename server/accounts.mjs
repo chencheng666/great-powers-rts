@@ -5,7 +5,8 @@ import { join } from 'node:path';
 import { nickname } from '../src/network-protocol.js';
 const hash = value => createHash('sha256').update(value).digest('hex');
 export class Accounts {
-  constructor(directory) {
+  constructor(directory,{cookieName='gp_guest'}={}) {
+    if(!['gp_guest','gp_six_guest'].includes(cookieName))throw new Error('会话名称无效');this.cookieName=cookieName;
     mkdirSync(directory, { recursive: true, mode: 0o700 });
     const Database = sqlite.DatabaseSync || sqlite.Database;
     const file = join(directory, 'guests.sqlite'); this.db = new Database(file); chmodSync(file, 0o600);
@@ -16,7 +17,7 @@ export class Accounts {
     this.db.exec('BEGIN');try{const result=this.db.prepare('INSERT OR IGNORE INTO multi_matches VALUES(?,?,?)').run(id,String(winner),Date.now());if(result.changes)users.forEach((u,side)=>{this.db.prepare('INSERT INTO match_members VALUES(?,?,?,?)').run(id,side,u.id,u.controlType||'human');if(u.controlType!=='ai'){const field=winner==='draw'?'draws':winner===side?'wins':'losses';this.db.prepare(`UPDATE guests SET ${field}=${field}+1 WHERE id=?`).run(u.id);}});this.db.exec('COMMIT');return !!result.changes;}catch(e){this.db.exec('ROLLBACK');throw e;}
   }
   find(cookie = '') {
-    const token = cookie.split(';').map(s => s.trim()).find(s => s.startsWith('gp_guest='))?.slice(9);
+    const prefix=this.cookieName+'=',token=cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith(prefix))?.slice(prefix.length);
     return token ? this.db.prepare('SELECT id,name,wins,losses,draws FROM guests WHERE token=? AND expires>?').get(hash(token), Date.now()) : null;
   }
   create(name) {

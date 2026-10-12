@@ -2,7 +2,7 @@ import { isDesktop, desktopInvoke } from './desktop.js';
 import { FACTIONS, MAPS, VICTORY_MODES } from './data.js';
 import { nickname, roomCode, PROTOCOL_VERSION } from './network-protocol.js';
 const key='great-powers-player-name-v1';
-const candidatePath=()=>location.pathname.startsWith('/candidate');
+const candidatePath=()=>/^\/candidate(?:\/|$)/.test(location.pathname);
 export class OnlineClient {
   constructor({refreshIcons,prepare,onBattle,onSnapshot,onNotice,onStatus,onInterrupted,onAck,config}) {
     Object.assign(this,{refreshIcons,prepare,onBattle,onSnapshot,onNotice,onStatus,onInterrupted,onAck,config});
@@ -99,8 +99,8 @@ export class OnlineClient {
   send(message){if(this.socket?.readyState!==WebSocket.OPEN){this.onNotice('连接尚未恢复，请稍候',true);return false;}if(message.type==='command')message.seq=++this.seq;this.socket.send(JSON.stringify(message));return true;}
   showError(message){this.dialog.querySelector('#online-error').textContent=message;}
   candidateControls(){
-    this.dialog.querySelector('h2').textContent=this.prefix?'六方自由对战 · 本机候选版':'双人对战';
-    let box=this.dialog.querySelector('#candidate-controls');if(!box){box=document.createElement('div');box.id='candidate-controls';box.innerHTML='<label><input type="checkbox" id="allow-spectators"> 允许跟随席位迷雾观战（不含经济与指令）</label><label>观战席位 <select id="observe-follow">'+Array.from({length:6},(_,i)=>`<option value="${i}">${i+1}号席位</option>`).join('')+'</select></label><button data-online="observe">按房间码观战</button>';this.dialog.querySelector('#online-setup').append(box);}box.hidden=!this.prefix;
+    this.dialog.querySelector('h2').textContent=this.prefix?'六方自由对战 · 实验候选版':'双人对战';
+    let box=this.dialog.querySelector('#candidate-controls');if(!box){box=document.createElement('div');box.id='candidate-controls';box.innerHTML='<p class="report-note">实验模式：每席位最多 40 个单位（含排队与生产中），六方互为对手；当前仅本机候选，尚未上线。默认流畅画质，密集交战仍可能低帧率。</p><label><input type="checkbox" id="allow-spectators"> 允许跟随席位迷雾观战（不含经济与指令）</label><label>观战席位 <select id="observe-follow">'+Array.from({length:6},(_,i)=>`<option value="${i}">${i+1}号席位</option>`).join('')+'</select></label><button data-online="observe">按房间码观战</button>';this.dialog.querySelector('#online-setup').append(box);}box.hidden=!this.prefix;
   }
   async action(action,button){
     if(!action)return;
@@ -134,7 +134,7 @@ export class OnlineClient {
     this.dialog.querySelectorAll('[data-online=create],[data-online=join]').forEach(b=>b.disabled=!connected);
     if(!hasRoom)return;
     this.dialog.querySelector('#room-code').textContent=r.code;
-    this.dialog.querySelector('#room-map').textContent=`${MAPS[r.config.mapId].name} · ${VICTORY_MODES[r.config.victoryMode].name}`;
+    this.dialog.querySelector('#room-map').textContent=`${MAPS[r.config.mapId].name} · ${VICTORY_MODES[r.config.victoryMode].name}${this.prefix?' · 实验模式 · 每席上限40（含排队/生产中）':''}`;
     const me=r.members.find(m=>m?.id===this.user.id),host=me&&r.host===r.members.indexOf(me);
     const list=this.dialog.querySelector('#room-members');list.replaceChildren();
     r.members.forEach((m,i)=>{const row=document.createElement('div');row.className='room-member';const name=document.createElement('strong');name.textContent=m?`${m.name} #${m.id.slice(0,6)}`:'等待指挥官加入';const status=document.createElement('span');status.textContent=m?`${FACTIONS[m.faction].name} · ${m.controlType==='ai'?'电脑 · ':''}${m.eliminated?'已淘汰':m.connected?m.ready?'已准备':'待准备':'已掉线'}${r.host===i?' · 房主':''}`:'空闲席位';row.append(name,status);if(this.prefix&&host&&r.status==='waiting'&&(!m||m.controlType==='ai')){const select=document.createElement('select');select.setAttribute('aria-label',`${i+1}号电脑阵营`);for(const[id,f]of Object.entries(FACTIONS)){const o=document.createElement('option');o.value=id;o.textContent=f.name;select.append(o);}select.value=this.aiFactions?.[i]||m?.faction||'china';select.addEventListener('change',()=>{this.aiFactions??={};this.aiFactions[i]=select.value});const bot=document.createElement('button');bot.textContent=m?'移除电脑':'加入电脑';bot.dataset.online=m?'remove-ai':'set-ai';bot.dataset.seat=i;row.append(select,bot);}list.append(row);});

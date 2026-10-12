@@ -335,9 +335,11 @@ export class Game {
     this.moveUnit(u, order, dt, 8); return true;
   }
 
+  unitCapacityUsed(side){return this.ownedUnits(side).length+this.ownedBuildings(side).reduce((n,b)=>n+b.queue.length+Number(!!b.active),0);}
+
   queueUnit(side, type) {
     if(this.isControlLocked(side)||this.players[side]?.eliminated)return false;
-    if(this.playerCount===6&&this.ownedUnits(side).length+this.ownedBuildings(side).reduce((n,b)=>n+b.queue.length+!!b.active,0)>=40)return false;
+    if(this.playerCount===6&&this.unitCapacityUsed(side)>=40)return false;
     const d = UNITS[type];
     if (!d || FREIGHT_TYPES.includes(type) || type === 'harvester' && this.economyMode !== 'mining' || (d.naval && !this.map.water) || !supportsMap(d.map, this.mapId) || (d.faction && this.players[side].faction !== d.faction) || (d.requires && !this.hasBuilding(side, d.requires))) return false;
     const producer = this.ownedBuildings(side, d.producer).sort((a, b) => a.queue.length - b.queue.length)[0];
@@ -435,7 +437,8 @@ export class Game {
 
   castAbility(x, y, side = 0) {
     if(this.isControlLocked(side))return false;
-    const p = this.players[side], targetSide = this.nearestEnemySide(side);
+    const p = this.players[side];
+    if(this.playerCount===6&&p.faction==='asia'&&this.unitCapacityUsed(side)>35)return false;
     if (!this.hasBuilding(side, 'super') || !this.hasPower(side) || p.abilityCharge < 100 || p.abilityCooldown > 0 || p.credits < 650) return false;
     if (p.faction !== 'china' && !this.isVisibleFor(side, x, y)) return false;
     p.credits -= 650; p.abilityCharge = 0; p.abilityCooldown = 45;
