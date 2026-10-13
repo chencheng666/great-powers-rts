@@ -1,3 +1,4 @@
+import { isDesktop, desktopInvoke, desktopNotice } from './desktop.js';
 import { createIcons, icons } from 'lucide';
 import { BUILDINGS, BUILD_ORDER, FACTIONS, MAPS, PRODUCERS, UNITS, UNIT_ORDER, VICTORY_MODES, supportsMap } from './data.js';
 import { Game } from './game.js';
@@ -33,6 +34,7 @@ import './online.css';
 import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
 
+const candidateMode=/^\/candidate(?:\/|$)/.test(location.pathname);
 const $ = selector => document.querySelector(selector);
 const fmt = amount => Math.floor(amount).toLocaleString('zh-CN');
 const seconds = value => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
@@ -48,7 +50,7 @@ const state = {
   game: null,
   renderer: null,
   faction: 'china',
-  mapId: 'valley',
+  mapId: candidateMode?'sixfront':'valley',
   victoryMode: 'quick',
   difficulty: 'standard',
   tab: 'build',
@@ -165,6 +167,7 @@ function updateFullscreenControl() {
 async function toggleFullscreen() {
   const app = $('#app');
   try {
+    if (isDesktop()) { const active = await desktopInvoke('desktop_fullscreen'); $('#fullscreen-btn').setAttribute('aria-pressed', String(active)); $('#fullscreen-btn').ariaLabel = active ? '退出全屏' : '进入全屏'; $('#fullscreen-btn').innerHTML = icon(active ? 'minimize' : 'maximize'); refreshIcons(); state.keys.clear(); requestAnimationFrame(() => state.renderer?.resize()); return; }
     if (document.fullscreenElement || document.webkitFullscreenElement) {
       if (document.exitFullscreen) await document.exitFullscreen();
       else document.webkitExitFullscreen();
@@ -259,7 +262,7 @@ async function startGame(save = null, onlinePayload = null) {
   window.scrollTo(0, 0);
   $('#side-faction').textContent = FACTIONS[state.faction].name;
   $('#faction-short').textContent = `我方：${FACTIONS[state.faction].name}`;
-  $('#enemy-short').textContent = `敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
+  $('#enemy-short').textContent = state.game.players.length>2?`其他 ${state.game.players.length-1} 方 · 六方实验 · 每席40单位`:`敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
   $('#battle-status').textContent = '战斗进行中';
   $('#battle-objective').textContent = VICTORY_MODES[state.victoryMode].description;
   $('.battlefield').classList.toggle('future', !!state.game.map.future);
@@ -519,6 +522,7 @@ function saveProgress(slot = 'manual', feedback = true) {
   try {
     const save = state.game.toSave({ center: { ...state.renderer.center }, zoom: state.renderer.camera.zoom, groups: state.groups });
     writeSave(localStorage, slot, save);
+    if (isDesktop()) desktopInvoke('desktop_backup', { slot, contents: JSON.stringify(save) }).catch(e => toast(`本地备份失败：${e}`, true));
     if (feedback) toast(`进度已保存 · ${seconds(save.state.time)}`);
     state.autoSaveFailed = false; updateContinueControl();
     return true;
@@ -559,10 +563,11 @@ async function loadProgress(slot) {
   } catch (error) { toast(error.message, true); }
 }
 
-function exportProgress() {
+async function exportProgress() {
   if (!state.game?.running) return;
   try {
     const save = state.game.toSave({ center: { ...state.renderer.center }, zoom: state.renderer.camera.zoom, groups: state.groups });
+    if (isDesktop()) { if (await desktopInvoke('desktop_export', { contents: JSON.stringify(save) })) toast('存档文件已导出'); return; }
     const url = URL.createObjectURL(new Blob([JSON.stringify(save)], { type: 'application/json' }));
     const anchor = document.createElement('a'); anchor.href = url;
     anchor.download = `Great-Powers-save-${Date.now()}.json`; anchor.click();
@@ -750,7 +755,8 @@ function setupControls() {
     state.drag = null; r.dragBox = null;
   });
   canvas.addEventListener('pointercancel', event => { state.drag = null; state.panning = null; updatePanControl(); state.touchPoints.delete(event.pointerId); if (!state.touchPoints.size) { state.touchPan = false; state.touchPinching = false; } if (state.renderer) state.renderer.dragBox = null; });
-  canvas.addEventListener('pointerleave', () => { state.pointerPosition = null; if (state.renderer) state.renderer.hoveredId = null; });
+  canvas.addEventListener('pointerleave', event => { state.pointerPosition = null; if(event.relatedTarget?.closest?.('#building-info'))return; if (state.renderer) state.renderer.hoveredId = null; });
+  $('#building-info').addEventListener('pointerleave',event=>{if(event.relatedTarget!==canvas&&state.renderer)state.renderer.hoveredId=null;});
   canvas.addEventListener('wheel', event => { if (!state.renderer) return; event.preventDefault(); const p = canvasPoint(event); state.renderer.zoomAt(event.deltaY < 0 ? 1.09 : 1 / 1.09, p.x, p.y); }, { passive: false });
   $('#minimap').addEventListener('pointerdown', event => { if (!state.renderer || !state.game?.hasRadarIntel(0) || state.game.isControlLocked(0)) return; const rect = event.currentTarget.getBoundingClientRect(); state.renderer.centerOn((event.clientX - rect.left) / rect.width * state.game.world.width, (event.clientY - rect.top) / rect.height * state.game.world.height); });
   $('#minimap').addEventListener('pointermove', event => { if (!(event.buttons & 1) || !state.renderer || !state.game?.hasRadarIntel(0) || state.game.isControlLocked(0)) return; const rect = event.currentTarget.getBoundingClientRect(); state.renderer.centerOn((event.clientX - rect.left) / rect.width * state.game.world.width, (event.clientY - rect.top) / rect.height * state.game.world.height); });
@@ -762,7 +768,7 @@ function setupControls() {
     if (catalog.dialog.open || honorPanel.dialog.open) return;
     if (event.target.closest('input, select, textarea, [contenteditable="true"]')) return;
     if ((event.ctrlKey || event.metaKey || event.altKey) && !/^[1-9]$/.test(event.key)) return;
-    if (event.key === 'Escape' && (document.fullscreenElement || document.webkitFullscreenElement)) { event.preventDefault(); toggleFullscreen(); return; }
+    if (event.key === 'Escape' && (document.fullscreenElement || document.webkitFullscreenElement || isDesktop() && $('#fullscreen-btn').getAttribute('aria-pressed') === 'true')) { event.preventDefault(); toggleFullscreen(); return; }
     const g = state.game; if (!g || $('#start-screen').style.display !== 'none') return;
     const key = event.key.toLowerCase();
     if (key === 'f' && !event.repeat) { event.preventDefault(); toggleFullscreen(); return; }
@@ -780,7 +786,7 @@ function setupControls() {
     else if (key === 'a') { g.placingBuilding = false; g.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('左键指定攻击移动目标'); }
     else if (key === 'p') { g.placingBuilding = false; g.orderMode = 'patrol'; clearOrderButtons(); $('#patrol-btn').classList.add('active'); }
     else if (key === 's') { g.stopSelected(); clearOrderButtons(); }
-    else if (key === 'h') state.renderer.centerOn(state.game.homeX||280, state.game.homeY);
+    else if (key === 'h') state.renderer.centerOn(state.game.homeX||state.game.map.spawns?.[0]?.x||280,state.game.online?state.game.homeY:state.game.map.spawns?.[0]?.y||state.game.homeY);
     else if (key === 'u') { for (const id of state.game.selected) state.game.unloadTransport(state.game.getEntity(id)); updateSelection(); }
     else if (key === 'r') { for (const id of state.game.selected) state.game.requestResupply(state.game.getEntity(id)); updateSelection(); }
   });
@@ -824,7 +830,7 @@ function setupControls() {
   });
   $('#all-btn').addEventListener('click', () => state.game?.selectAllCombat());
   $('#stop-btn').addEventListener('click', () => { state.game?.stopSelected(); clearOrderButtons(); });
-  $('#home-btn').addEventListener('click', () => state.renderer?.centerOn(state.game.homeX||280, state.game.homeY));
+  $('#home-btn').addEventListener('click', () => state.renderer?.centerOn(state.game.homeX||state.game.map.spawns?.[0]?.x||280,state.game.online?state.game.homeY:state.game.map.spawns?.[0]?.y||state.game.homeY));
   $('#queue-cancel').addEventListener('click', () => {
     const g = state.game; if (!g) return;
     if (g.pendingBuilding || g.players[0].buildQueue) g.cancelBuilding(0);
@@ -840,7 +846,7 @@ function setupControls() {
   $('#save-btn').addEventListener('click', () => saveProgress());
   $('#menu-btn').addEventListener('click', requestMainMenu);
   $('#continue-btn').addEventListener('click', showLoadMenu);
-  $('#import-btn').addEventListener('click', () => $('#save-file').click());
+  $('#import-btn').addEventListener('click', importDesktopOrWeb);
   $('#attack-alert').addEventListener('click', locateAttack);
   $('#save-file').addEventListener('change', async event => {
     const file = event.target.files[0]; event.target.value = '';
@@ -884,7 +890,7 @@ function setupControls() {
     else if (action === 'load') showLoadMenu();
     else if (action?.startsWith('load-')) loadProgress(action.slice(5));
     else if (action === 'export') exportProgress();
-    else if (action === 'import') $('#save-file').click();
+    else if (action === 'import') importDesktopOrWeb();
     else if (action === 'restart') {
       if (!state.game?.running) startGame();
       else showModal('重新开始', '<p>当前战局将备份到自动存档，然后重新部署。</p>', '<button class="primary-btn" data-modal="confirm-restart">保存后重新开始</button><button class="secondary-btn" data-modal="resume">取消</button>');
@@ -937,7 +943,7 @@ const onlineClient=new OnlineClient({
   onInterrupted:()=>{if(state.game?.online){state.game.running=false;showModal('战局已取消','<p>服务器维护或房间已过期，本局未记录胜负。</p>','<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button>');}}
 });
 drawFactionPicker();
-$('#map-select').innerHTML = Object.entries(MAPS).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
+$('#map-select').innerHTML = Object.entries(MAPS).filter(([,map])=>!candidateMode||map.maxPlayers===6).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
 $('#map-select').value = state.mapId;
 setupControls();
 try { setSidebarCollapsed(localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(false); }
@@ -946,3 +952,10 @@ updateHonorOverview();
 updateContinueControl();
 refreshIcons();
 Renderer.prepare().catch(() => {});
+
+async function importDesktopOrWeb() {
+ if (!isDesktop()) { $('#save-file').click(); return; }
+ if (state.loading) return;
+ try { const text = await desktopInvoke('desktop_import'); if (!text) return; const save = parseSave(text); if (state.game?.running && !saveProgress('auto', true)) return; await startGame(save); } catch (e) { toast(String(e), true); }
+}
+desktopNotice();

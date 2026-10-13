@@ -18,13 +18,18 @@ export function refinePowerFans(model) {
   return model;
 }
 
+const facilityMotion = new WeakMap();
 export function animateFacility(model, unit, game) {
   if (unit.kind !== 'building' || unit.hp <= 0) return;
+  let state = facilityMotion.get(model);
+  if (!state) {
+    const nodes = []; model.traverse(node => { if (node.name === 'facility_radar' || node.name.startsWith('facility_fan_')) nodes.push(node); });
+    state = { nodes, time: game.time }; facilityMotion.set(model, state);
+  }
+  const dt = game.paused ? 0 : Math.min(.1, Math.max(0, game.time - state.time)); state.time = game.time;
   const powered = unit.type === 'power' || game.hasPower(unit.owner);
-  model.traverse(node => {
-    if (node.name === 'facility_radar') node.rotation.y = powered ? game.time * .7 : node.rotation.y;
-    if (node.name.startsWith('facility_fan_')) node.rotation.y = game.time * 8;
-  });
+  if (!powered) return;
+  for (const node of state.nodes) node.rotation.y = (node.rotation.y + dt * (node.name === 'facility_radar' ? .7 : 8)) % (Math.PI * 2);
 }
 
 export function drawRepairBadge(ctx, point, time, waiting = false) {

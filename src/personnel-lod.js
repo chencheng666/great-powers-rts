@@ -1,9 +1,13 @@
 import * as THREE from 'three';
+import { createPersonnel } from './personnel-models.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export function personnelLOD(source, track = value => value) {
   const material = track(new THREE.MeshStandardMaterial({ name: '远景人物合批', vertexColors: true, roughness: .83, metalness: .05 }));
-  // 保留腰、持枪和腿膝关节，仅把远景难以辨认的材质分组合并。
+  // 同一套人物配件与关节使用低分段几何，远景不用近景的细密曲面。
+  const palette = new Map();
+  source.traverse(mesh => { if (mesh.isMesh) palette.set(mesh.material.name, mesh.material.color); });
+  const distant = createPersonnel(source.name, { distant: true });
   const copy = node => {
     const group = new THREE.Group(); group.name = node.name;
     group.position.copy(node.position); group.quaternion.copy(node.quaternion); group.scale.copy(node.scale);
@@ -11,14 +15,17 @@ export function personnelLOD(source, track = value => value) {
     for (const child of node.children) {
       if (!child.isMesh) { group.add(copy(child)); continue; }
       const geometry = child.geometry.index ? child.geometry.toNonIndexed() : child.geometry.clone(); child.updateMatrix(); geometry.applyMatrix4(child.matrix);
-      const color = child.material.color, values = new Float32Array(geometry.attributes.position.count * 3);
+      const color = palette.get(child.material.name) || child.material.color, values = new Float32Array(geometry.attributes.position.count * 3);
       for (let i = 0; i < values.length; i += 3) { values[i] = color.r; values[i + 1] = color.g; values[i + 2] = color.b; }
       geometry.setAttribute('color', new THREE.BufferAttribute(values, 3)); pieces.push(geometry);
     }
     if (pieces.length) { const mesh = new THREE.Mesh(track(mergeGeometries(pieces, false)), material); mesh.castShadow = mesh.receiveShadow = true; group.add(mesh); pieces.forEach(g => g.dispose()); }
     return group;
   };
-  const result = copy(source); result.scale.setScalar(1); result.name = 'personnel_lod'; return result;
+  const result = copy(distant);
+  const materials = new Set(); distant.traverse(mesh => { if (mesh.isMesh) { mesh.geometry.dispose(); materials.add(mesh.material); } });
+  materials.forEach(material => material.dispose());
+  result.scale.setScalar(1); result.name = 'personnel_lod'; return result;
 }
 
 export function syncPersonnelLOD(entry, distant) {

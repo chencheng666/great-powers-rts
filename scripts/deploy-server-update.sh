@@ -33,6 +33,19 @@ for file in "$previous/dist/assets/"*; do
     cp -p "$file" "$stage/dist/assets/${file##*/}"
   fi
 done
+# 下载页面随发布版本切换；仅安装包保存在独立目录，避免失败发布改变旧页面。
+shared="$base/downloads/packages"
+install -d -m 755 "$shared" "$stage/dist/downloads"
+if [[ -d "$stage/dist/downloads/packages" && ! -L "$stage/dist/downloads/packages" ]]; then
+  # 已有文件必须字节一致，禁止覆盖历史安装包。
+  for file in "$stage/dist/downloads/packages/"*; do
+    [[ -f "$file" ]] || continue
+    target="$shared/${file##*/}"
+    if [[ -e "$target" ]]; then cmp "$file" "$target"; else cp -p "$file" "$target"; fi
+  done
+  rm -rf "$stage/dist/downloads/packages"
+fi
+ln -s "$shared" "$stage/dist/downloads/packages"
 "$node" --input-type=module <<'JS'
 import { createBattleServer } from './server/index.mjs';
 import { mkdtemp, rm, readFile } from 'node:fs/promises';

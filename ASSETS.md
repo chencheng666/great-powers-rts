@@ -48,3 +48,9 @@
 eSpeak NG 是生成声音的构建工具，不是随游戏分发的运行依赖。使用其内置普通话音色生成原创台词，不采用许可不明确的第三方神经声音模型。生成器许可与输出的区别参考 [eSpeak 官方许可说明](https://espeak.sourceforge.net/license.html)；将来替换音色或分发引擎前需重新核对许可。
 
 Three.js、PathFinding.js、ws 使用 MIT 许可；heap.js 保留 PSF 许可文本；Lucide 使用 ISC 许可，部分继承自 Feather 的图标另有 MIT 声明。原始授权文本见 `THIRD-PARTY-NOTICES.txt`。开发工具及其他间接依赖的许可应同时查看其各自 npm 包；本文件不是对所有未来依赖的授权保证。
+
+## 2026-10-12 官网候选素材
+
+`public/official/assets/battle.jpg`、`lobby.jpg` 来自本项目 0.9.1 HTTPS 原生实机截图，`ocean.png` 来自本项目海战实机截图。`battle-6s.mp4` 复用已登记的 `docs/wechat-community-20261008/videos/实机交火-6秒.mp4`，长度六秒，单机真实交火，默认静音、由访客主动播放；未导入第三方音频。
+
+`wechat-official.jpg` 是账号所有者授权后，在数字机器莱西奥官方公众号账号设置下载的关注二维码（430×430 JPEG），不是登录二维码。仅用于关注本账号，不附带后台登录地址或令牌。六域示意图由 CSS 绘制并明确标注规划示意，非实机截图。

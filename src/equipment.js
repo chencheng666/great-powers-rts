@@ -3,7 +3,7 @@ import { isLunarRobot, ROBOT_SPECS } from './lunar-robots.js';
 
 // 原型资料只影响名称、简介与外形，不能把现实宣传参数直接当作游戏战力。
 export const EQUIPMENT_SYSTEMS = {
-  china: { country: '中国装备', tank: ['99A 主战坦克', '数字化主战坦克原型；在游戏中负责装甲推进。', 'china-tank'], rocket: ['PHL-03 远程火箭炮', '多管远程火箭炮原型；侦察后展开射击，停驻补弹。', 'china-rocket'], fighter: ['歼-20 制空编组', '以歼-20为名称参考，游戏化拆分为制空任务。', 'china-air'], aa: ['红旗-17 防空车', '野战防空系统参考；护卫地面纵队，拦截空中目标。', 'china-aa'] },
+  china: { country: '中国装备', tank: ['99A 主战坦克', '数字化主战坦克原型；在游戏中负责装甲推进。', 'china-tank'], rocket: ['PHL-03 远程火箭炮', '多管远程火箭炮原型；侦察后展开射击，停驻补弹。', 'china-rocket'], fighter: ['歼-20 制空编组', '原创鸭翼双垂尾简化外形；游戏以制空为主，兼顾较弱对地任务，不代表真实挂载或性能。', 'china-air'], aa: ['红旗-17 防空车', '野战防空系统参考；护卫地面纵队，拦截空中目标。', 'china-aa'] },
   russia: { country: '俄系装备', tank: ['T-90MS 主战坦克', '公开出口型号参考，不代表俄军实际编制；强调装甲突击。', 'russia-tank'], rocket: ['BM-30 龙卷风', '多管火箭炮原型；展开时间与补给制约持续火力。', 'russia-rocket'], fighter: ['Su-35 制空编组', '多用途战斗机参考；本游戏按制空任务配置。', 'russia-air'], apc: ['BTR-82A 运输编组', '轮式装甲输送车参考；本游戏侧重运载，不模拟其机炮。', 'russia-tank'] },
   nato: { country: '北约／美系装备', tank: ['M1A2 艾布拉姆斯', '主战坦克原型；重装推进依赖防空与补给护卫。', 'nato-tank'], rocket: ['M142 HIMARS', '轮式模块化火箭炮参考；有限弹药，展开后远距打击。', 'nato-rocket'], fighter: ['F-22 制空编组', '制空战斗机参考；空中优势不能代替地面占领。', 'nato-air'], strike: ['F-35 对地编组', '多用途战斗机参考；游戏按对地载荷配置，不代表只能对地。', 'nato-strike'], apc: ['Stryker 运输编组', '轮式装甲车族参考；快速运输与部署步兵。', 'nato-tank'] },
   asia: { country: '韩国装备', tank: ['K2 黑豹主战坦克', '韩国主战坦克原型；机动、护卫与侧翼推进相配合。', 'asia-tank'], rocket: ['K239 天舞', '模块化多管火箭炮参考；需保护展开位置和补给线。', 'asia-rocket'], fighter: ['KF-16 制空编组', '韩国F-16体系参考；游戏中担任制空与空中护航。', 'asia-air'] },
@@ -47,6 +47,7 @@ export function equipmentModel(faction, type, future = false) {
   if (type === 'refinery' && !future) return 'logistics_depot';
   if (type === 'destroyer' && faction === 'china') return 'destroyer_china';
   if (type === 'tank' || type === 'rocket') return `${type}_${faction}`;
+  if (type === 'fighter' && faction === 'china') return 'fighter_china';
   if (future && !UNITS[type]) return `future_${type}`;
   return type === 'elite' ? `elite_${faction}` : type;
 }

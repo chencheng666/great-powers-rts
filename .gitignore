@@ -18,3 +18,6 @@ server-data/
 /docs/wechat-community-20261008/videos/*8秒.mp4
 /docs/wechat-community-20261008/videos/*30fps.mp4
 /docs/wechat-community-20261008/文章预览.png
+
+/src-tauri/target/
+/qa/

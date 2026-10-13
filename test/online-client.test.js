@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { OnlineClient } from '../src/online-client.js';
-import { roomCode } from '../src/network-protocol.js';
+import { roomCode, PROTOCOL_VERSION } from '../src/network-protocol.js';
 
 function fixture() {
   const nodes = new Map();
@@ -57,7 +57,7 @@ test('连接必须收到身份欢迎后才能完成，防止尚未恢复旧房�
   const ws = Socket.latest; ws.readyState = 1; ws.onopen(); await Promise.resolve();
   assert.equal(finished, false);
   const room = { code: '123456' };
-  await ws.onmessage({ data: JSON.stringify({ type: 'hello', protocol: 1, user: { id: '甲' }, room }) });
+  await ws.onmessage({ data: JSON.stringify({ type: 'hello', protocol: PROTOCOL_VERSION, user: { id: '甲' }, room }) });
   await pending; assert.equal(finished, true); assert.equal(client.room.code, room.code);
   client.room = null; ws.close();
 });
@@ -77,7 +77,7 @@ test('大厅错误独立显示，收到服务端加入失败不会藏在遮罩�
   browserGlobal(t, 'WebSocket', Socket);
   browserGlobal(t, 'location', { protocol: 'http:', host: 'localhost:4180' });
   const { client, dialog } = fixture(); const pending = client.connect();
-  await Socket.latest.onmessage({ data: JSON.stringify({ type: 'hello', protocol: 1, user: { id: '甲' }, room: null }) });
+  await Socket.latest.onmessage({ data: JSON.stringify({ type: 'hello', protocol: PROTOCOL_VERSION, user: { id: '甲' }, room: null }) });
   await pending;
   await Socket.latest.onmessage({ data: JSON.stringify({ type: 'error', message: '房间不存在、已满或已开战' }) });
   assert.match(dialog.querySelector('#online-error').textContent, /房间不存在/);

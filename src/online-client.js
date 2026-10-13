@@ -1,11 +1,14 @@
+import { isDesktop, desktopInvoke } from './desktop.js';
 import { FACTIONS, MAPS, VICTORY_MODES } from './data.js';
 import { nickname, roomCode, PROTOCOL_VERSION } from './network-protocol.js';
 const key='great-powers-player-name-v1';
+const candidatePath=()=>/^\/candidate(?:\/|$)/.test(location.pathname);
 export class OnlineClient {
   constructor({refreshIcons,prepare,onBattle,onSnapshot,onNotice,onStatus,onInterrupted,onAck,config}) {
     Object.assign(this,{refreshIcons,prepare,onBattle,onSnapshot,onNotice,onStatus,onInterrupted,onAck,config});
+    this.prefix=candidatePath()?'/candidate':'';this.expectedProtocol=this.prefix?3:PROTOCOL_VERSION;
     this.dialog=document.querySelector('#online-dialog');this.nameDialog=document.querySelector('#nickname-dialog');this.seq=0;this.retries=0;
-    this.dialog.addEventListener('click',e=>{const action=e.target.closest('[data-online]')?.dataset.online;if(action!=='join')this.action(action);});
+    this.dialog.addEventListener('click',e=>{const action=e.target.closest('[data-online]')?.dataset.online;if(action!=='join')this.action(action,e.target.closest('[data-online]'));});
     this.dialog.querySelector('.join-room').addEventListener('submit',e=>{e.preventDefault();this.action('join');});
     this.dialog.querySelector('#join-code').addEventListener('input',()=>this.showError(''));
     this.dialog.addEventListener('change',e=>{if(e.target.id==='online-faction')this.send({type:'faction',faction:e.target.value});});
@@ -15,7 +18,7 @@ export class OnlineClient {
     document.querySelector('#player-name-btn').addEventListener('click',()=>this.editName());
     let name='';try{name=localStorage.getItem(key)||'';}catch{}
     this.name=name;this.renderName();if(!name)this.editName();
-    if(name)fetch('/api/session').then(r=>r.ok?r.json():null).then(data=>{if(data?.user&&data.room?.code){this.user=data.user;this.room=data.room;this.connect().catch(()=>{});}}).catch(()=>{});
+    if(name && !isDesktop())fetch(this.prefix+'/api/session').then(r=>r.ok?r.json():null).then(data=>{if(data?.user&&data.room?.code){this.user=data.user;this.room=data.room;this.connect().catch(()=>{});}}).catch(()=>{});
   }
   renderName(){document.querySelector('#player-name').textContent=this.name||'指挥官';}
   editName(){this.nameDialog.querySelector('input').value=this.name||'';this.nameDialog.querySelector('[role=alert]').textContent='';if(!this.nameDialog.open)this.nameDialog.showModal();}
@@ -29,7 +32,7 @@ export class OnlineClient {
   async session(name=this.name){
     if(!['http:','https:'].includes(location.protocol))throw new Error('离线文件不能直接联机，请打开在线试玩地址或局域网服务地址');
     let response;
-    try{response=await fetch('/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name}),signal:AbortSignal.timeout(10000)});}
+    try{response=await fetch(this.prefix+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name}),signal:AbortSignal.timeout(10000)});}
     catch{throw new Error('连接对战服务超时或网络不可达，单机作战仍可使用');}
     const data=await response.json().catch(()=>null);
     if(!response.ok)throw new Error(data?.error||'对战服务暂不可用，单机作战仍可使用');
@@ -37,15 +40,35 @@ export class OnlineClient {
     this.user=data.user;return data;
   }
   async open(){
+    if (isDesktop()) { await this.openDesktop(); return; }
     if(!this.name){this.editName();return;}
     this.dialog.showModal();this.showError('');this.render();this.dialog.querySelector('#online-status').textContent='正在连接战区…';
-    try{await this.session();await this.connect();this.render();}catch(e){this.showError(e.message);this.render();}
+    try{const prefix=(candidatePath()||this.config().mapId==='sixfront')?'/candidate':'';if(prefix!==this.prefix){if(this.room)throw new Error('切换战区前请先退出当前房间');this.socket?.close();this.socket=null;this.prefix=prefix;this.expectedProtocol=prefix?3:PROTOCOL_VERSION;}this.candidateControls();await this.session();await this.connect();this.render();}catch(e){this.showError(e.message);this.render();}
+  }
+  async openDesktop(){
+    if(this.desktopOpening)return;
+    this.desktopOpening=true;
+    let dialog=document.querySelector('#desktop-online-dialog');
+    if(!dialog){
+      dialog=document.createElement('dialog');dialog.id='desktop-online-dialog';dialog.className='online-dialog';
+      dialog.setAttribute('aria-labelledby','desktop-online-title');
+      dialog.innerHTML='<h2 id="desktop-online-title">联网对战</h2><p role="status"></p><p role="alert" class="online-error"></p><footer><button class="secondary-btn" data-desktop-retry>重试连接</button><button class="secondary-btn" data-desktop-return>返回单机</button></footer>';
+      document.body.append(dialog);
+      dialog.querySelector('[data-desktop-retry]').addEventListener('click',()=>this.openDesktop());
+      dialog.querySelector('[data-desktop-return]').addEventListener('click',()=>dialog.close());
+    }
+    const retry=dialog.querySelector('[data-desktop-retry]');retry.disabled=true;
+    dialog.querySelector('[role=status]').textContent='正在加载独立联网窗口，最长等待20秒…';
+    dialog.querySelector('[role=alert]').textContent='';if(!dialog.open)dialog.showModal();
+    try{await desktopInvoke('desktop_online');dialog.close();}
+    catch(e){dialog.querySelector('[role=status]').textContent='联网窗口未能打开';dialog.querySelector('[role=alert]').textContent=String(e);}
+    finally{this.desktopOpening=false;retry.disabled=false;}
   }
   connect(){
     if(this.socket?.readyState===WebSocket.OPEN)return Promise.resolve();
     if(this.connecting)return this.connecting;
     this.connecting=new Promise((resolve,reject)=>{
-      const ws=new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}/battle-socket`);this.socket=ws;
+      const ws=new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}${this.prefix||''}/battle-socket`);this.socket=ws;
       let welcomed=false;
       const fail=message=>{clearTimeout(timeout);reject(new Error(message));};
       const timeout=setTimeout(()=>{fail('连接超时，请重新连接');ws.close();},10000);
@@ -54,12 +77,12 @@ export class OnlineClient {
       ws.onmessage=async e=>{
         const m=JSON.parse(e.data);
         if(m.type==='hello'){
-          if(m.protocol!==PROTOCOL_VERSION){fail('游戏与服务版本不一致，请刷新页面');ws.close();return;}
+          if(m.protocol!==(this.expectedProtocol??PROTOCOL_VERSION)){fail('游戏与服务版本不一致，请刷新网页或更新桌面版');ws.close();return;}
           welcomed=true;clearTimeout(timeout);this.user=m.user;this.room=m.room;this.retries=0;
           if(this.inBattle&&!m.room){this.inBattle=false;this.onInterrupted?.();}this.render();this.onStatus('已连接');resolve();
         }
         else if(m.type==='room'){this.room=m.room;this.render();}
-        else if(m.type==='battle'){this.room=m.room;this.latest=m;this.inBattle=true;this.dialog.close();await this.onBattle(m);}
+        else if(m.type==='battle'){this.room=m.room;this.latest=m;this.spectating=!!m.spectator;this.inBattle=true;this.dialog.close();await this.onBattle(m);}
         else if(m.type==='snapshot'){this.room=m.room;this.latest=m;this.onSnapshot(m);this.onStatus(m.view.paused?'等待对手重连':'联网对战');}
         else if(m.type==='error'){this.showError(m.message);this.onNotice(m.message,true);}
         else if(m.type==='ack'){if(!m.ok)this.onNotice('指令未执行，请检查条件或重新选择目标',true);else this.onAck?.(m.action);}
@@ -75,9 +98,15 @@ export class OnlineClient {
   }
   send(message){if(this.socket?.readyState!==WebSocket.OPEN){this.onNotice('连接尚未恢复，请稍候',true);return false;}if(message.type==='command')message.seq=++this.seq;this.socket.send(JSON.stringify(message));return true;}
   showError(message){this.dialog.querySelector('#online-error').textContent=message;}
-  async action(action){
+  candidateControls(){
+    this.dialog.querySelector('h2').textContent=this.prefix?'六方自由对战 · 实验候选版':'双人对战';
+    let box=this.dialog.querySelector('#candidate-controls');if(!box){box=document.createElement('div');box.id='candidate-controls';box.innerHTML='<p class="report-note">六方自由对战 · 实验模式 · 每席最多40单位（含排队与生产中）· 同时开放一场战局。密集交战可能低帧率。</p><label><input type="checkbox" id="allow-spectators"> 允许跟随席位迷雾观战（不含经济与指令）</label><label>观战席位 <select id="observe-follow">'+Array.from({length:6},(_,i)=>`<option value="${i}">${i+1}号席位</option>`).join('')+'</select></label><button data-online="observe">按房间码观战</button>';this.dialog.querySelector('#online-setup').append(box);}box.hidden=!this.prefix;
+  }
+  async action(action,button){
     if(!action)return;
     try{
+      if(action==='set-ai'||action==='remove-ai'){const seat=Number(button?.dataset.seat);this.send({type:'set-ai',seat,faction:this.aiFactions?.[seat]||this.room?.members[seat]?.faction||'china',remove:action==='remove-ai'});return;}
+      if(action==='observe'){if(this.socket?.readyState!==WebSocket.OPEN){await this.session();await this.connect();}this.send({type:'observe',code:roomCode(this.dialog.querySelector('#join-code').value),follow:Number(this.dialog.querySelector('#observe-follow').value)});return;}
       if(action==='close'){this.dialog.close();return;}
       this.showError('');
       if(action==='connect'){await this.session();await this.connect();this.render();return;}
@@ -85,7 +114,7 @@ export class OnlineClient {
         const code=action==='join'?roomCode(this.dialog.querySelector('#join-code').value):null;
         if(this.socket?.readyState!==WebSocket.OPEN||this.connecting){await this.session();await this.connect();}
         if(this.room?.code)throw new Error('你已在房间中，请先退出当前房间');
-        if(action==='create')this.send({type:'create',...this.config()});
+        if(action==='create')this.send({type:'create',...this.config(),allowSpectators:!!this.dialog.querySelector('#allow-spectators')?.checked});
         else{this.dialog.querySelector('#join-code').value=code;this.send({type:'join',code,faction:this.config().faction});}
       }
       else if(action==='ready'){
@@ -105,12 +134,13 @@ export class OnlineClient {
     this.dialog.querySelectorAll('[data-online=create],[data-online=join]').forEach(b=>b.disabled=!connected);
     if(!hasRoom)return;
     this.dialog.querySelector('#room-code').textContent=r.code;
-    this.dialog.querySelector('#room-map').textContent=`${MAPS[r.config.mapId].name} · ${VICTORY_MODES[r.config.victoryMode].name}`;
+    this.dialog.querySelector('#room-map').textContent=`${MAPS[r.config.mapId].name} · ${VICTORY_MODES[r.config.victoryMode].name}${this.prefix?' · 实验模式 · 每席上限40（含排队/生产中）':''}`;
+    const me=r.members.find(m=>m?.id===this.user.id),host=me&&r.host===r.members.indexOf(me);
     const list=this.dialog.querySelector('#room-members');list.replaceChildren();
-    r.members.forEach((m,i)=>{const row=document.createElement('div');row.className='room-member';const name=document.createElement('strong');name.textContent=m?`${m.name} #${m.id.slice(0,6)}`:'等待指挥官加入';const status=document.createElement('span');status.textContent=m?`${FACTIONS[m.faction].name} · ${m.connected?m.ready?'已准备':'待准备':'已掉线'}${r.host===i?' · 房主':''}`:'空闲席位';row.append(name,status);list.append(row);});
-    const me=r.members.find(m=>m?.id===this.user.id),f=this.dialog.querySelector('#online-faction');
-    if(!f.options.length)f.innerHTML=Object.entries(FACTIONS).map(([id,d])=>`<option value="${id}">${d.name}</option>`).join('');f.value=me.faction;
-    const ready=this.dialog.querySelector('[data-online=ready]');ready.textContent=me.ready?'取消准备':'准备作战';ready.disabled=!connected||r.status!=='waiting';f.disabled=r.status!=='waiting';
+    r.members.forEach((m,i)=>{const row=document.createElement('div');row.className='room-member';const name=document.createElement('strong');name.textContent=m?`${m.name} #${m.id.slice(0,6)}`:'等待指挥官加入';const status=document.createElement('span');status.textContent=m?`${FACTIONS[m.faction].name} · ${m.controlType==='ai'?'电脑 · ':''}${m.eliminated?'已淘汰':m.connected?m.ready?'已准备':'待准备':'已掉线'}${r.host===i?' · 房主':''}`:'空闲席位';row.append(name,status);if(this.prefix&&host&&r.status==='waiting'&&(!m||m.controlType==='ai')){const select=document.createElement('select');select.setAttribute('aria-label',`${i+1}号电脑阵营`);for(const[id,f]of Object.entries(FACTIONS)){const o=document.createElement('option');o.value=id;o.textContent=f.name;select.append(o);}select.value=this.aiFactions?.[i]||m?.faction||'china';select.addEventListener('change',()=>{this.aiFactions??={};this.aiFactions[i]=select.value});const bot=document.createElement('button');bot.textContent=m?'移除电脑':'加入电脑';bot.dataset.online=m?'remove-ai':'set-ai';bot.dataset.seat=i;row.append(select,bot);}list.append(row);});
+    const f=this.dialog.querySelector('#online-faction');
+    if(!f.options.length)f.innerHTML=Object.entries(FACTIONS).map(([id,d])=>`<option value="${id}">${d.name}</option>`).join('');f.value=me?.faction||Object.keys(FACTIONS)[0];
+    const ready=this.dialog.querySelector('[data-online=ready]');ready.textContent=me?.ready?'取消准备':'准备作战';ready.disabled=!me||!connected||r.status!=='waiting';f.disabled=!me||r.status!=='waiting';
     this.dialog.querySelector('[data-online=start]').disabled=!connected||r.host!==r.members.indexOf(me)||!r.members.every(m=>m?.ready&&m.connected)||r.status!=='waiting';
   }
 }

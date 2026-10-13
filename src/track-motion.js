@@ -39,9 +39,10 @@ export function createMovingTracks(center, steel, rubber) {
   return group;
 }
 
-export function animateTracks(meshes, travel) {
+export function animateTracks(meshes, travel, turnTravel = 0) {
   for (const mesh of meshes) {
-    const p = palette(mesh.userData.trackCenter), phase = Math.floor(((travel / p.pitch % 1) + 1) % 1 * p.frames);
+    const sideTravel = travel - (mesh.position.z < 0 ? -1 : 1) * turnTravel;
+    const p = palette(mesh.userData.trackCenter), phase = Math.floor(((sideTravel / p.pitch % 1) + 1) % 1 * p.frames);
     if (mesh.userData.trackFrame === phase) continue;
     mesh.instanceMatrix.array.set(p.samples[phase]); mesh.instanceMatrix.needsUpdate = true; mesh.userData.trackFrame = phase;
   }

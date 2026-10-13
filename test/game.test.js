@@ -204,7 +204,7 @@ test('舰艇有明确的海岸射界、制空短板和对舰克制', () => {
   assert.equal(game.canAttack(frigate, hostileJet), true);
   assert.equal(game.canAttack(patrol, dock), true);
   assert.equal(game.canAttack(patrol, hq), false);
-  assert.equal(game.canAttack(fighter, hostileShip), false);
+  assert.equal(game.canAttack(fighter, hostileShip), true);
   assert.equal(game.canAttack(strike, hostileShip), true);
   assert.equal(game.canAttack(tank, hostileShip), true);
   assert.equal(game.hasLineOfFire(tank, hostileShip), true);
@@ -679,9 +679,11 @@ test('高空战机跨越建筑，制空、对地和防空形成明确克制', ()
   assert.equal(game.canAttack(chinaElite, enemyJet), true);
   assert.equal(game.canAttack(fighter, enemyJet), true);
   assert.equal(game.canAttack(fighter, enemyDrone), true);
-  assert.equal(game.canAttack(fighter, enemyTank), false);
-  assert.equal(game.canAttack(strike, enemyJet), false);
-  assert.equal(game.canAttack(strike, enemyDrone), false);
+  assert.equal(game.canAttack(fighter, enemyTank), true);
+  assert.equal(game.canAttack(strike, enemyJet), true);
+  assert.equal(game.canAttack(strike, enemyDrone), true);
+  assert.ok(game.unitDamage(fighter, enemyTank) < game.unitDamage(fighter, enemyJet));
+  assert.ok(game.unitDamage(strike, enemyJet) < game.unitDamage(strike, enemyTank));
   assert.equal(game.canAttack(strike, enemyTank), true);
   assert.equal(game.canAttack(strike, enemyBuilding), true);
   game.addBuilding(0, 'power', 1000, 700);

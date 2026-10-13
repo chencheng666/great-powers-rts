@@ -9,13 +9,14 @@ const ground=u=>!UNITS[u.type].tags.some(t=>['air','ship','logistics'].includes(
 export const intelligenceCombat={
   isControlLocked(side) {
     const p=this.players[side],source=this.getEntity(p.cyberSourceId);
-    return p.cyberLockedUntil>this.time&&source?.kind==='building'&&source.owner===1-side&&source.type==='super'&&source.hp>0&&this.hasPower(source.owner);
+    return p.cyberLockedUntil>this.time&&source?.kind==='building'&&source.owner!==side&&source.type==='super'&&source.hp>0&&this.hasPower(source.owner);
   },
   launchCyber(side) {
+    const targetSide=this.nearestEnemySide(side);if(targetSide===undefined)return false;
     const p=this.players[side],source=this.ownedBuildings(side,'super')[0];
     if(this.isControlLocked(side)||!source||!this.hasPower(side)||p.cyberCharge<INTELLIGENCE_RULES.cyberCharge||p.credits<INTELLIGENCE_RULES.cyberCost||p.cyberPending)return false;
     p.credits-=INTELLIGENCE_RULES.cyberCost;p.cyberCharge=0;
-    p.cyberPending={sourceId:source.id,executeAt:this.time+INTELLIGENCE_RULES.cyberWarning};
+    p.cyberPending={sourceId:source.id,targetSide,executeAt:this.time+INTELLIGENCE_RULES.cyberWarning};
     this.events.notice?.(side===1?'敌方网络攻击预警：12 秒后指令链路将受干扰，摧毁源站或切断敌方供电可取消。':'网络攻击已排程，敌方收到 12 秒预警。');
     this.events.voice?.(side===1?'cyberWarning':'cyberLaunch');
     return true;
@@ -31,7 +32,7 @@ export const intelligenceCombat={
         const source=this.getEntity(p.cyberPending.sourceId);
         if(!active||source?.hp<=0||source?.type!=='super'||source?.owner!==p.side){p.cyberPending=null;this.events.notice?.('网络攻击源站离线，排程已取消。');}
         else if(p.cyberPending.executeAt<=this.time){
-          const target=this.players[1-p.side];target.cyberSourceId=source.id;target.cyberLockedUntil=this.time+INTELLIGENCE_RULES.cyberDuration;p.cyberPending=null;
+          const target=this.players[p.cyberPending.targetSide??this.nearestEnemySide(p.side)];if(!target||target.eliminated){p.cyberPending=null;continue;}target.cyberSourceId=source.id;target.cyberLockedUntil=this.time+INTELLIGENCE_RULES.cyberDuration;p.cyberPending=null;
           if(target.side===0){this.placingBuilding=false;this.orderMode=null;this.pendingAbility=false;this.events.voice?.('cyberDisrupted');this.events.notice?.('指令链路受干扰 4 秒：不能下达新指令，部队仍自动还击；镜头、暂停与存档可用。');}
         }
       }
@@ -59,7 +60,7 @@ export const intelligenceCombat={
       if(order.progress>=INTELLIGENCE_RULES.defuseTime){delete target.sabotage;u.order=null;u.path=[];if(u.owner===0){this.events.notice?.(`${lunarBuildingProfile(this.map.future,target.type,BUILDINGS[target.type]).name}的定时破坏已解除，工程师继续待命。`);this.events.voice?.(`spyDefused_${target.type}`);}}
     }else{
       // 有敌方回收者同时抵达时停止交付，让玩家先取得现场控制权。
-      if(this.activeUnits(1-u.owner).some(v=>v.order?.type==='collect'&&v.order.targetId===target.id&&distance(v,target)<=reach))return true;
+      if(this.enemyUnits(u.owner).some(v=>v.order?.type==='collect'&&v.order.targetId===target.id&&distance(v,target)<=reach))return true;
       const rate=target.type==='cache'?75:45,gain=Math.min(target.amount,dt*rate);target.amount-=gain;this.players[u.owner].credits+=gain;
       order.progress=(order.progress||0)+dt;u.collectionFX=(u.collectionFX||0)+gain;
       if(u.collectionFX>=75||target.amount<=0){this.effects.push({type:'income',x:target.x,y:target.y,amount:Math.round(u.collectionFX),owner:u.owner,age:0,duration:1.5});u.collectionFX=0;}
@@ -67,21 +68,21 @@ export const intelligenceCombat={
     }
     return true;
   },
-  updateIntelligenceAI() {
-    if(this.isControlLocked(1))return;
-    const bombs=this.ownedBuildings(1).filter(b=>b.sabotage);
+  updateIntelligenceAI(side=1) {
+    if(this.isControlLocked(side))return;
+    const bombs=this.ownedBuildings(side).filter(b=>b.sabotage);
     if(bombs.length){
-      for(const e of this.activeUnits(1,'engineer')){if(e.order?.type==='defuse')continue;const b=bombs.sort((a,b)=>distance(a,e)-distance(b,e))[0];e.order={type:'defuse',targetId:b.id,x:b.x,y:b.y,progress:0};e.path=[];}
-      if(!this.ownedUnits(1,'engineer').length&&!this.ownedBuildings(1,'barracks').some(b=>b.active?.type==='engineer'||b.queue.includes('engineer')))this.queueUnit(1,'engineer');
+      for(const e of this.activeUnits(side,'engineer')){if(e.order?.type==='defuse')continue;const b=bombs.sort((a,b)=>distance(a,e)-distance(b,e))[0];e.order={type:'defuse',targetId:b.id,x:b.x,y:b.y,progress:0};e.path=[];}
+      if(!this.ownedUnits(side,'engineer').length&&!this.ownedBuildings(side,'barracks').some(b=>b.active?.type==='engineer'||b.queue.includes('engineer')))this.queueUnit(side,'engineer');
     }
-    for(const spy of this.activeUnits(1,'scout'))if(!['infiltrate','rearm'].includes(spy.order?.type)){
-      const target=this.ownedBuildings(0).filter(b=>!b.sabotage&&this.canSeeEntity(1,b)&&distance(spy,b)<UNITS.scout.sight).sort((a,b)=>distance(a,spy)-distance(b,spy))[0];
+    for(const spy of this.activeUnits(side,'scout'))if(!['infiltrate','rearm'].includes(spy.order?.type)){
+      const target=this.enemyBuildings(side).filter(b=>!b.sabotage&&this.canSeeEntity(side,b)&&distance(spy,b)<UNITS.scout.sight).sort((a,b)=>distance(a,spy)-distance(b,spy))[0];
       if(target){spy.order={type:'infiltrate',targetId:target.id,x:target.x,y:target.y};spy.path=[];}
     }
-    for(const u of this.activeUnits(1).filter(u=>ground(u)&&!u.order)){
-      const site=(this.resourceSites||[]).filter(s=>s.type!=='depot'&&s.amount>0&&this.hasExploredFor(1,s.x,s.y)&&(s.type==='cache'||['engineer','harvester','supply'].includes(u.type))&&distance(s,u)<380).sort((a,b)=>distance(a,u)-distance(b,u))[0];
+    for(const u of this.activeUnits(side).filter(u=>ground(u)&&!u.order)){
+      const site=(this.resourceSites||[]).filter(s=>s.type!=='depot'&&s.amount>0&&this.hasExploredFor(side,s.x,s.y)&&(s.type==='cache'||['engineer','harvester','supply'].includes(u.type))&&distance(s,u)<380).sort((a,b)=>distance(a,u)-distance(b,u))[0];
       if(site)u.order={type:'collect',targetId:site.id,x:site.x,y:site.y,progress:0};
     }
-    if(this.players[1].cyberCharge>=INTELLIGENCE_RULES.cyberCharge)this.launchCyber(1);
+    if(this.players[side].cyberCharge>=INTELLIGENCE_RULES.cyberCharge)this.launchCyber(side);
   }
 };

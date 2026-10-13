@@ -1,0 +1,11 @@
+{
+  "scenario": "240单位密集布置，单步模拟+渲染+gl.finish同步GPU，非RAF帧率",
+  "quality": "standard",
+  "steps": 30,
+  "meanMs": 51.619999999801315,
+  "p95Ms": 63.900000005960464,
+  "maxMs": 67.40000000596046,
+  "remainingUnits": 226,
+  "glError": 0,
+  "heapMiB": 170.78101539611816
+}

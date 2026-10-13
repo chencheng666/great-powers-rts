@@ -50,8 +50,8 @@ test('舰船只保留海军灰风化，不注入陆地迷彩，阵营识别材�
   const land = weatherMaterial(source), naval = weatherMaterial(source, 'naval');
   const shader = () => ({ vertexShader: '#include <begin_vertex>', fragmentShader: '#include <map_fragment>\n#include <roughnessmap_fragment>' });
   const a = shader(), b = shader(); land.onBeforeCompile(a); naval.onBeforeCompile(b);
-  assert.ok(a.fragmentShader.includes('vec3(.19,.24,.15)'));
-  assert.equal(b.fragmentShader.includes('vec3(.19,.24,.15)'), false);
+  assert.ok(a.fragmentShader.includes('vec3(.28,.32,.18)'));
+  assert.equal(b.fragmentShader.includes('vec3(.28,.32,.18)'), false);
   assert.notEqual(land.customProgramCacheKey(), naval.customProgramCacheKey());
   assert.equal(naval.color.getHexString(), '929da4');
   const team = new THREE.MeshStandardMaterial({ name: '阵营标识' }); assert.equal(weatherMaterial(team, 'naval'), team);

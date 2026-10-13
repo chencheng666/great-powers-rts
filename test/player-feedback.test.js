@@ -115,5 +115,6 @@ test('月表七类飞机使用独立原创几何，常规飞机和阵营平衡�
     const model = createSpaceAircraft(type), box = new THREE.Box3().setFromObject(model); assert.ok(box.max.x > box.min.x && box.max.z > box.min.z);
     model.traverse(m => { if (m.isMesh) for (const a of ['position', 'normal']) assert.ok([...m.geometry.attributes[a].array].every(Number.isFinite)); });
   }
-  assert.equal(equipmentModel('china', 'fighter'), 'fighter');
+  assert.equal(equipmentModel('china', 'fighter'), 'fighter_china');
+  assert.equal(equipmentModel('russia', 'fighter'), 'fighter');
 });

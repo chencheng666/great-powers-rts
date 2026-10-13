@@ -1,0 +1,110 @@
+{
+  "checkedAt": "2026-10-12T10:10:11.694Z",
+  "base": "https://43.135.186.21:8443",
+  "url": "https://43.135.186.21:8443/official/",
+  "anonymous": true,
+  "files": [
+    {
+      "path": "assets/battle-6s.mp4",
+      "status": 200,
+      "type": "video/mp4",
+      "size": 1718123,
+      "sha256": "75aba8f40d8abe214360908301e372f7c0db222fb2f77974f3dbebf007e7db0d",
+      "matches": true,
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+    },
+    {
+      "path": "assets/battle.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "size": 1569691,
+      "sha256": "ada8b03e12a68e3032bb646da1962edcd73b5448adc6628ca7a675e807138348",
+      "matches": true,
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+    },
+    {
+      "path": "assets/lobby.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "size": 268516,
+      "sha256": "c6e3027b78ff8bf10812934b78687524fde2a06f243e83a2a5b5607abe83e6f0",
+      "matches": true,
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+    },
+    {
+      "path": "assets/ocean.png",
+      "status": 200,
+      "type": "image/png",
+      "size": 810643,
+      "sha256": "613c8c9545139f132b04df86d78091a04146e4bd7ce13648677ed208cdef4232",
+      "matches": true,
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+    },
+    {
+      "path": "assets/wechat-official.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "size": 40993,
+      "sha256": "0a0cc622832dbb8617a2b740e93dbbdd035a7ca99b218ebb1cab26b010d08226",
+      "matches": true,
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+    },
+    {
+      "path": "index.html",
+      "status": 200,
+      "type": "text/html",
+      "size": 10386,
+      "sha256": "04162bc799affc26f7f349f4d30e4be8b716c1446f02a38aac4689b72e7b6942",
+      "matches": true,
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+    },
+    {
+      "path": "site.js",
+      "status": 200,
+      "type": "application/javascript",
+      "size": 996,
+      "sha256": "fdfa40db480eadd76611197074b2d0c71566cdce0d6723862f36a2a4952bf53c",
+      "matches": true,
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+    },
+    {
+      "path": "site.json",
+      "status": 200,
+      "type": "application/json",
+      "size": 339,
+      "sha256": "26ae6179c701c2c23c30b419716b2d52fb2c7f4440a1d4db05cbf04e9a5076ee",
+      "matches": true,
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+    },
+    {
+      "path": "style.css",
+      "status": 200,
+      "type": "text/css",
+      "size": 12156,
+      "sha256": "074cbd2e61b7c8060f92a323e32f57bfe7ed26587a7949ef149a8ba16a4b4331",
+      "matches": true,
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+    }
+  ],
+  "partial": {
+    "status": 206,
+    "type": "video/mp4",
+    "range": "bytes 0-31/1718123",
+    "bytes": 32
+  },
+  "head": {
+    "status": 200,
+    "size": 1718123,
+    "type": "video/mp4"
+  },
+  "health": {
+    "ok": true,
+    "protocol": 2,
+    "rooms": 0,
+    "battles": 0
+  },
+  "redirect": {
+    "status": 302,
+    "location": "https://43.135.186.21:8443/official/"
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "version": "0.9.1",
+  "codeCommit": "5b5b83deefb166f56211aebc7c6eb63c9126ca9b",
+  "desktopOnline": "0.9.1使用可信HTTPS/WSS；0.9.0旧桌面包仍待更新",
+  "files": [
+    {
+      "name": "packages/Great-Powers_0.9.1_aarch64.dmg",
+      "label": "服务器本地包 · macOS Apple Silicon · v0.9.1 HTTPS联网",
+      "size": 45531609,
+      "sha256": "d6f7e6cd40feddf9b2979e53bc5a059d67d6c9d8394e88cc8472d322ed5c32cb",
+      "status": "本机Mac原生HTTPS大厅、与浏览器开局、命令及关闭重开联网窗口恢复战局已实测；ad-hoc、未Apple公证。其他0.9.1平台CI构建成功并已公开，见下方GitHub新版条目。"
+    },
+    {
+      "name": "packages/Great-Powers_0.9.0_aarch64.dmg",
+      "label": "服务器本地包 · macOS Apple Silicon · v0.9.0",
+      "size": 45532066,
+      "sha256": "065e6bc368c429c27f4983c3f5864f96c77501d692b57dda1a2a6a649aa64b81",
+      "status": "Mac ARM64本机三维单机、保存恢复和全屏已验收；ad-hoc签名、未公证。桌面联网待HTTPS；其他系统可选择下方GitHub公开包。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_aarch64.app.tar.gz",
+      "label": "GitHub新版0.9.1 · macOS Apple Silicon · Great.Powers_0.9.1_aarch64.app.tar.gz",
+      "size": 45468900,
+      "sha256": "f86b396132f61fa6315b0bb7c59137bca65833fc09a3c650c3b2883c57721bf7",
+      "status": "已公开CI产物，HTTPS/WSS入口；大小与SHA256来自公开发行API。Mac未公证，Windows未签名；其他平台未实机验收。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_aarch64.AppImage",
+      "label": "GitHub新版0.9.1 · Linux ARM64 · Great.Powers_0.9.1_aarch64.AppImage",
+      "size": 122100232,
+      "sha256": "0401f447349ffc3091abd3a2c9f1c2d78c269486b7e1916ed916708904f45ee0",
+      "status": "已公开CI产物，HTTPS/WSS入口；大小与SHA256来自公开发行API。Mac未公证，Windows未签名；其他平台未实机验收。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_aarch64.dmg",
+      "label": "GitHub新版0.9.1 · macOS Apple Silicon · Great.Powers_0.9.1_aarch64.dmg",
+      "size": 45533998,
+      "sha256": "41ddd05bb7502db5faaa960035a7250bef204d3abddddaeba99e79361013c6f1",
+      "status": "已公开CI产物，HTTPS/WSS入口；大小与SHA256来自公开发行API。Mac未公证，Windows未签名；其他平台未实机验收。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_amd64.AppImage",
+      "label": "GitHub新版0.9.1 · Linux x64 · Great.Powers_0.9.1_amd64.AppImage",
+      "size": 123951608,
+      "sha256": "7c45d0883a188ac4b1ddc7fe2f56a5f750927fdbb7f598f933d229374d92113a",
+      "status": "已公开CI产物，HTTPS/WSS入口；大小与SHA256来自公开发行API。Mac未公证，Windows未签名；其他平台未实机验收。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_amd64.deb",
+      "label": "GitHub新版0.9.1 · Linux x64 · Great.Powers_0.9.1_amd64.deb",
+      "size": 45578366,
+      "sha256": "3502623a9fbd59aa00ecf9f59116746b1b3fa362fc9e398884f1e84c39a6a5b1",
+      "status": "已公开CI产物，HTTPS/WSS入口；大小与SHA256来自公开发行API。Mac未公证，Windows未签名；其他平台未实机验收。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_arm64.deb",
+      "label": "GitHub新版0.9.1 · Linux ARM64 · Great.Powers_0.9.1_arm64.deb",
+      "size": 45620068,
+      "sha256": "c46da2f42fa54b8d8a42083b8e46d03e73b3fc98ceffd94d7aa168eba015370f",
+      "status": "已公开CI产物，HTTPS/WSS入口；大小与SHA256来自公开发行API。Mac未公证，Windows未签名；其他平台未实机验收。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_x64-setup.exe",
+      "label": "GitHub新版0.9.1 · Windows x64 · Great.Powers_0.9.1_x64-setup.exe",
+      "size": 261517739,
+      "sha256": "b21c1a88f0916eee686de107170b44e92a43a13744d4d06c1f37f99a3138f5a1",
+      "status": "已公开CI产物，HTTPS/WSS入口；大小与SHA256来自公开发行API。Mac未公证，Windows未签名；其他平台未实机验收。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_x64.app.tar.gz",
+      "label": "GitHub新版0.9.1 · macOS Intel · Great.Powers_0.9.1_x64.app.tar.gz",
+      "size": 45922682,
+      "sha256": "8ec835e4701a43866f2101bd2fafe58db5cc05ad3c5e70d3a4b5d8998b516d4c",
+      "status": "已公开CI产物，HTTPS/WSS入口；大小与SHA256来自公开发行API。Mac未公证，Windows未签名；其他平台未实机验收。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.1/Great.Powers_0.9.1_x64.dmg",
+      "label": "GitHub新版0.9.1 · macOS Intel · Great.Powers_0.9.1_x64.dmg",
+      "size": 45987094,
+      "sha256": "e3b28460e7d8591f45590f03426119a83628f7158b5bc47f8f2a79444d59422f",
+      "status": "已公开CI产物，HTTPS/WSS入口；大小与SHA256来自公开发行API。Mac未公证，Windows未签名；其他平台未实机验收。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_aarch64.app.tar.gz",
+      "label": "GitHub历史0.9.0 · macOS Apple Silicon · Great.Powers_0.9.0_aarch64.app.tar.gz",
+      "size": 45468727,
+      "sha256": "26c3c1033945dc8d5c0b4707d448e195c92d00e75e5c0668aefa660acaabd442",
+      "status": "公开Release资产；官方API核验大小与SHA256，未在本机完整下载此CI包。Mac未公证，Windows未代码签名；其他系统未实机验收，桌面联网待HTTPS。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_aarch64.AppImage",
+      "label": "GitHub历史0.9.0 · Linux ARM64 · Great.Powers_0.9.0_aarch64.AppImage",
+      "size": 122092040,
+      "sha256": "f884cf50f1d74f0266937a9c30ffef4bf19d45595ff7ad34ff86110811720224",
+      "status": "公开Release资产；官方API核验大小与SHA256，未在本机完整下载此CI包。Mac未公证，Windows未代码签名；其他系统未实机验收，桌面联网待HTTPS。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_aarch64.dmg",
+      "label": "GitHub历史0.9.0 · macOS Apple Silicon · Great.Powers_0.9.0_aarch64.dmg",
+      "size": 45534407,
+      "sha256": "24334ee4f9c2c731ea6bb38da3aea5c165c7e24f85cdf57b80116607076e5035",
+      "status": "公开Release资产；官方API核验大小与SHA256，未在本机完整下载此CI包。Mac未公证，Windows未代码签名；其他系统未实机验收，桌面联网待HTTPS。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_amd64.AppImage",
+      "label": "GitHub历史0.9.0 · Linux x64 · Great.Powers_0.9.0_amd64.AppImage",
+      "size": 123947512,
+      "sha256": "3451b7002222a71c4c9b1f75eb7ee2a2012e69bb5514bf8092855a981a7055cc",
+      "status": "公开Release资产；官方API核验大小与SHA256，未在本机完整下载此CI包。Mac未公证，Windows未代码签名；其他系统未实机验收，桌面联网待HTTPS。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_amd64.deb",
+      "label": "GitHub历史0.9.0 · Linux x64 · Great.Powers_0.9.0_amd64.deb",
+      "size": 45576306,
+      "sha256": "bbb64decf858f7ef69e148730ab0c6fdf00c1c82918e3d735ab95b63470f3b68",
+      "status": "公开Release资产；官方API核验大小与SHA256，未在本机完整下载此CI包。Mac未公证，Windows未代码签名；其他系统未实机验收，桌面联网待HTTPS。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_arm64.deb",
+      "label": "GitHub历史0.9.0 · Linux ARM64 · Great.Powers_0.9.0_arm64.deb",
+      "size": 45619324,
+      "sha256": "cf5b9ceae9dc5b8ce8cc234d039712911e8ff97d0d412487fce008177b74f5fb",
+      "status": "公开Release资产；官方API核验大小与SHA256，未在本机完整下载此CI包。Mac未公证，Windows未代码签名；其他系统未实机验收，桌面联网待HTTPS。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_x64-setup.exe",
+      "label": "GitHub历史0.9.0 · Windows x64 · Great.Powers_0.9.0_x64-setup.exe",
+      "size": 261529332,
+      "sha256": "41fcc2206555c552669d8b031e02c379d57a5380769255cb02a4da7df693b676",
+      "status": "公开Release资产；官方API核验大小与SHA256，未在本机完整下载此CI包。Mac未公证，Windows未代码签名；其他系统未实机验收，桌面联网待HTTPS。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_x64.app.tar.gz",
+      "label": "GitHub历史0.9.0 · macOS Intel · Great.Powers_0.9.0_x64.app.tar.gz",
+      "size": 45921334,
+      "sha256": "f82914d2c5df3b2cfa7d1631e6d9db2de31b75991d7fec5168e5b4224b811fa9",
+      "status": "公开Release资产；官方API核验大小与SHA256，未在本机完整下载此CI包。Mac未公证，Windows未代码签名；其他系统未实机验收，桌面联网待HTTPS。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/desktop-v0.9.0/Great.Powers_0.9.0_x64.dmg",
+      "label": "GitHub历史0.9.0 · macOS Intel · Great.Powers_0.9.0_x64.dmg",
+      "size": 45986153,
+      "sha256": "f05a0a1c875ff7b6c9ea19da69e05b48510b49fb71fba0190547992a61581ab3",
+      "status": "公开Release资产；官方API核验大小与SHA256，未在本机完整下载此CI包。Mac未公证，Windows未代码签名；其他系统未实机验收，桌面联网待HTTPS。"
+    }
+  ]
+}

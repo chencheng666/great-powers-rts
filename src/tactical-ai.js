@@ -1,9 +1,9 @@
 import { UNITS, supportsMap } from './data.js';
 
 export function knownThreats(game, side) {
-  const units = game.activeUnits(1 - side).filter(u => game.canSeeEntity(side, u));
+  const units = game.enemyUnits(side).filter(u => game.canSeeEntity(side, u));
   const count = tag => units.filter(u => UNITS[u.type].tags.includes(tag)).length;
-  return { air: count('air'), drones: count('drone'), armor: count('armor'), subs: count('submerged'), ships: count('ship'), forts: game.ownedBuildings(1 - side, 'turret').filter(b => game.canSeeEntity(side, b)).length };
+  return { air: count('air'), drones: count('drone'), armor: count('armor'), subs: count('submerged'), ships: count('ship'), forts: game.enemyBuildings(side, 'turret').filter(b => game.canSeeEntity(side, b)).length };
 }
 
 export function aiCounterUnit(game, side, choices, domain = 'ground') {

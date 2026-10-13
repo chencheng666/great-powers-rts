@@ -17,7 +17,7 @@ const quiet = (mapId = 'ocean') => {
 const advance = (g, seconds) => { for (let n = 0; n < seconds * 20; n++) g.update(.05); };
 
 test('常规地图无矿石和矿车，只在子午地图采矿，双方与难度不改变外部后勤条件', () => {
-  for (const mapId of Object.keys(MAPS)) {
+  for (const mapId of Object.keys(MAPS).filter(id=>MAPS[id].maxPlayers!==6)) {
     const g = quiet(mapId), lunar = mapId === 'meridian';
     assert.equal(g.economyMode, lunar ? 'mining' : 'convoy');
     assert.equal(g.ore.length, lunar ? MAPS.meridian.ore.length : 0);

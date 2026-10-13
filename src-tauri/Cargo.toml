@@ -1,0 +1,15 @@
+[package]
+name = "great-powers-desktop"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.90"
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde_json = "1"
+
+[features]
+# Tauri 发行构建启用本地协议，开发构建保留本机 Vite 地址。
+custom-protocol = ["tauri/custom-protocol"]

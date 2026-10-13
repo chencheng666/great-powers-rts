@@ -74,6 +74,6 @@ export function refineTransportBody(model) {
 
 export function submarinePose(game, unit, now = 0) {
   const surfaced = game.submarineSurfaced(unit);
-  const detected = surfaced || (unit.exposedUntil || 0) > game.time || game.activeUnits(1 - unit.owner).some(u => UNITS[u.type].sonar && Math.hypot(u.x - unit.x, u.y - unit.y) <= UNITS[u.type].sonar);
+  const detected = surfaced || (unit.exposedUntil || 0) > game.time || game.enemyUnits(unit.owner).some(u => !u.embarkedIn && UNITS[u.type].sonar && Math.hypot(u.x - unit.x, u.y - unit.y) <= UNITS[u.type].sonar);
   return { surfaced, detected, height: surfaced || detected ? -.8 + Math.sin(now * .002 + unit.id) * .2 : -7.5, verticalScale: surfaced || detected ? 1 : .16 };
 }

@@ -1,0 +1,21 @@
+{
+  "gitCodeCommit": "95f3af23451d980574a3cfa165208e8d76a0c323",
+  "serverRelease": "20261010-v090-downloads",
+  "backup": "/opt/great-powers/backups/20261010-v090-downloads",
+  "databasePreserved": true,
+  "onlineCheck": "protocol2、两个席位、清理房间通过",
+  "downloadURL": "http://43.135.186.21:8088/downloads/packages/Great-Powers_0.9.0_aarch64.dmg",
+  "size": 45532066,
+  "sha256": "065e6bc368c429c27f4983c3f5864f96c77501d692b57dda1a2a6a649aa64b81",
+  "anonymousExternalHEAD": 200,
+  "serverPublicAddressFullGETSHA256": "通过",
+  "serverLoopbackFullGETSHA256": "通过",
+  "externalMacGETBytes": 2334720,
+  "externalMacPartialBytesMatch": true,
+  "externalMacFullGET": "未完成，慢速连接已停止",
+  "tests": {
+    "web": 283,
+    "rust": 3
+  },
+  "release": "GitHub草稿；公开发行等待明确批准"
+}

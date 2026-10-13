@@ -24,12 +24,13 @@ import { RESOURCE_TYPES } from './battlefield-expansion.js';
 import { COMMUNITY_3D_BUILDINGS } from './community-visuals.js';
 import { BATTLE_READABILITY, readableMaterial, identityRadius, identityVisible } from './battle-readability.js';
 import { fixedWingHeight } from './airfield-presentation.js';
+import { animateIdleGun } from './idle-gun.js';
 import { lunarCraters } from './lunar-terrain.js';
 import { battleElevation } from './battle-camera.js';
 import { damagePresentation, damagedMaterial, structuralDamage, confirmedShipLoss, sinkingPose } from './damage-presentation.js';
 import { submarinePose } from './naval-presentation.js';
 import { animateFacility, drawRepairBadge } from './facility-motion.js';
-import { unitAnimation } from './unit-animation.js';
+import { unitAnimation, weaponElevation } from './unit-animation.js';
 import { animateTracks } from './track-motion.js';
 import { personnelLOD, syncPersonnelLOD } from './personnel-lod.js';
 
@@ -69,6 +70,8 @@ export class Renderer {
 
   constructor(canvas, minimap, game) {
     this.canvas = canvas; this.minimap = minimap; this.mctx = minimap.getContext('2d'); this.game = game;
+    this.quality=game.map.maxPlayers===6?'standard':'high';
+    try { const saved=localStorage.getItem('great-powers-quality');if(['standard','high'].includes(saved))this.quality=saved; } catch { /* 无存储时按模式选默认画质。 */ }
     this.world = game.world;
     this.projectileModels = new Map();
     this.munitionTemplates = new Map();
@@ -78,10 +81,10 @@ export class Renderer {
     this.cameraElevation = battleElevation(this.viewMode); this.wrecks = []; this.damageMaterials = new Map(); this.damageTemplates = new Map();
     this.pointer = null; this.dragBox = null; this.lastMinimap = 0; this.lastFog = -1000;
     this.entities = new Map(); this.effects = new Map(); this.environment = []; this.bridges = []; this.trails = []; this.ownedResources = [];
-    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: !(game.map.maxPlayers===6&&this.quality==='standard'), alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
     // 返回菜单或读档时复用同一画布，先清理上一渲染器遗留的 WebGL 绑定。
     this.webgl.resetState();
-    this.webgl.setPixelRatio(Math.min(devicePixelRatio, innerWidth < 700 ? 1.5 : 2));
+    this.webgl.setPixelRatio(game.map.maxPlayers===6&&this.quality==='standard'?1:Math.min(devicePixelRatio,innerWidth<700?1.5:2));
     this.webgl.shadowMap.enabled = true; this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
     this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = 1.06;
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color('#10181d');
@@ -91,14 +94,14 @@ export class Renderer {
     const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .58; room.dispose(); pmrem.dispose();
     this.scene.add(new THREE.HemisphereLight('#d7e8ef', game.map.future ? '#3e434c' : '#3b4739', .95));
     const sun = new THREE.DirectionalLight(game.map.future ? '#e8f2ff' : '#ffedd4', 3.05); sun.position.set(this.world.width / 2 - 1750, 2450, this.world.height / 2 - 1520); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true; this.sun = sun;
-    const shadowSize = innerWidth < 700 ? 2048 : 4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
+    const shadowSize=game.map.maxPlayers===6&&this.quality==='standard'?1024:innerWidth<700?2048:4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
     Object.assign(sun.shadow.camera, { left: -this.world.width * .7, right: this.world.width * .7, top: this.world.height * .85, bottom: -this.world.height * .85, near: 10, far: 6000 });
     sun.shadow.bias = -.00015; sun.shadow.normalBias = .24; sun.shadow.radius = 2; this.scene.add(sun, sun.target);
     this.fireTexture = particleTexture(); this.smokeTexture = particleTexture(true);
     this.createTerrain(); this.createBridges(); this.createEnvironment(); this.createFutureStructures(); this.createSites(); this.createFog(); this.createOverlays();
     this.createTracks(); this.createCombatAtmosphere();
     this.createPostprocessing();
-    this.resize(); this.centerOn(innerWidth < 700 ? 400 : 470, game.homeY);
+    this.resize(); this.centerOn(game.map.maxPlayers===6?(game.homeX??game.map.spawns[0].x):innerWidth<700?400:470,game.map.maxPlayers===6?(game.online?game.homeY:game.map.spawns[0].y):game.homeY);
   }
 
   track(resource) { this.ownedResources.push(resource); return resource; }
@@ -119,13 +122,14 @@ export class Renderer {
       try { render(...args); } finally { hidden.forEach(object => { object.visible = true; }); }
     };
     this.composer.addPass(this.ambientPass); this.composer.addPass(new OutputPass());
-    this.quality = 'high';
-    try { this.quality = localStorage.getItem('great-powers-quality') === 'standard' ? 'standard' : 'high'; } catch { /* 无本地存储时使用默认画质。 */ }
     this.ambientPass.enabled = this.quality === 'high';
   }
 
   setQuality(value) {
     this.quality = value === 'standard' ? 'standard' : 'high'; this.ambientPass.enabled = this.quality === 'high';
+    this.webgl.setPixelRatio(this.game.map.maxPlayers===6&&this.quality==='standard'?1:Math.min(devicePixelRatio,innerWidth<700?1.5:2));
+    const shadowSize=this.game.map.maxPlayers===6&&this.quality==='standard'?1024:innerWidth<700?2048:4096;
+    if(this.sun.shadow.mapSize.x!==shadowSize){this.sun.shadow.mapSize.set(shadowSize,shadowSize);this.sun.shadow.map?.dispose();this.sun.shadow.map=null;}
     try { localStorage.setItem('great-powers-quality', this.quality); } catch { /* 当前战局仍可切换画质。 */ }
     this.resize();
   }
@@ -409,6 +413,10 @@ export class Renderer {
   updateFog() {
     const { cols, rows, visible, explored } = this.game.fog, ctx = this.fogSmall.getContext('2d'); ctx.clearRect(0, 0, cols, rows);
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) { const i = y * cols + x; if (visible[i]) continue; ctx.fillStyle = explored[i] ? 'rgba(13,21,26,.52)' : 'rgba(7,12,17,.96)'; ctx.fillRect(x, y, 1, 1); }
+    // 仅清除驻留目标的视觉遮罩，不修改可见性网格或暴露周围敌军。
+    for(const b of this.game.buildings.filter(b=>b.hp>0&&b.sabotage?.owner===0)){
+      const cell=this.game.world.fog,half=b.size*.65;ctx.clearRect((b.x-half)/cell,(b.y-half)/cell,half*2/cell,half*2/cell);
+    }
     const fog = this.fogCanvas.getContext('2d'); fog.clearRect(0, 0, 560, 360); fog.filter = 'blur(9px)'; fog.drawImage(this.fogSmall, -5, -5, 570, 370); fog.filter = 'none'; this.fogTexture.needsUpdate = true;
     const dummy = new THREE.Object3D();
     for (const mesh of this.bridges) mesh.visible = this.game.hasExploredFor(0, mesh.position.x, mesh.position.z);
@@ -679,6 +687,7 @@ export class Renderer {
   updateEntities(now) {
     const dt = this.game.paused ? 0 : Math.min(.05, Math.max(0, (now - (this.lastEntityFrame ?? now)) / 1000)); this.lastEntityFrame = now;
     const active = new Set();
+    const shotAims = new Map(this.game.effects.filter(effect => effect.type === 'shot').map(effect => [effect.sourceId, effect]));
     const targeted = new Set(this.game.selected.map(id => this.game.getEntity(id)).filter(entity => entity?.owner === 0).map(entity => entity.order?.targetId || entity.targetId).filter(Boolean));
     for (const entity of [...this.game.buildings, ...this.game.units]) {
       if (entity.hp <= 0) continue; active.add(entity.id);
@@ -690,6 +699,19 @@ export class Renderer {
       if (entity.kind === 'unit') {
         const tags = UNITS[entity.type].tags;
         const animation = unitAnimation(entry, entity, dt, this.game.time);
+        if (entry.upperBody && entity.type === 'rifle') {
+          const aimTarget = this.game.getEntity(entity.order?.type === 'attack' ? entity.order.targetId : entity.targetId);
+          const shot = shotAims.get(entity.id);
+          if (shot) { entry.shotAim = shot; entry.shotAimAt = this.game.time; }
+          const shotAim = this.game.time - (entry.shotAimAt ?? -10) < .5 ? entry.shotAim : null;
+          const targetTags = UNITS[aimTarget?.type || shotAim?.targetType]?.tags || [];
+          const airborne = aimTarget && !this.game.aircraftGrounded(aimTarget) && !aimTarget.embarkedIn;
+          const targetHeight = aimTarget ? this.elevation(aimTarget.x, aimTarget.y) + (airborne && targetTags.includes('jet') ? 95 : airborne && targetTags.includes('drone') ? 23 : 3) : height;
+          const aimPitch = aimTarget && this.game.canSeeEntity(0, aimTarget)
+            ? weaponElevation(Math.hypot(aimTarget.x - entity.x, aimTarget.y - entity.y), targetHeight - height)
+            : shotAim ? weaponElevation(Math.hypot(shotAim.toX - entity.x, shotAim.toY - entity.y), targetTags.includes('jet') ? 95 : targetTags.includes('drone') ? 23 : 0) : 0;
+          animation.aimPitch += (aimPitch - animation.aimPitch) * (1 - Math.exp(-dt * 9));
+        }
         if (tags.includes('jet')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x, entity.y) + 4 : 95 * (entity.deployment ? Math.min(1, (this.game.time - entity.deployment.start) / 2.6) : 1) + Math.sin(now * .001 + entity.id) * 2;
         if (entity.deckApproach) height = 15 + 80 * Math.max(0, (entity.deckApproach.until - this.game.time) / 2.4);
         if (entity.embarkedIn) height = 15;
@@ -727,15 +749,18 @@ export class Renderer {
           height = entry.flightHeight;
         }
         if (entry.weapon) { entry.weapon.rotation.y = entry.heading - animation.turret; entry.weapon.position.x = 0; }
-        if (entry.barrel) entry.barrel.position.x = -.32 * (animation.recoil || 0);
+        if (entry.barrel) animateIdleGun(entry, animation, dt);
         if (entry.upperBody) {
           entry.upperBody.rotation.y = clamp(Math.atan2(Math.sin(entry.heading - animation.turret), Math.cos(entry.heading - animation.turret)), -1.1, 1.1);
-          entry.upperBody.rotation.z = -.018 * (animation.recoil || 0);
+          entry.upperBody.rotation.z = animation.aimPitch - .018 * (animation.recoil || 0);
         }
-        if (entry.weaponPose && entity.type === 'rifle') entry.weaponPose.position.x = -.028 * (animation.recoil || 0);
+        if (entry.weaponPose && entity.type === 'rifle') {
+          entry.weaponPose.position.x = -.028 * (animation.recoil || 0);
+          entry.weaponPose.rotation.z = Math.sin(this.game.time * 2.2 + entity.id) * .008 * (1 - animation.speed);
+        }
         if (tags.includes('infantry')) entry.model.rotation.z = Math.sin(animation.phase) * .018 * animation.speed;
         for (const track of entry.tracks) track.visible = this.camera.zoom >= 1.4;
-        if (visible && entry.tracks.length && this.camera.zoom >= 1.4) animateTracks(entry.tracks, animation.travel);
+        if (visible && entry.tracks.length && this.camera.zoom >= 1.4) animateTracks(entry.tracks, animation.travel, animation.turnTravel);
         entry.legs.forEach((leg, index) => {
           const phase = animation.phase + index * Math.PI, knee = leg.getObjectByName(index === 0 ? 'knee_left' : 'knee_right');
           leg.rotation.z = Math.sin(phase) * (knee ? .35 : .47) * animation.speed;
@@ -961,11 +986,11 @@ export class Renderer {
       if (screen.x < 0 || screen.x > this.viewport.width || screen.y < 0 || screen.y > this.viewport.height) continue;
       const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry'), robot = entity.kind === 'unit' && isLunarRobot(this.game.map, entity.type), ammo = robot ? 10 : UNITS[entity.type]?.ammo;
       const numeric = hovered || isSelected && selected.size === 1;
-      const label = `${entity.owner === 1 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
+      const label = `${entity.owner !== 0 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
       const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : '';
       ctx.font = '500 10px "Noto Sans SC",sans-serif';
       const width = Math.max(entity.kind === 'building' ? 76 : infantry ? 28 : 50, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0);
-      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner === 1 ? 2 : 1 });
+      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner !== 0 ? 2 : 1 });
     }
     const repairs = this.game.ownedBuildings(0).filter(b => b.repairing && b.hp < b.maxHp).map(building => {
       const point = this.entityAnchor(building);

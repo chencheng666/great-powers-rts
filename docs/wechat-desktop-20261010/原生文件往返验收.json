@@ -1,0 +1,10 @@
+{
+  "file": "gp-native-qa-export-20261011.json",
+  "bytes": 39003,
+  "validJSON": true,
+  "testApp": "/tmp/Great Powers QA.app",
+  "export": "原生保存对话框成功",
+  "import": "原生打开对话框成功",
+  "restored": "灰谷地带、华夏防卫、00:49、资金2270",
+  "scope": "仅Mac测试副本；未验证其他平台"
+}

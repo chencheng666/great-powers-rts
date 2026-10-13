@@ -1,0 +1,11 @@
+   Compiling great-powers-desktop v0.9.1 (/Users/chencheng/Documents/Codex/2026-10-09/task/publication-local/src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.29s
+     Running unittests src/main.rs (/Users/chencheng/Documents/Codex/2026-10-09/task/publication-local/src-tauri/target/debug/deps/great_powers_desktop-dd682edcb9dbfe6b)
+
+running 3 tests
+test tests::desktop_requires_https_without_transport_exceptions ... ok
+test tests::native_commands_reject_remote_pages_and_release_dev_origin ... ok
+test tests::save_payload_is_bounded_json_object ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

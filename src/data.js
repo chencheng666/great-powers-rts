@@ -1,3 +1,4 @@
+import {sixPlayerMap} from './six-player-map.js';
 export const WORLD = { width: 2240, height: 1440, cell: 40, fog: 80 };
 export const CORE_BUILDINGS = ['hq', 'refinery', 'barracks', 'factory', 'armory', 'airfield', 'dock'];
 export const PRODUCERS = ['barracks', 'factory', 'armory', 'airfield', 'dock'];
@@ -44,8 +45,8 @@ export const UNITS = {
   drone: { name: '攻击无人机', cost: 260, time: 13, hp: 130, speed: 116, range: 180, damage: 20, cooldown: 0.85, sight: 330, icon: 'scan', producer: 'armory', tags: ['drone', 'air'], desc: '机动灵活，对装甲目标有额外伤害。' },
   ghost: { name: '隐形侦察无人机', cost: 340, time: 18, hp: 85, speed: 124, range: 0, damage: 0, cooldown: 1, sight: 450, icon: 'eye-off', producer: 'armory', requires: 'radar', faction: 'middleeast', tags: ['drone', 'air', 'scout', 'stealth'], desc: '新月专属；深入敌后提供视野，接近侦察兵、防空车或雷达信标会暴露。' },
   aa: { name: '防空车', cost: 360, time: 17, hp: 230, speed: 72, range: 250, damage: 22, cooldown: 0.8, sight: 320, icon: 'radar', producer: 'armory', requires: 'radar', tags: ['vehicle', 'anti-air'], desc: '防空与弹药拦截，不能对地；需要装甲或步兵护卫。' },
-  fighter: { name: '制空战机', cost: 620, time: 24, hp: 215, speed: 210, range: 275, damage: 37, cooldown: 0.85, sight: 470, ammo: 9, rearmTime: 8, icon: 'plane', producer: 'airfield', tags: ['air', 'jet', 'anti-air'], desc: '只攻击空中目标；高速穿越地形，弹药耗尽后返场。' },
-  strike: { name: '对地攻击机', cost: 760, time: 29, hp: 235, speed: 170, range: 245, damage: 62, cooldown: 1.55, sight: 420, ammo: 3, rearmTime: 10, icon: 'plane-takeoff', producer: 'airfield', tags: ['air', 'jet', 'bomber'], desc: '重创地面与建筑；无法空战，须返回空军基地补给。' },
+  fighter: { name: '制空战机', cost: 620, time: 24, hp: 215, speed: 210, range: 275, damage: 37, cooldown: 0.85, sight: 470, ammo: 9, rearmTime: 8, icon: 'plane', producer: 'airfield', tags: ['air', 'jet', 'anti-air'], desc: '优先制空；可对地对舰，但伤害仅基础的35%；各任务共用有限弹药，返场整备。' },
+  strike: { name: '对地攻击机', cost: 760, time: 29, hp: 235, speed: 170, range: 245, damage: 62, cooldown: 1.55, sight: 420, ammo: 3, rearmTime: 10, icon: 'plane-takeoff', producer: 'airfield', tags: ['air', 'jet', 'bomber'], desc: '优先对地对舰；具备基础伤害35%的空战自卫能力，各任务共用有限弹药，返场整备。' },
   patrol: { name: '近海巡逻艇', cost: 380, time: 18, hp: 270, speed: 110, range: 235, damage: 26, cooldown: 0.9, sight: 355, sonar: 150, icon: 'ship', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-sub'], desc: '高速夺取海面优势，近距声呐发现潜艇；对建筑伤害较低。' },
   frigate: { name: '防空护卫舰', cost: 760, time: 29, hp: 470, speed: 72, range: 335, damage: 38, cooldown: 1.55, sight: 435, sonar: 230, icon: 'sailboat', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-air', 'anti-sub'], desc: '区域防空与反潜护航；可拦截巡飞弹和舰载机。' },
   harvester: { name: '采矿车', cost: 440, time: 19, hp: 350, speed: 59, range: 0, damage: 0, cooldown: 1, sight: 240, icon: 'pickaxe', producer: 'factory', tags: ['vehicle', 'harvester'], desc: '自动采集矿石，扩张经济。' },
@@ -63,7 +64,7 @@ export const UNITS = {
 
 Object.assign(UNITS, {
   ewPlane: { name: '电子压制机', cost: 1350, time: 43, hp: 185, speed: 168, range: 230, damage: 0, cooldown: 1, sight: 410, producer: 'airfield', requires: 'lab', tags: ['air', 'jet', 'support'], icon: 'radio-tower', desc: '原创概念：每 10 秒在 230 范围内压制敌方防空 2.5 秒；自身无武装，制空机与范围外防空可反制。' },
-  navalFighter: { ...UNITS.fighter, name: '舰载制空机', cost: 760, time: 29, hp: 225, ammo: 8, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'anti-air', 'deck'], desc: '通用游戏舰载型，仅制空；可编入本方航母，停航着舰，付费维修补弹，再次起飞护航。' },
+  navalFighter: { ...UNITS.fighter, name: '舰载制空机', cost: 760, time: 29, hp: 225, ammo: 8, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'anti-air', 'deck'], desc: '优先制空，兼顾35%基础伤害对地；可编入本方航母，停航着舰、付费维修补弹。' },
   navalStrike: { ...UNITS.strike, name: '舰载攻击机', cost: 880, time: 33, hp: 245, ammo: 4, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'bomber', 'deck'], desc: '通用游戏舰载型，对地与对舰；可编入航母，每舰最多三架真实机体，与自带攻击编组互斥。' },
   freightPlane: { name: '后勤运输机', cost: 0, time: 1, hp: 290, speed: 160, range: 0, damage: 0, cooldown: 1, sight: 90, icon: 'package', tags: ['air', 'jet', 'logistics'], desc: '外部援助航班，按固定航线自动运抵后勤中心；无武装，可被防空和战机拦截，不受战斗指令控制。' },
   containerShip: { name: '集装箱补给船', cost: 0, time: 1, hp: 620, speed: 92, range: 0, damage: 0, cooldown: 1, sight: 100, icon: 'container', tags: ['ship', 'naval', 'logistics'], desc: '沿海运路线自动回港卸货；无武装，可被舰艇和潜艇袭击，需要护航，不可载兵或刷补给资金。' },
@@ -100,6 +101,7 @@ export const ORE_LAYOUT = [
 ];
 
 export const MAPS = {
+  sixfront: sixPlayerMap(),
   archipelago: {
     name: '跨海登陆战', sector: '战区 07 · 无桥海战', world: { width: 3520, height: 2240, cell: 40, fog: 80 },
     ore: [], oil: [{ id: 'oil-a', x: 890, y: 240 }, { id: 'oil-b', x: 2630, y: 2000 }],
