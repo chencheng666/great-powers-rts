@@ -100,7 +100,7 @@ export class OnlineClient {
   showError(message){this.dialog.querySelector('#online-error').textContent=message;}
   candidateControls(){
     this.dialog.querySelector('h2').textContent=this.prefix?'六方自由对战 · 实验候选版':'双人对战';
-    let box=this.dialog.querySelector('#candidate-controls');if(!box){box=document.createElement('div');box.id='candidate-controls';box.innerHTML='<p class="report-note">实验模式：每席位最多 40 个单位（含排队与生产中），六方互为对手；当前仅本机候选，尚未上线。默认流畅画质，密集交战仍可能低帧率。</p><label><input type="checkbox" id="allow-spectators"> 允许跟随席位迷雾观战（不含经济与指令）</label><label>观战席位 <select id="observe-follow">'+Array.from({length:6},(_,i)=>`<option value="${i}">${i+1}号席位</option>`).join('')+'</select></label><button data-online="observe">按房间码观战</button>';this.dialog.querySelector('#online-setup').append(box);}box.hidden=!this.prefix;
+    let box=this.dialog.querySelector('#candidate-controls');if(!box){box=document.createElement('div');box.id='candidate-controls';box.innerHTML='<p class="report-note">六方自由对战 · 实验模式 · 每席最多40单位（含排队与生产中）· 同时开放一场战局。密集交战可能低帧率。</p><label><input type="checkbox" id="allow-spectators"> 允许跟随席位迷雾观战（不含经济与指令）</label><label>观战席位 <select id="observe-follow">'+Array.from({length:6},(_,i)=>`<option value="${i}">${i+1}号席位</option>`).join('')+'</select></label><button data-online="observe">按房间码观战</button>';this.dialog.querySelector('#online-setup').append(box);}box.hidden=!this.prefix;
   }
   async action(action,button){
     if(!action)return;

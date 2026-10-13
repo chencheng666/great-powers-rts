@@ -132,6 +132,7 @@ export function validateSave(save) {
   if (!Array.isArray(s.selected) || s.selected.some(id => !Number.isSafeInteger(id)) || !Array.isArray(s.projectiles) || s.projectiles.length > 10000 || !Number.isSafeInteger(s.nextProjectileId) || ![s.aiTimer, s.aiWaveTimer, s.fogTimer].every(finite) || s.pendingBuilding !== null && !known(BUILDINGS, s.pendingBuilding) || typeof s.pendingAbility !== 'boolean') invalid();
   for (const projectile of s.projectiles) if (!object(projectile) || !['x', 'y', 'startX', 'startY', 'toX', 'toY', 'angle', 'age', 'amount', 'speed', 'hp', 'jam'].every(key => finite(projectile[key])) || projectile.speed <= 0 || !owners.includes(projectile.owner) || !['wing', 'torpedo', 'rocket', 'missile', 'loitering', 'bomb'].includes(projectile.kind)) invalid();
   for (const projectile of s.projectiles) for (const key of ['sourceHeight', 'targetHeight', 'fallDuration']) if (projectile[key] !== undefined && (!finite(projectile[key]) || key === 'fallDuration' && (projectile[key] <= 0 || projectile[key] > 10))) invalid();
+  for (const projectile of s.projectiles) if(projectile.flightRole!==undefined&&!['air-to-air','air-to-ground','surface'].includes(projectile.flightRole))invalid();
   if (save.view !== undefined && !object(save.view)) invalid();
   if (s.battleStats !== undefined && !validateBattleStats(s.battleStats, s.time,count)) invalid();
   if (s.logistics !== undefined) {

@@ -11,6 +11,7 @@ import { PROTOCOL_VERSION, nickname } from '../src/network-protocol.js';
 import { Accounts } from './accounts.mjs';
 import { executeCommand } from './commands.mjs';
 import { battleView } from './battle-view.mjs';
+import { GAME_VERSION } from '../src/version.js';
 
 export function createBattleServer({ directory = process.env.DATA_DIRECTORY || resolve('server-data'), root = resolve('dist'), origin = process.env.PUBLIC_ORIGIN || '', additionalOrigins = process.env.PUBLIC_ORIGINS || '', maxPlayers=2, dev = process.env.NODE_ENV !== 'production' } = {}) {
   if(![2,6].includes(maxPlayers))throw new Error('席位上限无效');
@@ -57,7 +58,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
     res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('X-Frame-Options','DENY'); res.setHeader('Referrer-Policy','same-origin');
     try {
       const url = new URL(req.url, 'http://local');
-      if (url.pathname === '/api/health') return json(200, { ok: true, protocol, maxPlayers,rooms: rooms.size, battles: [...rooms.values()].filter(r => r.game?.running).length });
+      if (url.pathname === '/api/health') return json(200, { ok: true, version:GAME_VERSION, protocol, maxPlayers,rooms: rooms.size, battles: [...rooms.values()].filter(r => r.game?.running).length });
       if (url.pathname === '/api/session') {
         let user = accounts.find(req.headers.cookie);
         if (req.method === 'POST') {
@@ -88,7 +89,8 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
       serveFile(req,res,file,info,{official:url.pathname.startsWith('/official/')});
     } catch (error) { json(error.code === 'ENOENT' ? 404 : 400, { error:error.code === 'ENOENT' ? '文件不存在' : '请求无效' }); }
   });
-  const wss = new WebSocketServer({ noServer:true, maxPayload:16384, perMessageDeflate:false });
+  // 六方快照较大，使用低压缩等级与有限并发，保持双人协议的传输方式不变。
+  const wss = new WebSocketServer({ noServer:true, maxPayload:16384, perMessageDeflate:maxPlayers===6?{threshold:1024,serverNoContextTakeover:true,clientNoContextTakeover:true,concurrencyLimit:2,zlibDeflateOptions:{level:1}}:false });
   server.on('upgrade', (req, socket, head) => {
     const user = accounts.find(req.headers.cookie);
     if (req.url !== '/battle-socket' || !allowed(req) || !user || peers.size >= 64 && !peers.has(user.id)) { socket.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return; }
@@ -123,6 +125,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
         } else if(msg.type==='observe'&&maxPlayers===6){
           if(r&&!r.game?.players[side]?.eliminated&&!r.spectators?.has(user.id))throw new Error('参战者不能切换他人视角');
           const target=rooms.get(String(msg.code));if(!target?.game||!target.allowSpectators||target.spectators.size>=8&&!target.spectators.has(user.id)||!Number.isInteger(msg.follow)||msg.follow<0||msg.follow>=6)throw new Error('观战不可用');
+          if(r&&r!==target)leave(user.id);
           target.spectators.set(user.id,msg.follow);send(ws,{type:'room',room:publicRoom(target)});snapshot(target,ws,msg.follow,true,true);
         } else if (msg.type === 'leave') leave(user.id);
         else if (msg.type === 'ping') send(ws,{ type:'pong',at:msg.at });
@@ -148,7 +151,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
         } else throw new Error('未知请求');
       } catch (error) { send(ws,{ type:'error',message:error instanceof SyntaxError ? '指令格式无效' : error.message }); }
     });
-    ws.on('close', () => { if (peers.get(user.id)!==ws) return; peers.delete(user.id); const r=userRoom(user.id); if(r) roomNotice(r); });
+    ws.on('close', () => { if (peers.get(user.id)!==ws) return; peers.delete(user.id); const r=userRoom(user.id); if(r){r.spectators?.delete(user.id);roomNotice(r);if(maxPlayers===6)abandonIfEmpty(r);} });
     ws.on('error', () => {});
   });
   let effectId=1, tick=0;

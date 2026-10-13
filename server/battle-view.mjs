@@ -23,6 +23,7 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
     return e;
   }
   for (const b of game.buildings) if (b.owner !== side && visible(b)) memory.set(b.id, entityView(b));
+  for(const [id,b]of memory)if(typeof id==='number'&&b.sabotage?.owner===0&&game.getEntity(id)?.sabotage?.owner!==side)delete b.sabotage;
   for (const [id, b] of memory) if (typeof id === 'number' && game.isVisibleFor(side, b.x, b.y) && !game.buildings.some(e => e.id === id)) memory.delete(id);
   function sites(key) {
     return game[key].map(site => {

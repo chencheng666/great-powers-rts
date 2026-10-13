@@ -777,9 +777,10 @@ export class Game {
     if (type === 'laser') return tags.includes('drone');
     if (type === 'submarine') return tags.includes('ship');
     if (['rocket', 'loiterer', 'carrier', 'bomber'].includes(type) && tags.includes('air')) return false;
-    if (['fighter', 'aegis', 'navalFighter'].includes(type)) return tags.includes('air');
+    if (type === 'aegis') return tags.includes('air');
+    if (['fighter', 'navalFighter'].includes(type)) return true;
     if (type === 'railgun' && tags.includes('air')) return false;
-    if (['strike', 'navalStrike'].includes(type)) return target.kind === 'building' || !tags.includes('air');
+    if (['strike', 'navalStrike'].includes(type)) return true;
     if (UNITS[type].tags.includes('ship')) {
       if (tags.includes('jet') && !UNITS[type].tags.includes('anti-air')) return false;
       const water = this.map.water;
@@ -839,12 +840,14 @@ export class Game {
 
   unitDamage(u, target) {
     let amount = UNITS[u.type].damage;
-    const targetTags = target.kind === 'unit' ? UNITS[target.type].tags : [];
+    const targetTags = target.kind === 'unit' ? UNITS[target.type].tags.filter(t=>!this.aircraftGrounded(target)||!['air','jet','drone'].includes(t)) : [];
     if (u.type === 'drone' && targetTags.includes('armor')) amount *= 1.8;
     if (u.type === 'drone' && targetTags.includes('jet')) amount *= 0.7;
     if (u.type === 'aa' && targetTags.includes('air')) amount *= 2.25;
     if (['fighter', 'aegis', 'navalFighter'].includes(u.type) && targetTags.includes('air')) amount *= targetTags.includes('jet') ? 1.15 : 1.4;
+    if (['fighter', 'navalFighter'].includes(u.type) && !targetTags.includes('air')) amount *= .35;
     if (['strike', 'navalStrike'].includes(u.type)) {
+      if (targetTags.includes('air')) amount *= .35;
       if (target.kind === 'building') amount *= 1.7;
       if (targetTags.includes('armor')) amount *= 1.2;
       if (targetTags.includes('ship')) amount *= 1.25;
@@ -950,7 +953,9 @@ export class Game {
       if (source.kind === 'building' && !this.hasLineOfFire(source, target)) continue;
       const d = distance(source, target) - (target.kind === 'building' ? target.size * 0.3 : 0);
       if (d >= range) continue;
-      const priority = ['aa', 'frigate'].includes(source.type) && target.kind === 'unit' && UNITS[target.type].tags.includes('jet') ? .65 : 1;
+      const airborne = target.kind === 'unit' && UNITS[target.type].tags.includes('air') && !this.aircraftGrounded(target);
+      const primaryAir = ['fighter','navalFighter'].includes(source.type), primaryGround = ['strike','navalStrike'].includes(source.type);
+      const priority = primaryAir ? airborne ? .3 : 1 : primaryGround ? airborne ? 1 : .3 : ['aa', 'frigate'].includes(source.type) && target.kind === 'unit' && UNITS[target.type].tags.includes('jet') ? .65 : 1;
       if (d * priority < best && this.canSeeEntity(owner, target)) { best = d * priority; nearest = target; }
     }
     return nearest;
@@ -1182,6 +1187,8 @@ export class Game {
   canSeeEntity(side, target) {
     if (target.embarkedIn) return false;
     if (target.owner === side) return true;
+    // 驻留间谍只保持目标设施的情报，不提供周围部队或生产队列的透视。
+    if (target.kind === 'building' && target.hp > 0 && target.sabotage?.owner === side) return true;
     if (!this.isVisibleFor(side, target.x, target.y)) return false;
     if (target.kind === 'unit' && UNITS[target.type].tags.includes('submerged')) return this.submarineSurfaced(target) || target.exposedUntil > this.time || this.activeUnits(side).some(u => UNITS[u.type].sonar && distance(u, target) <= UNITS[u.type].sonar);
     if (target.kind !== 'unit' || !UNITS[target.type].tags.includes('stealth')) return true;

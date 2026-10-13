@@ -8,12 +8,12 @@ export function createPersonnel(type, { distant = false } = {}) {
   const group = new THREE.Group(); group.name = 'upper_body'; root.add(group);
   const weaponPose = new THREE.Group(); weaponPose.name = 'weapon_pose'; group.add(weaponPose);
   const spy = type === 'scout', engineer = type === 'engineer';
-  const fabric = craftedMaterial('战术织物', spy ? '#272b31' : engineer ? '#6c7762' : '#566650', 'fabric', .95, 0);
+  const fabric = craftedMaterial(spy ? '黑色西装' : '作战服', spy ? '#11151a' : engineer ? '#6c7762' : '#738263', 'fabric', .95, 0);
   const dark = craftedMaterial('皮革与橡胶', '#252b2d', 'rubber', .87, 0);
   const armor = craftedMaterial('携行具', '#485549', 'fabric', .9, 0);
   const steel = craftedMaterial('武器金属', '#677176', 'coating', .5, .65);
   const skin = new THREE.MeshStandardMaterial({ name: '皮肤', color: '#bb937c', roughness: .85 });
-  const shirt = craftedMaterial('衬衣与工程护具', engineer ? '#b59d62' : '#d5d5ca', 'fabric', .92, 0);
+  const shirt = craftedMaterial('衬衣与工程护具', engineer ? '#b59d62' : '#f0f2ef', 'fabric', .92, 0);
   const team = new THREE.MeshStandardMaterial({ name: '阵营标识', color: '#64d8e4', emissive: '#64d8e4', emissiveIntensity: .12, roughness: .7 });
   const mesh = (parent, geometry, material, position, rotation) => {
     const m = new THREE.Mesh(geometry, material); m.position.set(...position); if (rotation) m.rotation.set(...rotation); parent.add(m); return m;

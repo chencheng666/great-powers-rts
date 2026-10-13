@@ -159,6 +159,8 @@ export const modernCombat = {
     }
     p.sourceHeight = UNITS[source.type]?.tags.includes('jet') && !this.aircraftGrounded(source) ? 95 : source.type === 'destroyer' ? 35 : 20;
     p.targetHeight = UNITS[target.type]?.tags.includes('jet') && !this.aircraftGrounded(target) ? 95 : UNITS[target.type]?.tags.includes('drone') ? 25 : 12;
+    const airborne = entity => entity.kind === 'unit' && UNITS[entity.type]?.tags.includes('air') && !this.aircraftGrounded(entity);
+    p.flightRole = airborne(source) ? airborne(target) ? 'air-to-air' : 'air-to-ground' : 'surface';
     if (kind === 'bomb') { p.toX = p.x; p.toY = p.y; p.fallDuration = 1.1; }
     if (style === 'submarine') source.exposedUntil = this.time + 4;
     this.events.shot?.(style, source.owner);

@@ -10,7 +10,7 @@ export function projectileFlightPose(p) {
   if (p.kind === 'torpedo') return { height: 2, pitch: 0 };
   if (p.kind === 'wing') return { height: 88, pitch: 0 };
   const start = p.sourceHeight ?? 30, end = p.targetHeight ?? 12;
-  const loft = p.kind === 'missile' ? 55 : 18;
+  const loft = p.kind === 'missile' ? p.flightRole === 'air-to-air' ? 6 : p.flightRole === 'air-to-ground' ? 18 : 55 : 18;
   return { height: start + (end - start) * progress + Math.sin(progress * Math.PI) * loft,
     pitch: Math.atan2(end - start + loft * Math.PI * Math.cos(progress * Math.PI), span) };
 }

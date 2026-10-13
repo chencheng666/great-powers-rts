@@ -2,7 +2,7 @@ name: Desktop release
 on:
   workflow_dispatch:
   push:
-    tags: ['desktop-v*']
+    tags: ['v1.*']
 permissions:
   contents: write
 jobs:
@@ -59,11 +59,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: desktop-v__VERSION__
-          releaseName: '大国崛起 桌面版 v__VERSION__'
-          releaseBody: '内嵌单机资源。0.9.1启用HTTPS/WSS独立联网窗口；服务入口https://43.135.186.21:8443/。实验发行：macOS ad-hoc签名，未公证；Windows未代码签名。Linux需要WebKitGTK 4.1和WebGL2，麒麟/UOS及具体CPU/GPU须实机验证。下载后请核对SHA256。'
+          tagName: v__VERSION__
+          releaseName: '大国崛起 v__VERSION__ 玩家共建版'
+          releaseBody: '1.0正式版本：浏览器、离线单机与Tauri桌面包。HTTPS双人联机，独立六方实验入口，真人与AI混合席位。Mac未Apple公证，Windows未代码签名；Linux需要WebKitGTK 4.1和WebGL2，麒麟/UOS及具体硬件须实机验证。下载后请核对SHA256。'
           releaseDraft: true
-          prerelease: true
+          prerelease: false
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} -- --locked
       - uses: actions/upload-artifact@v4
         with:

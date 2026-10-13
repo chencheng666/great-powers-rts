@@ -413,6 +413,10 @@ export class Renderer {
   updateFog() {
     const { cols, rows, visible, explored } = this.game.fog, ctx = this.fogSmall.getContext('2d'); ctx.clearRect(0, 0, cols, rows);
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) { const i = y * cols + x; if (visible[i]) continue; ctx.fillStyle = explored[i] ? 'rgba(13,21,26,.52)' : 'rgba(7,12,17,.96)'; ctx.fillRect(x, y, 1, 1); }
+    // 仅清除驻留目标的视觉遮罩，不修改可见性网格或暴露周围敌军。
+    for(const b of this.game.buildings.filter(b=>b.hp>0&&b.sabotage?.owner===0)){
+      const cell=this.game.world.fog,half=b.size*.65;ctx.clearRect((b.x-half)/cell,(b.y-half)/cell,half*2/cell,half*2/cell);
+    }
     const fog = this.fogCanvas.getContext('2d'); fog.clearRect(0, 0, 560, 360); fog.filter = 'blur(9px)'; fog.drawImage(this.fogSmall, -5, -5, 570, 370); fog.filter = 'none'; this.fogTexture.needsUpdate = true;
     const dummy = new THREE.Object3D();
     for (const mesh of this.bridges) mesh.visible = this.game.hasExploredFor(0, mesh.position.x, mesh.position.z);

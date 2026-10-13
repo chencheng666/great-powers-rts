@@ -9,6 +9,7 @@ import { refineEquipment, hasRefinedTracks } from './equipment-finishing.js';
 import { refineAirfieldRunway, refineAircraftCanopy } from './airfield-presentation.js';
 import { replacedNavalPart, refineNavalHull, refineTransportBody } from './naval-presentation.js';
 import { refinePowerFans } from './facility-motion.js';
+import { createModernAircraft } from './aircraft-models.js';
 
 const modelURL = new URL('../assets/models/military-library.glb', import.meta.url).href;
 const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url).href;
@@ -64,7 +65,7 @@ ${shader.fragmentShader}`.replace('#include <map_fragment>', `#include <map_frag
 float weather = surfaceNoise(vSurface * ${stone ? '9.0' : '35.0'});
 float patches = surfaceNoise(vSurface * ${stone ? '2.5' : '1.5'});
 diffuseColor.rgb *= ${stone ? '0.64 + weather * 0.52 + patches * 0.28' : '0.84 + weather * 0.24'};
-${domain === 'land' && ['装甲钢', '建筑面板', '屋顶'].includes(material.name) ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.24,.15), smoothstep(.42,.49,patches) * .42); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.075,.10,.085), smoothstep(.59,.65,patches) * .48);' : ''}
+${domain === 'land' && ['装甲钢', '建筑面板', '屋顶', '作战服'].includes(material.name) ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.28,.32,.18), smoothstep(.40,.48,patches) * .62); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.065,.085,.075), smoothstep(.57,.65,patches) * .68);' : ''}
 ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothstep(.69,.83,weather) * .35);' : ''}`)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (surfaceNoise(vSurface * 28.0) - .4) * .18, .28, 1.0);');
   };
@@ -137,7 +138,10 @@ export function prepareVisualAssets() {
       models.set(name, template);
     }
     for (const type of ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane']) models.set(`space_${type}`, createSpaceAircraft(type));
-    for(const type of ['rifle','engineer','scout'])models.set(type,createPersonnel(type));
+    for(const type of ['rifle','engineer','scout']){
+      const model=createPersonnel(type);model.traverse(m=>{if(m.isMesh&&m.material.name==='作战服')m.material=weatherMaterial(m.material);});models.set(type,model);
+    }
+    for(const type of ['fighter_china','freightPlane','airlift'])models.set(type,createModernAircraft(type));
     for(const type of ['cache','salvage','depot'])models.set(`resource_${type}`,createResourceModel(type));
     models.set('dock', createHarbor(weatherMaterial));
     for (const type of COMMUNITY_3D_BUILDINGS.filter(type => type !== 'dock')) refineFacility(models.get(type), type, weatherMaterial);

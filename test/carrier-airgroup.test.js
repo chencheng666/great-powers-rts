@@ -74,7 +74,9 @@ test('航母沉没后甲板飞机紧急撤离受损，空中飞机可改回机�
 test('舰载机遵守空地克制，飞弹实际飞行后命中，不是瞬间扣血', () => {
   const g = setup(), fighter = g.addUnit(0, 'navalFighter', 1400, 1000), strike = g.addUnit(0, 'navalStrike', 1400, 1200), enemyAir = g.addUnit(1, 'fighter', 1640, 1000), enemyShip = g.addUnit(1, 'patrol', 1640, 1200);
   g.fogs[0].visible.fill(true);
-  assert.equal(g.canAttack(fighter, enemyShip), false); assert.equal(g.canAttack(strike, enemyAir), false);
+  assert.equal(g.canAttack(fighter, enemyShip), true); assert.equal(g.canAttack(strike, enemyAir), true);
+  assert.ok(g.unitDamage(fighter, enemyShip) < g.unitDamage(fighter, enemyAir));
+  assert.ok(g.unitDamage(strike, enemyAir) < g.unitDamage(strike, enemyShip));
   assert.equal(g.canAttack(fighter, enemyAir), true); assert.equal(g.canAttack(strike, enemyShip), true);
   g.fire(strike, enemyShip, 50, 'navalStrike'); assert.equal(enemyShip.hp, enemyShip.maxHp);
   assert.equal(g.projectiles[0].kind, 'missile');
