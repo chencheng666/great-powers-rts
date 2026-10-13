@@ -1,0 +1,20 @@
+* { letter-spacing: 0 !important; }
+.hero { height: calc(100svh - 90px); min-height: 620px; max-height: 940px; }
+.hero h1 { font-size: 78px; }
+.section h2 { font-size: 45px; }
+.hero-content { max-width: 760px; }
+.hero-actions { align-items: stretch; }
+.hero-actions .button { min-width: 190px; }
+.downloads article { min-width: 0; }
+.downloads a { overflow-wrap: anywhere; }
+.gallery figcaption { min-height: 155px; }
+@media (max-width: 1050px) {
+  .hero h1 { font-size: 64px; }
+  .section h2 { font-size: 37px; }
+}
+@media (max-width: 700px) {
+  .hero { min-height: 540px; }
+  .hero h1 { font-size: 44px; }
+  .section h2 { font-size: 30px; }
+  .hero-actions .button { min-width: 0; }
+}

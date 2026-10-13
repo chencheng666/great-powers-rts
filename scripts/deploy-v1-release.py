@@ -21,7 +21,7 @@ def health(port):
         return json.load(response)
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('archive');parser.add_argument('sha256');parser.add_argument('release');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('archive');parser.add_argument('sha256');parser.add_argument('release');parser.add_argument('--updater');args=parser.parse_args()
     if not args.release.replace('-','').isalnum():raise RuntimeError('发布编号无效')
     archive=pathlib.Path(args.archive)
     if hashlib.file_digest(archive.open('rb'),'sha256').hexdigest()!=args.sha256:raise RuntimeError('包校验失败')
@@ -34,7 +34,7 @@ def main():
     backup=BASE/'backups'/args.release
     if backup.exists():raise RuntimeError('备份编号已存在')
     # 既有更新器在停服后备份完整SQLite目录，失败恢复旧双人服务。
-    print(run(['bash',str(pathlib.Path(__file__).with_name('deploy-server-update.sh')),str(archive),args.sha256,args.release]))
+    print(run(['bash',args.updater or str(pathlib.Path(__file__).with_name('deploy-server-update.sh')),str(archive),args.sha256,args.release]))
     stage=BASE/'releases'/args.release
     (backup/'nginx-before.conf').write_bytes(before)
     (backup/'official-before.txt').write_text(str(old_official))
