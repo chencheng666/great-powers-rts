@@ -88,7 +88,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
       serveFile(req,res,file,info,{official:url.pathname.startsWith('/official/')});
     } catch (error) { json(error.code === 'ENOENT' ? 404 : 400, { error:error.code === 'ENOENT' ? '文件不存在' : '请求无效' }); }
   });
-  const wss = new WebSocketServer({ noServer:true, maxPayload:16384, perMessageDeflate:false });
+  const wss = new WebSocketServer({ noServer:true, maxPayload:16384, perMessageDeflate:maxPlayers===6?{serverNoContextTakeover:true,clientNoContextTakeover:true,concurrencyLimit:1,threshold:1024}:false });
   server.on('upgrade', (req, socket, head) => {
     const user = accounts.find(req.headers.cookie);
     if (req.url !== '/battle-socket' || !allowed(req) || !user || peers.size >= 64 && !peers.has(user.id)) { socket.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return; }

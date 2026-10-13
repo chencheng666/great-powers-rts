@@ -1,0 +1,45 @@
+{
+  "scenario": "12s real damage 240 initial units; localhost TCP socket bytesRead, not WAN",
+  "remainingUnits": 89,
+  "uncompressed": {
+    "compress": false,
+    "extensions": "",
+    "frames": 60,
+    "sixWireBytes": {
+      "mean": 707961.3333333334,
+      "p95": 1055511,
+      "max": 1124095
+    },
+    "localEncodeSendReceiveMs": {
+      "mean": 0.6762881833333267,
+      "p95": 1.1507919999999103,
+      "max": 1.9785839999999553
+    },
+    "estimatedMbpsAt5Hz": {
+      "mean": 28.318453333333345,
+      "p95": 42.22044,
+      "max": 44.9638
+    }
+  },
+  "deflate": {
+    "compress": true,
+    "extensions": "permessage-deflate",
+    "frames": 60,
+    "sixWireBytes": {
+      "mean": 90598.78333333334,
+      "p95": 131452,
+      "max": 138602
+    },
+    "localEncodeSendReceiveMs": {
+      "mean": 3.0052604833333136,
+      "p95": 4.624042000000372,
+      "max": 4.886375000000044
+    },
+    "estimatedMbpsAt5Hz": {
+      "mean": 3.6239513333333333,
+      "p95": 5.25808,
+      "max": 5.54408
+    }
+  },
+  "rssMiB": 260.796875
+}
