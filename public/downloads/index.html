@@ -1,3 +1,61 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>大国崛起 · 下载中心</title><style>body{background:#0d181b;color:#dbe7df;font:16px system-ui;max-width:960px;margin:60px auto;padding:24px}h1{font-size:42px}a{color:#77d3bf}section{background:#172a2d;padding:24px;margin:24px 0;border:1px solid #355052;border-radius:12px}.files{display:grid;gap:16px}.file{padding:16px;border:1px solid #355052;word-break:break-all}small{display:block;line-height:1.7;color:#a6bec0}button{background:#21423e;color:white;padding:12px;border:1px solid #68bda7}h2{font-size:22px}</style><h1>大国崛起 · 下载中心</h1><p>把战场装进桌面。内嵌单机资源。0.9.1桌面包使用独立HTTPS/WSS联网窗口；旧0.9.0包未开放桌面联网，请按版本区分。</p><a href="/">在线试玩</a> · <a href="https://github.com/chencheng666/great-powers-rts">源码与构建说明</a><section><h2>桌面发行包</h2><div id="files" class="files">正在读取已发布文件…</div></section><section><h2>安装与兼容</h2><p>Windows：x64安装器包含离线WebView2运行时。macOS：按Intel或Apple Silicon选择；实验包未Apple公证。不要关闭系统安全设置。</p><p>Linux：按x64或ARM64选择，需WebKitGTK 4.1、GTK3及支持WebGL2的显卡/驱动。麒麟、统信UOS仅在满足具体发行版依赖后具备测试条件，未保证所有版本；龙芯/申威未支持。</p><p>单机素材随应用安装，首次安装后无需Vite或Node。0.9.1桌面联网使用 https://43.135.186.21:8443/；旧0.9.0桌面联网仍为待开放说明。单机存档可原生导入/导出，并备份到应用数据目录；不同窗口身份和存档分开。</p></section><script>
-fetch('manifest.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('发行包尚未发布');return r.json()}).then(m=>{const box=document.querySelector('#files');box.replaceChildren();for(const f of m.files||[]){const card=document.createElement('div');card.className='file';const a=document.createElement('a');a.textContent=f.label;const u=new URL(f.name,location.href);const local=u.origin===location.origin&&u.pathname.startsWith('/downloads/');const github=u.protocol==='https:'&&u.hostname==='github.com'&&['desktop-v0.9.0','desktop-v0.9.1'].some(tag=>u.pathname.startsWith(`/chencheng666/great-powers-rts/releases/download/${tag}/`));if(!local&&!github)continue;a.href=u.href;if(local)a.download=f.name;else{a.target='_blank';a.rel='noopener noreferrer';}const meta=document.createElement('small');meta.textContent=`${(f.size/1024/1024).toFixed(1)} MB · SHA256 ${f.sha256} · ${f.status}`;card.append(a,meta);box.append(card)}if(!box.children.length)box.textContent='暂无通过校验的发行包。';}).catch(()=>{document.querySelector('#files').textContent='发行包尚未发布，请稍后查看；当前可以使用在线试玩。'});
-</script></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="大国崛起 1.0 下载中心，离线单机与各平台桌面安装包。">
+  <title>大国崛起 1.0 · 下载中心</title>
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,-apple-system,"Noto Sans SC",sans-serif;background:#12181a;color:#e7ece8}
+    *{box-sizing:border-box}body{margin:0}a{color:#9de0d5;text-decoration:none}a:hover{text-decoration:underline}
+    header{border-bottom:1px solid #344349;background:#172124;padding:18px max(24px,calc((100vw - 1120px)/2));display:flex;align-items:center;justify-content:space-between;gap:24px}
+    header b{font-size:17px}nav{display:flex;gap:22px;font-size:13px}
+    main{max-width:1120px;margin:auto;padding:48px 24px 72px}
+    .eyebrow{color:#e4b66e;font-size:12px;font-weight:700}
+    h1{font-size:clamp(32px,5vw,54px);line-height:1.15;margin:14px 0 18px}
+    .intro{max-width:760px;color:#b9c9c5;line-height:1.8;margin-bottom:35px}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;margin:27px 0 54px}.actions a{display:inline-block;border:1px solid #72978f;padding:11px 18px;color:#f2f5ed}
+    .actions a:first-child{background:#1d524f;border-color:#4bafa3}
+    section{border-top:1px solid #344349;padding:28px 0 22px}
+    section h2{font-size:23px;margin:0 0 14px}section>p{color:#aabbb7;font-size:14px;line-height:1.8;max-width:870px}
+    .file{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 20px;padding:17px 0;border-bottom:1px solid #29383c}
+    .file a{font-weight:650;font-size:15px;overflow-wrap:anywhere}.file small{grid-column:1/-1;color:#9fb4ae;line-height:1.65;overflow-wrap:anywhere}
+    .file .size{color:#e4b66e;font-size:13px;white-space:nowrap}
+    details{border-top:1px solid #344349;padding-top:24px;margin-top:28px}summary{cursor:pointer;font-size:17px;font-weight:650}
+    .notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:25px;margin-top:25px}
+    .notes p{line-height:1.8;color:#aec0b9;font-size:13px}footer{border-top:1px solid #344349;color:#80958f;padding:26px 24px;font-size:12px;text-align:center}
+    @media(max-width:640px){header{padding:16px 20px}nav{gap:12px}main{padding:32px 20px}.notes{grid-template-columns:1fr}.file{grid-template-columns:1fr}.file .size{grid-row:2}}
+  </style>
+</head>
+<body>
+<header><b>大国崛起 <span style="color:#e4b66e">1.0</span></b><nav><a href="/official/">官网</a><a href="/">在线试玩</a><a href="https://github.com/chencheng666/great-powers-rts">源码</a></nav></header>
+<main>
+  <div class="eyebrow">PLAYER RELEASE / 2026.10.13</div>
+  <h1>选择你的战场。</h1>
+  <p class="intro">免安装包完整解压后打开 PLAY.html，即可离线单机。桌面文件按系统与架构选择；联网使用独立窗口，六方对战仍是实验入口。升级前分别导出战局和荣誉备份。</p>
+  <div class="actions"><a href="/downloads/packages/Great-Powers-RTS-v1.0.0.zip">下载免安装单机 ZIP ↓</a><a href="https://github.com/chencheng666/great-powers-rts/releases/tag/v1.0.0">查看 GitHub 1.0 发行页 ↗</a></div>
+  <section><h2>1.0 发行文件</h2><p>下方校验值来自公开发行记录。CI 已完成构建；各系统实际运行仍受硬件、驱动和系统依赖影响。</p><div id="current">正在读取文件…</div></section>
+  <details><summary>查看历史 0.9 桌面文件</summary><div id="archive"></div></details>
+  <section><h2>安装与兼容</h2><div class="notes"><p>macOS 按 Intel / Apple Silicon 选择 DMG 或应用压缩包；目前未完成 Apple 公证。Windows x64 安装器未签名。请按系统正常的安全提示检查文件与校验值。</p><p>Linux 按 x64 / ARM64 选择 DEB 或 AppImage，需要 WebKitGTK 4.1、GTK3 和支持 WebGL2 的图形环境。麒麟、统信 UOS 需对应机器实测；目前没有龙芯、申威版本。</p></div><p>服务器位于硅谷，下载速度受网络线路影响。也可从 GitHub 发行页获取同一版本；国内镜像仍在规划中。</p></section>
+</main>
+<footer>大国崛起 · 原创开源即时战略 · 1.0 玩家共建版</footer>
+<script>
+fetch("manifest.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("清单暂不可用");return r.json()}).then(m=>{
+  const current=document.querySelector("#current"),archive=document.querySelector("#archive");current.replaceChildren();archive.replaceChildren();
+  for(const f of m.files||[]){
+    const u=new URL(f.name,location.href);
+    const local=u.origin===location.origin&&u.pathname.startsWith("/downloads/packages/");
+    const github=u.protocol==="https:"&&u.hostname==="github.com"&&["v1.0.0","desktop-v0.9.1","desktop-v0.9.0"].some(tag=>u.pathname.startsWith("/chencheng666/great-powers-rts/releases/download/"+tag+"/"));
+    if(!local&&!github)continue;
+    const item=document.createElement("div"),a=document.createElement("a"),size=document.createElement("span"),meta=document.createElement("small");
+    item.className="file";a.href=u.href;a.textContent=f.label;if(local)a.download=u.pathname.split("/").at(-1);else{a.target="_blank";a.rel="noopener noreferrer"}
+    size.className="size";size.textContent=(f.size/1048576).toFixed(1)+" MB";
+    meta.textContent="SHA256 "+f.sha256+" · "+f.status;item.append(a,size,meta);
+    (u.pathname.includes("v1.0.0")?current:archive).append(item);
+  }
+  if(!current.children.length)current.textContent="1.0 文件暂不可用，请查看 GitHub 发行页。";
+  if(!archive.children.length)archive.textContent="暂无历史文件。";
+}).catch(()=>{document.querySelector("#current").textContent="下载清单读取失败，请前往 GitHub 发行页。"});
+</script>
+</body>
+</html>

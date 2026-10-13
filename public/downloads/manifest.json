@@ -1,8 +1,71 @@
 {
   "version": "1.0.0",
   "releaseTag": "v1.0.0",
-  "desktopOnline": "0.9.1使用可信HTTPS/WSS；0.9.0旧桌面包仍待更新",
+  "desktopOnline": "1.0使用可信HTTPS/WSS；六方实验入口单独运行，历史0.9.1/0.9.0仍保留",
   "files": [
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great.Powers_1.0.0_aarch64.app.tar.gz",
+      "label": "GitHub 1.0 · macOS Apple Silicon 压缩应用 · Great.Powers_1.0.0_aarch64.app.tar.gz",
+      "size": 57277481,
+      "sha256": "47f6b47d34b891d82e67122ad6e5906ccf9bb2f8e4b813d01cc234efee6d2571",
+      "status": "1.0公开发行资产；SHA256来自GitHub发行API。构建通过，尚未在全部对应硬件实测。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great.Powers_1.0.0_aarch64.AppImage",
+      "label": "GitHub 1.0 · Linux ARM64 AppImage · Great.Powers_1.0.0_aarch64.AppImage",
+      "size": 133888520,
+      "sha256": "85463080fa36b4236df91522aa37d1d761f2f5638060e57932b092a471f2e5b7",
+      "status": "1.0公开发行资产；SHA256来自GitHub发行API。构建通过，尚未在全部对应硬件实测。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great.Powers_1.0.0_aarch64.dmg",
+      "label": "GitHub 1.0 · macOS Apple Silicon DMG · Great.Powers_1.0.0_aarch64.dmg",
+      "size": 57350074,
+      "sha256": "6c7020102a37697e0cc8d2aa0d4f8a841c321ec8a94a98b7bafb14b270c6c37d",
+      "status": "1.0公开发行资产；SHA256来自GitHub发行API。构建通过，尚未在全部对应硬件实测。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great.Powers_1.0.0_amd64.AppImage",
+      "label": "GitHub 1.0 · Linux x64 AppImage · Great.Powers_1.0.0_amd64.AppImage",
+      "size": 135739896,
+      "sha256": "8a74ea30347f892b9c2e72acd8708397f786ac43161eecd1affcd8d7f9324fc8",
+      "status": "1.0公开发行资产；SHA256来自GitHub发行API。构建通过，尚未在全部对应硬件实测。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great.Powers_1.0.0_amd64.deb",
+      "label": "GitHub 1.0 · Linux x64 DEB · Great.Powers_1.0.0_amd64.deb",
+      "size": 57364542,
+      "sha256": "359147efed9b72f2fca4ecb38c24a0daf5e2d218d144a5f75e46a99684ee297e",
+      "status": "1.0公开发行资产；SHA256来自GitHub发行API。构建通过，尚未在全部对应硬件实测。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great.Powers_1.0.0_arm64.deb",
+      "label": "GitHub 1.0 · Linux ARM64 DEB · Great.Powers_1.0.0_arm64.deb",
+      "size": 57405000,
+      "sha256": "a6f3d206235056bb683eb06b24d1dd2eea296229dc8a03020186f53c172c9faa",
+      "status": "1.0公开发行资产；SHA256来自GitHub发行API。构建通过，尚未在全部对应硬件实测。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great.Powers_1.0.0_x64-setup.exe",
+      "label": "GitHub 1.0 · Windows x64 安装器 · Great.Powers_1.0.0_x64-setup.exe",
+      "size": 273388536,
+      "sha256": "6d8abb033aa35cb21b0aebe899f80e899b4dfd594fe3a60c93d55580b327290b",
+      "status": "1.0公开发行资产；SHA256来自GitHub发行API。构建通过，尚未在全部对应硬件实测。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great.Powers_1.0.0_x64.app.tar.gz",
+      "label": "GitHub 1.0 · macOS Intel 压缩应用 · Great.Powers_1.0.0_x64.app.tar.gz",
+      "size": 57798946,
+      "sha256": "74b10d5ac4433de9d4cd61fbf315f89bd65771bb12aabfcd8737663fb7bf5cb7",
+      "status": "1.0公开发行资产；SHA256来自GitHub发行API。构建通过，尚未在全部对应硬件实测。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great.Powers_1.0.0_x64.dmg",
+      "label": "GitHub 1.0 · macOS Intel DMG · Great.Powers_1.0.0_x64.dmg",
+      "size": 57871284,
+      "sha256": "f184cd32969fb3c41795f7653b6f446bfc9ed4eb31967f7415420d77b44be414",
+      "status": "1.0公开发行资产；SHA256来自GitHub发行API。构建通过，尚未在全部对应硬件实测。"
+    },
     {
       "name": "packages/Great-Powers-RTS-v1.0.0.zip",
       "label": "1.0免安装离线单机包 · 完整解压打开PLAY.html",

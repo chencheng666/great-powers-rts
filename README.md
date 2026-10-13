@@ -1,10 +1,10 @@
 # 大国崛起
 
-原创、非官方的红警风格浏览器即时战略游戏。使用 JavaScript、Three.js 和 Blender，提供五阵营、七张地图、单机 AI 遭遇战、昵称游客双人联机，以及陆海空与现代支援单位。不是《红色警戒》官方续作，也不是其代码或美术资源的移植。
+原创、非官方的红警风格即时战略游戏。使用 JavaScript、Three.js 和 Blender，提供五阵营、八张地图、单机 AI 遭遇战、昵称游客双人联机与独立六方实验战区，以及陆海空与现代支援单位。不是《红色警戒》官方续作，也不是其代码或美术资源的移植。
 
 ![升级后的作战部署首页，背景为原创插画](docs/images/visual-menu-1600.png)
 
-[下载离线试玩包](https://github.com/chencheng666/great-powers-rts/releases/latest) · [掘金文章](docs/juejin-article.md) · [开发清单](ROADMAP.md) · [反馈问题](https://github.com/chencheng666/great-powers-rts/issues)
+[下载 1.0 离线试玩包](https://github.com/chencheng666/great-powers-rts/releases/tag/v1.0.0) · [官网](https://43.135.186.21:8443/official/) · [反馈问题](https://github.com/chencheng666/great-powers-rts/issues)
 
 ## 1.0 玩家共建版（2026-10-13）
 
@@ -18,7 +18,7 @@
 - 下载中心：https://43.135.186.21:8443/downloads/
 - 1.0离线包：https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great-Powers-RTS-v1.0.0.zip
 
-本轮发布正在验收，实际上线状态见[1.0发行说明](docs/releases/v1.0.0.md)。[新留言筛选](docs/公众号反馈筛选-20261013.md) · [公众号图文草稿](docs/wechat-v1-20261013/公众号文章.md)。307项测试通过，六方密集交战仍有性能边界；具体国产系统需实机验证。
+1.0 源码已合入 main，GitHub Release、离线包、九项桌面资产、官网和腾讯云双人/六方入口均已发布。[发行说明](docs/releases/v1.0.0.md) · [服务器验收](docs/服务器发布验收-20261013.md) · [新留言筛选](docs/公众号反馈筛选-20261013.md) · [公众号图文草稿](docs/wechat-v1-20261013/公众号文章.md)。307项测试通过；六方密集交战仍有性能边界，具体国产系统需实机验证。
 
 ## 历史：0.9.1桌面实验版
 
@@ -38,7 +38,7 @@ AI 根据已侦察的空军、无人机、装甲和海军威胁补充反制装�
 
 本轮源码、离线包与公网服务器均已升级到 v0.8.0。[版本说明](docs/releases/v0.8.0.md) · [反馈筛选与验收记录](docs/公众号反馈续查-20261009.md) · [服务器发布验收](docs/服务器发布验收-20261009.md)。
 
-最新离线 ZIP：https://github.com/chencheng666/great-powers-rts/releases/download/v0.8.0/Great-Powers-RTS-v0.8.0.zip
+历史 v0.8.0 离线 ZIP：https://github.com/chencheng666/great-powers-rts/releases/download/v0.8.0/Great-Powers-RTS-v0.8.0.zip
 
 完整解压后打开 `PLAY.html`，输入昵称即可单机作战，无需注册。更新前请分别导出战局与荣誉备份；离线文件本身不提供联机服务，局域网需按下文启动完整源码中的服务。
 
@@ -329,4 +329,4 @@ Tauri 内嵌单机素材，支持原生全屏、系统存档导入/导出和应�
 
 构建目标为 macOS Apple Silicon/Intel、Windows x64、Linux x64/ARM64，具体构建与实机结果见发行记录，不能仅凭工作流配置视作全部平台可运行。Linux 需要 WebKitGTK 4.1、GTK3 和支持 WebGL2 的 GPU/驱动；麒麟、UOS 尚未实机验证，必须按具体系统版本与架构核验依赖。未提供龙芯/申威支持。
 
-macOS 实验包采用 ad-hoc 签名，未经 Apple 公证；Windows 未代码签名。下载请核对 SHA256，不关闭系统安全保护。现有服务器下载中心将在实际文件校验完成后更新：<http://43.135.186.21:8088/downloads/>。
+macOS 实验包采用 ad-hoc 签名，未经 Apple 公证；Windows 未代码签名。下载请核对 SHA256，不关闭系统安全保护。当前 1.0 下载中心：<https://43.135.186.21:8443/downloads/>。
