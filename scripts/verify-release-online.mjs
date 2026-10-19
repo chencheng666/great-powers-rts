@@ -42,8 +42,8 @@ for(const count of [2,6]){
   }
 }
 const js=(await readdir('dist/assets')).filter(f=>/^index-.*\.js$/.test(f));if(js.length!==1)throw Error('不能唯一确定网页入口');
-const manifest=JSON.parse(await readFile('dist/downloads/manifest.json','utf8')),archive=manifest.files.find(f=>f.name===`Great-Powers-RTS-v${GAME_VERSION}.zip`);
-for(const path of ['/',`/assets/${js[0]}`,'/official/','/downloads/manifest.json',`/downloads/packages/${archive.name}`]){
+const manifest=JSON.parse(await readFile('dist/downloads/manifest.json','utf8')),archive=manifest.files.find(f=>f.name===`packages/Great-Powers-RTS-v${GAME_VERSION}.zip`);
+for(const path of ['/',`/assets/${js[0]}`,'/official/','/downloads/manifest.json',`/downloads/${archive.name}`]){
   const local=path==='/'?'dist/index.html':path==='/official/'?'dist/official/index.html':'dist'+path;
   const response=await fetch(origin+path,{signal:AbortSignal.timeout(180000)});if(!response.ok)throw Error('下载或网页请求失败：'+path);
   const sha=b=>createHash('sha256').update(b).digest('hex'),remote=sha(Buffer.from(await response.arrayBuffer())),expected=sha(await readFile(local));
