@@ -4,6 +4,8 @@ import { validBattleId } from './battle-identity.js';
 import { battlefieldMap, resourceLayout, RESOURCE_TYPES } from './battlefield-expansion.js';
 import { INTELLIGENCE_RULES } from './intelligence.js';
 import { validateBattleStats } from './battle-report.js';
+import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
+import { DETERRENCE as R } from './deterrence-rules.js';
 
 export const SAVE_VERSION = 1;
 export const SAVE_LIMIT = 8 * 1024 * 1024;
@@ -32,6 +34,8 @@ export function validateSave(save) {
   if(save.version===2&&(config?.playerCount!==6||MAPS[config?.mapId]?.maxPlayers!==6))invalid();
   if (!object(s) || !object(config) || !known(MAPS, config.mapId) || !known(AI_DIFFICULTIES, config.difficulty) || !['quick', 'annihilation', 'control'].includes(config.victoryMode) || !finite(save.savedAt) || !finite(s.time) || s.time < 0) invalid();
   if (config.economyMode !== undefined && !['mining', 'convoy'].includes(config.economyMode)) invalid();
+  if(config.nuclearEnabled!==undefined&&(typeof config.nuclearEnabled!=='boolean'||config.nuclearEnabled&&config.mapId!=='strategic'))invalid();
+  if(s.pendingNuclear!==undefined&&(typeof s.pendingNuclear!=='boolean'||s.pendingNuclear&&(!config.nuclearEnabled||!s.pendingAbility)))invalid();
   if (config.battleId !== undefined && !validBattleId(config.battleId)) invalid();
   if(config.battlefieldScale!==undefined&&![1,1.5].includes(config.battlefieldScale))invalid();
   if (SNAPSHOT_FIELDS.some(key => !Object.hasOwn(s, key))) invalid();
@@ -43,6 +47,9 @@ export function validateSave(save) {
     if (!object(player) || player.side !== side || !known(FACTIONS, player.faction) || !['credits', 'abilityCharge', 'abilityCooldown', 'shieldUntil', 'controlScore', 'unitCount', 'aiPlanIndex', 'aiUnitCount', 'aiAirUnitCount', 'aiNavyUnitCount', 'aiEngineerRetryAt', 'aiScoutRetryAt', 'aiGhostRetryAt'].every(key => finite(player[key])) || player.credits < 0) invalid();
     if(count===6&&(!["human","ai"].includes(player.controlType)||typeof player.eliminated!=="boolean"))invalid();
     checkProduction(player.buildQueue, BUILDINGS);
+    if(player.nuclearCharge!==undefined&&(!finite(player.nuclearCharge)||player.nuclearCharge<0||player.nuclearCharge>R.charge))invalid();
+    if(player.nuclearSpent!==undefined&&typeof player.nuclearSpent!=='boolean')invalid();
+    if(player.nuclearPending!==undefined&&player.nuclearPending!==null){const n=player.nuclearPending,w=MAPS[config.mapId].world||WORLD;if(!config.nuclearEnabled||player.nuclearSpent||!object(n)||!Number.isSafeInteger(n.sourceId)||!finite(n.launchAt)||n.launchAt<s.time||n.launchAt>s.time+R.prepare+.01||!finite(n.x)||!finite(n.y)||n.x<0||n.y<0||n.x>w.width||n.y>w.height)invalid();}
     for (const key of ['satelliteUntil', 'satelliteReadyAt']) if (player[key] !== undefined && (!finite(player[key]) || player[key] < 0)) invalid();
     if(player.cyberCharge!==undefined&&(!finite(player.cyberCharge)||player.cyberCharge<0||player.cyberCharge>INTELLIGENCE_RULES.cyberCharge))invalid();
     if(player.cyberLockedUntil!==undefined&&(!finite(player.cyberLockedUntil)||player.cyberLockedUntil<0||player.cyberLockedUntil>s.time+INTELLIGENCE_RULES.cyberDuration+.01))invalid();
@@ -69,10 +76,12 @@ export function validateSave(save) {
         if (!Array.isArray(entity.path) || entity.path.some(p => !point(p)) || !Array.isArray(entity.passengers) || entity.passengers.some(id => !Number.isSafeInteger(id)) || !['pathTimer', 'stunUntil', 'turretAngle', 'cargo', 'cargoValue', 'rearmProgress', 'temporaryUntil', 'movePulse', 'heat', 'deployProgress'].every(key => finite(entity[key]))) invalid();
         checkOrder(entity.order); checkOrder(entity.resumeOrder);
         const d = UNITS[entity.type];
+        if(entity.swarmParentId!==undefined&&(!Number.isSafeInteger(entity.swarmParentId)||entity.swarmParentId<1||entity.temporaryUntil<=s.time||!['swarmScout','swarmDecoy','drone'].includes(entity.type)))invalid();
         if (entity.battery !== undefined && (!isLunarRobot(MAPS[config.mapId], entity.type) || !finite(entity.battery) || entity.battery < 0 || entity.battery > ROBOT_ENERGY.capacity)) invalid();
         if (entity.ammo !== null && (!Number.isSafeInteger(entity.ammo) || entity.ammo < 0 || !d.ammo || entity.ammo > d.ammo)) invalid();
         if (d.stock && (!finite(entity.stock) || entity.stock < 0 || entity.stock > d.stock)) invalid();
         if (entity.type === 'supply' && entity.autoSupply !== undefined && typeof entity.autoSupply !== 'boolean') invalid();
+        if (entity.autoDrone !== undefined && (!supportsDroneAutonomy(entity) || typeof entity.autoDrone !== 'boolean' || !Object.hasOwn(DRONE_ROLES, entity.droneRole))) invalid();
         if (UNITS[entity.type].tags.includes('logistics')) {
           const f = entity.freight;
           if (!object(f) || !point(f.entry) || f.entry.x < 0 || f.entry.x > world.width || f.entry.y < 0 || f.entry.y > world.height || !['inbound', 'unloading', 'outbound'].includes(f.phase) || !finite(f.progress) || f.progress < 0 || !finite(f.value) || f.value < 0 || f.value > 900 || f.homeId !== null && !Number.isSafeInteger(f.homeId)) invalid();
@@ -130,7 +139,8 @@ export function validateSave(save) {
     for (const key of ['visible', 'explored']) if (!Array.isArray(fog[key]) || fog[key].length !== fog.cols * fog.rows || fog[key].some(value => typeof value !== 'boolean')) invalid();
   }
   if (!Array.isArray(s.selected) || s.selected.some(id => !Number.isSafeInteger(id)) || !Array.isArray(s.projectiles) || s.projectiles.length > 10000 || !Number.isSafeInteger(s.nextProjectileId) || ![s.aiTimer, s.aiWaveTimer, s.fogTimer].every(finite) || s.pendingBuilding !== null && !known(BUILDINGS, s.pendingBuilding) || typeof s.pendingAbility !== 'boolean') invalid();
-  for (const projectile of s.projectiles) if (!object(projectile) || !['x', 'y', 'startX', 'startY', 'toX', 'toY', 'angle', 'age', 'amount', 'speed', 'hp', 'jam'].every(key => finite(projectile[key])) || projectile.speed <= 0 || !owners.includes(projectile.owner) || !['wing', 'torpedo', 'rocket', 'missile', 'loitering', 'bomb'].includes(projectile.kind)) invalid();
+  for (const projectile of s.projectiles) if (!object(projectile) || !['x', 'y', 'startX', 'startY', 'toX', 'toY', 'angle', 'age', 'amount', 'speed', 'hp', 'jam'].every(key => finite(projectile[key])) || projectile.speed <= 0 || !owners.includes(projectile.owner) || !['nuclear','ballistic', 'wing', 'torpedo', 'rocket', 'missile', 'loitering', 'bomb'].includes(projectile.kind)) invalid();
+  if(s.projectiles.some(p=>p.kind==='nuclear'&&(!config.nuclearEnabled||p.age<0||p.age>R.flight+.1||p.toX<0||p.toY<0||p.toX>world.width||p.toY>world.height||p.hp>R.projectileHP)))invalid();
   for (const projectile of s.projectiles) for (const key of ['sourceHeight', 'targetHeight', 'fallDuration']) if (projectile[key] !== undefined && (!finite(projectile[key]) || key === 'fallDuration' && (projectile[key] <= 0 || projectile[key] > 10))) invalid();
   for (const projectile of s.projectiles) if(projectile.flightRole!==undefined&&!['air-to-air','air-to-ground','surface'].includes(projectile.flightRole))invalid();
   if (save.view !== undefined && !object(save.view)) invalid();
@@ -152,7 +162,7 @@ export function parseSave(text) {
 export function createSave(game, view = {}, savedAt = Date.now()) {
   if (!game?.running || game.winner !== null) throw new Error('只能保存尚未结束的战局');
   const difficulty = Object.entries(AI_DIFFICULTIES).find(([, value]) => value === game.difficulty)?.[0];
-  const save = { format: 'great-powers-rts', version: game.playerCount===6?2:SAVE_VERSION, savedAt, config: { ...(game.playerCount===6?{playerCount:6}:{}),battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])), logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
+  const save = { format: 'great-powers-rts', version: game.playerCount===6?2:SAVE_VERSION, savedAt, config: { ...(game.playerCount===6?{playerCount:6}:{}),nuclearEnabled:!!game.nuclearEnabled,battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])),pendingNuclear:!!game.pendingNuclear, logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
   validateSave(save);
   return JSON.parse(JSON.stringify(save));
 }

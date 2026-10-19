@@ -1,4 +1,5 @@
 import {sixPlayerMap} from './six-player-map.js';
+import { STRATEGIC_UNITS, strategicMap } from './strategic-data.js';
 export const WORLD = { width: 2240, height: 1440, cell: 40, fog: 80 };
 export const CORE_BUILDINGS = ['hq', 'refinery', 'barracks', 'factory', 'armory', 'airfield', 'dock'];
 export const PRODUCERS = ['barracks', 'factory', 'armory', 'airfield', 'dock'];
@@ -42,7 +43,7 @@ export const UNITS = {
   engineer: { name: '工程师', cost: 220, time: 12, hp: 80, speed: 76, range: 0, damage: 0, cooldown: 1, sight: 230, icon: 'wrench', producer: 'barracks', tags: ['infantry', 'engineer'], desc: '右键油井、信标或能源仓占领，成功后驻留；可回收物资。右键己方被潜入设施，停驻 3 秒拆弹，工程师保留。' },
   scout: { name: '间谍', cost: 320, time: 16, hp: 75, speed: 104, range: 0, damage: 0, cooldown: 1, sight: 480, icon: 'binoculars', producer: 'barracks', tags: ['infantry', 'scout'], desc: '无武装，480 视野与 260 范围反隐；右键可见敌方设施一次性潜入，45 秒后引爆。敌方工程师可在 3 秒内拆弹；不伪装敌军，不隐身。' },
   tank: { name: '主战坦克', cost: 480, time: 20, hp: 380, speed: 62, range: 205, damage: 38, cooldown: 1.3, sight: 280, icon: 'shield', producer: 'factory', tags: ['armor'], desc: '重装核心，克制步兵和防空单位。' },
-  drone: { name: '攻击无人机', cost: 260, time: 13, hp: 130, speed: 116, range: 180, damage: 20, cooldown: 0.85, sight: 330, icon: 'scan', producer: 'armory', tags: ['drone', 'air'], desc: '机动灵活，对装甲目标有额外伤害。' },
+  drone: { name: '攻击无人机', cost: 260, time: 13, hp: 130, speed: 116, range: 180, damage: 20, cooldown: 0.85, sight: 330, icon: 'scan', producer: 'armory', tags: ['drone', 'air'], desc: '自主基地警戒、任务结束返航，低血低弹提前整备；手动移动与停止优先。对装甲额外伤害，兵工厂或机场付费补给。' },
   ghost: { name: '隐形侦察无人机', cost: 340, time: 18, hp: 85, speed: 124, range: 0, damage: 0, cooldown: 1, sight: 450, icon: 'eye-off', producer: 'armory', requires: 'radar', faction: 'middleeast', tags: ['drone', 'air', 'scout', 'stealth'], desc: '新月专属；深入敌后提供视野，接近侦察兵、防空车或雷达信标会暴露。' },
   aa: { name: '防空车', cost: 360, time: 17, hp: 230, speed: 72, range: 250, damage: 22, cooldown: 0.8, sight: 320, icon: 'radar', producer: 'armory', requires: 'radar', tags: ['vehicle', 'anti-air'], desc: '防空与弹药拦截，不能对地；需要装甲或步兵护卫。' },
   fighter: { name: '制空战机', cost: 620, time: 24, hp: 215, speed: 210, range: 275, damage: 37, cooldown: 0.85, sight: 470, ammo: 9, rearmTime: 8, icon: 'plane', producer: 'airfield', tags: ['air', 'jet', 'anti-air'], desc: '优先制空；可对地对舰，但伤害仅基础的35%；各任务共用有限弹药，返场整备。' },
@@ -87,7 +88,10 @@ export const UNIT_ORDER = ['rifle', 'engineer', 'scout', 'tank', 'apc', 'supply'
 UNIT_ORDER.push('railgun', 'aegis', 'relay');
 UNIT_ORDER.push('landing', 'bomber', 'airlift');
 UNIT_ORDER.push('navalFighter', 'navalStrike');
-UNIT_ORDER.push('ewPlane');
+Object.assign(UNITS, STRATEGIC_UNITS);
+BUILDINGS.nuclearSilo={name:'战略威慑发射井',cost:2400,time:70,hp:950,power:-100,size:90,icon:'radiation',requires:'lab',map:'strategic',nuclear:true,desc:'仅开局启用核威慑规则可造；240 秒准备，4500 资金，8 秒可中止准备与20 秒公开飞行预警，每方每局一次实际发射。需雷达、实验室和供电；准备期摧毁设施或断网可取消，投入资金不退。区域反导、分散和疏散可反制，友军亦受损。'};
+BUILD_ORDER.push('nuclearSilo');
+UNIT_ORDER.push('ewPlane', ...Object.keys(STRATEGIC_UNITS).filter(type => STRATEGIC_UNITS[type].producer));
 export const supportsMap = (required, mapId) => !required || required === mapId || required === 'ocean' && mapId === 'archipelago';
 UNITS.carrier.capacity = 3;
 UNITS.carrier.desc = '可驻泊三架自行生产的兼容舰载机；停航着舰、维修补弹、弹射起飞。编入真实舰载机后不再同时出动自带攻击编组，需反潜护卫。';
@@ -101,6 +105,7 @@ export const ORE_LAYOUT = [
 ];
 
 export const MAPS = {
+  strategic: strategicMap(),
   sixfront: sixPlayerMap(),
   archipelago: {
     name: '跨海登陆战', sector: '战区 07 · 无桥海战', world: { width: 3520, height: 2240, cell: 40, fog: 80 },

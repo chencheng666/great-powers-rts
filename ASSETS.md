@@ -20,9 +20,10 @@
 | 子午环阵地表 | `assets/meridian-regolith-v2.png`；内置 AI 图像生成工具制作的细颗粒俯视月壤纹理，旧 `v1` 保留 | 2026-10-04 更新；完整提示词见 `assets/asset-prompts.json`；道路、掩体、反应堆和基地由程序及三维模型叠加 |
 | 配乐 | `assets/audio/frontline-sequence.m4a`；程序编曲、合成的循环配乐《前线序列》 | `scripts/generate-audio.mjs`，约 74 秒，不使用官方游戏音乐 |
 | 战场音效 | `src/audio.js` 中 Web Audio 振荡器、噪声与滤波合成 | 修改频率、包络和滤波参数 |
-| 中文应答 | `src/audio-data.js` 中 67 条原创台词，包含受袭、潜入／拆弹设施名称与网络预警 | 优先使用设备中文 Speech Synthesis，不分发系统语音录音 |
+| 中文应答 | `src/audio-data.js` 中 73 条原创台词，包含受袭、潜入／拆弹设施名称、网络与战略威慑预警 | 优先使用设备中文 Speech Synthesis，不分发系统语音录音 |
 | 离线兜底播报 | `assets/audio/portable/*.wav` 与 `manifest.json` | `scripts/generate-portable-voices.mjs` 使用 eSpeak NG 1.52.0 合成原创台词；缺少中文音色或播报失败时使用。声音为机械合成，不分发 eSpeak NG 引擎、库、词典或第三方声音模型 |
-| 内置女声 | `assets/audio/portable/female-*.wav`，67 条 | 普通话 `cmn+f3` 合成音色，与男声使用同一套原创台词，不是真人配音；无需系统安装女声 |
+| 内置女声 | `assets/audio/portable/female-*.wav`，73 条 | 普通话 `cmn+f3` 合成音色，与男声使用同一套原创台词，不是真人配音；无需系统安装女声 |
+| 战略装备与威慑特效 | `src/strategic-models.js`、`src/deterrence-models.js`、`src/deterrence-fx.js` | 原创 Three.js 程序模型：独立发射架、反导车、反侦察站、直升机、F-22、任务母机、双开门发射井；有界烟尘和冲击环。不含真实武器精确结构、外部付费模型或官方游戏素材 |
 | 常规人物与资源模型 | `src/personnel-models.js` | 原创 Three.js 程序建模：比例重制的突击兵、工程师、黑西装间谍及三类资源实体；按材质合批，双腿保留独立步态，不是现实装备精确复刻 |
 | 程序化工艺材质与装备细化 | `src/model-craft.js`、`src/equipment-finishing.js` | 原创代码生成涂层、织物、橡胶的 128×128 颜色／法线／粗糙度贴图；中空曲面履带、分节履带板、轮轴、炮口、喷口与座舱框。保留 UV 并按材质合批，不依赖 AI 工具或外部模型下载 |
 | 港口、设施细节与弹坑 | `src/community-visuals.js`、`src/realistic-fx.js` | 原创 Three.js 三维长码头与装卸设备；机场等设施的屋面、格栅、标线合批细节；不规则焦痕和低矮碎石。舰船海军灰材质与陆地迷彩分域，不使用其他游戏模型或贴图 |

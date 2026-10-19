@@ -87,6 +87,18 @@ test('九个混合单位在三张地图行进并集结，不互相堵死或挤�
   }
 });
 
+test('五辆坦克集结后全部停稳，不在已就位友军前反复绕圈', () => {
+  const game = quietGame('valley');
+  const units = Array.from({ length: 5 }, (_, index) => game.addUnit(0, 'tank', 580 + index * 75, 400));
+  game.selected = units.map(unit => unit.id);
+  game.command(1100, 400);
+  for (let i = 0; i < 1000; i++) game.update(.05);
+  assert.ok(units.every(unit => unit.order === null), '全部单位应到达各自编队位置');
+  const positions = units.map(unit => ({ x: unit.x, y: unit.y }));
+  for (let i = 0; i < 200; i++) game.update(.05);
+  assert.ok(units.every((unit, index) => distance(unit, positions[index]) < 1), '就位后不应继续抖动或绕圈');
+});
+
 test('后车遇到慢行前车主动绕行，不被碰撞分离反复推回', () => {
   const game=quietGame('valley'),front=game.addUnit(0,'tank',690,350),rear=game.addUnit(0,'tank',620,350);
   front.jammedUntil=100;for(const u of [front,rear])u.order={type:'move',x:960,y:350};

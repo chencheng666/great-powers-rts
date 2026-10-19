@@ -60,8 +60,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
-          releaseName: '大国崛起 v__VERSION__ 玩家共建版'
-          releaseBody: '1.0正式版本：浏览器、离线单机与Tauri桌面包。HTTPS双人联机，独立六方实验入口，真人与AI混合席位。Mac未Apple公证，Windows未代码签名；Linux需要WebKitGTK 4.1和WebGL2，麒麟/UOS及具体硬件须实机验证。下载后请核对SHA256。'
+          releaseName: '大国崛起 v__VERSION__ 战略威慑更新'
+          releaseBody: '新增战略纵深、现代装备模型、异构蜂群与默认关闭的核威慑规则。联机启用核规则需要双方明确确认；准备、预警、反导和疏散形成完整反制。浏览器、离线单机与Tauri桌面包，双人与独立六方实验入口。Mac未Apple公证，Windows未代码签名；Linux需要WebKitGTK 4.1和WebGL2，麒麟/UOS及具体硬件须实机验证。它是走向2.0的一次更新，不代表全部路线图完成。'
           releaseDraft: true
           prerelease: false
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} -- --locked

@@ -3,7 +3,7 @@ import { MAPS, WORLD } from './data.js';
 
 export function battlefieldMap(mapId, scale = 1) {
   const source=MAPS[mapId],world=source.world||WORLD;
-  if(scale===1||source.maxPlayers===6)return source;
+  if(scale===1||source.maxPlayers===6||source.fixedScale)return source;
   if(scale!==1.5)throw new Error('不支持的战场尺寸');
   const rect=r=>Object.fromEntries(Object.entries(r).map(([k,v])=>[k,typeof v==='number'?v*scale:v]));
   const sites=values=>values.map(v=>({...v,x:v.x*scale,y:v.y*scale}));
@@ -18,6 +18,7 @@ export const RESOURCE_TYPES = {
 
 export function resourceLayout(map) {
   if(map.maxPlayers===6)return sixResources();
+  if(map.strategic)return [['cache',1280,1120],['salvage',2240,2640],['depot',2520,1360],['depot',2520,2800],['cache',3040,2080]].flatMap(([type,x,y],i)=>[0,1].map(side=>({id:`resource-strategic-${i}-${side}`,kind:'resource',type,x:side?6400-x:x,y,owner:null,amount:RESOURCE_TYPES[type].amount,max:RESOURCE_TYPES[type].amount,progress:0})));
   const world=map.world||WORLD,w=world.width,h=world.height;
   const landX=map.water?map.water.x1*.68:w*.40;
   const spots=[['cache',landX,h*.27],['salvage',landX*.92,h*.73],['depot',landX+55,h*.36]];

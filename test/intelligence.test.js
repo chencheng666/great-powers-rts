@@ -16,7 +16,7 @@ const tick=(g,seconds)=>{for(let i=0;i<Math.ceil(seconds/.05);i++)g.update(.05);
 const station=(g,side)=>{for(let i=0;i<4;i++)g.addBuilding(side,'power',side?g.world.width-100-i*80:100+i*80,100);const b=g.addBuilding(side,'super',side?g.world.width-200:200,250);g.players[side].credits=3000;return b;};
 
 test('七张地图可扩大到 2.25 倍面积，目标、通道、港口镜像且旧版尺寸不变',()=>{
-  for(const mapId of Object.keys(MAPS).filter(id=>MAPS[id].maxPlayers!==6)){
+  for(const mapId of Object.keys(MAPS).filter(id=>MAPS[id].maxPlayers!==6&&!MAPS[id].fixedScale)){
     const original=JSON.stringify(MAPS[mapId]),small=quiet(mapId),large=quiet(mapId,1.5);
     assert.equal(large.world.width,small.world.width*1.5);assert.equal(large.world.height,small.world.height*1.5);
     assert.equal(JSON.stringify(MAPS[mapId]),original);assert.equal(battlefieldMap(mapId,1),MAPS[mapId]);

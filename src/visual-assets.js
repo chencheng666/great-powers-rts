@@ -10,6 +10,8 @@ import { refineAirfieldRunway, refineAircraftCanopy } from './airfield-presentat
 import { replacedNavalPart, refineNavalHull, refineTransportBody } from './naval-presentation.js';
 import { refinePowerFans } from './facility-motion.js';
 import { createModernAircraft } from './aircraft-models.js';
+import { createStrategicModel, STRATEGIC_MODELS } from './strategic-models.js';
+import { createNuclearSilo } from './deterrence-models.js';
 
 const modelURL = new URL('../assets/models/military-library.glb', import.meta.url).href;
 const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url).href;
@@ -142,6 +144,8 @@ export function prepareVisualAssets() {
       const model=createPersonnel(type);model.traverse(m=>{if(m.isMesh&&m.material.name==='作战服')m.material=weatherMaterial(m.material);});models.set(type,model);
     }
     for(const type of ['fighter_china','freightPlane','airlift'])models.set(type,createModernAircraft(type));
+    for(const type of STRATEGIC_MODELS)models.set(type,createStrategicModel(type));
+    models.set('nuclearSilo',createNuclearSilo());
     for(const type of ['cache','salvage','depot'])models.set(`resource_${type}`,createResourceModel(type));
     models.set('dock', createHarbor(weatherMaterial));
     for (const type of COMMUNITY_3D_BUILDINGS.filter(type => type !== 'dock')) refineFacility(models.get(type), type, weatherMaterial);
@@ -190,7 +194,7 @@ export function spriteTexture(name, teamColor = '#59d7ec') {
 export function modelThumbnail(name, color) {
   const key = `${name}:${color}`;
   if (thumbnails.has(key)) return thumbnails.get(key);
-  if (buildingNames.includes(name) && !['hq', 'power', 'barracks', 'factory', 'armory', ...COMMUNITY_3D_BUILDINGS].includes(name)) {
+  if (buildingNames.includes(name) && !['hq', 'power', 'barracks', 'factory', 'armory', 'turret', ...COMMUNITY_3D_BUILDINGS].includes(name)) {
     const url = spriteTexture(name, color).image.toDataURL(); thumbnails.set(key, url); return url;
   }
   portraitRenderer ||= new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });

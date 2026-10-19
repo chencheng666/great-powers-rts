@@ -18,11 +18,13 @@ export function executeCommand(game, side, message) {
     case 'resupply': return entity?.kind === 'unit' && game.requestResupply(entity);
     case 'unload': return entity?.kind === 'unit' && game.unloadTransport(entity);
     case 'auto-supply': return entity?.kind === 'unit' && game.toggleAutoSupply(entity);
+    case 'auto-drone': return entity?.kind === 'unit' && game.toggleAutoDrone(entity);
     case 'group-resupply':
     case 'group-unload': return selected.filter(id=>own(id)?.kind==='unit').map(id=>message.action==='group-resupply'?game.requestResupply(own(id)):game.unloadTransport(own(id))).some(Boolean);
     case 'ability': return point() && game.castAbility(message.x, message.y, side);
     case 'satellite': return game.activateSatellite(side);
     case 'cyber': return game.launchCyber(side);
+    case 'nuclear': return point() && game.launchNuclear(message.x,message.y,side);
     case 'move':
     case 'stop': {
       if (!selected.length || message.action === 'move' && !point()) return false;

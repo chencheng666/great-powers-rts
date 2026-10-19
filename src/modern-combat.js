@@ -4,6 +4,7 @@ import { weatherState, hasSignalCover } from './tactical-rules.js';
 import { turnToward } from './projectile-flight.js';
 import { isLunarRobot } from './lunar-robots.js';
 import { battleMetric } from './battle-report.js';
+import { DETERRENCE } from './deterrence-rules.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const alive = u => u.hp > 0 && !u.embarkedIn;
@@ -12,14 +13,19 @@ const alive = u => u.hp > 0 && !u.embarkedIn;
 export const modernCombat = {
   activeUnits(side, type) { return this.ownedUnits(side, type).filter(u => !u.embarkedIn); },
 
+  aircraftServiceSites(u) {
+    const rotorDrone = UNITS[u.type].tags.includes('drone');
+    return this.ownedBuildings(u.owner).filter(b => b.type === 'airfield' || rotorDrone && b.type === 'armory');
+  },
+
   serviceReady(u) {
-    return this.hasPower(u.owner) && this.time - (u.lastDamageAt ?? -10) > 3 && this.time - (u.lastMovedAt ?? -10) >= .5;
+    return !u.swarmParentId && this.hasPower(u.owner) && this.time - (u.lastDamageAt ?? -10) > 3 && this.time - (u.lastMovedAt ?? -10) >= .5;
   },
 
   aircraftGrounded(u) {
     return !!UNITS[u.type]?.tags.includes('air') && !u.embarkedIn && !u.deployment && !u.deckApproach &&
       !['move', 'attackMove', 'attack', 'patrol', 'board'].includes(u.order?.type) && this.time - (u.lastMovedAt ?? -10) >= .5 &&
-      this.ownedBuildings(u.owner, 'airfield').some(b => distance(b, u) <= b.size * .55 + 24);
+      this.aircraftServiceSites(u).some(b => distance(b, u) <= b.size * .55 + 24);
   },
 
   serviceGroundUnit(u, dt, home = null) {
@@ -55,8 +61,9 @@ export const modernCombat = {
   },
 
   serviceAircraft(u, dt) {
+    if(u.swarmParentId)return;
     if (u.hp >= u.maxHp || this.time - (u.lastDamageAt ?? -10) <= 3 || this.time - (u.lastMovedAt ?? -10) < .5 || !this.hasPower(u.owner)) return;
-    const home = this.ownedBuildings(u.owner, 'airfield').find(b => distance(b, u) <= b.size * .55 + 30);
+    const home = this.aircraftServiceSites(u).find(b => distance(b, u) <= b.size * .55 + 30);
     if (!home) return;
     const p = this.players[u.owner], repaired = Math.min(22 * dt, u.maxHp - u.hp, p.credits / .3);
     u.hp += repaired; p.credits = Math.max(0, p.credits - repaired * .3); battleMetric(this, u.owner, 'repairHP', repaired);
@@ -147,9 +154,10 @@ export const modernCombat = {
       const flights = this.projectiles.filter(p => !p.finished && p.sourceId === source.id && p.kind === 'wing').length;
       if (flights >= source.wing || source.wing <= 0) return false;
     }
-    const kind = style === 'bomber' ? 'bomb' : style === 'carrier' ? 'wing' : style === 'rocket' ? 'rocket' : style === 'submarine' ? 'torpedo' : style === 'loiterer' ? 'loitering' : 'missile';
+    const kind = style === 'ballistic' ? 'ballistic' : style === 'bomber' ? 'bomb' : style === 'carrier' ? 'wing' : style === 'rocket' ? 'rocket' : style === 'submarine' ? 'torpedo' : style === 'loiterer' ? 'loitering' : 'missile';
     this.projectiles.push({ id: this.nextProjectileId++, kind, owner: source.owner, sourceId: source.id, targetId: target.id, targetType: target.type, x: source.x, y: source.y, startX: source.x, startY: source.y, toX: target.x, toY: target.y, angle: Math.atan2(target.y - source.y, target.x - source.x), age: 0, jam: 0, amount, hp: kind === 'wing' ? 90 : 38, speed: kind === 'wing' ? 185 : kind === 'torpedo' ? 155 : kind === 'rocket' ? 300 : kind === 'missile' ? 360 : 185, returning: false });
     const p = this.projectiles.at(-1);
+    if(kind==='ballistic'){p.hp=70;p.speed=120;}
     if (kind === 'torpedo') {
       // 艇首沿当前艇身方向发射，然后按原有目标进行有限角速度转弯。
       const offset = 6.2 * 8;
@@ -157,8 +165,8 @@ export const modernCombat = {
       p.y = p.startY = Math.max(0, Math.min(this.world.height, source.y + Math.sin(source.angle) * offset));
       p.angle = source.angle;
     }
-    p.sourceHeight = UNITS[source.type]?.tags.includes('jet') && !this.aircraftGrounded(source) ? 95 : source.type === 'destroyer' ? 35 : 20;
-    p.targetHeight = UNITS[target.type]?.tags.includes('jet') && !this.aircraftGrounded(target) ? 95 : UNITS[target.type]?.tags.includes('drone') ? 25 : 12;
+    p.sourceHeight = UNITS[source.type]?.tags.includes('jet') && !this.aircraftGrounded(source) ? 95 : source.type === 'helicopter' ? 45 : source.type === 'destroyer' ? 35 : 20;
+    p.targetHeight = UNITS[target.type]?.tags.includes('jet') && !this.aircraftGrounded(target) ? 95 : target.type === 'helicopter' ? 45 : UNITS[target.type]?.tags.includes('drone') ? 25 : 12;
     const airborne = entity => entity.kind === 'unit' && UNITS[entity.type]?.tags.includes('air') && !this.aircraftGrounded(entity);
     p.flightRole = airborne(source) ? airborne(target) ? 'air-to-air' : 'air-to-ground' : 'surface';
     if (kind === 'bomb') { p.toX = p.x; p.toY = p.y; p.fallDuration = 1.1; }
@@ -172,10 +180,11 @@ export const modernCombat = {
     // 优先拦截入境弹药；与普通射击共享射击间隔及弹药，不能同时无限输出。
     for (const defender of this.units.filter(u => alive(u) && this.time >= u.stunUntil && u.fireTimer <= 0)) {
       const d = UNITS[defender.type];
-      if (!['laser', 'aa', 'frigate', 'destroyer', 'fighter', 'aegis', 'navalFighter'].includes(defender.type) || defender.ewSuppressedUntil > this.time || defender.overheated || d.ammo && defender.ammo <= 0 || defender.order?.type === 'rearm') continue;
-      const target = list.filter(p => p.hp > 0 && p.owner !== defender.owner && !['rocket', 'torpedo', 'bomb'].includes(p.kind) && !(defender.type === 'laser' && p.kind === 'wing') && !(['fighter', 'aegis', 'navalFighter'].includes(defender.type) && p.kind !== 'wing') && distance(defender, p) <= d.range && this.isVisibleFor(defender.owner, p.x, p.y)).sort((a, b) => distance(defender, a) - distance(defender, b))[0];
+      if (!['abm', 'laser', 'aa', 'frigate', 'destroyer', 'fighter', 'aegis', 'navalFighter'].includes(defender.type) || defender.ewSuppressedUntil > this.time || defender.overheated || d.ammo && defender.ammo <= 0 || defender.order?.type === 'rearm') continue;
+      if(defender.type==='abm'&&(!this.hasPower(defender.owner)||!this.hasBuilding(defender.owner,'radar')))continue;
+      const target = list.filter(p => p.hp > 0 && !p.finished && p.owner !== defender.owner && (defender.type==='abm'?['ballistic','nuclear'].includes(p.kind):!['ballistic','nuclear'].includes(p.kind)) && (p.kind!=='nuclear'||p.age>=DETERRENCE.flight*DETERRENCE.terminal) && !['rocket', 'torpedo', 'bomb'].includes(p.kind) && !(defender.type === 'laser' && p.kind === 'wing') && !(['fighter', 'aegis', 'navalFighter'].includes(defender.type) && p.kind !== 'wing') && distance(defender, p) <= d.range && (p.kind==='nuclear'||this.isVisibleFor(defender.owner, p.x, p.y))).sort((a, b) => distance(defender, a) - distance(defender, b))[0];
       if (!target) continue;
-      target.hp -= d.damage * (defender.type === 'laser' ? 1 : 1.8);
+      target.hp -= d.damage * (['laser','abm'].includes(defender.type) ? 1 : 1.8);
       defender.fireTimer = d.cooldown;
       defender.turretAngle = Math.atan2(target.y - defender.y, target.x - defender.x);
       if (d.ammo) defender.ammo--;
@@ -184,6 +193,7 @@ export const modernCombat = {
       this.events.shot?.(defender.type, defender.owner);
     }
     for (const p of list) {
+      if(p.kind==='nuclear'){this.updateNuclearProjectile(p,dt);continue;}
       p.age += dt;
       if (p.hp <= 0) { this.finishProjectile(p, true); continue; }
       const source = this.getEntity(p.sourceId), target = this.getEntity(p.targetId);
@@ -194,7 +204,7 @@ export const modernCombat = {
       if (p.returning) {
         if (!source || source.hp <= 0) { this.finishProjectile(p, true); continue; }
         p.toX = source.x; p.toY = source.y;
-      } else if (!['rocket', 'bomb'].includes(p.kind) && !jammed && target?.hp > 0 && this.canSeeEntity(p.owner, target)) {
+      } else if (!['ballistic', 'rocket', 'bomb'].includes(p.kind) && !jammed && target?.hp > 0 && this.canSeeEntity(p.owner, target)) {
         p.toX = target.x; p.toY = target.y;
       }
       const remaining = distance(p, { x: p.toX, y: p.toY }), step = p.speed * dt * (jammed ? .5 : 1);
@@ -208,17 +218,17 @@ export const modernCombat = {
           const record = { target: entity, amount: p.amount, side: p.owner, stun: 0 };
           if (this.collectingHits) this.pendingHits.push(record); else this.applyHit(record);
         };
-        if (['rocket', 'bomb'].includes(p.kind)) {
+        if (['ballistic', 'rocket', 'bomb'].includes(p.kind)) {
           for (const entity of [...this.units, ...this.buildings]) {
             if (entity.owner === p.owner || !alive(entity) || entity.kind === 'unit' && (UNITS[entity.type].tags.includes('submerged') || UNITS[entity.type].tags.includes('air') && !this.aircraftGrounded(entity))) continue;
             const gap = distance(entity, { x: p.toX, y: p.toY });
-            if (gap <= (p.kind === 'bomb' ? UNITS.bomber.splash : 65)) {
-              const record = { target: entity, amount: p.amount * (1 - gap / 100), side: p.owner, stun: 0 };
+            if (gap <= (p.kind === 'ballistic' ? 105 : p.kind === 'bomb' ? UNITS.bomber.splash : 65)) {
+              const record = { target: entity, amount: p.amount * (1 - gap / (p.kind==='ballistic'?175:100)), side: p.owner, stun: 0 };
               if (this.collectingHits) this.pendingHits.push(record); else this.applyHit(record);
             }
           }
         } else if (target?.hp > 0 && !target.embarkedIn && distance(target, { x: p.toX, y: p.toY }) < 45 && (!UNITS[target.type]?.tags.includes('submerged') || this.canSeeEntity(p.owner, target))) hit(target);
-        this.effects.push({ type: 'explosion', x: p.toX, y: p.toY, targetType: p.targetType, size: p.kind === 'rocket' ? 42 : 24, owner: p.owner, age: 0, duration: .7 });
+        this.effects.push({ type: 'explosion', x: p.toX, y: p.toY, targetType: p.targetType, size: p.kind === 'ballistic' ? 85 : p.kind === 'rocket' ? 42 : 24, owner: p.owner, age: 0, duration: p.kind==='ballistic'?1.2:.7 });
         if (p.kind === 'wing' && source?.hp > 0) p.returning = true;
         else this.finishProjectile(p, false);
       }

@@ -1,4 +1,10 @@
-大国崛起：v1.0.0 玩家共建版（2026-10-13）
+大国崛起：v1.1.0 战略威慑更新（2026-10-19）
+
+本轮新增：战略纵深、东风常规编组、F-22专属模型、武装直升机、异构蜂群、区域反导和反侦察。
+核威慑仅在战略纵深主动勾选后启用，默认关闭；联机双方都须确认。
+发射井准备240秒、花费4500，8秒准备加20秒飞行预警；每方每局实际发射一次。
+反导多次命中、摧毁准备设施／切断供电、疏散分散可反制。敌我均可能受损，不是清图按钮。
+本离线文件仅支持单机；旧存档保持原规则，不会被自动开启核威慑。它不是全部2.0路线图的完成版。
 
 【开始游戏】
 1. 先把整个 ZIP 压缩包解压到一个文件夹，不要直接在压缩包里运行。
@@ -45,8 +51,8 @@ AI 根据侦察到的敌军补充反制装备，重伤和缺弹单位撤回真�
 月表七类空间飞行器模板、车辆迷彩与亮色敌我标识、部分设施防护网、
 施工清理树石、镜像坡面与战车俯仰、坑缘焦痕、潜航外观和鱼雷水面尾迹。
 完整下载地址：
-https://github.com/chencheng666/great-powers-rts/releases/tag/v1.0.0
-https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great-Powers-RTS-v1.0.0.zip
+https://github.com/chencheng666/great-powers-rts/releases/tag/v1.1.0
+https://github.com/chencheng666/great-powers-rts/releases/download/v1.1.0/Great-Powers-RTS-v1.1.0.zip
 
 【联机与局域网】
 完整源码支持昵称游客双人房间、房间码和双方准备，最新联机动画与复盘已同步源码。

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
 import { Game } from '../src/game.js';
 import { FACTIONS, MAPS, VICTORY_MODES } from '../src/data.js';
-import { PROTOCOL_VERSION, nickname } from '../src/network-protocol.js';
+import { PROTOCOL_VERSION,SIX_PROTOCOL_VERSION, nickname } from '../src/network-protocol.js';
 import { Accounts } from './accounts.mjs';
 import { executeCommand } from './commands.mjs';
 import { battleView } from './battle-view.mjs';
@@ -15,7 +15,7 @@ import { GAME_VERSION } from '../src/version.js';
 
 export function createBattleServer({ directory = process.env.DATA_DIRECTORY || resolve('server-data'), root = resolve('dist'), origin = process.env.PUBLIC_ORIGIN || '', additionalOrigins = process.env.PUBLIC_ORIGINS || '', maxPlayers=2, dev = process.env.NODE_ENV !== 'production' } = {}) {
   if(![2,6].includes(maxPlayers))throw new Error('席位上限无效');
-  const protocol=maxPlayers===6?3:PROTOCOL_VERSION;
+  const protocol=maxPlayers===6?SIX_PROTOCOL_VERSION:PROTOCOL_VERSION;
   const cookieName=maxPlayers===6?'gp_six_guest':'gp_guest',cookiePath=maxPlayers===6?'/candidate':'/';
   const accounts = new Accounts(directory,{cookieName}), rooms = new Map(), peers = new Map(), requests = new Map();
   const send = (ws, value) => { if (ws?.readyState === WebSocket.OPEN && ws.bufferedAmount < 512*1024) ws.send(JSON.stringify(value)); };
@@ -114,8 +114,10 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
           if (r) throw new Error('请先退出当前房间');
           if (rooms.size >= 20) throw new Error('房间已满，请稍后重试');
           if (maxPlayers===6&&msg.mapId!=='sixfront'||maxPlayers===2&&MAPS[msg.mapId]?.maxPlayers===6|| !Object.hasOwn(MAPS,msg.mapId) || !Object.hasOwn(FACTIONS,msg.faction) || !Object.hasOwn(VICTORY_MODES,msg.victoryMode)) throw new Error('作战配置无效');
+          if(msg.nuclearEnabled===true&&(maxPlayers!==2||msg.mapId!=='strategic'))throw new Error('核威慑仅限战略纵深双人战区');
           let code; do { code=String(randomInt(100000,1000000)); } while (rooms.has(code));
-          r={ code, host:0, config:{ mapId:msg.mapId, victoryMode:msg.victoryMode, battlefieldScale:maxPlayers===6?1:1.5,...(maxPlayers===6?{playerCount:6}: {}) }, members:Array.from({length:maxPlayers},(_,seat)=>seat===0?{user,faction:msg.faction,ready:false,seat,controlType:'human'}:null), expires:now+600000, memory:Array.from({length:maxPlayers},()=>new Map()),spectators:new Map(),allowSpectators:maxPlayers===6&&msg.allowSpectators===true,disconnects:0,deadlines:new Map() };
+          r={ code, host:0, config:{ mapId:msg.mapId, victoryMode:msg.victoryMode, battlefieldScale:maxPlayers===6||MAPS[msg.mapId].fixedScale?1:1.5,...(maxPlayers===6?{playerCount:6}: {}) }, members:Array.from({length:maxPlayers},(_,seat)=>seat===0?{user,faction:msg.faction,ready:false,seat,controlType:'human'}:null), expires:now+600000, memory:Array.from({length:maxPlayers},()=>new Map()),spectators:new Map(),allowSpectators:maxPlayers===6&&msg.allowSpectators===true,disconnects:0,deadlines:new Map() };
+          r.config.nuclearEnabled=msg.nuclearEnabled===true;
           rooms.set(code,r); roomNotice(r);
         } else if (msg.type === 'join') {
           if (r) throw new Error('请先退出当前房间'); r=rooms.get(String(msg.code));
@@ -137,10 +139,11 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
         else if (msg.type === 'ready' || msg.type === 'faction') {
           if (r.game) throw new Error('已经开战，不能修改部署');
           if (msg.type === 'faction') { if (!Object.hasOwn(FACTIONS,msg.faction)) throw new Error('阵营无效'); r.members[side].faction=msg.faction; r.members[side].ready=false; }
-          else r.members[side].ready=msg.ready === true;
+          else {if(msg.ready===true&&r.config.nuclearEnabled&&msg.nuclearConsent!==true)throw new Error('请明确确认核威慑规则后准备');r.members[side].nuclearConsent=msg.nuclearConsent===true;r.members[side].ready=msg.ready === true;}
           r.expires=now+600000; roomNotice(r);
         } else if (msg.type === 'start') {
           if (r.game || side!==r.host || !r.members.every(m=>m?.ready&&(m.controlType==='ai'||peers.has(m.user.id)))) throw new Error(maxPlayers===6?'六个席位准备完成后，由房主开战':'双方准备完成后，由房主开战');
+          if(r.config.nuclearEnabled&&!r.members.every(m=>m.nuclearConsent===true))throw new Error('双方均须确认核威慑规则');
           if ([...rooms.values()].filter(v=>v.game?.running).length >= (maxPlayers===6?1:4)) throw new Error('战区繁忙，请稍后开战');
           r.game=new Game(r.members[0].faction,r.members[1].faction,{}, { ...r.config, multiplayer:true,...(maxPlayers===6?{players:r.members.map(m=>({faction:m.faction,controlType:m.controlType}))}:{}) });
           r.members.forEach((m,s)=>m.controlType!=='ai'&&snapshot(r,peers.get(m.user.id),s,true)); roomNotice(r);

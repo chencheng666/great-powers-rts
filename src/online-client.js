@@ -1,12 +1,12 @@
 import { isDesktop, desktopInvoke } from './desktop.js';
 import { FACTIONS, MAPS, VICTORY_MODES } from './data.js';
-import { nickname, roomCode, PROTOCOL_VERSION } from './network-protocol.js';
+import { nickname, roomCode, PROTOCOL_VERSION,SIX_PROTOCOL_VERSION } from './network-protocol.js';
 const key='great-powers-player-name-v1';
 const candidatePath=()=>/^\/candidate(?:\/|$)/.test(location.pathname);
 export class OnlineClient {
   constructor({refreshIcons,prepare,onBattle,onSnapshot,onNotice,onStatus,onInterrupted,onAck,config}) {
     Object.assign(this,{refreshIcons,prepare,onBattle,onSnapshot,onNotice,onStatus,onInterrupted,onAck,config});
-    this.prefix=candidatePath()?'/candidate':'';this.expectedProtocol=this.prefix?3:PROTOCOL_VERSION;
+    this.prefix=candidatePath()?'/candidate':'';this.expectedProtocol=this.prefix?SIX_PROTOCOL_VERSION:PROTOCOL_VERSION;
     this.dialog=document.querySelector('#online-dialog');this.nameDialog=document.querySelector('#nickname-dialog');this.seq=0;this.retries=0;
     this.dialog.addEventListener('click',e=>{const action=e.target.closest('[data-online]')?.dataset.online;if(action!=='join')this.action(action,e.target.closest('[data-online]'));});
     this.dialog.querySelector('.join-room').addEventListener('submit',e=>{e.preventDefault();this.action('join');});
@@ -43,7 +43,7 @@ export class OnlineClient {
     if (isDesktop()) { await this.openDesktop(); return; }
     if(!this.name){this.editName();return;}
     this.dialog.showModal();this.showError('');this.render();this.dialog.querySelector('#online-status').textContent='正在连接战区…';
-    try{const prefix=(candidatePath()||this.config().mapId==='sixfront')?'/candidate':'';if(prefix!==this.prefix){if(this.room)throw new Error('切换战区前请先退出当前房间');this.socket?.close();this.socket=null;this.prefix=prefix;this.expectedProtocol=prefix?3:PROTOCOL_VERSION;}this.candidateControls();await this.session();await this.connect();this.render();}catch(e){this.showError(e.message);this.render();}
+    try{const prefix=(candidatePath()||this.config().mapId==='sixfront')?'/candidate':'';if(prefix!==this.prefix){if(this.room)throw new Error('切换战区前请先退出当前房间');this.socket?.close();this.socket=null;this.prefix=prefix;this.expectedProtocol=prefix?SIX_PROTOCOL_VERSION:PROTOCOL_VERSION;}this.candidateControls();await this.session();await this.connect();this.render();}catch(e){this.showError(e.message);this.render();}
   }
   async openDesktop(){
     if(this.desktopOpening)return;
@@ -120,7 +120,9 @@ export class OnlineClient {
       else if(action==='ready'){
         const me=this.room.members.find(m=>m?.id===this.user.id);
         if(!me.ready){this.dialog.querySelector('#online-status').textContent='正在载入战场素材…';await this.prepare();}
-        this.send({type:'ready',ready:!me.ready});
+        const consent=!!this.dialog.querySelector('#nuclear-consent')?.checked;
+        if(!me.ready&&this.room.config.nuclearEnabled&&!consent)throw new Error('请先勾选核威慑规则确认，再准备作战');
+        this.send({type:'ready',ready:!me.ready,nuclearConsent:consent});
       }else if(action==='start')this.send({type:'start'});
       else if(action==='leave'){this.send({type:'leave'});this.room=null;this.render();}
     }catch(e){this.showError(e.message);}
@@ -134,7 +136,10 @@ export class OnlineClient {
     this.dialog.querySelectorAll('[data-online=create],[data-online=join]').forEach(b=>b.disabled=!connected);
     if(!hasRoom)return;
     this.dialog.querySelector('#room-code').textContent=r.code;
-    this.dialog.querySelector('#room-map').textContent=`${MAPS[r.config.mapId].name} · ${VICTORY_MODES[r.config.victoryMode].name}${this.prefix?' · 实验模式 · 每席上限40（含排队/生产中）':''}`;
+    this.dialog.querySelector('#room-map').textContent=`${MAPS[r.config.mapId].name} · ${VICTORY_MODES[r.config.victoryMode].name}${r.config.nuclearEnabled?' · 核威慑已启用（双方须确认）':' · 常规规则'}${this.prefix?' · 实验模式 · 每席上限40（含排队/生产中）':''}`;
+    let consent=this.dialog.querySelector('#nuclear-consent-row');
+    if(!consent){consent=document.createElement('label');consent.id='nuclear-consent-row';consent.className='nuclear-consent';consent.innerHTML='<input id="nuclear-consent" type="checkbox"> 我确认启用核威慑：8秒准备、20秒落区预警，敌我区域伤害，每方仅一次；可反导拦截与疏散。';this.dialog.querySelector('#online-room').append(consent);}
+    if(this.consentRoom!==r.code){this.dialog.querySelector('#nuclear-consent').checked=false;this.consentRoom=r.code;}consent.hidden=!r.config.nuclearEnabled;
     const me=r.members.find(m=>m?.id===this.user.id),host=me&&r.host===r.members.indexOf(me);
     const list=this.dialog.querySelector('#room-members');list.replaceChildren();
     r.members.forEach((m,i)=>{const row=document.createElement('div');row.className='room-member';const name=document.createElement('strong');name.textContent=m?`${m.name} #${m.id.slice(0,6)}`:'等待指挥官加入';const status=document.createElement('span');status.textContent=m?`${FACTIONS[m.faction].name} · ${m.controlType==='ai'?'电脑 · ':''}${m.eliminated?'已淘汰':m.connected?m.ready?'已准备':'待准备':'已掉线'}${r.host===i?' · 房主':''}`:'空闲席位';row.append(name,status);if(this.prefix&&host&&r.status==='waiting'&&(!m||m.controlType==='ai')){const select=document.createElement('select');select.setAttribute('aria-label',`${i+1}号电脑阵营`);for(const[id,f]of Object.entries(FACTIONS)){const o=document.createElement('option');o.value=id;o.textContent=f.name;select.append(o);}select.value=this.aiFactions?.[i]||m?.faction||'china';select.addEventListener('change',()=>{this.aiFactions??={};this.aiFactions[i]=select.value});const bot=document.createElement('button');bot.textContent=m?'移除电脑':'加入电脑';bot.dataset.online=m?'remove-ai':'set-ai';bot.dataset.seat=i;row.append(select,bot);}list.append(row);});

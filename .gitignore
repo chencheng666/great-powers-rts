@@ -21,3 +21,4 @@ server-data/
 
 /src-tauri/target/
 /qa/
+/public/downloads/packages/

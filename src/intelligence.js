@@ -33,7 +33,7 @@ export const intelligenceCombat={
         if(!active||source?.hp<=0||source?.type!=='super'||source?.owner!==p.side){p.cyberPending=null;this.events.notice?.('网络攻击源站离线，排程已取消。');}
         else if(p.cyberPending.executeAt<=this.time){
           const target=this.players[p.cyberPending.targetSide??this.nearestEnemySide(p.side)];if(!target||target.eliminated){p.cyberPending=null;continue;}target.cyberSourceId=source.id;target.cyberLockedUntil=this.time+INTELLIGENCE_RULES.cyberDuration;p.cyberPending=null;
-          if(target.side===0){this.placingBuilding=false;this.orderMode=null;this.pendingAbility=false;this.events.voice?.('cyberDisrupted');this.events.notice?.('指令链路受干扰 4 秒：不能下达新指令，部队仍自动还击；镜头、暂停与存档可用。');}
+          if(target.side===0){this.placingBuilding=false;this.orderMode=null;this.pendingAbility=false;this.pendingNuclear=false;this.events.voice?.('cyberDisrupted');this.events.notice?.('指令链路受干扰 4 秒：不能下达新指令，部队仍自动还击；镜头、暂停与存档可用。');}
         }
       }
       if(p.cyberSourceId&&!this.isControlLocked(p.side)){p.cyberSourceId=null;p.cyberLockedUntil=0;if(p.side===0){this.events.voice?.('cyberRestored');this.events.notice?.('指令链路已恢复。');}}

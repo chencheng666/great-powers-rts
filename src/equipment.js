@@ -33,12 +33,13 @@ export function equipmentProfile(faction, type, future = false) {
   if (!data) return null;
   if (isLunarRobot(future, type)) { const robot = ROBOT_SPECS[type]; return { name: robot.name, description: robot.description, country: '原创月表无人体系', category: '原创／机器人', source: null }; }
   if (future && ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane'].includes(type)) return { name: { fighter: '云隼制空穿梭机', strike: '月弧对地穿梭机', bomber: '月隼轨道轰炸机', airlift: '星舟战术运输机', freightPlane: '月表物资穿梭机' }[type], description: '原创科幻无人平台，推进舱、姿态喷口与功能模块；游戏职责和成本仍遵循双方统一规则。', country: '原创月表无人体系', category: '原创／科幻装备', source: null };
-  if (entry) return { name: entry[0], description: entry[1], country: system.country, category: '现实原型', source: EQUIPMENT_SOURCES[entry[2]] };
+  if (entry) return { name: entry[0], description: entry[1], country: system.country, category: type==='swarmCarrier'?'公开原型／游戏化':'现实原型', source: EQUIPMENT_SOURCES[entry[2]] };
   const concept = ['elite', 'ghost', 'drone', 'jammer', 'laser', 'railgun', 'aegis', 'relay', 'ewPlane'].includes(type);
   return { name: type === 'elite' ? FACTIONS[faction].elite : data.name, description: data.desc, country: system?.country || '通用体系', category: concept ? '原创／概念装备' : '通用战术单位', source: null };
 }
 
 export function equipmentModel(faction, type, future = false) {
+  if(type==='nuclearSilo')return 'nuclearSilo';
   if (isLunarRobot(future, type)) return ROBOT_SPECS[type].model;
   if (type === 'ewPlane') return future ? 'space_ewPlane' : 'ewPlane';
   if (future && ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis'].includes(type)) return `space_${type}`;
@@ -48,9 +49,16 @@ export function equipmentModel(faction, type, future = false) {
   if (type === 'destroyer' && faction === 'china') return 'destroyer_china';
   if (type === 'tank' || type === 'rocket') return `${type}_${faction}`;
   if (type === 'fighter' && faction === 'china') return 'fighter_china';
+  if (type === 'fighter' && faction === 'nato') return 'fighter_nato';
   if (future && !UNITS[type]) return `future_${type}`;
   return type === 'elite' ? `elite_${faction}` : type;
 }
 
 EQUIPMENT_SYSTEMS.china.destroyer = ['052D 导弹驱逐舰', '052D 公开外观参考：相控阵雷达、垂发甲板与直升机平台；原创简化模型，战力仍遵循统一平衡。', 'china-destroyer'];
 EQUIPMENT_SOURCES['china-destroyer'] = 'https://www.mod.gov.cn/djzx/4809824.html';
+EQUIPMENT_SYSTEMS.china.ballistic=['东风-26 常规打击编组','参考公开外观的原创简化发射车；这里只使用常规弹头。射程、弹道、伤害、弹药与反导均为游戏设定，不代表实际性能。','china-ballistic'];
+EQUIPMENT_SOURCES['china-ballistic']='https://www.mod.gov.cn/djzx/4811026.html';
+EQUIPMENT_SYSTEMS.nato.helicopter=['AH-64 阿帕奇编组','参考串列座舱、主旋翼、短翼挂架、尾旋翼与传感器的原创模型；有限弹药反装甲，防空与制空机可反制。','nato-helicopter'];
+EQUIPMENT_SOURCES['nato-helicopter']='https://www.boeing.com/defense/military-rotorcraft/ah-64-apache';
+EQUIPMENT_SYSTEMS.china.swarmCarrier=['九天异构蜂群试验编组','受公开展示的九天异构蜂巢任务舱启发；侦察、诱饵、攻击三类临时子机是本游戏原创玩法，不宣称现实系统已经形成对应作战能力。','china-swarm'];
+EQUIPMENT_SOURCES['china-swarm']='https://www.news.cn/milpro/20241112/c9d20f51ef7f4970a01a6c74a8bc453a/c.html';

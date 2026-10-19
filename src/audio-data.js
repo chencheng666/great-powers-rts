@@ -2,6 +2,10 @@ import { BUILDINGS } from './data.js';
 
 export const VOICE_LINES = {
   welcome: ['战区通信已接入。指挥官，部队等待您的命令。'],
+  nuclearWarning:['战略威慑警报。落区已标记，立即疏散部队，反导系统准备拦截。'],
+  nuclearCancelled:['战略发射准备已中止，威胁解除。'],
+  nuclearIntercepted:['战略弹头拦截成功，落区威胁解除。'],
+  nuclearImpact:['战略打击已经落地，请检查部队损失和基地状态。'],
   construction: ['开始建造。'], buildReady: ['建筑建造完成，等待部署。'], deployed: ['建筑已部署。'],
   queued: ['生产任务已确认。'], unitReady: ['新单位已就绪。'],
   powerLow: ['电力不足。请增建电力站。'], powerRestored: ['供电已恢复。'],
@@ -29,6 +33,7 @@ for(const [type,b]of Object.entries(BUILDINGS)){
 
 export const COMMAND_LINES = new Set(['armorSelected','infantrySelected','engineerSelected','airSelected','droneSelected','navySelected','moveOrder','attackOrder','captureOrder','stopOrder']);
 export const VOICE_PRIORITY = { underAttack: 3, unitUnderAttack: 3, defeat: 4, victory: 4, draw: 4, buildingLost: 2, powerLow: 2, fundsLow: 2, unitReady: 1, buildReady: 1, oilCaptured: 1, beaconCaptured: 1, welcome: 2,cyberWarning:3,cyberDisrupted:3,cyberRestored:2 };
+Object.assign(VOICE_PRIORITY,{nuclearWarning:4,nuclearCancelled:3,nuclearIntercepted:4,nuclearImpact:3});
 for(const type of Object.keys(BUILDINGS)){VOICE_PRIORITY[`spyInfiltrated_${type}`]=3;VOICE_PRIORITY[`spyDefused_${type}`]=2;}
 export const VOICE_COOLDOWN = { underAttack: 10, unitUnderAttack: 10, unitLost: 10, buildingLost: 6, fundsLow: 10, queued: 3, unitReady: 3, construction: 2, deployed: 2 };
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#171d1b" />
-    <title>大国崛起 1.0 | 玩家共建即时战略</title>
+    <title>大国崛起 1.1 | 战略威慑更新</title>
   </head>
   <body>
     <div id="app">
@@ -42,6 +42,7 @@
           </div>
           <section id="building-info" class="building-info" aria-label="建筑信息" hidden></section>
           <button id="attack-alert" class="attack-alert" title="定位受袭区域" aria-label="定位受袭区域" hidden><i data-lucide="triangle-alert"></i><span><strong id="attack-alert-title">部队遭到攻击</strong><small id="attack-alert-detail">请求支援</small></span><i data-lucide="locate-fixed"></i></button>
+          <button id="nuclear-alert" class="nuclear-alert" title="定位核威慑落区" aria-label="定位核威慑落区" hidden><i data-lucide="radiation"></i><span><strong>核威慑预警</strong><small id="nuclear-alert-detail"></small></span><i data-lucide="locate-fixed"></i></button>
           <div class="battle-hud top-left"><span class="hud-label">战区态势</span><strong id="battle-status">部署中</strong><span id="battle-objective">摧毁敌方指挥中心</span><span id="environment-status" hidden></span></div>
           <div class="battle-hud top-right"><span id="faction-short">请选择阵营</span><span class="divider"></span><span id="enemy-short">敌方：待确认</span></div>
           <div class="battle-hud bottom-left" id="selection-panel"><span class="hud-label">当前选择</span><strong>未选择单位</strong><span>左键选择 · 框选部队 · 右键下达命令</span></div>
@@ -71,7 +72,7 @@
       <div id="start-screen" class="start-screen">
         <div class="start-backdrop"></div>
         <div class="start-shade"></div>
-        <header class="menu-topline"><span>大国崛起 1.0 / 作战指挥中心</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
+        <header class="menu-topline"><span>大国崛起 1.1 / 作战指挥中心</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
         <div class="start-content">
           <div class="start-kicker"><span class="live-dot"></span> 现代即时战略</div>
           <h1>大国<em>崛起</em></h1>
@@ -82,12 +83,13 @@
         <div class="faction-picker">
           <div class="picker-heading"><strong>作战部署</strong><span>选择你的阵营</span></div>
           <div class="faction-list" id="faction-list"></div>
+          <label id="nuclear-option" class="nuclear-option" hidden><input type="checkbox" id="nuclear-enabled"> 核威慑规则 <small>默认关闭 · 双方确认 · 可预警与反制</small></label>
           <div class="deployment-controls">
             <div class="map-deployment"><label class="map-select">战场 <span class="select-shell"><select id="map-select"></select><i data-lucide="chevron-down"></i></span></label><input id="expanded-map" type="checkbox" checked hidden></div>
             <div class="victory-picker"><span>胜利规则</span><div class="victory-options" role="group" aria-label="胜利规则"><button type="button" class="victory-option active" data-victory="quick">快速对战<small>摧毁生产核心</small></button><button type="button" class="victory-option" data-victory="annihilation">全域歼灭<small>清除全部敌军</small></button><button type="button" class="victory-option" data-victory="control">据点控制<small>累计 240 分</small></button></div></div>
             <label class="enemy-select">对手 <span class="select-shell"><select id="enemy-select"><option value="random">随机阵营</option></select><i data-lucide="chevron-down"></i></span></label>
             <label class="enemy-select">难度 <span class="select-shell"><select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select><i data-lucide="chevron-down"></i></span></label>
-            <a id="desktop-download-link" class="desktop-download-link" href="/downloads/index.html">桌面版下载与兼容说明</a>
+            <a id="desktop-download-link" class="desktop-download-link" href="/downloads/index.html" target="_blank" rel="noopener noreferrer"><i data-lucide="download"></i> 下载游戏 · 免安装 / Windows / Mac / Linux</a>
             <div class="battle-entry"><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 单机作战</button><button id="online-btn" class="secondary-btn"><i data-lucide="network"></i> 联网对战</button></div>
           </div>
         </div>

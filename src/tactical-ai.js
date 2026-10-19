@@ -3,7 +3,7 @@ import { UNITS, supportsMap } from './data.js';
 export function knownThreats(game, side) {
   const units = game.enemyUnits(side).filter(u => game.canSeeEntity(side, u));
   const count = tag => units.filter(u => UNITS[u.type].tags.includes(tag)).length;
-  return { air: count('air'), drones: count('drone'), armor: count('armor'), subs: count('submerged'), ships: count('ship'), forts: game.enemyBuildings(side, 'turret').filter(b => game.canSeeEntity(side, b)).length };
+  return { ballistic:units.filter(u=>u.type==='ballistic').length, air: count('air'), drones: count('drone'), armor: count('armor'), subs: count('submerged'), ships: count('ship'), forts: game.enemyBuildings(side, 'turret').filter(b => game.canSeeEntity(side, b)).length };
 }
 
 export function aiCounterUnit(game, side, choices, domain = 'ground') {
@@ -13,7 +13,7 @@ export function aiCounterUnit(game, side, choices, domain = 'ground') {
   const ground = game.activeUnits(side).filter(u => UNITS[u.type].damage > 0 && !UNITS[u.type].tags.some(t => ['air', 'ship'].includes(t))).length;
   const demands = domain === 'air' ? [['fighter', Math.ceil(threats.air / 2), 4], ['navalFighter', Math.ceil(threats.air / 2), 4]]
     : domain === 'naval' ? [['frigate', Math.ceil((threats.subs + threats.air) / 2), 4], ['submarine', Math.ceil(threats.ships / 3), 2]]
-    : [['aa', Math.ceil(threats.air / 2), 3], ['laser', Math.ceil(threats.drones / 3), 4], ['loiterer', Math.ceil(threats.armor / 3), 2], ['rocket', Math.ceil((threats.armor + threats.forts * 2) / 4), 2], ['supply', ground >= 4 ? 1 : 0, 1]];
+    : [['abm',Math.max(game.nuclearEnabled?2:0,Math.min(3,threats.ballistic)),5],['aa', Math.ceil(threats.air / 2), 3], ['laser', Math.ceil(threats.drones / 3), 4], ['loiterer', Math.ceil(threats.armor / 3), 2], ['rocket', Math.ceil((threats.armor + threats.forts * 2) / 4), 2], ['supply', ground >= 4 ? 1 : 0, 1]];
   const available = demands.filter(([type, desired]) => {
     const d = UNITS[type];
     return choices.includes(type) && desired > (counts.get(type) || 0) && supportsMap(d.map, game.mapId) && (!d.faction || d.faction === game.players[side].faction) && (!d.requires || game.hasBuilding(side, d.requires)) && game.hasBuilding(side, d.producer);

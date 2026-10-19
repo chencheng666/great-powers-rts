@@ -1,6 +1,6 @@
 {
   "generator": "eSpeak NG text-to-speech: 1.52.0  Data at: /opt/homebrew/Cellar/espeak-ng/1.52.0/share/espeak-ng-data",
-  "generatedOn": "2026-10-07",
+  "generatedOn": "2026-10-19",
   "source": "https://github.com/espeak-ng/espeak-ng",
   "license": "仅分发原创台词的合成音频，不捆绑 GPL 引擎、系统录音或第三方声音模型。",
   "voice": "cmn",
@@ -11,6 +11,30 @@
       "key": "welcome",
       "index": 0,
       "text": "战区通信已接入。指挥官，部队等待您的命令。"
+    },
+    {
+      "file": "nuclearWarning-0.wav",
+      "key": "nuclearWarning",
+      "index": 0,
+      "text": "战略威慑警报。落区已标记，立即疏散部队，反导系统准备拦截。"
+    },
+    {
+      "file": "nuclearCancelled-0.wav",
+      "key": "nuclearCancelled",
+      "index": 0,
+      "text": "战略发射准备已中止，威胁解除。"
+    },
+    {
+      "file": "nuclearIntercepted-0.wav",
+      "key": "nuclearIntercepted",
+      "index": 0,
+      "text": "战略弹头拦截成功，落区威胁解除。"
+    },
+    {
+      "file": "nuclearImpact-0.wav",
+      "key": "nuclearImpact",
+      "index": 0,
+      "text": "战略打击已经落地，请检查部队损失和基地状态。"
     },
     {
       "file": "construction-0.wav",
@@ -407,6 +431,18 @@
       "key": "spyDefused_super",
       "index": 0,
       "text": "战略武器站的间谍破坏已解除。"
+    },
+    {
+      "file": "spyInfiltrated_nuclearSilo-0.wav",
+      "key": "spyInfiltrated_nuclearSilo",
+      "index": 0,
+      "text": "警报，我方战略威慑发射井被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "spyDefused_nuclearSilo-0.wav",
+      "key": "spyDefused_nuclearSilo",
+      "index": 0,
+      "text": "战略威慑发射井的间谍破坏已解除。"
     }
   ],
   "femaleFiles": [
@@ -415,6 +451,30 @@
       "key": "welcome",
       "index": 0,
       "text": "战区通信已接入。指挥官，部队等待您的命令。"
+    },
+    {
+      "file": "female-nuclearWarning-0.wav",
+      "key": "nuclearWarning",
+      "index": 0,
+      "text": "战略威慑警报。落区已标记，立即疏散部队，反导系统准备拦截。"
+    },
+    {
+      "file": "female-nuclearCancelled-0.wav",
+      "key": "nuclearCancelled",
+      "index": 0,
+      "text": "战略发射准备已中止，威胁解除。"
+    },
+    {
+      "file": "female-nuclearIntercepted-0.wav",
+      "key": "nuclearIntercepted",
+      "index": 0,
+      "text": "战略弹头拦截成功，落区威胁解除。"
+    },
+    {
+      "file": "female-nuclearImpact-0.wav",
+      "key": "nuclearImpact",
+      "index": 0,
+      "text": "战略打击已经落地，请检查部队损失和基地状态。"
     },
     {
       "file": "female-construction-0.wav",
@@ -811,6 +871,18 @@
       "key": "spyDefused_super",
       "index": 0,
       "text": "战略武器站的间谍破坏已解除。"
+    },
+    {
+      "file": "female-spyInfiltrated_nuclearSilo-0.wav",
+      "key": "spyInfiltrated_nuclearSilo",
+      "index": 0,
+      "text": "警报，我方战略威慑发射井被潜入。定时破坏将在四十五秒后引爆，请工程师立即拆弹。"
+    },
+    {
+      "file": "female-spyDefused_nuclearSilo-0.wav",
+      "key": "spyDefused_nuclearSilo",
+      "index": 0,
+      "text": "战略威慑发射井的间谍破坏已解除。"
     }
   ]
 }

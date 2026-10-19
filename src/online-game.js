@@ -9,10 +9,10 @@ export class OnlineGame extends Game {
     // 客户端只持有视图，不生成基地、不运行本地战斗模拟。
     super(payload.view.players[0].faction, payload.view.players[1].faction, {}, { ...payload.config, multiplayer:true });
     this.online=true; this.client=client; this.events=events; this.seat=payload.seat;
-    this.mapId=payload.config.mapId; this.map=battlefieldMap(this.mapId,1.5); this.world=this.map.world||WORLD;
+    this.mapId=payload.config.mapId; this.map=battlefieldMap(this.mapId,payload.config.battlefieldScale||1.5); this.world=this.map.world||WORLD;
     this.homeY=this.map.spawns?.[this.seat]?.y??this.world.height/2; this.homeX=this.map.spawns?.[this.seat]?.x??(this.seat?this.world.width-470:470);
     this.battleId=payload.config.battleId; this.victoryMode=payload.config.victoryMode;
-    this.difficulty=AI_DIFFICULTIES.standard; this.battlefieldScale=1.5;
+    this.difficulty=AI_DIFFICULTIES.standard; this.battlefieldScale=this.map.fixedScale||this.map.maxPlayers===6?1:payload.config.battlefieldScale||1.5;
     this.units=[];this.buildings=[];this.ore=[];this.oil=[];this.beacons=[];this.resourceSites=[];
     this.effects=[];this.seenEffects=new Set();this.attackAlerts=[];this.lastAttackVoiceAt=-20;
     this.apply(payload, true);
@@ -20,6 +20,7 @@ export class OnlineGame extends Game {
   get paused() { return !!this._serverPaused; }
   set paused(value) { /* 联机弹窗不暂停服务器；仅快照可修改暂停状态。 */ }
   isControlLocked(side) { return side === 0 && !!this.players[0].controlLocked; }
+  launchNuclear(x,y,side=0){return side===0&&this.client.send({type:'command',action:'nuclear',x,y});}
   // 浮航是可见外观，依赖服务器判定，不从已隐藏的敌方指令推断。
   submarineSurfaced(unit) { return unit?.type === 'submarine' && unit.hp > 0 && !unit.embarkedIn && unit.surfaced === true; }
   canPlace(side,type,x,y) {
@@ -54,8 +55,12 @@ export class OnlineGame extends Game {
     if(!initial&&this.pendingBuilding&&pendingBefore!==this.pendingBuilding)this.events.voice?.('buildReady');
     if(!initial&&this.units.some(u=>u.owner===0&&!before.has(u.id)&&!UNITS[u.type].tags.includes('logistics')))this.events.voice?.('unitReady');
     this.projectiles=v.projectiles;
+    const oldWarnings=this.publicNuclearWarnings||[];this.publicNuclearWarnings=v.nuclearWarnings||[];
+    if(this.publicNuclearWarnings.some(w=>!oldWarnings.some(old=>old.owner===w.owner))){this.events.voice?.('nuclearWarning');this.events.notice?.('核威慑预警：落区已公开，请立即疏散并组织反导。');}
     for(const effect of v.effects)if(!this.seenEffects.has(effect.networkId)){
       this.seenEffects.add(effect.networkId);this.effects.push(effect);
+      if(effect.type==='nuclearBlast'){this.events.voice?.('nuclearImpact');this.events.shot?.('bomber',effect.owner);}
+      if(effect.style==='nuclearIntercept')this.events.voice?.('nuclearIntercepted');
       if(effect.type==='shot'||effect.type==='muzzle')this.events.shot?.(effect.style||'rifle',effect.owner);
     }
     if(this.seenEffects.size>2000)this.seenEffects=new Set(v.effects.map(e=>e.networkId));
@@ -94,5 +99,6 @@ export class OnlineGame extends Game {
   requestResupply(unit){return this.batch('resupply',unit);}
   unloadTransport(unit){return this.batch('unload',unit);}
   toggleAutoSupply(unit){return this.issue('auto-supply',{id:unit.id});}
+  toggleAutoDrone(unit){return this.issue('auto-drone',{id:unit.id});}
   toSave(){throw new Error('联网战局由服务器维护，不能导出为单机存档');}
 }

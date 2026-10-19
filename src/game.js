@@ -16,6 +16,9 @@ import { battlefieldMap, resourceLayout } from './battlefield-expansion.js';
 import { intelligenceCombat } from './intelligence.js';
 import { aiCounterUnit, retreatAIUnits } from './tactical-ai.js';
 import { createBattleStats, battleMetric, recordBattleDamage } from './battle-report.js';
+import { droneAutonomy, supportsDroneAutonomy } from './drone-autonomy.js';
+import { strategicCombat } from './strategic-combat.js';
+import { deterrenceCombat } from './deterrence.js';
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -43,10 +46,12 @@ export class Game {
     this.victoryMode = ['annihilation', 'control'].includes(options.victoryMode) ? options.victoryMode : 'quick';
     this.difficulty = AI_DIFFICULTIES[options.difficulty] || AI_DIFFICULTIES.standard;
     this.mapId = MAPS[options.mapId] ? options.mapId : 'valley';
-    this.battlefieldScale = options.battlefieldScale === 1.5 ? 1.5 : 1;
+    this.battlefieldScale = !MAPS[this.mapId].fixedScale && options.battlefieldScale === 1.5 ? 1.5 : 1;
     this.map = battlefieldMap(this.mapId,this.battlefieldScale);
     this.world = this.map.world || WORLD;
     this.playerCount = this.map.maxPlayers===6 ? 6 : 2;
+    this.nuclearEnabled=this.mapId==='strategic'&&options.nuclearEnabled===true;
+    this.pendingNuclear=false;
     const configs=options.players;
     if(configs&&(!Array.isArray(configs)||configs.length!==this.playerCount||configs.some(p=>!Object.hasOwn(FACTIONS,p.faction)||!['human','ai'].includes(p.controlType))))throw new Error('席位配置无效');
     this.playerConfigs= configs || Array.from({length:this.playerCount},(_,i)=>({faction:i===0?playerFaction:i===1?enemyFaction:Object.keys(FACTIONS)[i%5],controlType:this.multiplayer?'human':i===0?'human':'ai'}));
@@ -91,7 +96,7 @@ export class Game {
   }
 
   makePlayer(side, faction) {
-    return { side, faction, credits: 1550, powerIn: 0, powerOut: 0, controlScore: 0, buildQueue: null, abilityCharge: 0, abilityCooldown: 0, shieldUntil: 0, aiPlanIndex: 0, aiUnitCount: 0, aiAirUnitCount: 0, aiNavyUnitCount: 0, aiEngineerRetryAt: this.difficulty.engineerStart, aiScoutRetryAt: 30, aiGhostRetryAt: 65, unitCount: 0 };
+    return { side, faction, credits: 1550, powerIn: 0, powerOut: 0, controlScore: 0, buildQueue: null, abilityCharge: 0, abilityCooldown: 0, shieldUntil: 0, nuclearCharge:0,nuclearSpent:false,nuclearPending:null,aiPlanIndex: 0, aiUnitCount: 0, aiAirUnitCount: 0, aiNavyUnitCount: 0, aiEngineerRetryAt: this.difficulty.engineerStart, aiScoutRetryAt: 30, aiGhostRetryAt: 65, unitCount: 0 };
   }
 
   get faction() { return FACTIONS[this.players[0].faction]; }
@@ -108,8 +113,10 @@ export class Game {
     game.mapId = copy.config.mapId; game.battlefieldScale=copy.config.battlefieldScale||1;game.map = battlefieldMap(game.mapId,game.battlefieldScale); game.world = game.map.world || WORLD;
     game.playerCount=copy.state.players.length;game.playerConfigs=copy.state.players.map(p=>({faction:p.faction,controlType:p.controlType|| (p.side===0?"human":"ai")}));game.multiplayer=false;
     game.homeY = game.world.height / 2; game.victoryMode = copy.config.victoryMode;
+    game.nuclearEnabled=copy.config.nuclearEnabled===true;game.pendingNuclear=copy.state.pendingNuclear===true;
     game.difficulty = AI_DIFFICULTIES[copy.config.difficulty];
     for (const key of SNAPSHOT_FIELDS) game[key] = copy.state[key];
+    for(const p of game.players){p.nuclearCharge??=0;p.nuclearSpent??=false;p.nuclearPending??=null;}
     game.battleStats = copy.state.battleStats || createBattleStats(game.time);
     // 旧战局不凭空追加可领奖的物资；新局和新存档才包含资源争夺点。
     game.resourceSites=copy.state.resourceSites||[];
@@ -122,6 +129,7 @@ export class Game {
       if (isLunarRobot(game.map, u.type)) { u.battery ??= ROBOT_ENERGY.capacity; u.ammo = null; }
       if (!isLunarRobot(game.map, u.type) && UNITS[u.type].ammo && u.ammo === null) u.ammo = UNITS[u.type].ammo;
       if (u.type === 'supply' && u.autoSupply === undefined) u.autoSupply = true;
+      if (supportsDroneAutonomy(u) && u.autoDrone === undefined) { u.autoDrone = true; u.droneRole = u.order ? 'manual' : 'guard'; }
     }
     game.fog = game.fogs[0]; game.running = true; game.paused = true; game.winner = null;
     game.effects = []; game.pendingHits = []; game.pendingMoves = []; game.collectingHits = game.collectingMoves = false;
@@ -189,6 +197,7 @@ export class Game {
     unit.passengers = []; unit.embarkedIn = null; unit.stock = d.stock ?? null;
     unit.wing = d.wing ?? null; unit.heat = 0; unit.deployProgress = 0;
     if (type === 'supply') unit.autoSupply = true;
+    if (supportsDroneAutonomy(unit)) { unit.autoDrone = true; unit.droneRole = 'guard'; }
     if (isLunarRobot(this.map, type)) { unit.battery = ROBOT_ENERGY.capacity; unit.ammo = null; }
     this.units.push(unit);
     if (this.isAI(owner) && type === 'strike') this.players[owner].aiFirstStrikeProduced = true;
@@ -214,7 +223,7 @@ export class Game {
 
   canBuild(side, type) {
     const d = BUILDINGS[type];
-    return !!d && (!d.naval || !!this.map.water) && (!d.map || d.map === this.mapId) && this.hasBuilding(side, 'hq') && (!d.requires || this.hasBuilding(side, d.requires));
+    return !!d && (!d.nuclear||this.nuclearEnabled) && (!d.naval || !!this.map.water) && (!d.map || d.map === this.mapId) && this.hasBuilding(side, 'hq') && (!d.requires || this.hasBuilding(side, d.requires));
   }
 
   startBuild(side, type) {
@@ -257,6 +266,7 @@ export class Game {
   }
 
   canPlace(side, type, x, y) {
+    if(BUILDINGS[type].nuclear&&!this.nuclearEnabled)return false;
     const size = BUILDINGS[type].size;
     if (x < size || y < size || x > this.world.width - size || y > this.world.height - size) return false;
     if (type === 'dock') {
@@ -342,6 +352,7 @@ export class Game {
     if(this.playerCount===6&&this.unitCapacityUsed(side)>=40)return false;
     const d = UNITS[type];
     if (!d || FREIGHT_TYPES.includes(type) || type === 'harvester' && this.economyMode !== 'mining' || (d.naval && !this.map.water) || !supportsMap(d.map, this.mapId) || (d.faction && this.players[side].faction !== d.faction) || (d.requires && !this.hasBuilding(side, d.requires))) return false;
+    if (!d.producer || d.limit && this.ownedUnits(side,type).length + this.ownedBuildings(side).reduce((n,b)=>n+b.queue.filter(t=>t===type).length+Number(b.active?.type===type),0)>=d.limit) return false;
     const producer = this.ownedBuildings(side, d.producer).sort((a, b) => a.queue.length - b.queue.length)[0];
     if (!producer || producer.queue.length >= 5) return false;
     producer.queue.push(type);
@@ -377,6 +388,15 @@ export class Game {
     this.events.selection?.();
   }
 
+  selectSameType(picked, visibleIds, additive = false) {
+    if (!picked || picked.kind !== 'unit' || picked.owner !== 0 || picked.hp <= 0 || picked.embarkedIn || FREIGHT_TYPES.includes(picked.type)) return false;
+    const visible = new Set(visibleIds);
+    const ids = this.activeUnits(0, picked.type).filter(unit => visible.has(unit.id)).map(unit => unit.id);
+    this.selected = [...new Set([...(additive ? this.selected : []), ...ids])];
+    this.events.selection?.();
+    return true;
+  }
+
   selectAllCombat() {
     this.selected = this.activeUnits(0).filter(u => UNITS[u.type].damage > 0).map(u => u.id);
     this.events.selection?.();
@@ -409,12 +429,14 @@ export class Game {
       else if(!attackMove&&enemy?.kind==='building'&&u.type==='scout'&&!enemy.sabotage)u.order={type:'infiltrate',targetId:enemy.id,x:enemy.x,y:enemy.y};
       else if(!attackMove&&cache&&!UNITS[u.type].tags.some(t=>['air','ship'].includes(t))&&(cache.type==='cache'||['engineer','harvester','supply'].includes(u.type)))u.order={type:'collect',targetId:cache.id,x:cache.x,y:cache.y,progress:0};
       else if (site && u.type === 'engineer') u.order = { type: 'capture', targetId: site.id, x: site.x, y: site.y };
+      else if (enemy && u.type==='swarmCarrier') u.order={type:'attackMove',x:enemy.x,y:enemy.y};
       else if (enemy && this.canAttack(u, enemy)) u.order = { type: 'attack', targetId: enemy.id, x: enemy.x, y: enemy.y };
       else {
         const goal = this.resolveMoveGoal(u, clamp(x + offset.x, 20, this.world.width - 20), clamp(y + offset.y, 20, this.world.height - 20));
         u.order = { type: attackMove ? 'attackMove' : 'move', ...goal };
       }
       u.resumeOrder = null; u.path = []; u.pathTimer = 0; u.deployProgress = 0;u.avoidSide=0;u.avoidUntil=0;
+      this.setDroneMission(u);
     });
     this.effects.push({ type: 'order', x, y, age: 0, duration: 0.6, owner: side });
     this.events.voice?.(site && selectedUnits.some(u => u.type === 'engineer') ? 'captureOrder' : enemy || attackMove ? 'attackOrder' : 'moveOrder');
@@ -424,7 +446,7 @@ export class Game {
   stopSelected(side = 0) {
     if(this.isControlLocked(side))return false;
     if (this.selected.some(id => this.getEntity(id)?.kind === 'unit')) this.events.voice?.('stopOrder');
-    this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !FREIGHT_TYPES.includes(e.type)).forEach(u => { u.order = null; u.resumeOrder = null; u.path = []; if (u.type === 'supply') u.autoSupply = false; });
+    this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !FREIGHT_TYPES.includes(e.type)).forEach(u => { u.order = null; u.resumeOrder = null; u.path = []; if (u.type === 'supply') u.autoSupply = false; if (supportsDroneAutonomy(u)) u.droneRole = 'hold'; });
     this.orderMode = null;
   }
 
@@ -482,6 +504,7 @@ export class Game {
     this.time += dt;
     this.recalculatePower();
     this.updateIntelligence(dt);
+    this.updateDeterrence(dt);
     this.updateLogistics(dt);
     for (const p of this.players) {
       battleMetric(this, p.side, 'oilSeconds', this.oil.filter(o => o.owner === p.side).length * dt);
@@ -594,12 +617,13 @@ export class Game {
         } else unit.order = { type: 'move', x: this.world.width / 2 + 70 + random(-100, 100), y: yCenter + random(-280, 280) };
       } else if (this.isAI(b.owner) && unit.type === 'ghost') {
         unit.order = { type: 'move', ...(this.playerCount===6?this.enemyObjective(b.owner):{x:570+random(-80,80),y:yCenter+random(-230,230)}) };
-      } else if (this.isAI(b.owner) && UNITS[unit.type].tags.includes('jet')) {
+      } else if (this.isAI(b.owner) && UNITS[unit.type].tags.includes('air')) {
         unit.order = { type: 'attackMove', ...(this.playerCount===6?this.enemyObjective(b.owner):{x:470+random(-110,110),y:yCenter+random(-240,240)}) };
       } else if (this.isAI(b.owner) && UNITS[unit.type].tags.includes('ship')) {
         unit.order = { type: 'attackMove', x: this.map.water.x1 + unitRadius(unit) + 40, y: yCenter + random(-290, 290) };
       } else if (this.isAI(b.owner) && unit.type !== 'harvester') unit.order = { type: 'move', ...(this.playerCount===6?sixPoint(b.owner,400+random(-70,70),random(-120,120)):{x:this.world.width-630+random(-70,70),y:yCenter+random(-120,120)}) };
       if (b.rallyPoint && unit.type !== 'harvester') unit.order = { type: 'move', ...this.resolveMoveGoal(unit, b.rallyPoint.x, b.rallyPoint.y) };
+      if (unit.order) this.setDroneMission(unit);
       if (b.owner === 0) this.events.notice?.(`${equipmentProfile(p.faction, unit.type, this.map.future).name}已就绪`);
       if (b.owner === 0) this.events.voice?.('unitReady');
       b.active = null;
@@ -658,6 +682,7 @@ export class Game {
       return;
     }
     if (this.time < u.stunUntil) return;
+    this.updateDroneAutonomy(u);
     u.fireTimer -= dt * (u.jammedUntil > this.time ? .4 : 1);
     const d = UNITS[u.type];
     if (u.type === 'carrier') this.updateCarrierAirGroup(u, dt);
@@ -673,6 +698,7 @@ export class Game {
       if (u.owner === 0) this.events.notice?.(`${d.name}弹药耗尽，正在返场补给`);
     }
     if (u.order?.type === 'rearm') { this.updateRearm(u, dt); return; }
+    if (this.updateSwarmCarrier(u,dt)) return;
     if (u.type === 'engineer') {
       if (u.order?.type === 'capture') {
         const site = this.getEntity(u.order.targetId);
@@ -702,7 +728,8 @@ export class Game {
       target = null;
     }
     if (!target || target.hp <= 0) { if (u.order?.type === 'attack') u.order = null; target = null; }
-    const acquisition = u.order?.type !== 'move' ? d.tags.includes('artillery') ? Math.max(d.sight, d.range) : d.sight : d.range * 0.85;
+    const holdingDrone = supportsDroneAutonomy(u) && u.droneRole === 'hold';
+    const acquisition = u.order?.type !== 'move' && !holdingDrone ? d.tags.includes('artillery') ? Math.max(d.sight, d.range) : d.sight : d.range * 0.85;
     if (!target) target = this.closestEnemy(u, acquisition, u.owner);
     if (target) {
       const range = this.unitRange(u, target);
@@ -743,7 +770,7 @@ export class Game {
     if (isLunarRobot(this.map, u.type)) { this.updateRobotRearm(u, dt); return; }
     if (!UNITS[u.type].tags.includes('air')) { this.updateGroundRearm(u, dt); return; }
     if (u.homeCarrierId && this.returnToCarrier(u, dt)) return;
-    const home = this.ownedBuildings(u.owner, 'airfield').sort((a, b) => distance(a, u) - distance(b, u))[0];
+    const home = this.aircraftServiceSites(u).sort((a, b) => distance(a, u) - distance(b, u))[0];
     if (!home) {
       if (u.resumeOrder?.x !== undefined) this.moveUnit(u, u.resumeOrder, dt, 8);
       return;
@@ -767,16 +794,18 @@ export class Game {
   canAttack(source, target) {
     if (target.embarkedIn) return false;
     if (target.kind === 'unit' && UNITS[target.type].tags.includes('submerged') && (source.kind !== 'unit' || !UNITS[source.type].tags.includes('anti-sub') && source.type !== 'submarine')) return false;
-    if (source.kind === 'building') return target.kind === 'building' || this.aircraftGrounded(target) || !UNITS[target.type].tags.includes('jet');
+    if (source.kind === 'building') return target.kind === 'building' || this.aircraftGrounded(target) || !UNITS[target.type].tags.some(t=>['jet','rotorcraft'].includes(t));
     const type = source.type;
     if (!UNITS[type]?.damage) return false;
+    if (type === 'abm') return false;
     if (bridgeBlocksDirectShot(this.map, source, target, UNITS)) return false;
     if (type === 'carrier' && this.carrierAircraft(source).length) return false;
-    const tags = target.kind === 'unit' ? UNITS[target.type].tags.filter(t => !this.aircraftGrounded(target) || !['air', 'jet', 'drone'].includes(t)) : [];
+    const tags = target.kind === 'unit' ? UNITS[target.type].tags.filter(t => !this.aircraftGrounded(target) || !['air', 'jet', 'drone','rotorcraft'].includes(t)) : [];
     if (type === 'aa') return tags.includes('air');
     if (type === 'laser') return tags.includes('drone');
     if (type === 'submarine') return tags.includes('ship');
-    if (['rocket', 'loiterer', 'carrier', 'bomber'].includes(type) && tags.includes('air')) return false;
+    if (['rocket', 'ballistic', 'helicopter', 'loiterer', 'carrier', 'bomber'].includes(type) && tags.includes('air')) return false;
+    if (tags.includes('rotorcraft') && !UNITS[type].tags.includes('air') && !UNITS[type].tags.includes('anti-air')) return false;
     if (type === 'aegis') return tags.includes('air');
     if (['fighter', 'navalFighter'].includes(type)) return true;
     if (type === 'railgun' && tags.includes('air')) return false;
@@ -823,7 +852,7 @@ export class Game {
   }
 
   hasLineOfFire(source, target) {
-    if (['rocket', 'loiterer'].includes(source.type)) return true;
+    if (['rocket', 'loiterer', 'ballistic'].includes(source.type)) return true;
     if (source.kind === 'unit' && UNITS[source.type].tags.includes('air')) return true;
     if (target.kind === 'unit' && UNITS[target.type].tags.includes('air')) return true;
     if (source.kind === 'unit' && UNITS[source.type].tags.includes('ship')) return true;
@@ -842,6 +871,7 @@ export class Game {
     let amount = UNITS[u.type].damage;
     const targetTags = target.kind === 'unit' ? UNITS[target.type].tags.filter(t=>!this.aircraftGrounded(target)||!['air','jet','drone'].includes(t)) : [];
     if (u.type === 'drone' && targetTags.includes('armor')) amount *= 1.8;
+    if (u.type === 'helicopter') amount *= targetTags.includes('armor') ? 1.5 : targetTags.includes('infantry') ? .6 : 1;
     if (u.type === 'drone' && targetTags.includes('jet')) amount *= 0.7;
     if (u.type === 'aa' && targetTags.includes('air')) amount *= 2.25;
     if (['fighter', 'aegis', 'navalFighter'].includes(u.type) && targetTags.includes('air')) amount *= targetTags.includes('jet') ? 1.15 : 1.4;
@@ -886,7 +916,7 @@ export class Game {
       style = 'robotPulse';
     }
     source.lastFireAt = this.time;
-    if (['loiterer', 'rocket', 'destroyer', 'carrier', 'submarine', 'bomber', 'fighter', 'strike', 'aegis', 'navalFighter', 'navalStrike'].includes(style)) { this.launchProjectile(source, target, amount, style); return; }
+    if (['loiterer', 'rocket', 'ballistic', 'helicopter', 'destroyer', 'carrier', 'submarine', 'bomber', 'fighter', 'strike', 'aegis', 'navalFighter', 'navalStrike'].includes(style)) { this.launchProjectile(source, target, amount, style); return; }
     this.effects.push({ type: 'shot', sourceId: source.id, x: source.x, y: source.y, toX: target.x, toY: target.y, sourceType: source.type, targetType: target.type, age: 0, duration: style === 'railgun' ? .32 : .18, owner: source.owner, style });
     this.effects.push({ type: 'hit', x: target.x, y: target.y, targetType: target.type, age: 0, duration: 0.42, owner: source.owner, style });
     const tags = target.kind === 'unit' ? UNITS[target.type].tags : [];
@@ -949,7 +979,7 @@ export class Game {
   closestEnemy(source, range, owner) {
     let nearest = null, best = range;
     for (const target of [...this.units, ...this.buildings]) {
-      if (target.owner === owner || target.hp <= 0 || !this.canAttack(source, target)) continue;
+      if (target.owner === owner || target.hp <= 0 || !this.canAttack(source, target) || !this.droneGuardAllows(source, target)) continue;
       if (source.kind === 'building' && !this.hasLineOfFire(source, target)) continue;
       const d = distance(source, target) - (target.kind === 'building' ? target.size * 0.3 : 0);
       if (d >= range) continue;
@@ -1016,7 +1046,7 @@ export class Game {
       const forward = dx * Math.cos(direction) + dy * Math.sin(direction), across = Math.abs(dx * Math.sin(direction) - dy * Math.cos(direction));
       return forward > 0 && forward < unitRadius(u) + radius + UNITS[u.type].speed * .65 && across < unitRadius(u) + radius + 5;
     };
-    const blockers = neighbors.filter(other => unitLayer(other) === unitLayer(u) && distance(other, goal) > unitRadius(other) + stopDistance && (other.owner === u.owner || this.canSeeEntity(u.owner, other)) && blocksAhead(other, unitRadius(other)));
+    const blockers = neighbors.filter(other => unitLayer(other) === unitLayer(u) && distance(other, goal) > unitRadius(other) + stopDistance && (other.owner === u.owner || this.canSeeEntity(u.owner, other)) && (blocksAhead(other, unitRadius(other)) || !other.order && distance(other, goal) < distance(u, goal) && distance(other, u) < 200));
     const buildingAhead = this.buildings.some(b => b.hp > 0 && this.canSeeEntity(u.owner, b) && distance(b, goal) > b.size * .5 + stopDistance && blocksAhead(b, b.size * .45));
     if ((blockers.length || buildingAhead) && this.time >= (u.avoidRepathAt || 0)) { u.pathTimer = 0; u.avoidRepathAt = this.time + .3; }
     const goalCell = `${Math.floor(goal.x / this.world.cell)},${Math.floor(goal.y / this.world.cell)}`;
@@ -1140,7 +1170,10 @@ export class Game {
       const { cols, rows, visible, explored } = this.fogs[side];
       visible.fill(false);
       if ((this.players[side].satelliteUntil || 0) > this.time) {
-        visible.fill(true); explored.fill(true); continue;
+        visible.fill(true); explored.fill(true);
+        const shields=this.satelliteShields(side);
+        if(!shields.length)continue;
+        for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)if(shields.some(u=>distance(u,{x:(x+.5)*this.world.fog,y:(y+.5)*this.world.fog})<=UNITS.counterIntel.range))visible[y*cols+x]=false;
       }
       const sources = [
         ...this.activeUnits(side).filter(u => !isLunarRobot(this.map, u.type) || u.battery > 0).map(u => ({ x: u.x, y: u.y, sight: UNITS[u.type].sight, overTerrain: UNITS[u.type].tags.includes('air') || UNITS[u.type].tags.includes('ship') || u.type === 'aa' })),
@@ -1211,7 +1244,7 @@ export class Game {
       if (escort) plane.order = { type: 'move', x: Math.min(this.world.width - 20, escort.x + 90), y: escort.y };
     }
     const prioritizingFirstStrike = airfield && this.time >= this.difficulty.waveStart && !p.aiFirstStrikeProduced;
-    const plan = ['power', 'radar', 'power', 'airfield', 'turret', 'lab', 'super', 'turret', 'power', 'factory', 'refinery'];
+    const plan = ['power', 'radar', 'power', 'airfield', 'turret', 'lab', 'super', 'turret', 'power', ...(this.nuclearEnabled?['power','nuclearSilo']:[]),'factory', 'refinery'];
     if (this.map.water && !dock && !p.buildQueue && p.credits > 600 && this.canBuild(side, 'dock')) this.startBuild(side, 'dock');
     else if (!this.hasBuilding(side, 'armory') && !p.buildQueue && !prioritizingFirstStrike && this.time >= 18 && p.credits > 600 && this.canBuild(side, 'armory')) this.startBuild(side, 'armory');
     else if (this.hasBuilding(side, 'hq') && !p.buildQueue && !prioritizingFirstStrike && p.aiPlanIndex < plan.length) {
@@ -1251,7 +1284,7 @@ export class Game {
     for (const b of this.ownedBuildings(side)) if (b.type !== 'hq' && b.hp < b.maxHp * .55 && !b.repairing && p.credits > 500) this.toggleRepair(side, b.id);
     const combat = this.ownedUnits(side).filter(u => UNITS[u.type].damage > 0 && !UNITS[u.type].tags.includes('ship') && !UNITS[u.type].tags.includes('jet')).length;
     if (!fundingTech && combat < this.difficulty.combatLimit) {
-      const sequence = ['rifle', 'tank', 'drone', 'apc', 'supply', 'aa', 'loiterer', 'jammer', 'laser', 'rocket', 'elite', ...(this.map.future ? ['railgun','relay'] : [])];
+      const sequence = ['rifle', 'tank', 'drone', 'apc', 'supply', 'aa', 'loiterer', 'jammer', 'laser', 'rocket', 'elite', ...(this.map.strategic?['ballistic','abm','counterIntel']:[]), ...(this.map.future ? ['railgun','relay'] : [])];
       const available = sequence.filter(type => !UNITS[type].requires || this.hasBuilding(side, UNITS[type].requires));
       const type = aiCounterUnit(this, side, available) || available[p.aiUnitCount % available.length];
       if (p.credits > (this.unitCost(side, type) * 0.4)) {
@@ -1259,11 +1292,15 @@ export class Game {
       }
     }
     if (airfield && (!fundingTech || prioritizingFirstStrike) && this.time >= this.difficulty.waveStart && p.credits > 350) {
-      const airborne = this.ownedUnits(side).filter(u => UNITS[u.type].tags.includes('jet') && !FREIGHT_TYPES.includes(u.type)).length;
+      const airborne = this.ownedUnits(side).filter(u => UNITS[u.type].tags.some(t=>['jet','rotorcraft'].includes(t)) && !FREIGHT_TYPES.includes(u.type)).length;
       const pending = airfield.queue.length + (airfield.active ? 1 : 0);
       if (airborne + pending < 4) {
         const carrier = this.ownedUnits(side, 'carrier').find(c => this.carrierAircraft(c).length < 3);
-        const type = aiCounterUnit(this, side, carrier ? ['navalFighter', 'fighter'] : ['fighter'], 'air') || (this.hasBuilding(side, 'lab') && p.aiAirUnitCount % 6 === 5 ? 'ewPlane' : carrier && this.hasBuilding(side, 'lab') ? p.aiAirUnitCount % 2 ? 'navalFighter' : 'navalStrike' : this.hasBuilding(side, 'lab') && p.aiAirUnitCount % 4 === 2 ? 'bomber' : this.hasBuilding(side, 'radar') && p.aiAirUnitCount % 4 === 3 && !this.ownedUnits(side, 'airlift').length ? 'airlift' : this.map.future && this.hasBuilding(side, 'lab') && p.aiAirUnitCount % 3 === 2 ? 'aegis' : p.aiAirUnitCount % 2 === 0 ? 'strike' : 'fighter');
+        let type = aiCounterUnit(this, side, carrier ? ['navalFighter', 'fighter'] : ['fighter'], 'air') || (this.hasBuilding(side, 'lab') && p.aiAirUnitCount % 6 === 5 ? 'ewPlane' : carrier && this.hasBuilding(side, 'lab') ? p.aiAirUnitCount % 2 ? 'navalFighter' : 'navalStrike' : this.hasBuilding(side, 'lab') && p.aiAirUnitCount % 4 === 2 ? 'bomber' : this.hasBuilding(side, 'radar') && p.aiAirUnitCount % 4 === 3 && !this.ownedUnits(side, 'airlift').length ? 'airlift' : this.map.future && this.hasBuilding(side, 'lab') && p.aiAirUnitCount % 3 === 2 ? 'aegis' : p.aiAirUnitCount % 2 === 0 ? 'strike' : 'fighter');
+        if(this.map.strategic&&!aiCounterUnit(this,side,['fighter'],'air')) {
+          if(p.aiAirUnitCount%4===1)type='helicopter';
+          if(p.aiAirUnitCount%4===3&&this.hasBuilding(side,'lab')&&!this.ownedUnits(side,'swarmCarrier').length&&!airfield.queue.includes('swarmCarrier')&&airfield.active?.type!=='swarmCarrier')type='swarmCarrier';
+        }
         if (this.queueAIUnit(type,side)) p.aiAirUnitCount++;
       }
     }
@@ -1380,4 +1417,4 @@ export class Game {
   }
 }
 
-Object.assign(Game.prototype, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat);
+Object.assign(Game.prototype, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat, droneAutonomy, strategicCombat,deterrenceCombat);

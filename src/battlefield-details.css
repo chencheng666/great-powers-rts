@@ -30,6 +30,7 @@
 .building-info-production .building-info-track { margin-bottom: 4px; }
 .building-info-production small { color: #b0c0b1; font-size: 10px; }
 .building-info-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 9px; }
+.building-info-actions .building-info-sell { width: auto; min-width: 64px; padding: 0 6px; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; }
 .building-info-actions .active { color: #c6f1d6; border-color: #91c89a; }
 .building-info-actions .icon-btn:disabled { opacity: .35; cursor: default; }
 @media (max-width: 700px) {

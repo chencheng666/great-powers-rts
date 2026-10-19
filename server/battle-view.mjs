@@ -16,6 +16,9 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
       e.passengers = []; e.embarkedIn = null; e.homeCarrierId = null;
       e.queue = []; e.active = null; e.rallyPoint = null; delete e.freight;
       delete e.serviceTargetId; delete e.stock; delete e.ammo;
+      delete e.autoDrone; delete e.droneRole;
+      delete e.swarmParentId;
+      delete e.nuclearEvadeUntil;
     } else if (e.order?.targetId && !ids.has(e.order.targetId) && !game.buildings.some(b => b.id === e.order.targetId && visible(b))) {
       // 指令目标是公开资源点时保留；敌军消失后不发送其最新位置。
       if (typeof e.order.targetId === 'number') { e.order = null; e.targetId = null; }
@@ -40,10 +43,11 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
   return {
     battleReport: game.running ? null : (() => { const report = battleReport(game); return report ? { ...report, sides: order.map(s=>report.sides[s]), events: report.events.map(e => ({ ...e, owner: owner(e.owner) })) } : null; })(),
     spectator,seatOrder:order,time: game.time, running: game.running, paused: game.paused,
+    nuclearWarnings:game.nuclearWarnings().map(w=>({...w,owner:owner(w.owner)})),
     winner: typeof game.winner === 'number' ? owner(game.winner) : game.winner,
     players, units: entities.map(entityView), buildings: [...game.ownedBuildings(side).map(entityView), ...[...memory].filter(([id]) => typeof id === 'number').map(([, b]) => copy(b))],
     ore: sites('ore'), oil: sites('oil'), beacons: sites('beacons'), resourceSites: sites('resourceSites'), fog: packFog(game.fogs[side]),
-    projectiles: game.projectiles.filter(p => game.isVisibleFor(side, p.x, p.y) && game.isVisibleFor(side, p.toX, p.toY)).map(p => ({ ...copy(p), startX:game.isVisibleFor(side,p.startX,p.startY)?p.startX:p.x,startY:game.isVisibleFor(side,p.startX,p.startY)?p.startY:p.y,owner: owner(p.owner), targetId: null, sourceId: null })),
-    effects: game.effects.filter(e => game.isVisibleFor(side, e.x, e.y) && (!Number.isFinite(e.toX) || game.isVisibleFor(side, e.toX, e.toY))).map(e => ({ ...copy(e), owner: owner(e.owner) }))
+    projectiles: game.projectiles.filter(p => p.kind==='nuclear'||game.isVisibleFor(side, p.x, p.y) && game.isVisibleFor(side, p.toX, p.toY)).map(p => ({ ...copy(p), startX:game.isVisibleFor(side,p.startX,p.startY)?p.startX:p.x,startY:game.isVisibleFor(side,p.startX,p.startY)?p.startY:p.y,owner: owner(p.owner), targetId: null, sourceId: null })),
+    effects: game.effects.filter(e => e.type==='nuclearBlast'||game.isVisibleFor(side, e.x, e.y) && (!Number.isFinite(e.toX) || game.isVisibleFor(side, e.toX, e.toY))).map(e => ({ ...copy(e), owner: owner(e.owner) }))
   };
 }

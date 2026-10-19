@@ -1,9 +1,12 @@
+import { DETERRENCE } from './deterrence-rules.js';
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 // 弹道只用于游戏可读性，不代表现实武器的飞行参数或制导算法。
 export function projectileFlightPose(p) {
   const span = Math.max(1, Math.hypot(p.toX - p.startX, p.toY - p.startY));
   const progress = clamp(Math.hypot(p.x - p.startX, p.y - p.startY) / span, 0, 1);
+  if (p.kind === 'nuclear') {const t=clamp(p.age/DETERRENCE.flight,0,1);return {height:20+Math.sin(t*Math.PI)*650,pitch:Math.atan2(650*Math.PI*Math.cos(t*Math.PI),span)};}
+  if (p.kind === 'ballistic') return { height: 20 + Math.sin(progress * Math.PI) * 420, pitch: Math.atan2(420 * Math.PI * Math.cos(progress * Math.PI), span) };
   if (p.kind === 'rocket') return { height: 22 + Math.sin(progress * Math.PI) * 135, pitch: Math.atan2(135 * Math.PI * Math.cos(progress * Math.PI), span) };
   if (p.kind === 'bomb' && p.fallDuration) return { height: 4 + (p.sourceHeight ?? 95) * (1 - clamp(p.age / p.fallDuration, 0, 1) ** 2), pitch: -Math.PI / 2 };
   if (p.kind === 'bomb') return { height: 95 * (1 - progress) + 4, pitch: Math.atan2(-95, span) };

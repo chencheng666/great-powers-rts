@@ -4,10 +4,18 @@ import { isLunarRobot, lunarBuildingProfile, ROBOT_ENERGY } from './lunar-robots
 import { productionDuration } from './battlefield-details.js';
 import { unitCostFor, unitHealthFor } from './unit-specs.js';
 import { SUPPLY_ROUTES } from './logistics-economy.js';
+import { supportsDroneAutonomy } from './drone-autonomy.js';
 
 export const CATALOG_CATEGORIES = { all: '全部', infantry: '人物／机器人', ground: '地面装备', air: '空中装备', naval: '舰艇', building: '建筑' };
 // 这里只补充战术说明；造价、生命、弹药、前置和地图限制读取实际规则。
 const GUIDES = {
+  helicopter:['低空反装甲','越障接近装甲，有限导弹、机场整备；配合制空护航。','不能攻击飞行目标；高空制空机与防空车克制，激光车不能代替常规防空。'],
+  ballistic:['常规纵深打击','以共享实时视野锁定发射时坐标，展开 5 秒后发射高弧线常规弹。','有最小射程、飞行时间和两发容量；目标可疏散，区域反导可拦截，发射车怕突击。不是核武器。'],
+  abm:['有限区域反导','有电和雷达站支持时拦截可见弹道弹，通常两枚拦截弹应对一枚来袭弹。','只能反导；四发弹药、付费补给，断电、饱和打击、地面突击都能削弱它。不是现实反核保证。'],
+  counterIntel:['反卫星侦察','停稳一秒、有电且雷达站存活时，遮蔽附近敌方卫星侦察。','直接侦察与前沿雷达仍能揭露区域；移动或断电立即失效，不能抹除已探索地形。'],
+  swarmCarrier:['异构蜂群任务','使用攻击移动接近已发现目标，释放侦察、诱饵、攻击三类子机；母机无武装。','同时一架母机、最多六架子机、两批任务舱，子机 24 秒退出；制空猎杀母机，激光与干扰对付蜂群。'],
+  swarmScout:['蜂群侦察','临时子机提供直接视野，侦察并不依赖卫星。','无武装、无隐身、不可独立生产或补给，24 秒任务时限。'],
+  swarmDecoy:['蜂群诱饵','真实机体进入防空区域吸引自动火力，给攻击子机争取时间。','敌方可手动选择高价值目标；不强制嘲讽，不伪造单位，不可独立生产或补给。'],
   rifle: ['前线步兵', '低成本守点，与装甲和防空混编；对装甲伤害降低。', '坦克克制步兵；不要让步兵单独追击装甲。'],
   engineer: ['占领与拆弹', '右键油井、信标或能源仓占领，成功后驻留；可回收物资，右键己方被潜入设施停驻 3 秒拆弹。', '无武装；拆弹不消耗工程师，占领会消耗。被攻击会暂时中断拆弹，需要护卫。'],
   scout: ['侦察与潜入', '480 视野、260 范围反隐；右键可见敌方建筑，一次性潜入并安装 45 秒定时破坏。', '无武装、不隐身；工程师右键本方被潜入设施，停驻 3 秒拆弹。月表保留机器人外形。'],
@@ -50,6 +58,7 @@ const ELITE_GUIDES = {
   middleeast: ['命中电子压制', '命中无人机／载具造成短时瘫痪，射程提高。', '不是全图网络攻击，需进入射程并建立目标视野。']
 };
 const BUILDING_GUIDES = {
+  nuclearSilo:['可选战略威慑','开局启用后，雷达／实验室／供电接入，准备 240 秒，花费 4500；8 秒准备及 20 秒飞行均公开落区。','每方每局实际发射一次；准备中源站被毁或断网取消、不退投入。区域反导可多发拦截，敌我都应疏散，满血核心不会被一击摧毁。'],
   hq: ['基地建造核心', '保护指挥中心；失去它无法继续建造，后勤中心被毁时可接收低额应急空运。', '快速对战要求摧毁所有生产核心，并非只打指挥中心。'],
   power: ['电网保障', '为生产、维修、港口整备与机器人充电提供供电余量。', '断电拖慢生产和技能充能、停止整备；机器人充电额外占用电力。'],
   refinery: ['经济枢纽', '常规战区接收空运；子午战区精炼本地矿石。', '实际卸货才到账，建更多后勤中心不会无限叠加援助班次。'],
@@ -68,11 +77,12 @@ const buildingName = (type, future) => lunarBuildingProfile(future, type, BUILDI
 export function catalogAvailability(kind, type, faction, mapId) {
   const map = MAPS[mapId], d = kind === 'unit' ? UNITS[type] : BUILDINGS[type];
   if (d.faction && d.faction !== faction) return { available: false, reason: `仅 ${FACTIONS[d.faction].name} 可生产` };
+  if(d.tags?.includes('swarm'))return {available:false,reason:'异构母机释放的临时子机，不可独立生产'};
   if (type === 'harvester' && !map.future) return { available: false, reason: '新战局仅子午采矿经济使用；旧采矿存档例外' };
   if (d.tags?.includes('logistics')) return { available: false, reason: map.future ? '月表采用本地采矿，不启用外部运输班次' : type === 'containerShip' && !map.water ? '仅常规海图自动运行，不可手动生产' : '外部援助自动运行，不可手动生产' };
   if ((d.naval || d.tags?.includes('ship')) && !map.water) return { available: false, reason: '需要海域战区' };
   if (!supportsMap(d.map, mapId)) return { available: false, reason: `限定战区：${Object.entries(MAPS).filter(([id]) => supportsMap(d.map, id)).map(([, m]) => m.name).join('、')}` };
-  return { available: true, reason: type === 'hq' ? '开局核心；存活的指挥中心是继续建造的前提' : '当前阵营与战区可用，仍需满足生产前置、资金与供电' };
+  return { available: true, reason: d.nuclear?'仅开局启用核威慑规则后可造；还需满足前置与资金':type === 'hq' ? '开局核心；存活的指挥中心是继续建造的前提' : '当前阵营与战区可用，仍需满足生产前置、资金与供电' };
 }
 
 export function catalogEntry(kind, type, faction = 'china', mapId = 'valley') {
@@ -97,13 +107,18 @@ export function catalogEntry(kind, type, faction = 'china', mapId = 'valley') {
     if (d.sonar) stats.push(['声呐', `${d.sonar}`]);
   } else stats.push(['电力', d.power >= 0 ? `+${d.power}` : `${d.power}`]);
   const attention = [guide[2]], tactics = [guide[1]], service = [];
+  if (kind === 'unit' && supportsDroneAutonomy({ type })) {
+    tactics.push('默认基地警戒；攻击目标或攻击移动后自主交战，任务结束返回基地。低于等于 35% 生命或 25% 弹药时提前付费整备，完成后继续任务。');
+    attention.push('只利用本方侦察视野；防空、激光和电子干扰仍能反制。手动移动、巡逻优先，停止指令保持原地，可关闭自主值守。');
+  }
   if (robot) {
     tactics.push('无需氧气、食物或常规弹药；电池驱动移动与脉冲攻击。');
     service.push(`低于 ${ROBOT_ENERGY.returnAt}% 自动返充；电站、装配站或补给车可充电，每机体占 ${ROBOT_ENERGY.chargeLoad} 电力，电量耗尽后需补给车救援。`);
-  } else if (kind === 'unit' && !d.tags.includes('logistics') && !['harvester', 'supply'].includes(type)) {
+  } else if (kind === 'unit' && !d.tags.includes('logistics') && !d.tags.includes('swarm') && !['harvester', 'supply'].includes(type)) {
     service.push(d.tags.includes('ship') ? '回己方港口，停稳脱战、供电且有资金时付费维修补弹。' : d.tags.includes('air') ? d.tags.includes('deck') ? '可返机场或所属航母付费整备；航母需停航、有电且脱战。' : '返回机场付费维修补弹；空中状态不能由地面补给车维修。' : d.tags.includes('infantry') ? '回兵营停驻脱战治疗；补给车也可医疗，补弹与维修消耗资金。' : '回战车工厂／兵工厂停驻维修补弹，或由补给车保障，消耗资金与库存。');
     if (d.ammo) attention.push('弹药是射击批次，不是真实逐发弹匣；耗尽自动返场，满弹掉血也可主动整备。');
   }
+  if (kind === 'unit' && d.tags.includes('drone') && !d.tags.includes('swarm')) service.push('低空无人机可在兵工厂或机场维修补弹；需要供电、资金和脱战停稳。');
   const modifiers = { 'nato:tank': '生命 +15%', 'asia:drone': '造价与生命均 -15%', 'china:aa': '生命 +15%', 'russia:aa': '对空伤害 -12%', 'middleeast:tank': '伤害 -10%' };
   if (kind === 'unit' && modifiers[`${faction}:${type}`]) attention.push(`当前阵营修正：${modifiers[`${faction}:${type}`]}。面板生命与造价已计入；基础伤害不含目标克制与阵营倍率。`);
   if (kind === 'building' && type === 'turret' && faction === 'china') attention.push('华夏炮塔承受伤害乘 0.85；面板生命不增加。');

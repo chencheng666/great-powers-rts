@@ -10,7 +10,7 @@ const folder = join(root, 'assets/audio/portable');
 const temporary = await mkdtemp(join(tmpdir(), 'great-powers-voices-'));
 await mkdir(folder, { recursive: true });
 const engine = execFileSync('espeak-ng', ['--version'], { encoding: 'utf8' }).split('\n')[0];
-const manifest = { generator: engine, generatedOn: '2026-10-07', source: 'https://github.com/espeak-ng/espeak-ng', license: '仅分发原创台词的合成音频，不捆绑 GPL 引擎、系统录音或第三方声音模型。', voice: 'cmn', femaleVoice:'cmn+f3',files: [],femaleFiles:[] };
+const manifest = { generator: engine, generatedOn: new Date().toISOString().slice(0,10), source: 'https://github.com/espeak-ng/espeak-ng', license: '仅分发原创台词的合成音频，不捆绑 GPL 引擎、系统录音或第三方声音模型。', voice: 'cmn', femaleVoice:'cmn+f3',files: [],femaleFiles:[] };
 try {
   for (const [key, lines] of Object.entries(VOICE_LINES)) {
     for (const [index, text] of lines.entries()) {

@@ -1,8 +1,15 @@
 {
-  "version": "1.0.0",
-  "releaseTag": "v1.0.0",
-  "desktopOnline": "1.0使用可信HTTPS/WSS；六方实验入口单独运行，历史0.9.1/0.9.0仍保留",
+  "version": "1.1.0",
+  "releaseTag": "v1.1.0",
+  "desktopOnline": "新版双人协议4、六方协议5，请所有玩家刷新或升级；核规则仅双人战略图且双方确认。历史安装包留作归档，不支持与新版联机。",
   "files": [
+    {
+      "name": "Great-Powers-RTS-v1.1.0.zip",
+      "label": "1.1.0 · 离线单机 ZIP · 免安装",
+      "size": 54859295,
+      "sha256": "3b2fd3479a98791f954a12cab3d94360a46597c558990cafb40c8a60a4b82992",
+      "status": "内置模型、音乐与中文男女声；完整解压后打开PLAY.html，不包含联机服务。"
+    },
     {
       "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.0.0/Great.Powers_1.0.0_aarch64.app.tar.gz",
       "label": "GitHub 1.0 · macOS Apple Silicon 压缩应用 · Great.Powers_1.0.0_aarch64.app.tar.gz",

@@ -8,12 +8,27 @@
 .menu-saves small { display: block; font-size: 11px; color: #c0ced1; margin-top: 10px; line-height: 1.6; }
 .menu-saves svg, .modal-actions svg { width: 16px; height: 16px; flex-shrink: 0; }
 .modal-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.desktop-download-link { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border: 1px solid #537b80; background: #18353b; line-height: 1.6; }
+.desktop-download-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+#battle-error-detail { overflow-wrap: anywhere; max-height: 120px; overflow: auto; }
 .modal-actions button { min-width: 0; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; }
 .save-slot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid #46545a; }
 .save-slot strong { font-size: 13px; }
 .save-slot small { display: block; font-size: 11px; color: #acbec4; line-height: 1.8; margin-top: 6px; }
 .save-slot .icon-btn { flex-shrink: 0; }
 .graphics-setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid #46545a; font-size: 12px; }
+.nuclear-option,.nuclear-consent { display:flex; align-items:flex-start; gap:9px; line-height:1.6; font-size:12px; color:#e1caa4; }
+.nuclear-option { flex-wrap:wrap; padding:8px 0; margin-bottom:10px; border-top:1px solid #576269; }
+.nuclear-option small { color:#a9b9bd; margin-left:auto; }
+.nuclear-option[hidden],.nuclear-consent[hidden] { display:none; }
+.nuclear-consent { padding:14px 0; border-top:1px solid #59656b; }
+.nuclear-option input,.nuclear-consent input { flex:none; accent-color:#e2bb74; margin-top:3px; }
+.online-dialog .nuclear-consent input { width:16px; height:16px; padding:0; margin:3px 0 0; }
+.nuclear-alert { position:absolute; top:252px; left:18px; z-index:7; width:236px; max-width:calc(100% - 36px); display:flex; align-items:center; gap:10px; border:1px solid #d5ab67; border-left:3px solid #ffd386; padding:10px 12px; background:#29241bf2; color:#ffe1ae; text-align:left; }
+.nuclear-alert[hidden] { display:none; }
+.nuclear-alert svg { width:18px; height:18px; flex:none; }.nuclear-alert svg:last-child { margin-left:auto; width:15px; }
+.nuclear-alert strong,.nuclear-alert small { display:block; }.nuclear-alert strong { font-size:12px; }.nuclear-alert small { margin-top:4px; font-size:10px; }
+.nuclear-control { border-color:#b79b6f; }.nuclear-control .ability-charge>div { background:#deb775; }
 .graphics-setting select { min-width: 130px; border: 1px solid #55676e; background: #26343a; color: #e4eef0; height: 34px; padding: 0 10px; }
 .attack-alert { position: absolute; top: 178px; left: 18px; width: 236px; max-width: calc(100% - 36px); min-height: 58px; z-index: 7; border: 1px solid #db7563; border-left: 3px solid #ff765d; background: #27191bef; color: #ffb4a4; display: flex; align-items: center; gap: 10px; padding: 10px 12px; text-align: left; box-shadow: 0 4px 22px #12060470; animation: attackAlertIn .25s ease-out; }
 .attack-alert[hidden] { display: none; }

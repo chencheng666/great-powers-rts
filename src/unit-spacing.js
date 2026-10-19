@@ -2,12 +2,13 @@ import { UNITS } from './data.js';
 
 export function unitLayer(unit) {
   const tags = UNITS[unit.type].tags;
-  return tags.includes('jet') ? 'jet' : tags.includes('drone') ? 'drone' : tags.includes('submerged') ? 'submerged' : tags.includes('ship') ? 'naval' : 'ground';
+  return tags.includes('jet') ? 'jet' : tags.includes('rotorcraft') ? 'rotorcraft' : tags.includes('drone') ? 'drone' : tags.includes('submerged') ? 'submerged' : tags.includes('ship') ? 'naval' : 'ground';
 }
 
 export function unitRadius(unit) {
   const tags = UNITS[unit.type].tags;
   if (tags.includes('infantry')) return 9;
+  if (tags.includes('rotorcraft')) return 48;
   if (tags.includes('jet')) return { airlift: 80, bomber: 76, freightPlane: 68 }[unit.type] || 40;
   if (tags.includes('drone')) return 20;
   if (tags.includes('ship')) return { carrier: 92, destroyer: 65, submarine: 46, frigate: 48, patrol: 36, landing: 74, containerShip: 88 }[unit.type] || 48;

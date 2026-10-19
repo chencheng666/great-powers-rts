@@ -108,6 +108,17 @@
   background: #69453a;
 }
 
+.selection-actions button[data-action="sell"] {
+  width: auto;
+  min-width: 62px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
 .selection-actions svg {
   width: 15px;
   height: 15px;
