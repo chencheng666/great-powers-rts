@@ -1,0 +1,62 @@
+[
+  {
+    "type": "image",
+    "file": "01-home.png",
+    "caption": "1.1 作战部署首页｜游戏界面截图；背景是原创插画，不代表实战模型精度。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/e1b4195ed1a000731d7cbdd1efc07057d3e11a52/docs/wechat-v110-20261019/images/01-home.png"
+  },
+  {
+    "type": "image",
+    "file": "09-dongfeng.png",
+    "caption": "东风常规编组图鉴｜原创简化外形；职责、弹药与弱点使用游戏规则，不复刻真实性能。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/e1b4195ed1a000731d7cbdd1efc07057d3e11a52/docs/wechat-v110-20261019/images/09-dongfeng.png"
+  },
+  {
+    "type": "image",
+    "file": "08-apache.png",
+    "caption": "AH-64 原型编组图鉴｜独立旋翼和低空反装甲职责，仍是原创简化模型。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/e1b4195ed1a000731d7cbdd1efc07057d3e11a52/docs/wechat-v110-20261019/images/08-apache.png"
+  },
+  {
+    "type": "image",
+    "file": "07-f22.png",
+    "caption": "F-22 原型编组图鉴｜不是给通用飞机改个名称，也不是高精度扫描复刻。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/e1b4195ed1a000731d7cbdd1efc07057d3e11a52/docs/wechat-v110-20261019/images/07-f22.png"
+  },
+  {
+    "type": "image",
+    "file": "10-jiutian.png",
+    "caption": "异构任务母机图鉴｜受九天公开原型启发；三类子机与任务舱规则是游戏创作，不代表现实已具备相同能力。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/e1b4195ed1a000731d7cbdd1efc07057d3e11a52/docs/wechat-v110-20261019/images/10-jiutian.png"
+  },
+  {
+    "type": "image",
+    "file": "06-silo-catalog.png",
+    "caption": "战略威慑发射井图鉴｜双开防爆门与独立机构；与常规东风编组是两套游戏职能。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/e1b4195ed1a000731d7cbdd1efc07057d3e11a52/docs/wechat-v110-20261019/images/06-silo-catalog.png"
+  },
+  {
+    "type": "image",
+    "file": "02-nuclear-warning.png",
+    "caption": "公开落区与倒计时｜预置单位、加速的受控验收场景，不是自然完整对局。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/e1b4195ed1a000731d7cbdd1efc07057d3e11a52/docs/wechat-v110-20261019/images/02-nuclear-warning.png"
+  },
+  {
+    "type": "image",
+    "file": "03-interception.png",
+    "caption": "末段拦截验收｜有限弹药和拦截窗口共同约束防守，不保证绝对防御。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/e1b4195ed1a000731d7cbdd1efc07057d3e11a52/docs/wechat-v110-20261019/images/03-interception.png"
+  },
+  {
+    "type": "image",
+    "file": "04-nuclear-impact.png",
+    "caption": "落地烟尘与冲击表现｜与上图拦截分属独立验收场景，不代表一局重复发射；均为虚构游戏尺度。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/e1b4195ed1a000731d7cbdd1efc07057d3e11a52/docs/wechat-v110-20261019/images/04-nuclear-impact.png"
+  },
+  {
+    "type": "image",
+    "file": "11-online-battle.png",
+    "caption": "1.1 双浏览器联机验收截图｜同一战略战局中的实际界面，非自然完整对局。",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/e1b4195ed1a000731d7cbdd1efc07057d3e11a52/docs/wechat-v110-20261019/images/11-online-battle.png"
+  }
+]
