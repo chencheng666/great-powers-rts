@@ -18,7 +18,9 @@ SERVICES=['great-powers','great-powers-six-candidate']
 DATA=[pathlib.Path('/var/lib/great-powers'),BASE/'candidate-data']
 
 def run(args,**kwargs):
-    return subprocess.run(args,check=True,capture_output=True,text=True,**kwargs).stdout
+    result=subprocess.run(args,capture_output=True,text=True,**kwargs)
+    if result.returncode:raise RuntimeError(result.stderr or result.stdout or '子进程执行失败')
+    return result.stdout
 
 def health(port):
     with urllib.request.urlopen(f'http://127.0.0.1:{port}/api/health',timeout=5) as response:
@@ -97,7 +99,7 @@ for(const count of [2,6]){const d=await mkdtemp(join(tmpdir(),'gp-preflight-')),
             content=urllib.request.urlopen(f'http://127.0.0.1:{port}/',timeout=5).read()
             if hashlib.sha256(content).digest()!=hashlib.sha256((stage/'dist/index.html').read_bytes()).digest():raise RuntimeError('网页内容不一致')
         for index,path in enumerate(DATA):
-            compare="""import{DatabaseSync}from'node:sqlite';const dbs=process.argv.slice(1).map(p=>new DatabaseSync(p,{readOnly:true}));for(const sql of ['SELECT count(*) n FROM guests','SELECT count(*) n FROM matches','SELECT count(*) n FROM multi_matches','SELECT count(*) n FROM match_members','SELECT coalesce(sum(wins+losses+draws),0) n FROM guests'])if(dbs[1].prepare(sql).get().n<dbs[0].prepare(sql).get().n)throw Error('历史战绩减少');dbs.forEach(d=>d.close());"""
+            compare="""import{DatabaseSync}from'node:sqlite';const dbs=process.argv.slice(1).map(p=>new DatabaseSync(p,{readOnly:true}));const count=(db,table)=>db.prepare(\"SELECT 1 FROM sqlite_master WHERE type='table' AND name=?\").get(table)?db.prepare('SELECT count(*) n FROM '+table).get().n:0;for(const table of ['guests','matches','multi_matches','match_members'])if(count(dbs[1],table)<count(dbs[0],table))throw Error('历史记录减少：'+table);const sql='SELECT coalesce(sum(wins+losses+draws),0) n FROM guests';if(dbs[1].prepare(sql).get().n<dbs[0].prepare(sql).get().n)throw Error('历史战绩减少');dbs.forEach(d=>d.close());"""
             run([str(node),'--input-type=module','-e',compare,str(backup/f'data-{index}/guests.sqlite'),str(path/'guests.sqlite')])
         report={'version':version,'services':values,'release':str(stage),'backup':str(backup),'sha256':args.sha256}
         (backup/'release.json').write_text(json.dumps(report,ensure_ascii=False,indent=2));print(json.dumps(report,ensure_ascii=False),flush=True)

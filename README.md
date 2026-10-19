@@ -36,6 +36,8 @@
 | 战略威慑预警 | 战略发射井图鉴 |
 | --- | --- |
 | ![战略威慑公开预警受控验收场景](docs/releases/v1.1.0-images/02-nuclear-warning.png) | ![原创战略发射井三维图鉴](docs/releases/v1.1.0-images/06-silo-catalog.png) |
+| F-22 原型模型 | AH-64 原型模型 |
+| ![西陆制空机原创简化模型](docs/releases/v1.1.0-images/07-f22.png) | ![武装直升机原创简化模型](docs/releases/v1.1.0-images/08-apache.png) |
 
 更多实机图与素材说明见 [1.1 发行说明](docs/releases/v1.1.0.md) 和 [素材清单](ASSETS.md)。战略截图来自加速、预置单位的受控验收，不是自然完整对局；旧场景截图保留对应内容，首页插画不代表实战模型精度。
 
