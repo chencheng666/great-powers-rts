@@ -35,7 +35,7 @@ for(const count of [2,6]){
     for(let i=1;i<count-1;i++)send(clients[i],{type:'leave'});
     const ended=await wait(host,m=>m.type==='snapshot'&&!m.view.running&&m.view.battleReport);
     if(ended.view.winner!==0||ended.view.battleReport.sides.length!==count)throw Error('公网结算视图错误');
-    results.push({players:count,protocol,sameBattle:true,movement:true,nuclearConsent:count===2,invalidNuclearRejected:count===2,independentElimination:count===6,reportSides:count,compression:host.ws.extensions||'none'});
+    results.push({players:count,protocol,sameBattle:true,movement:true,nuclearConsent:count===2?true:null,invalidNuclearRejected:count===2?true:null,independentElimination:count===6?true:null,reportSides:count,compression:host.ws.extensions||'none'});
   }finally{
     identities.push({directory:count===6?'six':'main',ids,battleId});await writeFile(`${out}/identities.json`,JSON.stringify(identities,null,2),{mode:0o600});
     for(const c of clients){if(c.ws.readyState===1)send(c,{type:'leave'});c.ws.close();}

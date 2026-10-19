@@ -1,0 +1,54 @@
+{
+  "version": "1.1.0",
+  "results": [
+    {
+      "players": 2,
+      "protocol": 4,
+      "sameBattle": true,
+      "movement": true,
+      "nuclearConsent": true,
+      "invalidNuclearRejected": true,
+      "independentElimination": null,
+      "reportSides": 2,
+      "compression": "none"
+    },
+    {
+      "players": 6,
+      "protocol": 5,
+      "sameBattle": true,
+      "movement": true,
+      "nuclearConsent": null,
+      "invalidNuclearRejected": null,
+      "independentElimination": true,
+      "reportSides": 6,
+      "compression": "permessage-deflate"
+    }
+  ],
+  "checks": [
+    {
+      "path": "/",
+      "sha256": "732930e0e873db3478013c6fb2e45ddb04f7c1d381bdd1f533ca962c703fd91c",
+      "match": true
+    },
+    {
+      "path": "/assets/index-Ce3yw3Cp.js",
+      "sha256": "42ebd0a2f316dc640f47f368e6847ec5ab51171c99f4993f0898aa786ac1169c",
+      "match": true
+    },
+    {
+      "path": "/official/",
+      "sha256": "0164195b5d9baf2deaa09fd557822a430b8671fb2f19a630559280739d37a6d9",
+      "match": true
+    },
+    {
+      "path": "/downloads/manifest.json",
+      "sha256": "f5bd9845462f4f01824d08daca6ad588bd001ac562242c93d80d5e7342bb6ee9",
+      "match": true
+    },
+    {
+      "path": "/downloads/packages/Great-Powers-RTS-v1.1.0.zip",
+      "sha256": "3b2fd3479a98791f954a12cab3d94360a46597c558990cafb40c8a60a4b82992",
+      "match": true
+    }
+  ]
+}
