@@ -87,12 +87,12 @@ test('火箭炮需要展开、不能近射，区域伤害不误伤友军或攻�
   const g = setup(), rocket = g.addUnit(0, 'rocket', 620, 700), target = g.addUnit(1, 'tank', 1180, 700);
   rocket.fireTimer = 0; rocket.order = { type: 'attack', targetId: target.id, x: target.x, y: target.y };
   for (let n = 0; n < 39; n++) g.updateUnit(rocket, .05);
-  assert.equal(g.projectiles.length, 0); g.updateUnit(rocket, .05); assert.equal(g.projectiles.length, 1); assert.equal(rocket.ammo, 5);
+  assert.equal(g.projectiles.length, 0); g.updateUnit(rocket, .05); assert.equal(g.projectiles.length, 1); assert.equal(rocket.ammo, UNITS.rocket.ammo - 1);
   const ally = g.addUnit(0, 'tank', 1180, 710), second = g.addUnit(1, 'rifle', 1180, 725), jet = g.addUnit(1, 'fighter', 1180, 715);
   for (let n = 0; n < 45; n++) { g.time += .05; g.updateProjectiles(.05); }
   assert.ok(target.hp < target.maxHp); assert.ok(second.hp < second.maxHp); assert.equal(ally.hp, ally.maxHp); assert.equal(jet.hp, jet.maxHp);
   target.x = 700; rocket.fireTimer = 0; rocket.deployProgress = 2; rocket.lastMovedAt = -10;
-  g.updateUnit(rocket, .05); assert.equal(rocket.ammo, 5); assert.ok(rocket.x < 620);
+  g.updateUnit(rocket, .05); assert.equal(rocket.ammo, UNITS.rocket.ammo - 1); assert.ok(rocket.x < 620);
 });
 
 test('运输车装载四名乘员，隐藏乘员视野和火力，下车恢复而不复制单位', () => {
@@ -116,25 +116,25 @@ test('车毁乘员受伤撤出，瘫痪及装载乘员不参与位置分离', ()
   g.damage(apc, apc.maxHp * 2, 1); assert.equal(u.embarkedIn, null); assert.equal(u.hp, u.maxHp / 2); assert.equal(apc.passengers.length, 0);
 });
 
-test('补给消耗有限库存和资金，只帮助友军，移动与刚受攻击时不能维修', () => {
+test('补给光环随车移动但只帮助友军，刚受攻击时不维修且资金库存有限', () => {
   const g = setup(), supply = g.addUnit(0, 'supply', 700, 700), tank = g.addUnit(0, 'tank', 760, 700), enemy = g.addUnit(1, 'tank', 760, 740);
   tank.hp = 200; enemy.hp = 200; g.players[0].credits = 100;
-  supply.order = { type: 'move', x: 1000, y: 700 }; g.updateSupply(supply, 1); assert.equal(tank.hp, 200);
-  supply.order = null; tank.lastDamageAt = g.time; g.updateSupply(supply, 1); assert.equal(tank.hp, 200);
-  g.time = 4; g.updateSupply(supply, 1); assert.equal(tank.hp, 224); assert.equal(enemy.hp, 200); assert.ok(supply.stock < 120); assert.ok(g.players[0].credits < 100);
-  g.players[0].credits = 0; g.updateSupply(supply, 1); assert.equal(tank.hp, 224);
+  supply.order = { type: 'move', x: 1000, y: 700 }; g.updateSupply(supply, 1); assert.equal(tank.hp, 224);
+  supply.order = null; tank.lastDamageAt = g.time; g.updateSupply(supply, 1); assert.equal(tank.hp, 224);
+  g.time = 4; g.updateSupply(supply, 1); assert.equal(tank.hp, 248); assert.equal(enemy.hp, 200); assert.ok(supply.stock < UNITS.supply.stock); assert.ok(g.players[0].credits < 100);
+  g.players[0].credits = 0; g.updateSupply(supply, 1); assert.equal(tank.hp, 248);
 });
 
 test('前线补弹有费用和间隔；地面补给不依赖空军基地', () => {
   const g = setup(), supply = g.addUnit(0, 'supply', 700, 700), rocket = g.addUnit(0, 'rocket', 765, 700);
   rocket.ammo = 0; rocket.order = { type: 'rearm' }; rocket.resumeOrder = { type: 'attackMove', x: 1200, y: 700 };
   const cash = g.players[0].credits; g.updateSupply(supply, .05); assert.equal(rocket.ammo, 1); assert.equal(g.players[0].credits, cash - 10);
-  g.updateSupply(supply, .05); assert.equal(rocket.ammo, 1);
-  for (let n = 0; n < 61; n++) g.updateSupply(supply, .05);
-  assert.equal(rocket.ammo, 3); assert.equal(rocket.order.type, 'attackMove');
-  supply.stock = 0; supply.x = 520; supply.y = 705; g.players[0].credits = 1000;
-  for (let n = 0; n < 162; n++) g.updateSupply(supply, .05);
-  assert.equal(supply.stock, 120); assert.equal(g.players[0].credits, 900);
+  g.time += .05; g.updateSupply(supply, .05); assert.equal(rocket.ammo, 1);
+  for (let n = 0; n < 81; n++) { g.time += .05; g.updateSupply(supply, .05); }
+  assert.equal(rocket.ammo, 4); assert.equal(rocket.order.type, 'attackMove');
+  supply.stock = 0; supply.x = 520; supply.y = 705; g.players[0].credits = 1000; rocket.ammo = UNITS.rocket.ammo;
+  for (let n = 0; n < 122; n++) { g.time += .05; g.updateSupply(supply, .05); }
+  assert.equal(supply.stock, UNITS.supply.stock); assert.equal(g.players[0].credits, 920);
 });
 
 test('潜艇不能被普通地面或空军发现和攻击，声呐与发射暴露形成反制', () => {

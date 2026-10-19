@@ -1,4 +1,5 @@
 import { battleMetric } from './battle-report.js';
+import { UNITS } from './data.js';
 
 export const ROBOT_SPECS = {
   rifle: { name: '月卫战斗机器人', model: 'robot_rifle', shotCost: 4, description: '原创月表无人战斗机体；电池驱动机动与脉冲武器，无需氧气、食物或常规弹药。低电量返场充电。' },
@@ -14,7 +15,7 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 export const lunarRobots = {
   robotChargeSite(u) {
     const buildings = this.ownedBuildings(u.owner).filter(b => ['power', 'barracks'].includes(b.type) && distance(u, b) <= b.size * .55 + 40);
-    const trucks = this.activeUnits(u.owner, 'supply').filter(t => t.stock >= 8 && this.time - (t.lastMovedAt ?? -10) >= .5 && !['move', 'attackMove', 'restock'].includes(t.order?.type) && distance(u, t) <= 125);
+    const trucks = this.activeUnits(u.owner, 'supply').filter(t => t.stock >= 8 && t.order?.type !== 'restock' && distance(u, t) <= UNITS.supply.range && this.hasLineOfFire(t, u));
     return [...buildings, ...trucks].filter(s => this.time - (s.lastDamageAt ?? -10) > 3).sort((a, b) => distance(a, u) - distance(b, u) || a.id - b.id)[0];
   },
 

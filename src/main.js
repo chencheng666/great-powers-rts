@@ -335,6 +335,8 @@ function advanceFrame(now, token) {
     saveProgress('auto', false); state.nextAutoAt = state.game.time + 45;
   }
   gameAudio.setPaused(state.game.paused || document.hidden);
+  // 按当前威胁状态同步，而非依赖解说事件；读档、重连和重复快照都不会漏报或叠音。
+  gameAudio.syncNuclearWarnings(state.game.running ? state.game.nuclearWarnings() : []);
   state.renderer.render(now);
   updateBuildingInspector(now);
   $('#zoom-level').textContent = `${Math.round(state.renderer.camera.zoom * 100)}%`;

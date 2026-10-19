@@ -20,6 +20,7 @@
 | 子午环阵地表 | `assets/meridian-regolith-v2.png`；内置 AI 图像生成工具制作的细颗粒俯视月壤纹理，旧 `v1` 保留 | 2026-10-04 更新；完整提示词见 `assets/asset-prompts.json`；道路、掩体、反应堆和基地由程序及三维模型叠加 |
 | 配乐 | `assets/audio/frontline-sequence.m4a`；程序编曲、合成的循环配乐《前线序列》 | `scripts/generate-audio.mjs`，约 74 秒，不使用官方游戏音乐 |
 | 战场音效 | `src/audio.js` 中 Web Audio 振荡器、噪声与滤波合成 | 修改频率、包络和滤波参数 |
+| 核威慑防空警报 | `src/nuclear-alarm.js` 原创程序合成的六秒循环机械升降调 | 不使用《红色警戒2》录音或采样；从公开核预警持续至威胁解除，走独立音效通道，服从音效音量、静音与暂停；单机、读档与联网按当前警报状态同步 |
 | 中文应答 | `src/audio-data.js` 中 73 条原创台词，包含受袭、潜入／拆弹设施名称、网络与战略威慑预警 | 优先使用设备中文 Speech Synthesis，不分发系统语音录音 |
 | 离线兜底播报 | `assets/audio/portable/*.wav` 与 `manifest.json` | `scripts/generate-portable-voices.mjs` 使用 eSpeak NG 1.52.0 合成原创台词；缺少中文音色或播报失败时使用。声音为机械合成，不分发 eSpeak NG 引擎、库、词典或第三方声音模型 |
 | 内置女声 | `assets/audio/portable/female-*.wav`，73 条 | 普通话 `cmn+f3` 合成音色，与男声使用同一套原创台词，不是真人配音；无需系统安装女声 |

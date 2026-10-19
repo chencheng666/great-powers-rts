@@ -12,12 +12,13 @@ import { Accounts } from './accounts.mjs';
 import { executeCommand } from './commands.mjs';
 import { battleView } from './battle-view.mjs';
 import { GAME_VERSION } from '../src/version.js';
+import { SessionRateLimit } from './session-rate-limit.mjs';
 
 export function createBattleServer({ directory = process.env.DATA_DIRECTORY || resolve('server-data'), root = resolve('dist'), origin = process.env.PUBLIC_ORIGIN || '', additionalOrigins = process.env.PUBLIC_ORIGINS || '', maxPlayers=2, dev = process.env.NODE_ENV !== 'production' } = {}) {
   if(![2,6].includes(maxPlayers))throw new Error('席位上限无效');
   const protocol=maxPlayers===6?SIX_PROTOCOL_VERSION:PROTOCOL_VERSION;
   const cookieName=maxPlayers===6?'gp_six_guest':'gp_guest',cookiePath=maxPlayers===6?'/candidate':'/';
-  const accounts = new Accounts(directory,{cookieName}), rooms = new Map(), peers = new Map(), requests = new Map();
+  const accounts = new Accounts(directory,{cookieName}), rooms = new Map(), peers = new Map(), requests = new SessionRateLimit();
   const send = (ws, value) => { if (ws?.readyState === WebSocket.OPEN && ws.bufferedAmount < 512*1024) ws.send(JSON.stringify(value)); };
   const extraOrigins = new Set(additionalOrigins.split(',').map(value=>value.trim()).filter(value=>{try{const u=new URL(value);return ['http:','https:'].includes(u.protocol)&&u.origin===value;}catch{return false;}}));
   const allowed = req => req.headers.origin === (origin || `http://${req.headers.host}`) || extraOrigins.has(req.headers.origin) || dev && ['http://localhost:4173','http://127.0.0.1:4173'].includes(req.headers.origin);
@@ -63,10 +64,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
         let user = accounts.find(req.headers.cookie);
         if (req.method === 'POST') {
           if (!allowed(req)) return json(403, { error:'请求来源不被允许' });
-          const ip=req.socket.remoteAddress, now=Date.now(), entry=requests.get(ip);
-          if(entry&&entry.until>now&&entry.count>=30)return json(429,{error:'操作过于频繁，请稍后再试'});
-          requests.set(ip,entry&&entry.until>now?{...entry,count:entry.count+1}:{until:now+60000,count:1});
-          if(requests.size>1000)for(const [key,value]of requests)if(value.until<=now)requests.delete(key);
+          if(!requests.accept(req.socket.remoteAddress))return json(429,{error:'操作过于频繁，请稍后再试'});
           let body = ''; for await (const chunk of req) { body += chunk; if (body.length > 1024) throw new Error('请求过大'); }
           const name = nickname(JSON.parse(body).name);
           if (user) { accounts.rename(user.id, name); user.name = name; }

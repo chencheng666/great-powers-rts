@@ -39,10 +39,10 @@ export const BUILDINGS = {
 };
 
 export const UNITS = {
-  rifle: { name: '突击兵', cost: 120, time: 8, hp: 110, speed: 82, range: 140, damage: 12, cooldown: 0.75, sight: 260, icon: 'user-round', producer: 'barracks', tags: ['infantry'], desc: '经济、可靠的基础作战单位。' },
+  rifle: { name: '突击兵', cost: 120, time: 8, hp: 110, speed: 82, range: 165, damage: 12, cooldown: 0.75, sight: 280, icon: 'user-round', producer: 'barracks', tags: ['infantry'], desc: '经济、可靠的基础作战单位；60 次射击储备，可在补给光环内自动补弹。' },
   engineer: { name: '工程师', cost: 220, time: 12, hp: 80, speed: 76, range: 0, damage: 0, cooldown: 1, sight: 230, icon: 'wrench', producer: 'barracks', tags: ['infantry', 'engineer'], desc: '右键油井、信标或能源仓占领，成功后驻留；可回收物资。右键己方被潜入设施，停驻 3 秒拆弹，工程师保留。' },
   scout: { name: '间谍', cost: 320, time: 16, hp: 75, speed: 104, range: 0, damage: 0, cooldown: 1, sight: 480, icon: 'binoculars', producer: 'barracks', tags: ['infantry', 'scout'], desc: '无武装，480 视野与 260 范围反隐；右键可见敌方设施一次性潜入，45 秒后引爆。敌方工程师可在 3 秒内拆弹；不伪装敌军，不隐身。' },
-  tank: { name: '主战坦克', cost: 480, time: 20, hp: 380, speed: 62, range: 205, damage: 38, cooldown: 1.3, sight: 280, icon: 'shield', producer: 'factory', tags: ['armor'], desc: '重装核心，克制步兵和防空单位。' },
+  tank: { name: '主战坦克', cost: 480, time: 20, hp: 380, speed: 62, range: 300, damage: 38, cooldown: 1.3, sight: 360, icon: 'shield', producer: 'factory', tags: ['armor'], desc: '重装核心，300 射程与30发备弹；克制步兵和防空，需要侦察、补给与侧翼保护。' },
   drone: { name: '攻击无人机', cost: 260, time: 13, hp: 130, speed: 116, range: 180, damage: 20, cooldown: 0.85, sight: 330, icon: 'scan', producer: 'armory', tags: ['drone', 'air'], desc: '自主基地警戒、任务结束返航，低血低弹提前整备；手动移动与停止优先。对装甲额外伤害，兵工厂或机场付费补给。' },
   ghost: { name: '隐形侦察无人机', cost: 340, time: 18, hp: 85, speed: 124, range: 0, damage: 0, cooldown: 1, sight: 450, icon: 'eye-off', producer: 'armory', requires: 'radar', faction: 'middleeast', tags: ['drone', 'air', 'scout', 'stealth'], desc: '新月专属；深入敌后提供视野，接近侦察兵、防空车或雷达信标会暴露。' },
   aa: { name: '防空车', cost: 360, time: 17, hp: 230, speed: 72, range: 250, damage: 22, cooldown: 0.8, sight: 320, icon: 'radar', producer: 'armory', requires: 'radar', tags: ['vehicle', 'anti-air'], desc: '防空与弹药拦截，不能对地；需要装甲或步兵护卫。' },
@@ -51,13 +51,13 @@ export const UNITS = {
   patrol: { name: '近海巡逻艇', cost: 380, time: 18, hp: 270, speed: 110, range: 235, damage: 26, cooldown: 0.9, sight: 355, sonar: 150, icon: 'ship', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-sub'], desc: '高速夺取海面优势，近距声呐发现潜艇；对建筑伤害较低。' },
   frigate: { name: '防空护卫舰', cost: 760, time: 29, hp: 470, speed: 72, range: 335, damage: 38, cooldown: 1.55, sight: 435, sonar: 230, icon: 'sailboat', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-air', 'anti-sub'], desc: '区域防空与反潜护航；可拦截巡飞弹和舰载机。' },
   harvester: { name: '采矿车', cost: 440, time: 19, hp: 350, speed: 59, range: 0, damage: 0, cooldown: 1, sight: 240, icon: 'pickaxe', producer: 'factory', tags: ['vehicle', 'harvester'], desc: '自动采集矿石，扩张经济。' },
-  elite: { name: '阵营特色单位', cost: 650, time: 27, hp: 330, speed: 65, range: 230, damage: 35, cooldown: 1.25, sight: 320, icon: 'sparkles', producer: 'armory', requires: 'lab', tags: ['elite'], desc: '阵营专属战术单位。' },
-  loiterer: { name: '巡飞弹发射车', cost: 620, time: 26, hp: 250, speed: 64, range: 520, minRange: 100, damage: 95, cooldown: 4.5, sight: 260, ammo: 4, rearmTime: 8, icon: 'send', producer: 'armory', requires: 'radar', tags: ['vehicle', 'artillery'], desc: '共享侦察视野发射追踪巡飞弹；可被激光、防空与电子干扰反制。' },
+  elite: { name: '阵营特色单位', cost: 650, time: 27, hp: 330, speed: 65, range: 315, damage: 35, cooldown: 1.25, sight: 380, icon: 'sparkles', producer: 'armory', requires: 'lab', tags: ['elite'], desc: '阵营专属战术单位。' },
+  loiterer: { name: '巡飞弹发射车', cost: 620, time: 26, hp: 250, speed: 64, range: 520, minRange: 100, damage: 95, cooldown: 4.5, sight: 260, ammo: 6, rearmTime: 8, icon: 'send', producer: 'armory', requires: 'radar', tags: ['vehicle', 'artillery'], desc: '共享侦察视野发射追踪巡飞弹；可被激光、防空与电子干扰反制。' },
   jammer: { name: '电子干扰车', cost: 520, time: 23, hp: 240, speed: 70, range: 235, damage: 0, cooldown: 1, sight: 300, icon: 'radio-tower', producer: 'armory', requires: 'radar', tags: ['vehicle', 'support'], desc: '235 范围压制敌方无人机与导引弹药；不造成直接伤害，不能反制无制导火箭。' },
   laser: { name: '激光反无人机车', cost: 580, time: 25, hp: 220, speed: 67, range: 250, damage: 45, cooldown: .75, sight: 320, icon: 'focus', producer: 'armory', requires: 'radar', tags: ['vehicle', 'anti-drone'], desc: '拦截巡飞弹、击落无人机；连续射击会过热，不能攻击坦克或高空战机。' },
-  rocket: { name: '远程火箭炮', cost: 880, time: 34, hp: 230, speed: 52, range: 680, minRange: 180, damage: 85, cooldown: 3.8, sight: 240, ammo: 6, rearmTime: 10, deployTime: 2, icon: 'rocket', producer: 'armory', requires: 'lab', tags: ['vehicle', 'artillery'], desc: '展开 2 秒后发射区域火箭；需要侦察，180 最小射程，有限弹药。' },
+  rocket: { name: '远程火箭炮', cost: 880, time: 34, hp: 230, speed: 52, range: 680, minRange: 180, damage: 85, cooldown: 3.8, sight: 240, ammo: 8, rearmTime: 10, deployTime: 2, icon: 'rocket', producer: 'armory', requires: 'lab', tags: ['vehicle', 'artillery'], desc: '展开 2 秒后发射区域火箭；需要侦察，180 最小射程，有限弹药。' },
   apc: { name: '装甲运输车', cost: 420, time: 19, hp: 430, speed: 90, range: 0, damage: 0, cooldown: 1, sight: 280, capacity: 4, icon: 'bus-front', producer: 'factory', tags: ['vehicle', 'armor', 'transport'], desc: '运载 4 名步兵或工程师；车毁乘员受伤撤出，无法无敌穿越封锁线。' },
-  supply: { name: '维修补给车', cost: 460, time: 21, hp: 230, speed: 64, range: 115, damage: 0, cooldown: 1, sight: 270, stock: 120, icon: 'wrench', producer: 'factory', tags: ['vehicle', 'support'], desc: '自动寻找可达的友军步兵和陆地载具，脱战后治疗、维修和补弹；消耗库存与资金，缺货自动回厂。' },
+  supply: { name: '维修补给车', cost: 300, time: 17, hp: 230, speed: 72, range: 240, damage: 0, cooldown: 1, sight: 300, stock: 360, icon: 'wrench', producer: 'factory', tags: ['vehicle', 'support'], desc: '240 范围光环自动为多支陆军补弹，脱战后分配维修；优先圈内保障，不与缺弹部队相向挤靠。360 库存，缺货回厂，消耗资金。' },
   destroyer: { name: '导弹驱逐舰', cost: 1150, time: 40, hp: 800, speed: 67, range: 470, damage: 72, cooldown: 2.6, sight: 440, sonar: 290, ammo: 8, rearmTime: 10, icon: 'ship', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'anti-air', 'anti-sub', 'artillery'], desc: '远程对舰、防空与反潜；导弹有飞行时间，须返回有电船坞付费补弹。' },
   carrier: { name: '舰队航空母舰', cost: 1900, time: 58, hp: 1400, speed: 43, range: 720, damage: 95, cooldown: 4, sight: 420, ammo: 6, rearmTime: 14, wing: 3, icon: 'plane-takeoff', producer: 'dock', requires: 'lab', map: 'ocean', tags: ['ship', 'naval', 'artillery'], desc: '3 架可被击落的舰载机执行远程打击；飞机返舰，损失后在船坞付费补充，惧怕潜艇。' },
   submarine: { name: '攻击潜艇', cost: 920, time: 35, hp: 420, speed: 64, range: 340, damage: 110, cooldown: 3.5, sight: 360, sonar: 190, ammo: 5, rearmTime: 10, icon: 'waves', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'submerged', 'stealth'], desc: '潜航伏击舰艇；声呐或发射后短暂暴露，可被反潜舰反制，不能攻击陆地。' }
@@ -78,7 +78,7 @@ Object.assign(UNITS, {
 });
 
 // 弹药表示一次射击批次，不逐发模拟步枪弹匣；双方共用容量与补给费用。
-for (const [type, ammo, ammoCost, rearmTime] of [['rifle', 18, 1, 9], ['tank', 12, 6, 12], ['aa', 16, 4, 10], ['elite', 12, 6, 12], ['drone', 8, 4, 8], ['patrol', 24, 3, 12], ['frigate', 16, 5, 12]]) {
+for (const [type, ammo, ammoCost, rearmTime] of [['rifle', 60, 1, 9], ['tank', 30, 6, 12], ['aa', 32, 4, 10], ['elite', 24, 6, 12], ['drone', 8, 4, 8], ['patrol', 24, 3, 12], ['frigate', 16, 5, 12]]) {
   Object.assign(UNITS[type], { ammo, ammoCost, rearmTime });
   UNITS[type].desc += ' 有限弹药，耗尽后自动补给。';
 }

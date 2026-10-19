@@ -27,7 +27,7 @@ test('满弹伤兵与坦克可主动整备，兵营和工厂逐步付费回血�
 });
 
 test('停驻设施旁空闲陆军自动维修补弹；满弹不影响维修，持续受击和断电不生效', () => {
-  const g = setup(), b = g.ownedBuildings(0, 'barracks')[0], u = g.addUnit(0, 'rifle', b.x + 65, b.y); u.hp = 60; u.ammo = 15;
+  const g = setup(), b = g.ownedBuildings(0, 'barracks')[0], u = g.addUnit(0, 'rifle', b.x + 65, b.y); u.hp = 60; u.ammo = UNITS.rifle.ammo - 3;
   ticks(g, u, 5); assert.equal(u.hp, u.maxHp); assert.equal(u.ammo, UNITS.rifle.ammo);
   u.hp = 50; u.ammo = 10; u.lastDamageAt = g.time; ticks(g, u, 2); assert.equal(u.hp, 50); assert.equal(u.ammo, 10);
   g.hasPower = () => false; ticks(g, u, 5); assert.equal(u.hp, 50); assert.equal(u.ammo, 10);

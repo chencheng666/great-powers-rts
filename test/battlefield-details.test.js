@@ -117,9 +117,11 @@ test('动态绕行不预知迷雾敌军，只有已知同层单位影响绕行�
   const direct = game.findPath(harvester, goal, 48);
   assert.deepEqual(game.findPath(harvester, goal, 48, [enemy]), direct);
   game.fogs[0].visible.fill(true);
-  assert.notDeepEqual(game.findPath(harvester, goal, 48, [enemy]), direct);
+  const known = game.findPath(harvester, goal, 48);
+  assert.notDeepEqual(known, direct);
+  assert.deepEqual(game.findPath(harvester, goal, 48, [enemy]), known);
   const aircraft = game.addUnit(0, 'fighter', 745, 450);
-  assert.deepEqual(game.findPath(harvester, goal, 48, [aircraft]), direct);
+  assert.deepEqual(game.findPath(harvester, goal, 48, [aircraft]), known);
 });
 
 test('新建筑挡住采矿车缓存路线时，立即重新规划而不是等待原寻路计时', () => {

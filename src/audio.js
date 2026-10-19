@@ -1,4 +1,5 @@
 import { COMMAND_LINES, normalizeAudioSettings, speechOptions, VOICE_COOLDOWN, VOICE_LINES, VOICE_PRIORITY, voiceFile } from './audio-data.js';
+import { NuclearAlarm, nuclearAlarmAudible } from './nuclear-alarm.js';
 
 const assets = import.meta.glob('../assets/audio/*.m4a', { eager: true, query: '?url', import: 'default' });
 const portableVoices = import.meta.glob('../assets/audio/portable/*.wav', { eager: true, query: '?url', import: 'default' });
@@ -13,6 +14,7 @@ export class GameAudio {
     this.active = false; this.paused = false; this.session = 0; this.music = null;
     this.voiceQueue = []; this.currentVoice = null; this.cooldowns = new Map(); this.variants = new Map(); this.lastSpeech = 0; this.lastShot = 0;
     this.celebrationNodes = new Set();
+    this.nuclearWarning = false; this.nuclearAlarm = null;
   }
 
   async unlock() {
@@ -26,6 +28,7 @@ export class GameAudio {
       this.analyser = ctx.createAnalyser(); this.analyser.fftSize = 1024;
       this.master.connect(this.compressor); this.compressor.connect(this.analyser); this.analyser.connect(ctx.destination);
       this.musicBus.connect(this.master); this.effectsBus.connect(this.master); this.voiceBus.connect(this.master);
+      this.nuclearAlarm = new NuclearAlarm(ctx, this.effectsBus);
       this.radioFilter = ctx.createBiquadFilter(); this.radioFilter.type = 'lowpass'; this.radioFilter.frequency.value = 4700; this.radioFilter.connect(this.voiceBus);
       this.noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const samples = this.noise.getChannelData(0);
       for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
@@ -59,6 +62,7 @@ export class GameAudio {
 
   stopBattle() {
     this.session++; this.active = false; this.paused = false;
+    this.nuclearWarning = false; this.nuclearAlarm?.setActive(false);
     for (const node of this.celebrationNodes) node.stop();
     this.celebrationNodes.clear();
     if (this.music) { this.music.stop(); this.music.disconnect(); this.music = null; }
@@ -83,7 +87,9 @@ export class GameAudio {
     if (!this.context) return;
     const time = this.context.currentTime, settings = this.settings;
     this.master.gain.setTargetAtTime(settings.muted ? 0 : settings.master, time, .04);
-    const duck = this.currentVoice ? .45 : 1, pause = this.paused ? .23 : 1;
+    const alarm = nuclearAlarmAudible({ active: this.active, paused: this.paused, wanted: this.nuclearWarning, settings });
+    this.nuclearAlarm?.setActive(alarm);
+    const duck = alarm ? .25 : this.currentVoice ? .45 : 1, pause = this.paused ? .23 : 1;
     this.musicBus.gain.setTargetAtTime(settings.music * duck * pause, time, .12);
     this.voiceBus.gain.setTargetAtTime(settings.voice, time, .04); this.effectsBus.gain.setTargetAtTime(settings.effects, time, .04);
   }
@@ -93,6 +99,12 @@ export class GameAudio {
     this.paused = value;
     if (value && !this.currentVoice?.preview) this.clearVoices();
     this.applySettings();
+  }
+
+  syncNuclearWarnings(warnings) {
+    const wanted = Boolean(warnings?.length);
+    if (this.nuclearWarning === wanted) return;
+    this.nuclearWarning = wanted; this.applySettings();
   }
 
   say(key, { preview = false } = {}) {

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game.js';
+import { UNITS } from '../src/data.js';
 import { CORE_BUILDINGS, MAPS, ORE_LAYOUT, WORLD } from '../src/data.js';
 
 const advance = (game, seconds) => {
@@ -467,7 +468,7 @@ test('射程边界的移动在双方判断后统一生效', () => {
   game.updateAI = () => {};
   game.aiWaveTimer = Infinity;
   const left = game.addUnit(0, 'rifle', 1000, 700);
-  const right = game.addUnit(1, 'rifle', 1143, 700);
+  const right = game.addUnit(1, 'rifle', 1000 + UNITS.rifle.range + 3, 700);
   left.fireTimer = 0; right.fireTimer = 0;
   game.updateFog();
   game.update(0.05);

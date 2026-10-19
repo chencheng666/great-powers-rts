@@ -46,9 +46,9 @@ export const realisticEffects = {
     let count = 0;
     for (const mark of this.scorchMarks) {
       const age = this.game.time - mark.start;
-      if (age >= 35 || !this.game.isVisibleFor(0, mark.x, mark.y)) continue;
+      if (age >= 180 || !this.game.isVisibleFor(0, mark.x, mark.y)) continue;
       const d = this.scorchDummy; d.position.set(mark.x, this.elevation(mark.x, mark.y) + .2, mark.y);
-      d.rotation.y = mark.angle; d.scale.set(mark.size * Math.min(1, (35 - age) / 8), 1, mark.size * .75); d.updateMatrix();
+      d.rotation.y = mark.angle; d.scale.set(mark.size * Math.min(1, (180 - age) / 15), 1, mark.size * .75); d.updateMatrix();
       this.scorchMesh.setMatrixAt(count++, d.matrix);
       d.position.y += .15; d.scale.y = mark.size * .65; d.updateMatrix(); this.craterMesh.setMatrixAt(count - 1, d.matrix);
     }

@@ -45,7 +45,8 @@ export function formationOffsets(units, target) {
   for (const group of layers.values()) {
     const center = group.reduce((value, unit) => ({ x: value.x + unit.x / group.length, y: value.y + unit.y / group.length }), { x: 0, y: 0 });
     const angle = Math.atan2(target.y - center.y, target.x - center.x), forward = { x: Math.cos(angle), y: Math.sin(angle) }, right = { x: -forward.y, y: forward.x };
-    const columns = Math.ceil(Math.sqrt(group.length)), rows = Math.ceil(group.length / columns), spacing = Math.max(...group.map(unitRadius)) * 2 + 12;
+    // 两侧都可能提前八至十单位停下，编队间距需覆盖到达误差及碰撞余量。
+    const columns = Math.ceil(Math.sqrt(group.length)), rows = Math.ceil(group.length / columns), spacing = Math.max(...group.map(unitRadius)) * 2 + 24;
     const slots = [];
     for (let row = 0; row < rows; row++) {
       const count = Math.min(columns, group.length - row * columns);

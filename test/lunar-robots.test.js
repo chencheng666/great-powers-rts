@@ -72,7 +72,7 @@ test('电池耗尽机器人停机，补给车能主动接近并在有电时救�
   const enemy = g.addUnit(1, 'scout', 1020, 1450); enemy.battery = 0;
   u.battery = 0; g.players[0].credits = 0;
   g.updateUnit(u, .05); assert.equal(u.x, 1000); assert.equal(u.order.type, 'rearm');
-  advance(g, 20); assert.ok(u.battery > 90); assert.ok(truck.x > 800); assert.equal(enemy.battery, 0);
+  advance(g, 20); assert.ok(u.battery > 90); assert.ok(truck.x > 700 && truck.x < 800); assert.equal(enemy.battery, 0);
   const apc = g.addUnit(0, 'apc', u.x, u.y); u.battery = 30; u.order = { type: 'board', targetId: apc.id };
   g.boardTransport(u, .05); assert.equal(u.embarkedIn, apc.id);
   const charge = u.battery; advance(g, 1); assert.equal(u.battery, charge);

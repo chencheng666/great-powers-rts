@@ -433,9 +433,9 @@ export class Game {
       else if (enemy && this.canAttack(u, enemy)) u.order = { type: 'attack', targetId: enemy.id, x: enemy.x, y: enemy.y };
       else {
         const goal = this.resolveMoveGoal(u, clamp(x + offset.x, 20, this.world.width - 20), clamp(y + offset.y, 20, this.world.height - 20));
-        u.order = { type: attackMove ? 'attackMove' : 'move', ...goal };
+        u.order = { type: attackMove ? 'attackMove' : 'move', ...goal, ...(selectedUnits.length > 1 ? { formation: true } : {}) };
       }
-      u.resumeOrder = null; u.path = []; u.pathTimer = 0; u.deployProgress = 0;u.avoidSide=0;u.avoidUntil=0;
+      u.resumeOrder = null; u.path = []; u.pathTimer = 0; u.deployProgress = 0;u.avoidSide=0;u.avoidUntil=0;delete u.navigationProgress;delete u.navigationStalled;delete u.navigationAttempts;
       this.setDroneMission(u);
     });
     this.effects.push({ type: 'order', x, y, age: 0, duration: 0.6, owner: side });
@@ -1038,6 +1038,23 @@ export class Game {
       this.moveWithAvoidance(u, destination, dt, stopDistance);
       return;
     }
+    const progress = u.navigationProgress;
+    if (!progress || Math.hypot(progress.x - goal.x, progress.y - goal.y) > 1) {
+      u.navigationProgress = { x: goal.x, y: goal.y, distance: distance(u, goal), until: this.time + 3 };
+      u.navigationStalled = false;
+    } else if (this.time >= progress.until) {
+      u.navigationStalled = progress.distance - distance(u, goal) < 12;
+      u.navigationAttempts = u.navigationStalled ? (u.navigationAttempts || 0) + 1 : 0;
+      progress.distance = distance(u, goal); progress.until = this.time + 3;
+      if (u.navigationStalled) u.pathTimer = 0;
+    }
+    if (u.order?.formation && ['move', 'attackMove'].includes(u.order.type) && distance(u.order, goal) < 1 && u.navigationAttempts >= 3 && distance(u, goal) < 360) {
+      const nearby = (this.unitIndex || new UnitSpatialIndex(this.units)).nearby(u);
+      if (nearby.some(v => v.owner === u.owner && !v.order && distance(v, u) < 180) && nearby.every(v => distance(v, u) >= unitRadius(v) + unitRadius(u) + 1) && this.canOccupyUnit(u, u)) {
+        // 连续改派仍被驻军封住时，在已到达的安全外围停稳，而非无限争抢内部槽位。
+        u.order = null; u.path = []; delete u.navigationProgress; delete u.navigationStalled; return;
+      }
+    }
     u.pathTimer -= dt;
     const neighbors = (this.unitIndex || new UnitSpatialIndex(this.units)).nearby(u);
     const ahead = u.path[0] || goal, direction = Math.atan2(ahead.y - u.y, ahead.x - u.x);
@@ -1056,7 +1073,7 @@ export class Game {
       u.pathGoal = goalCell;
     }
     let point = u.path[0] || goal;
-    if (distance(u, point) < 13 && u.path.length) { u.path.shift(); point = u.path[0] || goal; }
+    if (distance(u, point) < 6 && u.path.length) { u.path.shift(); point = u.path[0] || goal; }
     if (!this.moveWithAvoidance(u, point, dt, u.path.length ? 0 : stopDistance)&&this.time>=(u.blockedRepathAt||0)) { u.pathTimer = 0; u.path = [];u.blockedRepathAt=this.time+.35; }
   }
 
@@ -1112,18 +1129,24 @@ export class Game {
   }
 
   findPath(u, goal, stopDistance, obstacles = []) {
-    const cols = this.world.width / this.world.cell, rows = this.world.height / this.world.cell;
+    // 把整片已知驻军纳入路线，避免只绕眼前一辆车后又撞上下一排。
+    const parked = this.units.filter(v => v !== u && v.hp > 0 && !v.embarkedIn && unitLayer(v) === 'ground' && (!v.order || v.order.type === 'rearm') && distance(v, u) < 900 && (v.owner === u.owner || this.canSeeEntity(u.owner, v)));
+    const parkedIds = new Set(parked.map(v => v.id));
+    obstacles = [...new Set([...obstacles, ...parked])];
+    // 驻军之间使用更细的导航格，避免可通行的编队空位被四十单位网格抹掉。
+    const cell = parked.length && u.order?.formation && distance(u, goal) < 600 ? this.world.cell / 2 : this.world.cell;
+    const cols = this.world.width / cell, rows = this.world.height / cell;
     const grid = new PF.Grid(cols, rows);
     const terrainRadius = UNITS[u.type].tags.includes('infantry') ? 6 : 14;
     if (this.map.barriers.length) for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
-      if (this.isGroundBlocked(cx * this.world.cell + this.world.cell / 2, cy * this.world.cell + this.world.cell / 2, terrainRadius)) grid.setWalkableAt(cx, cy, false);
+      if (this.isGroundBlocked(cx * cell + cell / 2, cy * cell + cell / 2, terrainRadius)) grid.setWalkableAt(cx, cy, false);
     }
     for (const b of this.buildings) {
       if (b.hp <= 0 || !this.canSeeEntity(u.owner, b)) continue;
       const r = b.size * 0.49 + (UNITS[u.type].tags.includes('infantry') ? 4 : 11);
-      for (let cy = Math.max(0, Math.floor((b.y - r) / this.world.cell)); cy <= Math.min(rows - 1, Math.floor((b.y + r) / this.world.cell)); cy++) {
-        for (let cx = Math.max(0, Math.floor((b.x - r) / this.world.cell)); cx <= Math.min(cols - 1, Math.floor((b.x + r) / this.world.cell)); cx++) {
-          if (distance({ x: cx * this.world.cell + 20, y: cy * this.world.cell + 20 }, b) < r) grid.setWalkableAt(cx, cy, false);
+      for (let cy = Math.max(0, Math.floor((b.y - r) / cell)); cy <= Math.min(rows - 1, Math.floor((b.y + r) / cell)); cy++) {
+        for (let cx = Math.max(0, Math.floor((b.x - r) / cell)); cx <= Math.min(cols - 1, Math.floor((b.x + r) / cell)); cx++) {
+          if (distance({ x: cx * cell + cell / 2, y: cy * cell + cell / 2 }, b) < r) grid.setWalkableAt(cx, cy, false);
         }
       }
     }
@@ -1132,16 +1155,16 @@ export class Game {
       if (other === u || other.embarkedIn || other.hp <= 0 || unitLayer(other) !== unitLayer(u)) continue;
       if (other.owner !== u.owner && !this.canSeeEntity(u.owner, other)) continue;
       // 网格中心保留半格余量；实际车距由局部避让约束，避免窄桥被粗网格误封死。
-      const radius = Math.max(unitRadius(other),unitRadius(u) + unitRadius(other) - this.world.cell * .45);
-      if (distance(other, goal) < radius + stopDistance) continue;
-      for (let y = Math.max(0, Math.floor((other.y - radius) / this.world.cell)); y <= Math.min(rows - 1, Math.floor((other.y + radius) / this.world.cell)); y++) {
-        for (let x = Math.max(0, Math.floor((other.x - radius) / this.world.cell)); x <= Math.min(cols - 1, Math.floor((other.x + radius) / this.world.cell)); x++) {
-          if (distance({ x: x * this.world.cell + 20, y: y * this.world.cell + 20 }, other) < radius) grid.setWalkableAt(x, y, false);
+      const radius = u.type === 'supply' || parkedIds.has(other.id) ? unitRadius(u) + unitRadius(other) + cell * .35 : Math.max(unitRadius(other),unitRadius(u) + unitRadius(other) - cell * .45);
+      if (!parkedIds.has(other.id) && distance(other, goal) < radius + stopDistance) continue;
+      for (let y = Math.max(0, Math.floor((other.y - radius) / cell)); y <= Math.min(rows - 1, Math.floor((other.y + radius) / cell)); y++) {
+        for (let x = Math.max(0, Math.floor((other.x - radius) / cell)); x <= Math.min(cols - 1, Math.floor((other.x + radius) / cell)); x++) {
+          if (distance({ x: x * cell + cell / 2, y: y * cell + cell / 2 }, other) < radius) grid.setWalkableAt(x, y, false);
         }
       }
     }
-    const sx = clamp(Math.floor(u.x / this.world.cell), 0, cols - 1), sy = clamp(Math.floor(u.y / this.world.cell), 0, rows - 1);
-    let ex = clamp(Math.floor(goal.x / this.world.cell), 0, cols - 1), ey = clamp(Math.floor(goal.y / this.world.cell), 0, rows - 1);
+    const sx = clamp(Math.floor(u.x / cell), 0, cols - 1), sy = clamp(Math.floor(u.y / cell), 0, rows - 1);
+    let ex = clamp(Math.floor(goal.x / cell), 0, cols - 1), ey = clamp(Math.floor(goal.y / cell), 0, rows - 1);
     grid.setWalkableAt(sx, sy, true);
     if (!grid.isWalkableAt(ex, ey)) {
       let best = Infinity, found = null;
@@ -1159,10 +1182,29 @@ export class Game {
     }
     if (!grid.isWalkableAt(ex, ey)) return [];
     const finder = new PF.AStarFinder({ allowDiagonal: true, dontCrossCorners: true, heuristic: PF.Heuristic.octile });
-    const rawPath = finder.findPath(sx, sy, ex, ey, grid);
+    let rawPath = finder.findPath(sx, sy, ex, ey, grid);
+    if ((!rawPath.length || u.navigationStalled) && u.order?.formation && parked.some(v => v.owner === u.owner && distance(v, goal) < 240) && distance(u, goal) < 500 && ['move', 'attackMove'].includes(u.order.type) && distance(u.order, goal) < 1) {
+      // 已停稳的外圈可能封住编队内侧空位，只改派到实际可达的邻近集结位。
+      const start = grid.getNodeAt(sx, sy), queue = [start], seen = new Set([start]);
+      let closest = null, best = Infinity;
+      for (let head = 0; head < queue.length && head < 8192; head++) {
+        const node = queue[head], score = Math.hypot(node.x + .5 - goal.x / cell, node.y + .5 - goal.y / cell);
+        const point = { x: (node.x + .5) * cell, y: (node.y + .5) * cell };
+        if (score < best && this.canOccupyUnit(u, point) && obstacles.every(v => distance(v, point) >= unitRadius(u) + unitRadius(v) + 5)) { best = score; closest = node; }
+        for (const next of grid.getNeighbors(node, PF.DiagonalMovement.OnlyWhenNoObstacles)) {
+          if (seen.has(next)) continue;
+          seen.add(next); queue.push(next);
+        }
+      }
+      const alternate = closest && { x: (closest.x + .5) * cell, y: (closest.y + .5) * cell };
+      if (alternate && distance(alternate, goal) < 360 && (u.navigationStalled || closest !== start)) {
+        rawPath = finder.findPath(sx, sy, closest.x, closest.y, grid.clone());
+        if (rawPath.length) { u.order = { ...u.order, ...alternate }; u.pathGoal = ''; delete u.navigationProgress; u.navigationStalled = false; }
+      }
+    }
     if (rawPath.length < 2) return [];
     const path = PF.Util.compressPath(rawPath);
-    return path.slice(1).map(([x, y]) => ({ x: x * this.world.cell + 20, y: y * this.world.cell + 20 }));
+    return path.slice(1).map(([x, y]) => ({ x: x * cell + cell / 2, y: y * cell + cell / 2 }));
   }
 
   updateFog() {

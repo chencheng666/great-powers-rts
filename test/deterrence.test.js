@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { Game } from '../src/game.js';
+import { UNITS } from '../src/data.js';
 import { DETERRENCE as R } from '../src/deterrence-rules.js';
 import { validateSave } from '../src/savegame.js';
 import { battleView } from '../server/battle-view.mjs';
@@ -61,7 +62,7 @@ test('实际发射后每方仅一次，源井被毁不凭空删除飞行弹头�
 test('反导只在末段拦截，通常四发消耗完成，不产生落地伤害；普通防空和干扰不能反核',()=>{
   const g=setup(),target=g.addUnit(1,'tank',3000,1800),abm=g.addUnit(1,'abm',2600,1830),aa=g.addUnit(1,'aa',2600,1810);abm.fireTimer=aa.fireTimer=0;
   g.addUnit(1,'jammer',2600,1790);g.launchNuclear(3000,1800);tick(g,18);assert.equal(abm.ammo,4);tick(g,12);
-  assert.equal(g.projectiles.length,0);assert.equal(abm.ammo,0);assert.equal(aa.ammo,16);assert.equal(target.hp,target.maxHp);assert.equal(g.effects.some(e=>e.type==='nuclearBlast'),false);assert.ok(g.effects.some(e=>e.style==='nuclearIntercept'));
+  assert.equal(g.projectiles.length,0);assert.equal(abm.ammo,0);assert.equal(aa.ammo,UNITS.aa.ammo);assert.equal(target.hp,target.maxHp);assert.equal(g.effects.some(e=>e.type==='nuclearBlast'),false);assert.ok(g.effects.some(e=>e.style==='nuclearIntercept'));
 });
 
 test('反导断电或缺弹会失守，伤害覆盖敌我、随距离衰减，满血核心保留且无永久污染',()=>{

@@ -9,6 +9,9 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
   const ids = new Set(entities.map(e => e.id));
   function entityView(entity) {
     const e = copy(entity); e.owner = owner(e.owner);
+    // 后勤避让缓存只在权威模拟中使用，不把历史位置和内部目标编号发给客户端。
+    delete e.serviceProgress; delete e.serviceSkipId; delete e.serviceSkipUntil;
+    delete e.navigationProgress; delete e.navigationStalled; delete e.navigationAttempts;
     if (entity.type === 'submarine') e.surfaced = game.submarineSurfaced(entity);
     if (e.sabotage) e.sabotage.owner = owner(e.sabotage.owner);
     if (e.owner !== 0 || spectator) {

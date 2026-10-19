@@ -89,3 +89,20 @@ test('指定HTTPS入口可建立Secure会话，旧HTTP仍可用，伪造代理�
   const r=await fetch(base+'/api/session',{method:'POST',headers:{Origin,'Content-Type':'application/json','X-Forwarded-Proto':'https','X-Forwarded-Host':'43.135.186.21:8443'},body:JSON.stringify({name:'安全入口验收'})});assert.equal(r.status,status);if(status===200)assert.equal(r.headers.get('set-cookie').includes('; Secure'),Origin===secure);
  }
 });
+
+test('真实会话接口第三十一次修改返回限流，读取会话与健康检查不受影响', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'gp-session-rate-'));
+  const { server } = createBattleServer({ directory });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { await new Promise(resolve => server.close(resolve)); await rm(directory, { recursive: true, force: true }); });
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  let cookie;
+  for (let i = 0; i < 31; i++) {
+    const r = await fetch(origin + '/api/session', { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, body: JSON.stringify({ name: '限流验收' }) });
+    assert.equal(r.status, i < 30 ? 200 : 429);
+    if (!cookie) cookie = r.headers.get('set-cookie').split(';')[0];
+    await r.arrayBuffer();
+  }
+  assert.equal((await fetch(origin + '/api/session', { headers: { Cookie: cookie } })).status, 200);
+  assert.equal((await fetch(origin + '/api/health')).status, 200);
+});

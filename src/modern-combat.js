@@ -5,6 +5,7 @@ import { turnToward } from './projectile-flight.js';
 import { isLunarRobot } from './lunar-robots.js';
 import { battleMetric } from './battle-report.js';
 import { DETERRENCE } from './deterrence-rules.js';
+import { SUPPLY, ammoStockCost } from './supply-rules.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const alive = u => u.hp > 0 && !u.embarkedIn;
@@ -45,10 +46,11 @@ export const modernCombat = {
   refillStationAmmo(u, dt) {
     const d = UNITS[u.type];
     if (!d.ammo || isLunarRobot(this.map, u.type) || u.ammo >= d.ammo || !this.serviceReady(u)) return;
-    u.rearmProgress += dt;
+    const interval = d.rearmTime / d.ammo;
+    u.rearmProgress = Math.min(interval * 2, u.rearmProgress + dt);
     const cost = d.ammoCost ?? 10;
-    if (u.rearmProgress >= d.rearmTime / d.ammo && this.players[u.owner].credits >= cost) {
-      this.players[u.owner].credits -= cost; u.ammo++; u.rearmProgress = 0;
+    while (u.rearmProgress + 1e-9 >= interval && u.ammo < d.ammo && this.players[u.owner].credits >= cost) {
+      this.players[u.owner].credits -= cost; u.ammo++; u.rearmProgress = Math.max(0, u.rearmProgress - interval);
     }
   },
 
@@ -252,8 +254,10 @@ export const modernCombat = {
   updateGroundRearm(u, dt) {
     const d = UNITS[u.type], naval = d.tags.includes('ship');
     if (!naval) {
-      const truck = this.activeUnits(u.owner, 'supply').find(s => s.stock >= 8 && distance(s, u) < UNITS.supply.range && !['move', 'attackMove'].includes(s.order?.type));
-      if (truck) { this.moveUnit(u, truck, dt, 75); return; }
+      // 已在保障圈内的部队原地等补弹，不再与补给车相向追逐。
+      const truck = this.activeUnits(u.owner, 'supply').find(s => s.stock >= 8 && distance(s, u) <= UNITS.supply.range && s.order?.type !== 'restock' && this.hasLineOfFire(s, u));
+      const price = d.ammo && u.ammo < d.ammo ? d.ammoCost ?? 10 : 1;
+      if (truck && this.players[u.owner].credits >= price) { u.path = []; return; }
     }
     const homes = this.ownedBuildings(u.owner).filter(b => naval ? b.type === 'dock' : d.tags.includes('infantry') ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type));
     const home = homes.find(b => b.id === u.order?.homeId) || homes.sort((a, b) => distance(a, u) - distance(b, u))[0];
@@ -289,58 +293,89 @@ export const modernCombat = {
 
   updateSupply(u, dt) {
     const p = this.players[u.owner], home = this.ownedBuildings(u.owner, 'factory').sort((a, b) => distance(a, u) - distance(b, u))[0];
-    if (u.stock < 8) {
-      if (!home) return;
+    const manualMove = ['move', 'attackMove'].includes(u.order?.type);
+    if (u.stock < 8 && home && !manualMove) {
       if (u.order?.type !== 'restock') { u.resumeOrder = u.order; u.order = { type: 'restock' }; }
     }
     if (u.order?.type === 'restock') {
-      if (!home) return;
+      if (!home) { this.restoreCombatOrder(u); return; }
       if (distance(u, home) > home.size * .55 + 40) { u.rearmProgress = 0; this.moveUnit(u, home, dt, home.size * .55 + 24); return; }
-      if (!this.hasPower(u.owner) || p.credits < 100) return;
+      if (!this.hasPower(u.owner) || p.credits < SUPPLY.restockPrice) return;
       u.rearmProgress += dt;
-      if (u.rearmProgress >= 8) { p.credits -= 100; u.stock = UNITS.supply.stock; this.restoreCombatOrder(u); }
+      if (u.rearmProgress >= SUPPLY.restockTime) { p.credits -= SUPPLY.restockPrice; u.stock = UNITS.supply.stock; this.restoreCombatOrder(u); }
       return;
     }
+    if (u.stock <= 0) {
+      u.serviceTargetId = null;
+      if (manualMove) {
+        if (distance(u, u.order) > 10) this.moveUnit(u, u.order, dt, 8);
+        else u.order = null;
+      }
+      return;
+    }
+    const eligible = v => v !== u && v.type !== 'supply' && !UNITS[v.type].tags.some(t => ['air', 'ship', 'harvester', 'logistics'].includes(t));
+    const needs = v => eligible(v) && (p.credits > 0 && (v.hp < v.maxHp - .01 || !isLunarRobot(this.map, v.type) && UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo) || isLunarRobot(this.map, v.type) && v.order?.type === 'rearm' && v.battery < 100 && this.hasPower(u.owner));
+    const units = this.activeUnits(u.owner), nearby = units.filter(v => eligible(v) && distance(u, v) <= UNITS.supply.range && this.hasLineOfFire(u, v));
+    // 范围补弹按同一脉冲覆盖所有单位；多个补给车不能在同一时刻无限叠加。
+    u.serviceTimer = Math.max(0, (u.serviceTimer || 0) - dt);
+    if (u.serviceTimer <= 1e-9) {
+      u.serviceTimer = SUPPLY.pulse;
+      const empty = nearby.filter(v => !isLunarRobot(this.map, v.type) && UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo && this.time - (v.suppliedAmmoAt ?? -100) + 1e-9 >= SUPPLY.pulse)
+        .sort((a, b) => a.ammo / UNITS[a.type].ammo - b.ammo / UNITS[b.type].ammo || a.id - b.id);
+      for (const v of empty) {
+        const cost = UNITS[v.type].ammoCost ?? 10, stock = ammoStockCost(v.type, UNITS[v.type].tags);
+        if (u.stock < stock || p.credits < cost) continue;
+        u.stock -= stock; p.credits -= cost; v.ammo++; v.suppliedAmmoAt = this.time;
+        if (v.order?.type === 'rearm' && v.hp >= v.maxHp - .01 && v.ammo >= Math.ceil(UNITS[v.type].ammo / 2)) this.restoreCombatOrder(v);
+        if (this.time >= (v.supplyFXAt || 0)) {
+          v.supplyFXAt = this.time + 2;
+          this.effects.push({ type: 'shot', style: 'repair', x: u.x, y: u.y, toX: v.x, toY: v.y, sourceType: 'supply', targetType: v.type, owner: u.owner, age: 0, duration: .5 });
+        }
+      }
+    }
+    const damaged = nearby.filter(v => v.hp < v.maxHp - .01 && this.time - (v.lastDamageAt ?? -10) > 3 && v.suppliedRepairAt !== this.time);
+    const share = SUPPLY.repairRate * dt / Math.max(1, damaged.length);
+    for (const v of damaged) {
+      const repair = Math.max(0, Math.min(share, v.maxHp - v.hp, p.credits / SUPPLY.repairPrice, u.stock / SUPPLY.repairStock));
+      v.hp += repair; if (v.maxHp - v.hp < 1e-6) v.hp = v.maxHp;
+      p.credits = Math.max(0, p.credits - repair * SUPPLY.repairPrice); u.stock = Math.max(0, u.stock - repair * SUPPLY.repairStock);
+      if (repair > 0) {
+        v.suppliedRepairAt = this.time; battleMetric(this, v.owner, 'repairHP', repair);
+        if (this.time >= (v.supplyFXAt || 0)) {
+          v.supplyFXAt = this.time + 2;
+          this.effects.push({ type: 'shot', style: 'repair', x: u.x, y: u.y, toX: v.x, toY: v.y, sourceType: 'supply', targetType: v.type, owner: u.owner, age: 0, duration: .5 });
+        }
+      }
+    }
     if (['move', 'attackMove'].includes(u.order?.type)) {
+      u.serviceTargetId = null;
       if (distance(u, u.order) > 10) { this.moveUnit(u, u.order, dt, 8); return; }
       u.order = null;
     }
-    const eligible = v => v !== u && !UNITS[v.type].tags.some(t => ['air', 'ship', 'harvester'].includes(t));
-    const needs = v => eligible(v) && (p.credits > 0 && (v.hp < v.maxHp - .01 || !isLunarRobot(this.map, v.type) && UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo) || isLunarRobot(this.map, v.type) && v.order?.type === 'rearm' && v.battery < 100 && this.hasPower(u.owner));
+    // 圈内仍有任务时保持位置，避免修好一辆又追另一辆造成整支纵队堵塞。
+    if (nearby.some(needs)) { u.serviceTargetId = null; u.path = []; return; }
     if (u.autoSupply !== false && (p.credits > 0 || this.hasPower(u.owner))) {
       let target = this.getEntity(u.serviceTargetId);
-      if (!target || target.owner !== u.owner || !alive(target) || !needs(target)) target = null;
+      if (target && (!u.serviceProgress || this.time - u.serviceProgress.at >= SUPPLY.stuckTimeout)) {
+        if (u.serviceProgress && distance(u, u.serviceProgress) < 20) {
+          u.serviceSkipId = target.id; u.serviceSkipUntil = this.time + 8; target = null; u.path = [];
+        } else u.serviceProgress = { x: u.x, y: u.y, at: this.time };
+      }
+      if (!target || target.owner !== u.owner || !alive(target) || !needs(target) || distance(u, target) > SUPPLY.searchRadius) target = null;
       if (!target && this.time >= (u.serviceSearchAt || 0)) {
-        u.serviceSearchAt = this.time + 1.5;
-        const candidates = this.activeUnits(u.owner).filter(v => needs(v) && this.time - (v.lastDamageAt ?? -10) > 3 && this.time - (v.lastFireAt ?? -10) > 3).sort((a, b) => distance(u, a) - distance(u, b) || a.id - b.id);
-        // 不派补给车追逐隔海、障碍后方或其他补给车已经服务的目标。
+        u.serviceSearchAt = this.time + SUPPLY.searchInterval;
+        const candidates = units.filter(v => needs(v) && distance(u, v) <= SUPPLY.searchRadius && !(v.id === u.serviceSkipId && u.serviceSkipUntil > this.time) && this.time - (v.lastDamageAt ?? -10) > 3 && this.time - (v.lastFireAt ?? -10) > 3).sort((a, b) => distance(u, a) - distance(u, b) || a.id - b.id);
         target = candidates.find(v => {
-          if (this.activeUnits(u.owner, 'supply').some(s => s !== u && s.serviceTargetId === v.id && s.autoSupply !== false)) return false;
-          if (distance(u, v) < UNITS.supply.range) return true;
+          if (units.some(s => s.type === 'supply' && s !== u && s.serviceTargetId === v.id && s.autoSupply !== false)) return false;
           const path = this.findPath(u, v, UNITS.supply.range * .75);
           return path.length && distance(path.at(-1), v) <= UNITS.supply.range;
         }) || null;
+        if (target) u.serviceProgress = { x: u.x, y: u.y, at: this.time };
       }
       u.serviceTargetId = target?.id ?? null;
-      if (target && distance(u, target) >= UNITS.supply.range * .85 && this.time - (target.lastDamageAt ?? -10) > 3 && this.time - (target.lastFireAt ?? -10) > 3) {
-        this.moveUnit(u, target, dt, UNITS.supply.range * .75); return;
+      if (target && this.time - (target.lastDamageAt ?? -10) > 3 && this.time - (target.lastFireAt ?? -10) > 3) {
+        this.moveUnit(u, target, dt, UNITS.supply.range * .8);
       }
-    }
-    if (this.time - (u.lastMovedAt ?? -10) < .5) return;
-    const nearby = this.activeUnits(u.owner).filter(v => eligible(v) && distance(u, v) < UNITS.supply.range).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp || a.id - b.id);
-    const damaged = nearby.find(v => v.hp < v.maxHp && this.time - (v.lastDamageAt ?? -10) > 3);
-    if (damaged) {
-      const repair = Math.min(24 * dt, damaged.maxHp - damaged.hp, p.credits / .3, u.stock / .2);
-      damaged.hp += repair; p.credits -= repair * .3; u.stock -= repair * .2; battleMetric(this, damaged.owner, 'repairHP', repair);
-      if (repair > 0 && this.time > (u.serviceFXAt || 0)) { u.serviceFXAt = this.time + .6; this.effects.push({ type: 'shot', style: 'repair', x: u.x, y: u.y, toX: damaged.x, toY: damaged.y, sourceType: 'supply', targetType: damaged.type, owner: u.owner, age: 0, duration: .6 }); }
-    }
-    u.serviceTimer = Math.max(0, (u.serviceTimer || 0) - dt);
-    const empty = nearby.find(v => !isLunarRobot(this.map, v.type) && UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo);
-    const cost = empty ? UNITS[empty.type].ammoCost ?? 10 : 10;
-    const stockCost = empty && UNITS[empty.type].tags.includes('infantry') ? 1 : empty && ['tank', 'aa', 'elite'].includes(empty.type) ? 4 : 8;
-    if (empty && u.serviceTimer <= 0 && u.stock >= stockCost && p.credits >= cost) {
-      u.stock -= stockCost; p.credits -= cost; empty.ammo++; u.serviceTimer = 1.5;
-      if (empty.order?.type === 'rearm' && empty.hp >= empty.maxHp - .01 && empty.ammo >= Math.ceil(UNITS[empty.type].ammo / 2) && empty.type !== 'carrier') this.restoreCombatOrder(empty);
     }
   },
 

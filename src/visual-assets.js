@@ -12,6 +12,7 @@ import { refinePowerFans } from './facility-motion.js';
 import { createModernAircraft } from './aircraft-models.js';
 import { createStrategicModel, STRATEGIC_MODELS } from './strategic-models.js';
 import { createNuclearSilo } from './deterrence-models.js';
+import { finishAirframe } from './airframe-finish.js';
 
 const modelURL = new URL('../assets/models/military-library.glb', import.meta.url).href;
 const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url).href;
@@ -155,6 +156,7 @@ export function prepareVisualAssets() {
     models.set('ewPlane', electronic);
     refineAirfieldRunway(models.get('airfield'));
     for (const name of ['fighter', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'ghost']) refineAircraftCanopy(models.get(name));
+    for (const name of ['fighter', 'fighter_china', 'fighter_nato', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'helicopter', 'swarmCarrier', 'swarmScout', 'swarmDecoy', 'drone', 'ghost', 'aegis', ...['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane'].map(type => `space_${type}`)]) finishAirframe(models.get(name));
     ground.colorSpace = THREE.SRGBColorSpace; ground.wrapS = ground.wrapT = THREE.RepeatWrapping;
     meridian.colorSpace = THREE.SRGBColorSpace;
     library = { models, ground, buildings, foliage, armory, meridian }; return library;

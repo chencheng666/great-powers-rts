@@ -26,7 +26,7 @@ import { BATTLE_READABILITY, readableMaterial, identityRadius, identityVisible }
 import { fixedWingHeight } from './airfield-presentation.js';
 import { animateIdleGun } from './idle-gun.js';
 import { lunarCraters } from './lunar-terrain.js';
-import { battleElevation } from './battle-camera.js';
+import { battleElevation, battleAzimuth, groundPan, groundExtents } from './battle-camera.js';
 import { damagePresentation, damagedMaterial, structuralDamage, confirmedShipLoss, sinkingPose } from './damage-presentation.js';
 import { submarinePose } from './naval-presentation.js';
 import { animateFacility, drawRepairBadge } from './facility-motion.js';
@@ -84,7 +84,7 @@ export class Renderer {
     this.camera = { x: 0, y: 0, zoom: innerWidth < 700 ? .7 : .98 }; this.center = { x: 450, y: 720 }; this.viewport = { width: 1, height: 1 };
     this.viewMode = 'immersive';
     try { if (localStorage.getItem('great-powers-battle-view') === 'tactical') this.viewMode = 'tactical'; } catch { /* 不支持存储时仍可切换视角。 */ }
-    this.cameraElevation = battleElevation(this.viewMode); this.wrecks = []; this.damageMaterials = new Map(); this.damageTemplates = new Map();
+    this.cameraElevation = battleElevation(this.viewMode); this.cameraAzimuth = battleAzimuth(this.viewMode); this.wrecks = []; this.damageMaterials = new Map(); this.damageTemplates = new Map();
     this.pointer = null; this.dragBox = null; this.lastMinimap = 0; this.lastFog = -1000;
     this.entities = new Map(); this.effects = new Map(); this.environment = []; this.bridges = []; this.trails = []; this.ownedResources = [];
     this.webgl = new THREE.WebGLRenderer({ canvas, antialias: !(game.map.maxPlayers===6&&this.quality==='standard'), alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
@@ -92,17 +92,17 @@ export class Renderer {
     this.webgl.resetState();
     this.webgl.setPixelRatio(game.map.maxPlayers===6&&this.quality==='standard'?1:Math.min(devicePixelRatio,innerWidth<700?1.5:2));
     this.webgl.shadowMap.enabled = true; this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = 1.06;
+    this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = .96;
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color('#10181d');
     this.viewCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 8000);
     this.raycaster = new THREE.Raycaster(); this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const pmrem = new THREE.PMREMGenerator(this.webgl), room = new RoomEnvironment();
-    const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .58; room.dispose(); pmrem.dispose();
-    this.scene.add(new THREE.HemisphereLight('#d7e8ef', game.map.future ? '#3e434c' : '#3b4739', .95));
-    const sun = new THREE.DirectionalLight(game.map.future ? '#e8f2ff' : '#ffedd4', 3.05); sun.position.set(this.world.width / 2 - 1750, 2450, this.world.height / 2 - 1520); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true; this.sun = sun;
+    const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .32; room.dispose(); pmrem.dispose();
+    this.scene.add(new THREE.HemisphereLight('#c4d9ee', game.map.future ? '#282d37' : '#26382a', .42));
+    const sun = new THREE.DirectionalLight(game.map.future ? '#e8f2ff' : '#fff0d7', 2.8); sun.position.set(this.world.width / 2 - 1750, 1850, this.world.height / 2 - 1050); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true; this.sun = sun;
     const shadowSize=game.map.maxPlayers===6&&this.quality==='standard'?1024:innerWidth<700?2048:4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
     Object.assign(sun.shadow.camera, { left: -this.world.width * .7, right: this.world.width * .7, top: this.world.height * .85, bottom: -this.world.height * .85, near: 10, far: 6000 });
-    sun.shadow.bias = -.00015; sun.shadow.normalBias = .24; sun.shadow.radius = 2; this.scene.add(sun, sun.target);
+    sun.shadow.bias = -.0001; sun.shadow.normalBias = .16; sun.shadow.radius = 1.5; this.scene.add(sun, sun.target);
     this.fireTexture = particleTexture(); this.smokeTexture = particleTexture(true);
     this.createTerrain(); this.createFoundationDecals(); this.createBridges(); this.createEnvironment(); this.createFutureStructures(); this.createSites(); this.createFog(); this.createOverlays();
     this.createTracks(); this.createCombatAtmosphere();
@@ -158,7 +158,14 @@ export class Renderer {
     const tile = this.game.map.future ? 560 : 420;
     for (let y = 0; y < this.world.height; y += tile) for (let x = 0; x < this.world.width; x += tile) ctx.drawImage(image, x, y, tile, tile);
     ctx.filter = 'none';
-    ctx.fillStyle = this.game.map.future ? 'rgba(86,100,120,.06)' : 'rgba(97,102,79,.12)'; ctx.fillRect(0, 0, this.world.width, this.world.height);
+    ctx.fillStyle = this.game.map.future ? 'rgba(55,67,88,.08)' : 'rgba(32,46,28,.10)'; ctx.fillRect(0, 0, this.world.width, this.world.height);
+    // 大尺度土壤与植被斑块打破平铺重复，细颗粒仍由原图和凹凸纹理提供。
+    if (!this.game.map.future) for (let i = 0; i < 480; i++) {
+      const x = hash(i, 61) * this.world.width, y = hash(i, 67) * this.world.height, radius = 30 + hash(i, 73) * 130;
+      const patch = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      patch.addColorStop(0, i % 3 ? 'rgba(30,60,21,.17)' : 'rgba(102,70,38,.18)'); patch.addColorStop(1, 'rgba(30,40,20,0)');
+      ctx.fillStyle = patch; ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    }
     const road = (points, width) => {
       const trace = () => { ctx.beginPath(); ctx.moveTo(...points[0]); points.slice(1).forEach(point => ctx.lineTo(...point)); };
       trace(); ctx.lineJoin = 'round'; ctx.strokeStyle = '#686962'; ctx.lineWidth = width + 11; ctx.stroke();
@@ -225,24 +232,33 @@ export class Renderer {
     detailContext.putImageData(detail, 0, 0);
     const bump = this.track(new THREE.CanvasTexture(detailCanvas)); bump.wrapS = bump.wrapT = THREE.RepeatWrapping; bump.repeat.set(this.world.width / 100, this.world.height / 100);
     bump.anisotropy = Math.min(8, this.webgl.capabilities.getMaxAnisotropy());
-    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, bumpMap: bump, bumpScale: .65, roughness: .96, metalness: 0 }))); terrain.receiveShadow = true; this.scene.add(terrain);
+    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, bumpMap: bump, bumpScale: 1.15, roughness: .96, metalness: 0, envMapIntensity: .3 }))); terrain.receiveShadow = true; this.scene.add(terrain);
     if (this.game.map.water) { this.createWater(); this.createShoreline(); }
   }
 
   createFoundationDecals() {
-    const canvas = makeCanvas(128, 128), ctx = canvas.getContext('2d'), pixels = ctx.createImageData(128, 128);
-    const base = this.game.map.future ? [99, 110, 119] : [91, 97, 89];
-    for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
-      const i = (y * 128 + x) * 4, edge = Math.max(Math.abs((x + .5) / 64 - 1), Math.abs((y + .5) / 64 - 1));
-      const grain = hash(x, y, 63) * 16 - 8, fade = clamp((1 - edge) / .27, 0, 1);
+    const canvas = makeCanvas(256, 256), ctx = canvas.getContext('2d'), pixels = ctx.createImageData(256, 256);
+    const base = this.game.map.future ? [118, 129, 137] : [143, 138, 119];
+    for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) {
+      const i = (y * 256 + x) * 4, grain = hash(x, y, 63) * 18 - 9;
       for (let channel = 0; channel < 3; channel++) pixels.data[i + channel] = base[channel] + grain;
-      pixels.data[i + 3] = Math.round((edge > .59 ? .64 : .36) * fade * 255);
+      pixels.data[i + 3] = 255;
     }
     ctx.putImageData(pixels, 0, 0);
+    const circle = (radius, color, width) => { ctx.beginPath(); ctx.arc(128, 128, radius, 0, TAU); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); };
+    circle(124, '#414b4b', 8); circle(115, '#aaa58c', 2);
+    for (let i = 0; i < 12; i++) {
+      const angle = i / 12 * TAU;
+      ctx.beginPath(); ctx.arc(128, 128, 121, angle + .07, angle + .30); ctx.strokeStyle = '#d5b15b'; ctx.lineWidth = 5; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(128 + Math.cos(angle) * 83, 128 + Math.sin(angle) * 83); ctx.lineTo(128 + Math.cos(angle) * 113, 128 + Math.sin(angle) * 113);
+      ctx.strokeStyle = '#666b60'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#414b4b'; ctx.beginPath(); ctx.arc(128 + Math.cos(angle) * 108, 128 + Math.sin(angle) * 108, 1.5, 0, TAU); ctx.fill();
+    }
     const texture = this.track(new THREE.CanvasTexture(canvas)); texture.colorSpace = THREE.SRGBColorSpace;
-    const geometry = this.track(new THREE.PlaneGeometry(1, 1)); geometry.rotateX(-Math.PI / 2);
-    const material = this.track(new THREE.MeshStandardMaterial({ map: texture, transparent: true, depthWrite: false, roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2 }));
-    this.foundationMesh = new THREE.InstancedMesh(geometry, material, 1024);
+    const geometry = this.track(new THREE.CylinderGeometry(.5, .5, 1, 64));
+    const top = this.track(new THREE.MeshStandardMaterial({ map: texture, roughness: .91, metalness: .04, polygonOffset: true, polygonOffsetFactor: -2 }));
+    const edge = this.track(new THREE.MeshStandardMaterial({ color: '#49504d', roughness: .86, metalness: .16 }));
+    this.foundationMesh = new THREE.InstancedMesh(geometry, [edge, top, edge], 1024); this.foundationMesh.receiveShadow = true;
     this.foundationMesh.count = 0; this.foundationMesh.frustumCulled = false; this.scene.add(this.foundationMesh);
     this.foundationSlots = new Map(); this.foundationVisible = new Map(); this.foundationFree = []; this.foundationNext = 0; this.foundationDummy = new THREE.Object3D();
   }
@@ -257,8 +273,8 @@ export class Renderer {
     }
     if (this.foundationVisible.get(entity.id) === visible) return;
     const dummy = this.foundationDummy, size = visible ? entity.size * 1.43 : 0;
-    dummy.position.set(entity.x, this.elevation(entity.x, entity.y) + .08, entity.y);
-    dummy.scale.set(size, 1, size); dummy.updateMatrix(); this.foundationMesh.setMatrixAt(slot, dummy.matrix);
+    dummy.position.set(entity.x, this.elevation(entity.x, entity.y) - .9, entity.y);
+    dummy.scale.set(size, 2.2, size); dummy.updateMatrix(); this.foundationMesh.setMatrixAt(slot, dummy.matrix);
     this.foundationMesh.instanceMatrix.needsUpdate = true; this.foundationVisible.set(entity.id, visible);
   }
 
@@ -404,7 +420,7 @@ export class Renderer {
     const geometry = this.track(new THREE.PlaneGeometry(1, 1)), dummy = new THREE.Object3D();
     for (let variant = 0; variant < 4; variant++) {
       const texture = spriteTexture(`tree_${variant}`), transforms = points.filter((point, i) => i % 4 === variant);
-      const face = this.track(new THREE.MeshBasicMaterial({ map: texture, alphaTest: .18, side: THREE.DoubleSide, toneMapped: false }));
+      const face = this.track(new THREE.MeshStandardMaterial({ map: texture, color: '#adb998', alphaTest: .18, side: THREE.DoubleSide, roughness: 1, metalness: 0 }));
       const sides = this.track(new THREE.MeshStandardMaterial({ map: texture, color: '#819078', alphaTest: .18, side: THREE.DoubleSide, roughness: 1, metalness: 0 }));
       transforms.forEach(point => { point.height = point.scale * 6.5; point.width = point.height * texture.image.width / texture.image.height; });
       for (const [foliage, angle] of [['billboard', 0], ['volume', -.58], ['volume', .58]]) {
@@ -419,8 +435,9 @@ export class Renderer {
   placeFoliage(dummy, point, foliage, angle, known) {
     const ground = this.elevation(point.x, point.z);
     if (foliage === 'billboard') {
-      dummy.position.set(point.x, ground + point.height * Math.cos(this.cameraElevation) / 2, point.z - point.height * Math.sin(this.cameraElevation) / 2);
-      dummy.rotation.set(-this.cameraElevation, 0, 0);
+      const yaw = this.cameraAzimuth || 0, offset = point.height * Math.sin(this.cameraElevation) / 2;
+      dummy.position.set(point.x - Math.sin(yaw) * offset, ground + point.height * Math.cos(this.cameraElevation) / 2, point.z - Math.cos(yaw) * offset);
+      dummy.rotation.set(-this.cameraElevation, yaw, 0, 'YXZ');
       dummy.scale.set(known ? point.width : 0, known ? point.height : 0, 1);
     } else {
       dummy.position.set(point.x, ground + point.height * .55, point.z);
@@ -538,7 +555,7 @@ export class Renderer {
   centerOn(x, y) { this.center.x = x; this.center.y = y; this.clampCamera(); this.updateCamera(); }
 
   setViewMode(mode) {
-    this.viewMode = mode === 'tactical' ? 'tactical' : 'immersive'; this.cameraElevation = battleElevation(this.viewMode);
+    this.viewMode = mode === 'tactical' ? 'tactical' : 'immersive'; this.cameraElevation = battleElevation(this.viewMode); this.cameraAzimuth = battleAzimuth(this.viewMode);
     try { localStorage.setItem('great-powers-battle-view', this.viewMode); } catch { /* 当前视角仍会立即生效。 */ }
     this.clampCamera(); this.updateCamera();
     const dummy = new THREE.Object3D();
@@ -552,7 +569,8 @@ export class Renderer {
   }
 
   clampCamera() {
-    const halfWidth = this.viewport.width / this.camera.zoom / 2, halfHeight = this.viewport.height / this.camera.zoom / Math.sin(this.cameraElevation) / 2;
+    const extents = groundExtents(this.viewport.width, this.viewport.height, this.camera.zoom, this.cameraElevation, this.cameraAzimuth);
+    const halfWidth = extents.x, halfHeight = extents.y;
     this.center.x = clamp(this.center.x, Math.min(halfWidth, this.world.width / 2), Math.max(this.world.width - halfWidth, this.world.width / 2));
     this.center.y = clamp(this.center.y, Math.min(halfHeight, this.world.height / 2), Math.max(this.world.height - halfHeight, this.world.height / 2)); this.camera.x = this.center.x - halfWidth; this.camera.y = this.center.y - halfHeight;
   }
@@ -560,12 +578,13 @@ export class Renderer {
   updateCamera() {
     const halfWidth = this.viewport.width / this.camera.zoom / 2, halfHeight = this.viewport.height / this.camera.zoom / 2;
     Object.assign(this.viewCamera, { left: -halfWidth, right: halfWidth, top: halfHeight, bottom: -halfHeight });
-    this.viewCamera.position.set(this.center.x, 2075 * Math.sin(this.cameraElevation), this.center.y + 2075 * Math.cos(this.cameraElevation));
+    const reach = 2075 * Math.cos(this.cameraElevation);
+    this.viewCamera.position.set(this.center.x + Math.sin(this.cameraAzimuth) * reach, 2075 * Math.sin(this.cameraElevation), this.center.y + Math.cos(this.cameraAzimuth) * reach);
     this.viewCamera.lookAt(this.center.x, 0, this.center.y); this.viewCamera.updateProjectionMatrix(); this.viewCamera.updateMatrixWorld();
     if (this.sun) {
       const radius = Math.max(700, halfWidth * 1.3, halfHeight / Math.sin(this.cameraElevation) * 1.3);
       const snappedX = Math.round(this.center.x / 4) * 4, snappedY = Math.round(this.center.y / 4) * 4;
-      this.sun.position.set(snappedX - 1750, 2450, snappedY - 1520); this.sun.target.position.set(snappedX, 0, snappedY);
+      this.sun.position.set(snappedX - 1750, 1850, snappedY - 1050); this.sun.target.position.set(snappedX, 0, snappedY);
       Object.assign(this.sun.shadow.camera, { left: -radius, right: radius, top: radius, bottom: -radius }); this.sun.shadow.camera.updateProjectionMatrix();
     }
     if (this.ambientPass) {
@@ -612,7 +631,7 @@ export class Renderer {
     }
     return this.game.selectSameType(entity, visible, additive);
   }
-  pan(dx, dy) { this.center.x += dx / this.camera.zoom; this.center.y += dy / this.camera.zoom / Math.sin(this.cameraElevation); this.clampCamera(); this.updateCamera(); }
+  pan(dx, dy) { const delta = groundPan(dx, dy, this.camera.zoom, this.cameraElevation, this.cameraAzimuth); this.center.x += delta.x; this.center.y += delta.y; this.clampCamera(); this.updateCamera(); }
   zoomAt(factor, sx, sy) { const before = this.screenToWorld(sx, sy); this.camera.zoom = clamp(this.camera.zoom * factor, .45, 2.4); this.updateCamera(); const after = this.screenToWorld(sx, sy); this.center.x += before.x - after.x; this.center.y += before.y - after.y; this.clampCamera(); this.updateCamera(); this.updateFoliageLayers(); }
 
   createEntity(entity) {
@@ -1074,7 +1093,7 @@ export class Renderer {
     const zone=(x,y,radius,color)=>{ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color+'14';ctx.lineWidth=2;ctx.setLineDash([9,7]);ctx.beginPath();for(let i=0;i<=72;i++){const a=i/72*TAU,p=this.worldToScreen(x+Math.cos(a)*radius,y+Math.sin(a)*radius,3);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);}ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();};
     for(const w of this.game.nuclearWarnings()) {zone(w.x,w.y,DETERRENCE.radius,'#ffc785');const p=this.worldToScreen(w.x,w.y,8);ctx.save();ctx.font='600 13px "Noto Sans SC",sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#111b21';const label=`核威慑落区 · ${Math.ceil(w.remaining)} 秒`;ctx.strokeText(label,p.x,p.y);ctx.fillStyle='#ffd49e';ctx.fillText(label,p.x,p.y);ctx.restore();}
     if(this.game.pendingNuclear&&this.pointer)zone(this.pointer.x,this.pointer.y,DETERRENCE.radius,'#ffc785');
-    for(const u of this.game.activeUnits(0).filter(u=>selected.has(u.id)&&['abm','counterIntel'].includes(u.type)))zone(u.x,u.y,UNITS[u.type].range,u.type==='abm'?'#82d5ee':'#d0bbef');
+    for(const u of this.game.activeUnits(0).filter(u=>selected.has(u.id)&&['abm','counterIntel','supply'].includes(u.type)))zone(u.x,u.y,UNITS[u.type].range,u.type==='supply'?'#7fd9a4':u.type==='abm'?'#82d5ee':'#d0bbef');
     const obstacles = [...this.canvas.parentElement.querySelectorAll('.battle-hud, .command-toolbar, .camera-tools, .building-info:not([hidden]), .compact-radar:not([hidden]), .attack-alert:not([hidden]), .nuclear-alert:not([hidden]), .toast')].map(element => {
       const rect = element.getBoundingClientRect(); return { x: rect.x - viewportRect.x, y: rect.y - viewportRect.y, width: rect.width, height: rect.height };
     });

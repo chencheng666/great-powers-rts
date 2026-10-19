@@ -46,7 +46,7 @@ test('满弹受伤飞机停在机场也会维修，手动返场不需要先把�
 
 test('补给车主动接近远处受伤步兵和坦克，恢复生命、弹药后换目标', () => {
   const g = setup('frontier'), truck = g.addUnit(0, 'supply', 600, 900), rifle = g.addUnit(0, 'rifle', 860, 900), tank = g.addUnit(0, 'tank', 1080, 960);
-  rifle.hp = 70; rifle.ammo = 14; tank.hp = 300; tank.ammo = 10;
+  rifle.hp = 70; rifle.ammo = UNITS.rifle.ammo - 4; tank.hp = 300; tank.ammo = UNITS.tank.ammo - 2;
   const x = truck.x; advance(g, 45);
   assert.ok(truck.x > x + 100); assert.equal(rifle.hp, rifle.maxHp); assert.equal(rifle.ammo, UNITS.rifle.ammo);
   assert.equal(tank.hp, tank.maxHp); assert.equal(tank.ammo, UNITS.tank.ammo); assert.ok(truck.stock < UNITS.supply.stock);

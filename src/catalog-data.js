@@ -34,7 +34,7 @@ const GUIDES = {
   laser: ['反无人机拦截', '攻击低空无人机，拦截部分导引弹药；承担短距保护。', '不能攻击坦克或高空战机，持续射击过热后必须冷却。'],
   rocket: ['区域远程火力', '共享侦察，停驻展开后区域打击；射击后可换阵地。', '有最小射程，近距单位与空袭可反制；无制导火箭不被普通拦截。'],
   apc: ['步兵运输', '右键友方装甲车装载步兵／工程师，停驻后卸载。', '仅能载步兵，没有直接火力；车毁后乘员受伤撤出。'],
-  supply: ['机动保障', '默认自动寻找可达的受损／缺弹陆军；可切换驻点保障，缺货回厂。', '库存和维修资金有限，不能保障海上舰艇和飞行战机。'],
+  supply: ['范围保障', '240 范围为所有友军陆地作战单位自动补弹；脱战后共享每秒24生命的维修能力。优先圈内保障，可切换驻点；缺货回厂。', '圈内部队无需挤靠车身。库存、补弹与维修资金有限；多车不叠加同一轮服务，山体阻隔保障，不能治疗海空单位。'],
   destroyer: ['舰队多用途火力', '远程对舰、沿岸支援、防空和声呐反潜，导弹有飞行时间。', '有限弹药；需返有电港口整备，不能在远海无限回血。'],
   carrier: ['舰载航空', '右键停航航母装载兼容舰载机，起飞后用真实机体出击；最多三架。', '普通陆基战机不可登舰；真实编组与自带攻击组互斥，惧怕潜艇。'],
   submarine: ['水下伏击', '潜航伏击舰艇，发射后短暂暴露；用声呐搜索水下目标。', '不能攻击陆地，反潜舰和敌方声呐可反制；受击也会暴露。'],
@@ -103,7 +103,7 @@ export function catalogEntry(kind, type, faction = 'china', mapId = 'valley') {
     if (robot) stats.push(['电池', `${ROBOT_ENERGY.capacity}%`], ['自动返充', `≤ ${ROBOT_ENERGY.returnAt}%`]);
     else if (d.ammo) stats.push(['弹药批次', `${d.ammo}`]);
     if (d.capacity) stats.push([type === 'carrier' ? '甲板机位' : '载重格数', `${d.capacity}`]);
-    if (d.stock) stats.push(['库存', `${d.stock}`]);
+    if (d.stock) stats.push(['库存', `${d.stock}`], ['保障范围', `${d.range}`]);
     if (d.sonar) stats.push(['声呐', `${d.sonar}`]);
   } else stats.push(['电力', d.power >= 0 ? `+${d.power}` : `${d.power}`]);
   const attention = [guide[2]], tactics = [guide[1]], service = [];

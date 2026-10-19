@@ -7,17 +7,21 @@ const noise = (x, y) => { const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
 
 export function surfaceMaps(kind = 'coating') {
   if (surfaces.has(kind)) return surfaces.get(kind);
-  const size = 128, color = new Uint8Array(size * size * 4), normal = new Uint8Array(color.length), rough = new Uint8Array(color.length);
+  const aircraft = kind === 'aircraft', size = aircraft ? 256 : 128, color = new Uint8Array(size * size * 4), normal = new Uint8Array(color.length), rough = new Uint8Array(color.length);
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const i = (y * size + x) * 4, grain = noise(x, y), fabric = kind === 'fabric', rubber = kind === 'rubber';
     const weave = fabric ? ((x % 4 < 2) === (y % 4 < 2) ? 1 : -1) : 0;
     const scratch = !fabric && !rubber && x % 47 === 0 && y % 19 < 11;
-    const value = 244 + grain * 8 + weave * 2 - (scratch ? 22 : 0);
+    const panelX = x % 64, panelY = y % 64;
+    const seam = aircraft && (panelX < 2 || panelY < 2);
+    const rivet = aircraft && ((panelX === 6 || panelX === 57) && panelY % 16 < 2 || (panelY === 6 || panelY === 57) && panelX % 16 < 2);
+    const panelTone = aircraft ? noise(Math.floor(x / 64), Math.floor(y / 64)) * 20 - 12 : 0;
+    const value = (aircraft ? 226 : 244) + grain * 8 + weave * 2 + panelTone - (scratch ? 22 : 0) - (seam ? 55 : rivet ? 35 : 0);
     color[i] = color[i + 1] = color[i + 2] = value; color[i + 3] = 255;
-    normal[i] = 128 + (fabric ? weave * 13 : (grain - .5) * 13);
-    normal[i + 1] = 128 + (fabric ? (y % 4 < 2 ? 1 : -1) * 13 : (noise(x + 1, y) - .5) * 13);
+    normal[i] = 128 + (aircraft && panelX < 3 ? panelX < 1 ? -26 : 26 : fabric ? weave * 13 : (grain - .5) * 13);
+    normal[i + 1] = 128 + (aircraft && panelY < 3 ? panelY < 1 ? -26 : 26 : fabric ? (y % 4 < 2 ? 1 : -1) * 13 : (noise(x + 1, y) - .5) * 13);
     normal[i + 2] = normal[i + 3] = 255;
-    rough[i] = rough[i + 1] = rough[i + 2] = (fabric || rubber ? 235 : 185) + grain * 18; rough[i + 3] = 255;
+    rough[i] = rough[i + 1] = rough[i + 2] = (fabric || rubber ? 235 : aircraft ? 170 + panelTone : 185) + grain * 18 + (seam ? 35 : 0); rough[i + 3] = 255;
   }
   const texture = (data, srgb = false) => {
     const t = new THREE.DataTexture(data, size, size); t.wrapS = t.wrapT = THREE.RepeatWrapping;
