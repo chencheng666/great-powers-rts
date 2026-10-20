@@ -1,10 +1,29 @@
 import { UNITS } from './data.js';
 
 const gap = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
+export const COUNTER_INTEL_LABELS = { ready:'卫星遮蔽生效', disabled:'已关闭', moving:'收拢／展开中', offline:'电力不足', 'no-radar':'缺少雷达链路', stunned:'设备瘫痪', embarked:'运输中', unavailable:'不可用' };
 
 export const strategicCombat = {
+  counterIntelState(u) {
+    if (!u || u.type !== 'counterIntel' || u.hp <= 0) return 'unavailable';
+    if (u.counterIntelEnabled === false) return 'disabled';
+    if (u.embarkedIn) return 'embarked';
+    if (u.stunUntil > this.time) return 'stunned';
+    if (this.time - (u.lastMovedAt ?? -10) < 1) return 'moving';
+    if (!this.hasBuilding(u.owner, 'radar')) return 'no-radar';
+    if (!this.hasPower(u.owner)) return 'offline';
+    return 'ready';
+  },
+
+  toggleCounterIntel(u) {
+    if (!u || u.type !== 'counterIntel' || u.hp <= 0 || u.embarkedIn || this.isControlLocked(u.owner)) return false;
+    u.counterIntelEnabled = u.counterIntelEnabled === false;
+    this.fogTimer = 0;
+    return true;
+  },
+
   satelliteShields(side) {
-    return this.enemyUnits(side,'counterIntel').filter(u => !u.embarkedIn && this.time >= u.stunUntil && this.time-(u.lastMovedAt??-10) >= 1 && this.hasPower(u.owner) && this.hasBuilding(u.owner,'radar'));
+    return this.enemyUnits(side,'counterIntel').filter(u => this.counterIntelState(u) === 'ready');
   },
 
   updateSwarmCarrier(u,dt) {

@@ -33,10 +33,29 @@ export function createNuclearSilo() {
 }
 
 export function animateStrategicEquipment(entry,entity,game,dt) {
+  if(entity.type==='counterIntel') {
+    entry.intelParts ||= {mast:entry.model.getObjectByName('counter_intel_mast'),array:entry.model.getObjectByName('counter_intel_array')};
+    // 敌方外观仅表现可观察的停车展开，不从隐藏电网或设备开关推断状态。
+    const active=entity.owner===0?game.counterIntelState(entity)==='ready':game.time-(entity.lastMovedAt??-10)>=1;
+    const target=active?1:.15;
+    entry.intelDeployment ??= target;
+    entry.intelDeployment += (target-entry.intelDeployment)*(1-Math.exp(-dt*4));
+    if(entry.intelParts.mast)entry.intelParts.mast.scale.y=entry.intelDeployment;
+    if(entry.intelParts.array)entry.intelParts.array.rotation.y=active?Math.sin(game.time*.45)*.35:0;
+    entry.displayTopHeight=entry.topHeight-(1-entry.intelDeployment)*23;
+    return;
+  }
   if(!['ballistic','nuclearSilo'].includes(entity.type))return;
-  entry.strategicParts||={launcher:entry.model.getObjectByName('strategic_launcher'),doors:['silo_door_left','silo_door_right'].map(name=>entry.model.getObjectByName(name))};
-  const {launcher,doors}=entry.strategicParts;
-  if(launcher){const deployment=Math.min(1,(entity.deployProgress||0)/5);launcher.rotation.z=deployment*.8;entry.displayTopHeight=entry.topHeight+deployment*45;}
+  entry.strategicParts||={launcher:entry.model.getObjectByName('strategic_launcher'),supports:entry.model.getObjectByName('launcher_supports'),hydraulics:entry.model.getObjectByName('launcher_hydraulics'),doors:['silo_door_left','silo_door_right'].map(name=>entry.model.getObjectByName(name))};
+  const {launcher,doors,supports,hydraulics}=entry.strategicParts;
+  if(launcher){
+    const target=Math.max(0,Math.min(1,(entity.deployProgress||0)/5));
+    entry.strategicDeployment ??= target;
+    entry.strategicDeployment += (target-entry.strategicDeployment)*(1-Math.exp(-Math.max(0,dt)*5));
+    const deployment=entry.strategicDeployment;launcher.rotation.z=deployment*.8;entry.displayTopHeight=entry.topHeight+deployment*45;
+    if(supports){supports.position.y=(1-deployment)*1.15;supports.scale.y=.15+.85*deployment;}
+    if(hydraulics){const x=-3+2.8*Math.cos(launcher.rotation.z)+2.7,y=1.8+2.8*Math.sin(launcher.rotation.z)-1.5;hydraulics.rotation.z=Math.atan2(y,x)-Math.PI/2;hydraulics.scale.y=Math.hypot(x,y);}
+  }
   if(doors[0]) {
     const pending=game.players[entity.owner]?.nuclearPending,open=entity.owner===0&&pending?.sourceId===entity.id?1:0;
     entry.siloOpen=(entry.siloOpen||0)+(open-(entry.siloOpen||0))*(1-Math.exp(-dt*1.8));

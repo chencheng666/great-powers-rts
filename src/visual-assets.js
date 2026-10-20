@@ -48,7 +48,8 @@ export function weatherMaterial(material, domain = 'land') {
   const result = material.clone(), stone = ['岩石', '矿石', '矿晶'].includes(material.name);
   const fabric = material.name === '作战服', rubber = material.name === '橡胶';
   if (!stone) {
-    const maps = surfaceMaps(fabric ? 'fabric' : rubber ? 'rubber' : 'coating');
+    const armor = domain === 'land' && material.name === '装甲钢';
+    const maps = surfaceMaps(fabric ? 'fabric' : rubber ? 'rubber' : armor ? 'armor' : 'coating');
     for (const key of ['map', 'normalMap', 'roughnessMap']) if (!result[key]) result[key] = maps[key];
     if (!material.normalMap) result.normalScale.setScalar(fabric ? .28 : .18);
     if (fabric || rubber) { result.metalness = 0; result.roughness = .94; }

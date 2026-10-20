@@ -28,7 +28,7 @@ import { animateIdleGun } from './idle-gun.js';
 import { lunarCraters } from './lunar-terrain.js';
 import { battleElevation, battleAzimuth, groundPan, groundExtents } from './battle-camera.js';
 import { damagePresentation, damagedMaterial, structuralDamage, confirmedShipLoss, sinkingPose } from './damage-presentation.js';
-import { submarinePose } from './naval-presentation.js';
+import { submarinePose, animateLandingCraft, landingCargoLayout, landingDetailPlan } from './naval-presentation.js';
 import { animateFacility, drawRepairBadge } from './facility-motion.js';
 import { unitAnimation, weaponElevation } from './unit-animation.js';
 import { animateStrategicEquipment } from './deterrence-models.js';
@@ -36,6 +36,13 @@ import { createDeterrenceBlast,animateDeterrenceBlast } from './deterrence-fx.js
 import { DETERRENCE } from './deterrence-rules.js';
 import { animateTracks } from './track-motion.js';
 import { personnelLOD, syncPersonnelLOD } from './personnel-lod.js';
+import { armyDetailPlan, inDetailViewport } from './army-detail.js';
+import { CHALLENGES } from './challenges.js';
+import { COMBAT_STANCES, combatStance, supportsCombatStance } from './combat-stance.js';
+import { animatePriorityAircraft } from './priority-model-detail.js';
+
+// 实体与部署预览共用同一名单，避免三维建筑读取不存在的旧贴图。
+const MODEL_ONLY_BUILDINGS = new Set(['nuclearSilo','turret','refinery',...COMMUNITY_3D_BUILDINGS,...REALISM_BUILDINGS]);
 
 const TAU = Math.PI * 2;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -649,7 +656,7 @@ export class Renderer {
       model.scale.setScalar(scale);
     }
     model.userData.entity = entity;
-    const sprite = entity.kind === 'building' && !['nuclearSilo','turret', 'refinery', ...COMMUNITY_3D_BUILDINGS, ...REALISM_BUILDINGS].includes(entity.type) && !this.game.map.future ? this.attachArchitecture(model, name, color) : null;
+    const sprite = entity.kind === 'building' && !MODEL_ONLY_BUILDINGS.has(entity.type) && !this.game.map.future ? this.attachArchitecture(model, name, color) : null;
     const entrance = entity.kind === 'building' && ['barracks', 'factory', 'armory', 'airfield'].includes(entity.type) ? this.createEntrance(entity, model, scale) : null;
     this.readableMaterials ||= new Map();
     const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry');
@@ -802,11 +809,23 @@ export class Renderer {
     const active = new Set();
     const shotAims = new Map(this.game.effects.filter(effect => effect.type === 'shot').map(effect => [effect.sourceId, effect]));
     const targeted = new Set(this.game.selected.map(id => this.game.getEntity(id)).filter(entity => entity?.owner === 0).map(entity => entity.order?.targetId || entity.targetId).filter(Boolean));
+    const visibility=new Map([...this.game.buildings,...this.game.units].map(e=>[e.id,e.hp>0&&this.game.canSeeEntity(0,e)]));
+    const framed=new Set(this.game.units.filter(u=>visibility.get(u.id)&&inDetailViewport(this.worldToScreen(u.x,u.y,UNITS[u.type].tags.includes('air')?50:0),this.viewport)).map(u=>u.id));
+    const detail=armyDetailPlan(this.game.units.filter(u=>framed.has(u.id)),this.camera.zoom,this.quality,this.game.selected,this.center,this.armyDetail);
+    this.armyDetail=detail;
+    this.cargoDetail=landingDetailPlan(this.game.units.filter(u=>framed.has(u.id)),this.camera.zoom,this.quality,this.game.selected,this.center,this.cargoDetail);
     for (const entity of [...this.game.buildings, ...this.game.units]) {
       if (entity.hp <= 0) continue; active.add(entity.id);
-      const entry = this.entities.get(entity.id) || this.createEntity(entity), visible = this.game.canSeeEntity(0, entity);
+      const visible=visibility.get(entity.id),cached=this.entities.get(entity.id);
+      if (!visible) {
+        if (cached) { cached.entity=entity;cached.model.visible=false;cached.identity.visible=false;cached.ring.visible=false;cached.lastX=entity.x;cached.lastY=entity.y; }
+        if(entity.kind==='building')this.updateFoundation(entity,false);
+        continue;
+      }
+      const entry = cached || this.createEntity(entity);
       entry.entity = entity; entry.model.userData.entity = entity; entry.model.visible = visible;
       animateStrategicEquipment(entry,entity,this.game,dt);
+      animateLandingCraft(entry,entity,this.game,dt);
       if (entity.kind === 'building') this.updateFoundation(entity, visible);
       const damage = damagePresentation(entity); this.setDamageStage(entry, damage.stage);
       const moving = Math.hypot(entity.x - entry.lastX, entity.y - entry.lastY) > .05;
@@ -875,14 +894,15 @@ export class Renderer {
           entry.weaponPose.rotation.z = Math.sin(this.game.time * 2.2 + entity.id) * .008 * (1 - animation.speed);
         }
         if (tags.includes('infantry')) entry.model.rotation.z = Math.sin(animation.phase) * .018 * animation.speed;
-        for (const track of entry.tracks) track.visible = this.camera.zoom >= 1.4;
-        if (visible && entry.tracks.length && this.camera.zoom >= 1.4) animateTracks(entry.tracks, animation.travel, animation.turnTravel);
+        const detailedTracks=detail.tracks&&framed.has(entity.id);
+        for (const track of entry.tracks) track.visible = detailedTracks;
+        if (entry.tracks.length && detailedTracks) animateTracks(entry.tracks, animation.travel, animation.turnTravel);
         entry.legs.forEach((leg, index) => {
           const phase = animation.phase + index * Math.PI, knee = leg.getObjectByName(index === 0 ? 'knee_left' : 'knee_right');
           leg.rotation.z = Math.sin(phase) * (knee ? .35 : .47) * animation.speed;
           if (knee) knee.rotation.z = -Math.max(0, -Math.sin(phase)) * .62 * animation.speed;
         });
-        syncPersonnelLOD(entry, this.camera.zoom < 1.7);
+        syncPersonnelLOD(entry, !detail.near.has(entity.id));
         if (tags.includes('drone') || entry.rotors.length) {
           const activeFlight = this.game.time >= entity.stunUntil;
           entry.rotors.forEach((rotor, index) => { rotor.rotation[rotor.userData.rotationAxis||'y'] += dt * (activeFlight ? 47 : 7) * (index % 2 ? -1 : 1); });
@@ -894,6 +914,7 @@ export class Renderer {
         }
       } else if (entity.type === 'dock') entry.model.rotation.y = entity.x > this.world.width / 2 ? Math.PI : 0;
       else if (entity.type === 'turret') entry.model.rotation.y = -entity.angle;
+      if (entity.kind==='unit') animatePriorityAircraft(entry,entity,this.game,dt,height-this.elevation(entity.x,entity.y));
       animateFacility(entry.model, entity, this.game);
       entry.model.position.set(entity.x, height, entity.y);
       const submerged = entity.type === 'submarine' && entry.submergedMaterials?.[0]?.mesh.material === entry.submergedMaterials?.[0]?.hidden;
@@ -910,6 +931,25 @@ export class Renderer {
           if (!mesh) { mesh = createModel(equipmentModel(this.game.players[entity.owner].faction, plane.type), teamVisual(entity.owner).color); mesh.scale.setScalar(.3); entry.model.add(mesh); entry.deckModels.set(plane.id, mesh); }
           mesh.position.set(-8 + i * 4.1, 1.3, -1.3);
         });
+      }
+      if(entity.type==='landing'&&entity.owner===0){
+        const passengers=(entity.passengers||[]).map(id=>this.game.getEntity(id)).filter(u=>u?.hp>0&&u.embarkedIn===entity.id),ids=new Set(passengers.map(u=>u.id));
+        for(const[id,model]of entry.deckModels)if(!ids.has(id)){entry.model.remove(model);entry.deckModels.delete(id);}
+        const detailed=this.cargoDetail.has(entity.id);
+        if(detailed)for(const item of landingCargoLayout(passengers)){
+          const {unit}=item;let cargo=entry.deckModels.get(unit.id);
+          if(!cargo){
+            cargo=createModel(equipmentModel(this.game.players[entity.owner].faction,unit.type),teamVisual(entity.owner).color);
+            if(UNITS[unit.type].tags.includes('infantry')){
+              this.personnelTemplates||=new Map();const key=`cargo:${unit.type}:${entity.owner}`;
+              if(!this.personnelTemplates.has(key))this.personnelTemplates.set(key,personnelLOD(cargo,value=>this.track(value)));
+              cargo=this.personnelTemplates.get(key).clone(true);
+            }
+            entry.model.add(cargo);entry.deckModels.set(unit.id,cargo);
+          }
+          cargo.scale.setScalar(item.scale);cargo.position.set(item.x,item.y,item.z);cargo.visible=true;
+        }
+        if(!detailed)for(const cargo of entry.deckModels.values())cargo.visible=false;
       }
       if (entry.entrance) {
         const age = this.game.time - ((entity.exitUntil || -10) - 2.6), open = entity.exitUntil > this.game.time ? Math.min(1, age / .3) : Math.max(0, 1 - (this.game.time - (entity.exitUntil || -10)) / .45);
@@ -1093,7 +1133,11 @@ export class Renderer {
     const zone=(x,y,radius,color)=>{ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color+'14';ctx.lineWidth=2;ctx.setLineDash([9,7]);ctx.beginPath();for(let i=0;i<=72;i++){const a=i/72*TAU,p=this.worldToScreen(x+Math.cos(a)*radius,y+Math.sin(a)*radius,3);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);}ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();};
     for(const w of this.game.nuclearWarnings()) {zone(w.x,w.y,DETERRENCE.radius,'#ffc785');const p=this.worldToScreen(w.x,w.y,8);ctx.save();ctx.font='600 13px "Noto Sans SC",sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#111b21';const label=`核威慑落区 · ${Math.ceil(w.remaining)} 秒`;ctx.strokeText(label,p.x,p.y);ctx.fillStyle='#ffd49e';ctx.fillText(label,p.x,p.y);ctx.restore();}
     if(this.game.pendingNuclear&&this.pointer)zone(this.pointer.x,this.pointer.y,DETERRENCE.radius,'#ffc785');
-    for(const u of this.game.activeUnits(0).filter(u=>selected.has(u.id)&&['abm','counterIntel','supply'].includes(u.type)))zone(u.x,u.y,UNITS[u.type].range,u.type==='supply'?'#7fd9a4':u.type==='abm'?'#82d5ee':'#d0bbef');
+    for(const u of this.game.activeUnits(0).filter(u=>selected.has(u.id)&&['abm','counterIntel','supply'].includes(u.type)))zone(u.x,u.y,UNITS[u.type].range,u.type==='supply'?'#7fd9a4':u.type==='abm'?'#82d5ee':this.game.counterIntelState(u)==='ready'?'#d0bbef':'#879393');
+    if (selected.size === 1) {
+      const u = this.game.getEntity([...selected][0]);
+      if (u?.owner === 0 && supportsCombatStance(u) && combatStance(u) === 'guard' && u.type !== 'abm') zone(u.x,u.y,UNITS[u.type].range,'#b1d7ab');
+    }
     const obstacles = [...this.canvas.parentElement.querySelectorAll('.battle-hud, .command-toolbar, .camera-tools, .building-info:not([hidden]), .compact-radar:not([hidden]), .attack-alert:not([hidden]), .nuclear-alert:not([hidden]), .toast')].map(element => {
       const rect = element.getBoundingClientRect(); return { x: rect.x - viewportRect.x, y: rect.y - viewportRect.y, width: rect.width, height: rect.height };
     });
@@ -1109,9 +1153,10 @@ export class Renderer {
       const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry'), robot = entity.kind === 'unit' && isLunarRobot(this.game.map, entity.type), ammo = robot ? 10 : UNITS[entity.type]?.ammo;
       const numeric = hovered || isSelected && selected.size === 1;
       const label = `${entity.owner !== 0 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
-      const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : '';
+      const stance = entity.owner === 0 && isSelected && supportsCombatStance(entity) ? combatStance(entity) : 'free';
+      const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : stance !== 'free' ? COMBAT_STANCES[stance].name : '';
       ctx.font = '500 10px "Noto Sans SC",sans-serif';
-      const width = Math.max(entity.kind === 'building' ? 76 : infantry ? 28 : 50, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0);
+      const width = Math.max(entity.kind === 'building' ? 76 : infantry ? 28 : 50, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0, status ? Math.ceil(ctx.measureText(status).width) + 8 : 0);
       bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner !== 0 ? 2 : 1 });
     }
     const repairs = this.game.ownedBuildings(0).filter(b => b.repairing && b.hp < b.maxHp).map(building => {
@@ -1150,6 +1195,28 @@ export class Renderer {
       const point = this.worldToScreen(effect.x, effect.y, 20 + effect.age / effect.duration * 32); ctx.font = '600 13px "Noto Sans SC",sans-serif'; ctx.fillStyle = '#e9cd90'; ctx.textAlign = 'center'; ctx.fillText(`+${effect.amount}`, point.x, point.y);
     }
     for (const badge of this.repairBadges) drawRepairBadge(ctx, { x: badge.x + 15, y: badge.y + 37 }, this.game.time, this.game.players[0].credits <= 0);
+    if(this.game.challenge?.id==='recon'){
+      const d=CHALLENGES.recon,intel=this.game.challenge.intel;
+      const label=(point,text,color)=>{const p=this.worldToScreen(point.x,point.y,6);ctx.save();ctx.font='600 12px sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#122025';ctx.strokeText(text,p.x,p.y);ctx.fillStyle=color;ctx.fillText(text,p.x,p.y);ctx.restore();};
+      d.nodes.forEach((node,i)=>{const color=i<intel.completed?'#8bd5ad':i===intel.completed?'#f2cf7d':'#9dafbd';zone(node.x,node.y,node.radius,color);label(node,`${i+1} · ${node.name}${i<intel.completed?' · 已记录':i===intel.completed?` · ${intel.progress.toFixed(1)} / ${d.scanTime} 秒`:''}`,color);});
+      zone(d.objective.x,d.objective.y,d.objective.radius,'#8bd5ad');label(d.objective,intel.completed===d.nodes.length?'情报齐备 · 返回撤离区':'撤离区 · 等待情报','#b4e8ca');
+    }
+    if (this.game.challenge?.id==='corridor') {
+      const {x,y,radius}=CHALLENGES.corridor.objective,center={x,y};ctx.save();ctx.strokeStyle='#efcc7f';ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();
+      for(let i=0;i<=48;i++){const a=i/48*TAU,p=this.worldToScreen(center.x+Math.cos(a)*radius,center.y+Math.sin(a)*radius,2);if(i)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);}ctx.stroke();ctx.setLineDash([]);
+      const p=this.worldToScreen(center.x,center.y,4);ctx.fillStyle='#ffe2a0';ctx.font='600 12px sans-serif';ctx.textAlign='center';ctx.fillText(this.game.time<45?`撤离区 · ${Math.ceil(45-this.game.time)}秒后开放`:'撤离区 · 清除周围敌军',p.x,p.y);ctx.restore();
+    }
+    if(this.game.challenge?.id==='beachhead'){
+      const d=CHALLENGES.beachhead,p=this.worldToScreen(d.objective.x,d.objective.y,6),hold=this.game.challenge.beachhead.hold;
+      const color=this.game.getEntity(d.objective.siteId)?.owner===0?'#8bd5ad':'#f2cf7d';
+      zone(d.objective.x,d.objective.y,d.objective.radius,color);
+      ctx.save();ctx.font='600 12px sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#122025';
+      const text=`东岸通信站 · 驻守 ${hold.toFixed(1)} / ${d.holdTime} 秒`;ctx.strokeText(text,p.x,p.y-48);ctx.fillStyle=color;ctx.fillText(text,p.x,p.y-48);ctx.restore();
+    }
+    if (this.game.challenge) {
+      const entity=this.game.getEntity(this.game.challenge.targetId),entry=entity&&this.entities.get(entity.id);
+      if(entry?.model.visible){const p=this.entityAnchor(entity);ctx.save();ctx.fillStyle='#ffe2a0';ctx.strokeStyle='#18201b';ctx.lineWidth=3;ctx.textAlign='center';ctx.font='600 12px sans-serif';ctx.strokeText('保护目标',p.x,p.y-22);ctx.fillText('保护目标',p.x,p.y-22);ctx.restore();}
+    }
     for (const unit of this.game.activeUnits(0).filter(u => selected.has(u.id) && u.order?.type === 'patrol')) {
       const order = unit.order, a = this.worldToScreen(order.originX, order.originY), b = this.worldToScreen(order.destinationX, order.destinationY);
       ctx.save(); ctx.strokeStyle = '#a1deca'; ctx.setLineDash([5, 6]); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]);
@@ -1176,6 +1243,20 @@ export class Renderer {
       const points=route.points.map(p=>this.worldToScreen(p.x,p.y,2));ctx.save();ctx.strokeStyle=route.color;ctx.globalAlpha=.72;ctx.lineWidth=1.3;ctx.setLineDash([6,7]);ctx.lineDashOffset=-this.game.time*9;
       ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();ctx.setLineDash([]);
       const end=this.worldToScreen(route.destination.x,route.destination.y,2);ctx.globalAlpha=.95;ctx.beginPath();ctx.arc(end.x,end.y,6,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(end.x,end.y-16);ctx.lineTo(end.x+13,end.y-12);ctx.lineTo(end.x,end.y-8);ctx.stroke();ctx.restore();
+      if (route.queued.length) {
+        ctx.save(); ctx.lineWidth=1.4; ctx.setLineDash([3,7]); ctx.globalAlpha=.5;
+        let previous=end;
+        if(route===this.orderRoutes[0]){ctx.setLineDash([]);ctx.globalAlpha=.95;ctx.fillStyle='#12252b';ctx.strokeStyle=route.color;ctx.beginPath();ctx.arc(end.x,end.y,10,0,TAU);ctx.fill();ctx.stroke();ctx.fillStyle='#e1f2f0';ctx.font='600 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('1',end.x,end.y);ctx.setLineDash([3,7]);ctx.globalAlpha=.5;}
+        route.queued.forEach((goal,index)=>{
+          const next=this.worldToScreen(goal.x,goal.y,2); ctx.strokeStyle=goal.type==='attackMove'?'#f1a291':'#a5ded8';
+          ctx.beginPath(); ctx.moveTo(previous.x,previous.y); ctx.lineTo(next.x,next.y); ctx.stroke();
+          if(route===this.orderRoutes[0]){
+            ctx.setLineDash([]);ctx.globalAlpha=.95;ctx.fillStyle='#12252b';ctx.beginPath();ctx.arc(next.x,next.y,10,0,TAU);ctx.fill();ctx.stroke();
+            ctx.fillStyle='#e1f2f0';ctx.font='600 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(index+2),next.x,next.y);ctx.setLineDash([3,7]);ctx.globalAlpha=.5;
+          }
+          previous=next;
+        });ctx.restore();
+      }
     }
   }
 
@@ -1185,7 +1266,7 @@ export class Renderer {
     if (!type || !this.pointer) { if (this.placement) this.placement.model.visible = false; return; }
     if (!this.placement) {
       const name = equipmentModel(this.game.players[0].faction, type, this.game.map.future);
-      const model = createModel(name), sprite = !this.game.map.future && !['turret', 'refinery', ...COMMUNITY_3D_BUILDINGS, ...REALISM_BUILDINGS].includes(type) ? this.attachArchitecture(model, type, '#59d7ec') : null;
+      const model = createModel(name), sprite = !this.game.map.future && !MODEL_ONLY_BUILDINGS.has(type) ? this.attachArchitecture(model, type, '#59d7ec') : null;
       if (sprite) sprite.material.opacity = .55;
       model.traverse(mesh => { if (!mesh.isMesh) return; if (!sprite) { mesh.material = this.track(mesh.material.clone()); mesh.material.transparent = true; mesh.material.opacity = .48; } mesh.castShadow = false; });
       model.scale.setScalar(BUILDINGS[type].size / 7.2); this.scene.add(model); this.placement = { type, model, sprite };

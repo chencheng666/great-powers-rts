@@ -91,7 +91,9 @@ export class OnlineGame extends Game {
   sellBuilding(side,id){return this.issue('sell',{id});}
   sellHarvester(side,id){return this.issue('sell',{id});}
   setRallyPoint(side,id,x,y){return this.issue('rally',{id,x,y});}
-  command(x,y,attackMove=false){const mode=this.orderMode;this.orderMode=null;return this.issue('move',{x,y,attackMove,mode,selected:[...this.selected]});}
+  command(x,y,attackMove=false,side=0,append=false){const mode=this.orderMode;this.orderMode=null;return this.issue('move',{x,y,attackMove,mode,append,selected:[...this.selected]});}
+  clearQueuedOrders(){return this.issue('clear-waypoints',{selected:[...this.selected]});}
+  setCombatStance(stance){return this.issue('combat-stance',{stance,selected:[...this.selected]});}
   stopSelected(){return this.issue('stop',{selected:[...this.selected]});}
   castAbility(x,y){this.pendingAbility=false;return this.issue('ability',{x,y});}
   activateSatellite(){return this.issue('satellite');}
@@ -100,5 +102,7 @@ export class OnlineGame extends Game {
   unloadTransport(unit){return this.batch('unload',unit);}
   toggleAutoSupply(unit){return this.issue('auto-supply',{id:unit.id});}
   toggleAutoDrone(unit){return this.issue('auto-drone',{id:unit.id});}
+  toggleCounterIntel(unit){return this.issue('counter-intel',{id:unit.id});}
+  counterIntelState(unit){return unit?.owner===0 ? unit.counterIntelState || 'unavailable' : 'unavailable';}
   toSave(){throw new Error('联网战局由服务器维护，不能导出为单机存档');}
 }

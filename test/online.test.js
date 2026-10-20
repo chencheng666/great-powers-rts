@@ -70,6 +70,13 @@ test('两个游客建房准备、权威对战、重连暂停和认输只结算�
   assert.equal(va.config.battleId,vb.config.battleId);assert.equal(vb.view.players[0].faction,'nato');
   send(second,{type:'command',action:'build',unitType:'power',seq:1});assert.equal((await wait(second,m=>m.type==='ack')).ok,true);
   const g=app.rooms.get(code).game;const before=g.players[1].buildQueue;
+  const routeUnit=g.ownedUnits(1,'tank')[0];
+  send(second,{type:'command',action:'move',selected:[routeUnit.id],x:g.world.width-800,y:800,seq:2});assert.equal((await wait(second,m=>m.type==='ack'&&m.seq===2)).ok,true);
+  send(second,{type:'command',action:'move',selected:[routeUnit.id],x:g.world.width-1000,y:950,append:true,seq:3});assert.equal((await wait(second,m=>m.type==='ack'&&m.seq===3)).ok,true);assert.equal(routeUnit.orderQueue.length,1);
+  send(second,{type:'command',action:'clear-waypoints',selected:[routeUnit.id],seq:4});assert.equal((await wait(second,m=>m.type==='ack'&&m.seq===4)).ok,true);assert.equal(routeUnit.orderQueue.length,0);assert.equal(routeUnit.order.type,'move');
+  const counter=g.addUnit(0,'counterIntel',800,900);
+  send(first,{type:'command',action:'counter-intel',id:counter.id,seq:1});assert.equal((await wait(first,m=>m.type==='ack'&&m.seq===1)).ok,true);assert.equal(counter.counterIntelEnabled,false);
+  send(second,{type:'command',action:'counter-intel',id:counter.id,seq:5});assert.equal((await wait(second,m=>m.type==='ack'&&m.seq===5)).ok,false);assert.equal(counter.counterIntelEnabled,false);
   send(second,{type:'command',action:'cancel-build',seq:1});await new Promise(r=>setTimeout(r,100));assert.equal(g.players[1].buildQueue,before);
   second.ws.close();await wait(first,m=>m.type==='snapshot'&&m.view.paused);
   const resumed=connect(b);const rejoin=await wait(resumed,m=>m.type==='battle');assert.equal(rejoin.config.battleId,va.config.battleId);

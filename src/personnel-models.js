@@ -8,7 +8,7 @@ export function createPersonnel(type, { distant = false } = {}) {
   const group = new THREE.Group(); group.name = 'upper_body'; root.add(group);
   const weaponPose = new THREE.Group(); weaponPose.name = 'weapon_pose'; group.add(weaponPose);
   const spy = type === 'scout', engineer = type === 'engineer';
-  const fabric = craftedMaterial(spy ? '黑色西装' : '作战服', spy ? '#11151a' : engineer ? '#6c7762' : '#738263', 'fabric', .95, 0);
+  const fabric = craftedMaterial(spy ? '黑色西装' : '作战服', spy ? '#11151a' : engineer ? '#8b957b' : '#b1b99a', spy ? 'fabric' : 'uniform', .95, 0);
   const dark = craftedMaterial('皮革与橡胶', '#252b2d', 'rubber', .87, 0);
   const armor = craftedMaterial('携行具', '#485549', 'fabric', .9, 0);
   const steel = craftedMaterial('武器金属', '#677176', 'coating', .5, .65);

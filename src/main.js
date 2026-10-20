@@ -2,7 +2,11 @@ import { isDesktop, desktopInvoke, desktopNotice } from './desktop.js';
 import { createIcons, icons } from 'lucide';
 import { BUILDINGS, BUILD_ORDER, FACTIONS, MAPS, PRODUCERS, UNITS, UNIT_ORDER, VICTORY_MODES, supportsMap } from './data.js';
 import { DETERRENCE } from './deterrence-rules.js';
+import { COUNTER_INTEL_LABELS } from './strategic-combat.js';
 import { Game } from './game.js';
+import { CHALLENGES, challengeStatus, RECON_ACTIVITY_LABELS, BEACHHEAD_ACTIVITY_LABELS } from './challenges.js';
+import { CHALLENGE_PROFILE_KEY, CHALLENGE_FILE_LIMIT, emptyChallengeProfile, readChallengeProfile, writeChallengeProfile, challengeRecords, settleChallengeResult, exportChallengeProfile, parseChallengeExport, mergeChallengeProfiles } from './challenge-profile.js';
+import './challenges.css';
 import { Renderer } from './render.js';
 import { modelThumbnail } from './visual-assets.js';
 import { gameAudio } from './audio.js';
@@ -35,6 +39,7 @@ import './online.css';
 import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
 import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
+import { COMBAT_STANCES, supportsCombatStance, combatStance } from './combat-stance.js';
 
 const candidateMode=/^\/candidate(?:\/|$)/.test(location.pathname);
 const $ = selector => document.querySelector(selector);
@@ -42,12 +47,14 @@ const fmt = amount => Math.floor(amount).toLocaleString('zh-CN');
 const seconds = value => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
 const selectionStatus = entity => {
   const d = UNITS[entity.type];
+  if (entity.type === 'counterIntel' && entity.owner === 0) return `生命 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)} · ${COUNTER_INTEL_LABELS[state.game.counterIntelState(entity)] || '状态同步中'}`;
   if(entity.type==='nuclearSilo'){const p=state.game.players[entity.owner];return `生命 ${Math.ceil(entity.hp)} / ${entity.maxHp} · ${p.nuclearSpent?'本局已发射':p.nuclearPending?'发射准备中':`准备 ${Math.floor(p.nuclearCharge||0)} / 240 秒`}`;}
   if (entity.kind === 'unit' && isLunarRobot(state.game.map, entity.type)) return `机体 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)} · 电池 ${Math.ceil(entity.battery)}%${entity.order?.type === 'rearm' ? entity.battery <= 0 ? ' · 电池耗尽，等待供电救援' : ' · 返场充电／维修' : ''}${entity.stunUntil > state.game.time ? ' · 瘫痪' : ''}`;
   return `生命 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)}${entity.type === 'harvester' ? ` · 矿石 ${Math.floor(entity.cargo)} / 210` : ''}${d?.ammo ? ` · 弹药 ${entity.ammo} / ${d.ammo}` : ''}${d?.capacity ? ` · 载重 ${state.game.transportLoad(entity)} / ${d.capacity} 格 · ${entity.passengers.length} 单位` : ''}${entity.type === 'supply' ? ` · 库存 ${Math.floor(entity.stock)} / ${d.stock} · ${entity.autoSupply !== false ? '自动保障' : '驻点保障'}` : ''}${supportsDroneAutonomy(entity) ? ` · ${entity.autoDrone ? DRONE_ROLES[entity.droneRole] || '自主值守' : '手动控制'}` : ''}${entity.type === 'carrier' ? ` · 舰载机 ${entity.wing} / ${d.wing}` : ''}${entity.type === 'laser' ? ` · 热量 ${Math.ceil(entity.heat)}%${entity.overheated ? ' 冷却中' : ''}` : ''}${entity.type === 'rocket' ? ` · 展开 ${entity.deployProgress.toFixed(1)} / 2 秒` : ''}${entity.type === 'submarine' ? state.game.submarineSurfaced(entity) ? ' · 港口浮航' : entity.exposedUntil > state.game.time ? ' · 暴露' : ' · 潜航' : ''}${entity.jammedUntil > state.game.time ? ' · 受干扰' : ''}${entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? ' · 返场补给' : ''}`;
 };
 const icon = name => `<i data-lucide="${name}"></i>`;
 const refreshIcons = () => createIcons({ icons });
+const commandSelectionKey = g => g.selected.map(id => { const u = g.getEntity(id); return `${id}:${u?.orderQueue?.length || 0}:${combatStance(u)}:${u?.type === 'counterIntel' && u.owner === 0 ? `${u.counterIntelEnabled !== false}:${g.counterIntelState(u)}` : ''}`; }).join(';');
 
 const state = {
   game: null,
@@ -79,6 +86,7 @@ const state = {
   modalMode: null,
   lastPower: true,
   lastSelection: '',
+  lastCommandSelection: '',
   sidebarCollapsed: false,
   loading: false,
   renderFailure: null,
@@ -251,8 +259,11 @@ async function deployGame(save = null, onlinePayload = null) {
   const enemy = enemyChoice === 'random' ? candidates[Math.floor(Math.random() * candidates.length)] : enemyChoice;
   state.difficulty = $('#difficulty-select').value;
   state.mapId = $('#map-select').value;
+  state.victoryMode = document.querySelector('[data-victory].active')?.dataset.victory || 'quick';
   const events = { notice: toast, shot: beep, voice: key => gameAudio.say(key), selection: updateSelection, end: showResult };
-  state.game = onlinePayload ? new OnlineGame(onlinePayload, events, onlineClient) : save ? Game.fromSave(save, events) : new Game(state.faction, enemy, events, { nuclearEnabled:$('#nuclear-enabled').checked,victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId,battlefieldScale:$('#expanded-map').checked?1.5:1 });
+  state.game = onlinePayload ? new OnlineGame(onlinePayload, events, onlineClient) : save ? Game.fromSave(save, events) : new Game(state.faction, enemy, events, { challengeId:state.launchChallenge,nuclearEnabled:$('#nuclear-enabled').checked,victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId,battlefieldScale:$('#expanded-map').checked?1.5:1 });
+  state.launchChallenge = null;
+  if (state.game.challenge) { state.mapId=state.game.mapId; state.victoryMode=state.game.victoryMode;state.difficulty='standard'; }
   if (onlinePayload) { state.faction=state.game.players[0].faction;state.mapId=state.game.mapId;state.victoryMode=state.game.victoryMode;state.difficulty='standard'; }
   if (save) {
     state.faction = state.game.players[0].faction; state.mapId = save.config.mapId;
@@ -271,13 +282,14 @@ async function deployGame(save = null, onlinePayload = null) {
   $('#start-screen').style.display = 'none';
   if (onlinePayload) state.renderer.centerOn(state.game.homeX,state.game.homeY);
   window.scrollTo(0, 0);
-  $('#side-faction').textContent = FACTIONS[state.faction].name;
-  $('#faction-short').textContent = `我方：${FACTIONS[state.faction].name}`;
+  $('#side-faction').textContent = state.game.faction.name;
+  $('#faction-short').textContent = `我方：${state.game.faction.name}`;
   $('#enemy-short').textContent = state.game.players.length>2?`其他 ${state.game.players.length-1} 方 · 六方实验 · 每席40单位`:`敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
   $('#battle-status').textContent = '战斗进行中';
   $('#battle-objective').textContent = VICTORY_MODES[state.victoryMode].description;
   $('.battlefield').classList.toggle('future', !!state.game.map.future);
   $('#mission-label').textContent = `${VICTORY_MODES[state.victoryMode].name} · ${state.game.map.name}`;
+  if (state.game.challenge) { const d=CHALLENGES[state.game.challenge.id];$('#mission-label').textContent=d.name+' · 战术挑战'; state.renderer.centerOn(d.camera?.x||(state.game.challenge.id==='corridor'?760:1000),d.camera?.y||(state.game.challenge.id==='corridor'?1030:720)); }
   $('#minimap-map').textContent = state.game.map.name;
   $('#minimap-sector').textContent = state.game.map.sector;
   $('#modal').classList.add('hidden');
@@ -395,6 +407,7 @@ function updateUI(force = false) {
   if(locked){state.drag=null;state.renderer.dragBox=null;}
   $('#save-btn').disabled = !g.running || !!g.online;
   if (g.victoryMode === 'control') $('#battle-objective').textContent = `信标积分 ${Math.floor(p.controlScore)} : ${Math.floor(g.players[1].controlScore)} / 240`;
+  if (g.challenge) { const s=challengeStatus(g);$('#battle-objective').textContent=`${s.definition.name} · 剩余 ${s.seconds} 秒 · ${g.challenge.intel?`情报 ${g.challenge.intel.completed} / ${s.definition.nodes.length} · `:g.challenge.beachhead?`驻守 ${Math.floor(g.challenge.beachhead.hold)} / ${s.definition.holdTime} 秒 · `:''}${s.definition.targetName} ${s.health}%`; }
   const environmentStatus = $('#environment-status');
   environmentStatus.hidden = !g.map.future;
   if (g.map.future) { const weather = weatherState(g.map, g.time); environmentStatus.textContent = `${weather.phase === 'storm' ? '离子扰动' : weather.phase === 'warning' ? '扰动预警' : '通信稳定'} · ${Math.ceil(weather.remaining)} 秒`; }
@@ -429,6 +442,7 @@ function updateUI(force = false) {
   }
   $('#queue-cancel').hidden = !(g.pendingBuilding || q || activeProducer);
   $('#queue-cancel').title = g.pendingBuilding || q ? '取消建筑建造并返还已支付资金' : '取消当前单位生产并返还已支付资金';
+  if (commandSelectionKey(g) !== state.lastCommandSelection) updateSelection();
   const selectedEntity = g.selected.length === 1 ? g.getEntity(g.selected[0]) : null;
   const healthLabel = $('#selection-panel .selection-health');
   if (selectedEntity && healthLabel) healthLabel.textContent = selectionStatus(selectedEntity);
@@ -438,6 +452,17 @@ function updateUI(force = false) {
 function updateSidebar(force = false) {
   const g = state.game; if (!g) return;
   const root = $('#sidebar-content');
+  if (g.challenge) {
+    const s=challengeStatus(g),key=`challenge:${g.challenge.id}:${s.seconds}:${s.health}:${s.remaining}:${g.challenge.wave}:${g.challenge.intel?.completed}:${Math.floor((g.challenge.intel?.progress||0)*5)}:${Math.floor((g.challenge.beachhead?.hold||0)*5)}:${s.activity}:${state.tab}`;
+    if (!force&&root.dataset.renderKey===key) return;
+    root.dataset.renderKey=key;
+    const intel=g.challenge.intel,d=s.definition,beachhead=g.challenge.beachhead;
+    const progress=intel?`<div><dt>已获情报</dt><dd>${intel.completed} / ${d.nodes.length}</dd></div><div><dt>采集状态</dt><dd>${RECON_ACTIVITY_LABELS[s.activity]}${s.activity==='scanning'?` · ${intel.progress.toFixed(1)} / ${d.scanTime} 秒`:''}</dd></div>`:beachhead?`<div><dt>驻守进度</dt><dd>${beachhead.hold.toFixed(1)} / ${d.holdTime} 秒</dd></div><div><dt>据点状态</dt><dd>${BEACHHEAD_ACTIVITY_LABELS[s.activity]}</dd></div><div><dt>东岸突击</dt><dd>${g.challenge.wave} / ${d.waves.length}${s.nextIn!==null?` · 下波 ${s.nextIn} 秒`:''}</dd></div>`:`<div><dt>突击波次</dt><dd>${g.challenge.wave} / ${d.waves.length}${s.nextIn!==null?` · 下波 ${s.nextIn} 秒`:''}</dd></div><div><dt>剩余敌军</dt><dd>${s.remaining}</dd></div>`;
+    const nodes=intel?`<ol class="recon-objectives">${d.nodes.map((n,i)=>`<li class="${i<intel.completed?'complete':i===intel.completed?'current':''}"><button type="button" data-challenge-focus="node-${i}" title="定位${n.name}">${icon(i<intel.completed?'check':'map-pin')}<span>${i+1}. ${n.name}</span><small>${i<intel.completed?'已记录':i===intel.completed?'当前目标':'待侦察'}</small></button></li>`).join('')}</ol>`:'';
+    root.innerHTML=`<section class="challenge-objectives"><h3>${d.name}</h3><p>${d.briefing}</p><dl><div><dt>任务目标</dt><dd>${intel?'采集三处情报，侦察员安全撤离':beachhead?'保护登陆舰，接管并驻守东岸通信站':`${d.targetName}存续${g.challenge.id==='corridor'?'并抵达撤离区':'并清除全部突击'}`}</dd></div><div><dt>目标生命</dt><dd>${s.health}%</dd></div><div><dt>剩余时间</dt><dd>${s.seconds} 秒</dd></div>${progress}</dl>${nodes}<p>固定编队 · 有限整备资金 · 不开放生产和外部物资收入</p><p>星级：完成任务；目标生命 ≥70%；${beachhead?'战斗损失':'部队损失'}不超过 1 支。${beachhead?'工程师接管后转为驻站人员，不计战损。':''}挑战不计遭遇战荣誉。</p><button class="secondary-btn" data-challenge-focus="target">${icon('locate-fixed')} 定位${intel?'侦察员':'保护目标'}</button>${g.challenge.id==='corridor'||intel||beachhead?`<button class="secondary-btn" data-challenge-focus="exit">${icon('flag')} 定位${beachhead?'东岸通信站':'撤离区'}</button>`:''}</section>`;
+    root.querySelectorAll('[data-challenge-focus]').forEach(b=>b.addEventListener('click',()=>{const key=b.dataset.challengeFocus,point=key==='exit'?d.objective:key.startsWith('node-')?d.nodes[Number(key.slice(5))]:s.target;if(point)state.renderer.centerOn(point.x,point.y);}));
+    refreshIcons(); return;
+  }
   const queues = g.ownedBuildings(0).filter(b => PRODUCERS.includes(b.type)).map(b => `${b.type}:${b.active?.type || ''}:${b.queue.join(',')}`).join(';');
   const key = `${state.tab}:${queues}:${g.players[0].buildQueue?.type || ''}:${g.pendingBuilding || ''}:${g.ownedBuildings(0).map(b => b.type).join(',')}:${g.players[0].abilityCharge >= 100}:${Math.floor(g.players[0].abilityCharge / 5)}:${g.players[0].abilityCooldown > 0}:${g.players[0].credits < 650}:${g.players[0].credits < 1000}:${Math.ceil(Math.max(0, (g.players[0].satelliteReadyAt || 0) - g.time))}:${Math.ceil(Math.max(0, (g.players[0].satelliteUntil || 0) - g.time))}:${g.hasPower(0)}`;
   const intelligenceKey=`${Math.floor(g.players[0].cyberCharge||0)}:${!!g.players[0].cyberPending}:${g.isControlLocked(0)}:${g.nuclearEnabled}:${Math.floor(g.players[0].nuclearCharge||0)}:${!!g.players[0].nuclearPending}:${!!g.players[0].nuclearSpent}:${g.players[0].credits<DETERRENCE.cost}`;
@@ -503,6 +528,7 @@ function updateSidebar(force = false) {
 
 function updateSelection() {
   const g = state.game; if (!g) return;
+  state.lastCommandSelection = commandSelectionKey(g);
   const selected = g.selected.map(id => g.getEntity(id)).filter(Boolean);
   $('#unload-btn').hidden = !selected.some(e => e.kind === 'unit' && UNITS[e.type].capacity);
   $('#resupply-btn').hidden = !selected.some(e => e.kind === 'unit' && !['harvester', 'supply'].includes(e.type) && !UNITS[e.type].tags.includes('logistics'));
@@ -526,6 +552,11 @@ function updateSelection() {
     if (e.freight) panel.querySelector('.selection-health').textContent += ` · ${e.freight.phase === 'unloading' ? `卸货 ${Math.floor(e.freight.progress)} 秒` : e.freight.phase === 'outbound' ? '空载返航' : e.freight.holding ? '等待接收航线' : '物资运输中'} · 待交付 ¤ ${e.freight.value}`;
     if (e.type === 'harvester') panel.insertAdjacentHTML('beforeend', `<div class="selection-actions"><button type="button" data-action="recycle" title="回收矿车，按剩余生命返还一半造价" aria-label="回收矿车">${icon('coins')}</button></div>`);
     if (!panel.querySelector('.selection-actions')) panel.insertAdjacentHTML('beforeend', '<div class="selection-actions"></div>');
+    if (e.type === 'counterIntel' && e.owner === 0) {
+      const enabled = e.counterIntelEnabled !== false;
+      panel.querySelector('.selection-actions').insertAdjacentHTML('beforeend', `<button type="button" data-action="counter-intel" class="${enabled ? 'active' : ''}" aria-pressed="${enabled}" title="${enabled ? '关闭反卫星侦察' : '开启反卫星侦察'}" aria-label="反侦察设备开关">${icon('shield-check')}</button>`);
+      panel.querySelector('[data-action="counter-intel"]').addEventListener('click', () => { if (!g.paused) g.toggleCounterIntel(e); updateSelection(); });
+    }
     panel.querySelector('.selection-actions').insertAdjacentHTML('beforeend', `<button type="button" data-action="catalog" title="查看图鉴" aria-label="查看图鉴">${icon('book-open')}</button>`);
     panel.querySelector('[data-action="catalog"]').addEventListener('click', () => openCatalog(e));
     panel.querySelector('[data-action="recycle"]')?.addEventListener('click', () => { g.sellHarvester(0, e.id); updateUI(true); });
@@ -537,6 +568,19 @@ function updateSelection() {
     panel.querySelector('[data-action="auto-drone"]')?.addEventListener('click', () => { if (!g.paused) g.toggleAutoDrone(e); updateSelection(); });
     refreshIcons();
   } else panel.innerHTML = `<span class="hud-label">当前选择</span><strong>${selected.length} 个单位</strong><span>${touch ? '选择指令后轻点目标' : '右键移动或攻击 · A 攻击移动 · S 停止'}</span>`;
+  const combatUnits = selected.filter(e => e.owner === 0 && !e.embarkedIn && supportsCombatStance(e));
+  if (combatUnits.length) {
+    const stances = new Set(combatUnits.map(combatStance)), current = stances.size === 1 ? [...stances][0] : null;
+    panel.insertAdjacentHTML('beforeend', `<div class="combat-stance-control"><span>交战姿态 · ${current ? COMBAT_STANCES[current].name : '混合编队'}</span><div role="group" aria-label="陆军交战姿态">${Object.entries(COMBAT_STANCES).map(([key,d]) => `<button type="button" data-stance="${key}" aria-label="${d.name}" aria-pressed="${current===key}" title="${d.name}：${d.description}" ${g.paused || g.isControlLocked(0) ? 'disabled' : ''}>${icon(d.icon)}</button>`).join('')}</div></div>`);
+    panel.querySelectorAll('[data-stance]').forEach(button => button.addEventListener('click', () => { g.setCombatStance(button.dataset.stance); updateSelection(); }));
+    refreshIcons();
+  }
+  const pending = Math.max(0, ...selected.filter(e => e.owner === 0).map(e => e.orderQueue?.length || 0));
+  if (pending) {
+    panel.insertAdjacentHTML('beforeend', `<div class="selection-actions"><button type="button" data-action="clear-waypoints" title="清空 ${pending} 个待执行航点，保留当前指令" aria-label="清空待执行航点">${icon('list-x')}<span class="waypoint-count">${pending}</span></button></div>`);
+    panel.querySelector('[data-action="clear-waypoints"]').addEventListener('click', () => { if (!g.paused) g.clearQueuedOrders(); updateSelection(); });
+    refreshIcons();
+  }
 }
 
 function updatePanControl() {
@@ -577,6 +621,7 @@ function showModal(title, body, actions, kicker = '指挥系统') {
   $('#modal').classList.remove('victory-result');
   $('#modal-content').innerHTML = `<div class="modal-kicker">${kicker}</div><h2>${title}</h2>${body}<div class="modal-actions">${actions}</div>`;
   $('#modal').classList.remove('hidden');
+  $('#modal .modal-card').scrollTop = 0;
   refreshIcons();
 }
 
@@ -607,12 +652,12 @@ function availableSaves() {
 function updateContinueControl() {
   const saves = availableSaves(), latest = saves.filter(item => item.save).sort((a, b) => b.save.savedAt - a.save.savedAt)[0]?.save;
   $('#continue-btn').disabled = !latest;
-  $('#save-summary').textContent = latest ? `${MAPS[latest.config.mapId].name} · ${seconds(latest.state.time)} · ${new Date(latest.savedAt).toLocaleString('zh-CN')}` : saves.some(item => item.error) ? '本地存档不可读取，可导入备份文件' : '暂无保存的战局';
+  $('#save-summary').textContent = latest ? `${CHALLENGES[latest.config.challengeId]?.name || MAPS[latest.config.mapId].name} · ${seconds(latest.state.time)} · ${new Date(latest.savedAt).toLocaleString('zh-CN')}` : saves.some(item => item.error) ? '本地存档不可读取，可导入备份文件' : '暂无保存的战局';
 }
 
 function showLoadMenu() {
   if (state.game?.running) { state.game.paused = true; gameAudio.setPaused(true); }
-  const rows = availableSaves().map(({ slot, save, error }) => `<div class="save-slot"><div><strong>${slot === 'manual' ? '手动存档' : '自动存档'}</strong><small>${save ? `${MAPS[save.config.mapId].name} · ${FACTIONS[save.state.players[0].faction].name} · ${seconds(save.state.time)}<br>${new Date(save.savedAt).toLocaleString('zh-CN')}` : error ? '存档不可读取，请导入备份文件' : '暂无存档'}</small></div><button class="icon-btn" data-modal="load-${slot}" title="读取${slot === 'manual' ? '手动' : '自动'}存档" aria-label="读取${slot === 'manual' ? '手动' : '自动'}存档" ${save ? '' : 'disabled'}>${icon('folder-open')}</button></div>`).join('');
+  const rows = availableSaves().map(({ slot, save, error }) => `<div class="save-slot"><div><strong>${slot === 'manual' ? '手动存档' : '自动存档'}</strong><small>${save ? `${CHALLENGES[save.config.challengeId]?.name || MAPS[save.config.mapId].name} · ${FACTIONS[save.state.players[0].faction].name} · ${seconds(save.state.time)}<br>${new Date(save.savedAt).toLocaleString('zh-CN')}` : error ? '存档不可读取，请导入备份文件' : '暂无存档'}</small></div><button class="icon-btn" data-modal="load-${slot}" title="读取${slot === 'manual' ? '手动' : '自动'}存档" aria-label="读取${slot === 'manual' ? '手动' : '自动'}存档" ${save ? '' : 'disabled'}>${icon('folder-open')}</button></div>`).join('');
   showModal('继续战局', `${state.game?.running ? '<p>读取前先备份当前战局到自动存档。</p>' : ''}${rows}`, `<button class="secondary-btn" data-modal="import">${icon('upload')} 导入存档</button><button class="primary-btn" data-modal="resume">${state.game ? '返回战场' : '返回'}</button>`);
 }
 
@@ -680,7 +725,7 @@ function locateAttack() {
 function showHelp() {
   if (state.game?.running) state.game.paused = true;
   gameAudio.setPaused(true);
-  showModal('操作说明', `<p>${VICTORY_MODES[state.game?.victoryMode || 'quick'].description}即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
+  showModal('操作说明', `<p>${state.game?.challenge ? CHALLENGES[state.game.challenge.id].briefing+' 固定编队与整备资金，不开放生产和外部收入。' : VICTORY_MODES[state.game?.victoryMode || 'quick'].description+'即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。'}补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
     <div class="keyline"><span>选择 / 框选部队</span><kbd>左键 / 拖动</kbd></div>
     <div class="keyline"><span>移动 / 攻击目标</span><kbd>右键</kbd></div>
     <div class="keyline"><span>攻击移动 / 停止</span><kbd>A / S</kbd></div>
@@ -703,8 +748,82 @@ function showPause() {
   showModal('战斗暂停', `<p>${state.game.map.name} · 当前战斗时长 ${seconds(state.game.time)}</p>${graphics}`, `<button class="primary-btn" data-modal="resume">${icon('play')} 继续作战</button><button class="secondary-btn" data-modal="save">${icon('save')} 保存进度</button><button class="secondary-btn" data-modal="load">${icon('folder-open')} 读取存档</button><button class="secondary-btn" data-modal="export">${icon('download')} 导出存档</button><button class="secondary-btn" data-modal="menu">${icon('house')} 返回主界面</button><button class="secondary-btn" data-modal="restart">${icon('rotate-ccw')} 重新开始</button>`, '战场控制');
 }
 
+function challengeTime(time) {
+  if(time===null)return '--';
+  const ticks=Math.round(time*10);
+  return `${Math.floor(ticks/600).toString().padStart(2,'0')}:${(Math.floor(ticks/10)%60).toString().padStart(2,'0')}.${ticks%10}`;
+}
+
+function challengeStars(stars) {
+  return `<span class="challenge-best-stars" aria-label="${stars} 星">${[1,2,3].map(n=>`<span class="${n<=stars?'earned':''}">${icon('star')}</span>`).join('')}</span>`;
+}
+
+function showChallenges(notice='',danger=false) {
+  state.pendingChallengeImport=null;
+  state.challengeImportRequest=null;
+  let profile=emptyChallengeProfile(),error='';
+  try { profile=readChallengeProfile(localStorage); } catch(failure) { error=failure.message; }
+  const records=challengeRecords(profile),values=Object.values(records),recent=profile.results.slice().sort((a,b)=>b.at-a.at||a.battleId.localeCompare(b.battleId)).slice(0,8);
+  const overview=error?'':`<p class="challenge-overview">${icon('medal')} 已通关 ${values.filter(r=>r.wins>0).length} / ${values.length} · 最佳 ${values.reduce((sum,r)=>sum+r.bestStars,0)} / ${values.length*3} 星</p>`;
+  const history=recent.length?`<details class="challenge-history"><summary>最近挑战 · ${profile.results.length} 次尝试</summary><ol>${recent.map(r=>`<li><div><strong>${CHALLENGES[r.challengeId].name}</strong><small>${new Date(r.at).toLocaleString('zh-CN')}</small></div><span>${r.winner===0?`${r.stars} 星`:'未完成'}</span><time>${challengeTime(r.time)}</time></li>`).join('')}</ol></details>`:'';
+  showModal('战术挑战',`${overview}<p id="challenge-profile-message" class="${error||danger?'challenge-warning':'challenge-notice'}" role="${error||danger?'alert':'status'}" ${error||notice?'':'hidden'}></p><div class="challenge-list">${Object.entries(CHALLENGES).map(([id,d])=>{
+    const r=records[id];
+    return `<article class="challenge-choice"><img src="${modelThumbnail(equipmentModel('china',d.targetType,false),teamVisual(0).color)}" alt="${d.targetName}"><div><h3>${d.name}</h3><div class="challenge-personal-best">${challengeStars(r.bestStars)}<span>${error?'成绩暂不可读取':r.wins?`最快 ${challengeTime(r.fastestTime)} · ${r.wins} / ${r.attempts} 次通关`:`尚未通关 · ${r.attempts} 次尝试`}</span></div><p>${d.briefing}</p><p>${d.limit} 秒时限 · ${d.budget} 整备资金 · 固定编队</p><button class="primary-btn" data-modal="challenge-${id}">${icon('play')} ${r.attempts?'再次挑战':'开始挑战'}</button></div></article>`;
+  }).join('')}</div>${history}<p class="challenge-local-note">本机挑战成绩 · 不计普通荣誉 · 未与服务器同步</p>`, `<button class="secondary-btn" data-modal="resume">返回</button><button class="icon-btn" data-modal="challenge-export" title="导出挑战成绩备份" aria-label="导出挑战成绩备份" ${error?'disabled':''}>${icon('download')}</button><button class="icon-btn" data-modal="challenge-import" title="合并导入挑战成绩" aria-label="合并导入挑战成绩">${icon('upload')}</button>`,'独立任务');
+  $('#challenge-profile-message').textContent=error||notice;
+  $('#modal .modal-actions').classList.add('challenge-profile-actions');
+}
+
+function exportChallengeRecords() {
+  try {
+    const data=exportChallengeProfile(readChallengeProfile(localStorage)),url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+    const link=document.createElement('a');link.href=url;link.download=`大国崛起-挑战成绩-${new Date().toISOString().slice(0,10)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+  } catch(error) { showChallenges(error.message,true); }
+}
+
+async function previewChallengeImport(file) {
+  if(!file)return;
+  const request={};state.challengeImportRequest=request;
+  try {
+    if(file.size>CHALLENGE_FILE_LIMIT)throw new Error('挑战成绩文件过大');
+    const text=await file.text();
+    if(state.challengeImportRequest!==request||state.loading||state.modalMode!=='战术挑战')return;
+    const incoming=parseChallengeExport(text),merged=mergeChallengeProfiles(readChallengeProfile(localStorage),incoming);
+    state.pendingChallengeImport=incoming;
+    showModal('合并挑战成绩',`<p>备份包含 ${incoming.results.length} 场挑战，将新增 ${merged.added} 场记录。</p><p>重复战局不会累计，较低星级或失败记录不会覆盖最佳成绩。普通荣誉和战局存档保持不变。</p>`, `<button class="primary-btn" data-modal="challenge-confirm-import">${icon('git-merge')} 合并成绩</button><button class="secondary-btn" data-modal="challenges">取消</button>`,'本机档案');
+  } catch(error) { showChallenges(error.message,true); }
+}
+
+function confirmChallengeImport() {
+  if(!state.pendingChallengeImport)return;
+  try {
+    const merged=mergeChallengeProfiles(readChallengeProfile(localStorage),state.pendingChallengeImport);
+    writeChallengeProfile(localStorage,merged.profile);showChallenges(`已合并 ${merged.added} 场新记录，最佳成绩已保留。`);
+  } catch(error) { showChallenges(error.message,true); }
+}
+
+function showChallengeResult(game,win) {
+  let settlement,error='';
+  try { settlement=settleChallengeResult(localStorage,game); } catch(failure) { error=failure.message; }
+  if(state.lastResultBattleId!==game.battleId) {
+    state.lastResultBattleId=game.battleId;gameAudio.setPaused(false);gameAudio.say(win?'victory':'defeat');if(win)gameAudio.celebrate(false);
+  }
+  const record=settlement&&challengeRecords(settlement.profile)[game.challenge.id];
+  const praise=!win?'这次尝试不会降低最佳成绩。整备后再来。':settlement?.previous.wins===0?'首次突破，新的战术履历属于你。':settlement?.improved.includes('stars')?'星级突破！这次指挥比上一次更出色。':settlement?.improved.includes('time')?'刷新最快通关！你的战术执行更利落了。':'任务完成，每一次稳健的指挥都值得肯定。';
+  const best=record?`<p class="challenge-result-record">${challengeStars(record.bestStars)} 最佳星级 · 最快 ${challengeTime(record.fastestTime)}<small>${record.wins} / ${record.attempts} 次通关 · ${settlement.status==='duplicate'?'本局已记录，未重复累计':'本局成绩已保存'}</small></p>`:'';
+  showModal(win?'挑战完成':'挑战未完成',`<div class="challenge-result-stars" aria-label="${game.challenge.stars} 星">${[1,2,3].map(n=>`<span class="${n<=game.challenge.stars?'earned':''}">${icon('star')}</span>`).join('')}</div><p>${CHALLENGES[game.challenge.id].name} · ${challengeTime(game.time)}</p><p>${game.challenge.reason}</p><p>${praise}</p>${best}${error?'<p class="challenge-warning" id="challenge-save-warning" role="alert"></p>':''}${battleReportHTML(game)}`,`${error?`<button class="secondary-btn" data-modal="retry-challenge-record">${icon('refresh-cw')} 重试保存成绩</button>`:''}<button class="primary-btn" data-modal="retry-challenge">${icon('rotate-ccw')} 再次挑战</button><button class="secondary-btn" data-modal="challenges">挑战档案</button><button class="secondary-btn" data-modal="menu">返回主界面</button>`,'战术训练');
+  if(error)$('#challenge-save-warning').textContent=error;
+}
+
+function restartBattle() { state.launchChallenge=state.game?.challenge?.id;startGame(); }
+
 function showResult(winner) {
+  $('#menu-toast-container').replaceChildren();$('#toast-container').replaceChildren();
   const game=state.game,win=winner===0,draw=winner==='draw';
+  if (game.challenge) {
+    $('#battle-status').textContent=win?'挑战完成':'挑战未完成';
+    showChallengeResult(game,win);state.keys.clear();return;
+  }
   if(game.online){gameAudio.say(draw?'draw':win?'victory':'defeat');if(win)gameAudio.celebrate(false);showModal(draw?'战局平局':win?'对战胜利':'重整旗鼓',`<p>${game.map.name} · ${seconds(game.time)} · 战绩由服务器结算</p>${battleReportHTML(game)}`,'<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button><button class="secondary-btn" data-modal="menu">返回主界面</button>');return;}
   let settlement,error='';
   try {
@@ -725,6 +844,8 @@ function showResult(winner) {
 }
 
 function closeModal() {
+  state.pendingChallengeImport=null;
+  state.challengeImportRequest=null;
   if (state.renderFailure) { returnToMenu(); return; }
   $('#modal').classList.add('hidden');
   state.modalMode = null;
@@ -813,7 +934,7 @@ function setupControls() {
       if (g.pendingAbility) { g.pendingAbility = false;g.pendingNuclear=false; toast('已取消技能定位'); }
       else if (g.orderMode) { g.orderMode = null; clearOrderButtons(); }
       else if (g.placingBuilding) { g.placingBuilding = false; toast('已退出部署，建筑仍保留在建造面板'); }
-      else g.command(world.x, world.y);
+      else g.command(world.x, world.y, false, 0, event.shiftKey);
       updateUI(true); return;
     }
     if (event.button !== 0) return;
@@ -822,7 +943,7 @@ function setupControls() {
     if (g.pendingBuilding && g.placingBuilding) { if (!g.placeBuilding(0, g.pendingBuilding, world.x, world.y)) toast('此处无法部署，请靠近己方建筑并避开障碍', true); updateUI(true); }
     else if (g.pendingAbility) { if (!(g.pendingNuclear?g.launchNuclear(world.x,world.y):g.castAbility(world.x, world.y))) toast('技能未就绪，或目标区域尚未侦察', true);else if(g.pendingNuclear){g.pendingAbility=false;g.pendingNuclear=false;} updateUI(true); }
     else if (g.orderMode === 'rally') { g.command(world.x, world.y); g.orderMode = null; }
-    else if (['attackMove', 'move', 'patrol'].includes(g.orderMode)) { g.command(world.x, world.y, g.orderMode === 'attackMove'); clearOrderButtons(); }
+    else if (['attackMove', 'move', 'patrol'].includes(g.orderMode)) { g.command(world.x, world.y, g.orderMode === 'attackMove', 0, event.shiftKey && g.orderMode !== 'patrol'); clearOrderButtons(); }
     else if (state.drag?.moved) r.selectBox(state.drag.start, world, state.drag.additive);
     else {
       state.dismissedInspectorId = null;
@@ -958,6 +1079,8 @@ function setupControls() {
   document.querySelectorAll('[data-audio]').forEach(slider => slider.addEventListener('input', () => { gameAudio.setSettings({ [slider.dataset.audio]: Number(slider.value) / 100 }); updateAudioControls(); }));
   document.addEventListener('pointerdown', event => { if (!event.target.closest('#audio-panel, #sound-btn')) { $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false'); } });
   $('#start-btn').addEventListener('click', () => startGame());
+  $('#challenge-btn').addEventListener('click', () => showChallenges());
+  $('#challenge-profile-file').addEventListener('change',event=>{const file=event.target.files[0];event.target.value='';previewChallengeImport(file);});
   document.querySelectorAll('[data-victory]').forEach(button => button.addEventListener('click', () => {
     state.victoryMode = button.dataset.victory;
     document.querySelectorAll('[data-victory]').forEach(option => option.classList.toggle('active', option === button));
@@ -967,7 +1090,15 @@ function setupControls() {
   $('#modal').addEventListener('click', event => {
     if (state.loading) return;
     if (event.target === $('#modal')) closeModal();
+    const filter = event.target.closest('[data-report-filter]');
+    if (filter) {
+      const report=filter.closest('.battle-report'),kind=filter.dataset.reportFilter;
+      report.querySelectorAll('[data-report-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===filter)));
+      const rows=[...report.querySelectorAll('[data-event-kind]')]; rows.forEach(row=>{row.hidden=kind!=='all'&&row.dataset.eventKind!==kind;});
+      report.querySelector('.report-empty').hidden=rows.some(row=>!row.hidden); return;
+    }
     const action = event.target.closest('[data-modal]')?.dataset.modal; if (!action) return;
+    if (action.startsWith('challenge-')&&Object.hasOwn(CHALLENGES,action.slice(10))) { state.launchChallenge=action.slice(10);startGame();return; }
     if (action === 'recover-render') recoverBattleView();
     else if (action === 'failure-menu') returnToMenu();
     else if (action === 'resume') closeModal();
@@ -975,15 +1106,21 @@ function setupControls() {
     else if (action === 'online-lobby') { returnToMenu();onlineClient.open(); }
     else if (action === 'honors') openHonors();
     else if (action === 'retry-honor' && state.game && state.game.winner!==null) showResult(state.game.winner);
+    else if (action === 'retry-challenge') restartBattle();
+    else if (action === 'retry-challenge-record'&&state.game?.challenge&&!state.game.running) showResult(state.game.winner);
+    else if (action === 'challenge-export') exportChallengeRecords();
+    else if (action === 'challenge-import') $('#challenge-profile-file').click();
+    else if (action === 'challenge-confirm-import') confirmChallengeImport();
+    else if (action === 'challenges') showChallenges();
     else if (action === 'save') saveProgress();
     else if (action === 'load') showLoadMenu();
     else if (action?.startsWith('load-')) loadProgress(action.slice(5));
     else if (action === 'export') exportProgress();
     else if (action === 'import') importDesktopOrWeb();
     else if (action === 'restart') {
-      if (!state.game?.running) startGame();
+      if (!state.game?.running) restartBattle();
       else showModal('重新开始', '<p>当前战局将备份到自动存档，然后重新部署。</p>', '<button class="primary-btn" data-modal="confirm-restart">保存后重新开始</button><button class="secondary-btn" data-modal="resume">取消</button>');
-    } else if (action === 'confirm-restart') { if (saveProgress('auto', true)) startGame(); }
+    } else if (action === 'confirm-restart') { if (saveProgress('auto', true)) restartBattle(); }
     else if (action === 'menu') requestMainMenu();
     else if (action === 'save-menu') { if (saveProgress('manual', true)) returnToMenu(); }
     else if (action === 'discard-menu') returnToMenu();
@@ -996,7 +1133,7 @@ function setupControls() {
     state.lastFrame = 0; state.keys.clear();
   });
   window.addEventListener('beforeunload', () => { if (state.game?.running) saveProgress('auto', false); });
-  window.addEventListener('storage',event=>{if(event.key===HONOR_KEY)updateHonorOverview();});
+  window.addEventListener('storage',event=>{if(event.key===HONOR_KEY)updateHonorOverview();if(event.key===CHALLENGE_PROFILE_KEY&&state.modalMode==='战术挑战')showChallenges();});
 }
 
 function updateAudioControls() {

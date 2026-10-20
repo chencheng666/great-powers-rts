@@ -11,3 +11,16 @@
 .battle-report ol { margin: 10px 0 0; padding: 0; list-style: none; }
 .battle-report li { display: flex; gap: 14px; padding: 6px 0; font-size: 12px; }
 .battle-report time { color: #a2bac2; font-variant-numeric: tabular-nums; }
+.report-table-scroll { overflow-x: auto; }
+.report-filters { display: flex; gap: 4px; margin-top: 12px; }
+.report-filters button { background: transparent; border: 1px solid #4b5e65; color: #c6d4d9; border-radius: 3px; padding: 5px 12px; cursor: pointer; }
+.report-filters button[aria-pressed="true"] { color: #a4ead4; border-color: #81b9aa; background: #214238; }
+.report-timeline { max-height: 260px; overflow-y: auto; }
+.battle-report li[hidden] { display: none; }
+.report-empty { font-size: 12px; color: #a8bdc4; }
+.report-overview { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; border-bottom: 1px solid #3d5159; padding: 0 0 14px; }
+.report-overview small { display: block; font-size: 10px; color: #a4bac2; }
+.report-overview strong { display: block; font-size: 17px; margin-top: 6px; color: #9ee1cf; }
+.report-metrics { margin-top: 18px; }
+.report-metrics table { margin-top: 10px; }
+.report-losses td small { display: block; margin-top: 4px; color: #a2b4bc; font-size: 10px; white-space: nowrap; }

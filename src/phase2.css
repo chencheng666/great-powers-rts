@@ -124,6 +124,23 @@
   height: 15px;
 }
 
+.selection-actions button[data-action="clear-waypoints"] { position: relative; }
+.selection-actions .waypoint-count {
+  position: absolute;
+  right: -5px;
+  top: -6px;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #638e93;
+  border-radius: 50%;
+  background: #182c32;
+  color: #d8f2ef;
+  font-size: 10px;
+  line-height: 1;
+}
+
 .queue-controls {
   display: flex;
   align-items: center;
@@ -211,3 +228,12 @@
     padding-top: 10px;
   }
 }
+.combat-stance-control { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; min-width: 0; }
+.combat-stance-control > span { font-size: 11px; color: #b8c7c7; overflow-wrap: anywhere; }
+.combat-stance-control [role="group"] { display: flex; flex: 0 0 auto; border: 1px solid #455b5d; border-radius: 4px; overflow: hidden; }
+.combat-stance-control button { display: grid; place-items: center; width: 32px; height: 30px; padding: 0; border: 0; border-radius: 0; background: #1c292a; color: #9eb3b5; cursor: pointer; pointer-events: auto; }
+.combat-stance-control button + button { border-left: 1px solid #455b5d; }
+.combat-stance-control button[aria-pressed="true"] { background: #365b50; color: #cbf7df; box-shadow: inset 0 -2px #88d8b0; }
+.combat-stance-control button:hover:not(:disabled) { background: #415456; color: #fff; }
+.combat-stance-control button:disabled { opacity: .45; cursor: default; }
+.combat-stance-control button svg { width: 16px; height: 16px; }

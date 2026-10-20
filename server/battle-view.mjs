@@ -1,5 +1,6 @@
 import { packFog } from '../src/network-protocol.js';
 import { battleReport } from '../src/battle-report.js';
+import { copyLossBreakdown } from '../src/loss-breakdown.js';
 const copy = value => JSON.parse(JSON.stringify(value));
 export function battleView(game, side, memory = new Map(), {spectator=false}={}) {
   const order=[side,...game.players.map(p=>p.side).filter(s=>s!==side)],mapping=new Map(order.map((s,i)=>[s,i]));
@@ -14,14 +15,17 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
     delete e.navigationProgress; delete e.navigationStalled; delete e.navigationAttempts;
     if (entity.type === 'submarine') e.surfaced = game.submarineSurfaced(entity);
     if (e.sabotage) e.sabotage.owner = owner(e.sabotage.owner);
+    if (entity.type === 'counterIntel' && e.owner === 0 && !spectator) e.counterIntelState = game.counterIntelState(entity);
     if (e.owner !== 0 || spectator) {
-      e.order = null; e.path = []; e.resumeOrder = null; e.targetId = null;
+      e.order = null; e.orderQueue = []; e.path = []; e.resumeOrder = null; e.targetId = null;
       e.passengers = []; e.embarkedIn = null; e.homeCarrierId = null;
       e.queue = []; e.active = null; e.rallyPoint = null; delete e.freight;
       delete e.serviceTargetId; delete e.stock; delete e.ammo;
       delete e.autoDrone; delete e.droneRole;
       delete e.swarmParentId;
       delete e.nuclearEvadeUntil;
+      delete e.counterIntelEnabled; delete e.counterIntelState;
+      delete e.combatStance;
     } else if (e.order?.targetId && !ids.has(e.order.targetId) && !game.buildings.some(b => b.id === e.order.targetId && visible(b))) {
       // 指令目标是公开资源点时保留；敌军消失后不发送其最新位置。
       if (typeof e.order.targetId === 'number') { e.order = null; e.targetId = null; }
@@ -44,7 +48,7 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
   }
   const players=order.map((s,index)=>index===0&&!spectator?{...copy(game.players[s]),side:0,actualSide:s,controlLocked:game.isControlLocked(s)}:{side:index,actualSide:s,faction:game.players[s].faction,eliminated:!!game.players[s].eliminated,controlType:game.players[s].controlType,credits:0,powerIn:0,powerOut:0,controlScore:game.players[s].controlScore,buildQueue:null,readyBuilding:null,abilityCharge:0,abilityCooldown:0,cyberPending:game.players[s].cyberPending?{executeAt:game.players[s].cyberPending.executeAt}:null});
   return {
-    battleReport: game.running ? null : (() => { const report = battleReport(game); return report ? { ...report, sides: order.map(s=>report.sides[s]), events: report.events.map(e => ({ ...e, owner: owner(e.owner) })) } : null; })(),
+    battleReport: game.running ? null : (() => { const report = battleReport(game); return report ? { ...report, sides: order.map(s=>report.sides[s]),unitLosses:copyLossBreakdown(report.unitLosses,order), events: report.events.map(e => ({ ...e, owner: owner(e.owner) })) } : null; })(),
     spectator,seatOrder:order,time: game.time, running: game.running, paused: game.paused,
     nuclearWarnings:game.nuclearWarnings().map(w=>({...w,owner:owner(w.owner)})),
     winner: typeof game.winner === 'number' ? owner(game.winner) : game.winner,

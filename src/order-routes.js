@@ -1,3 +1,5 @@
+import { ORDER_QUEUE_LIMIT } from './command-queue.js';
+
 export function orderRoutes(game) {
   const selected=new Set(game.selected),routes=[];
   for(const u of game.activeUnits(0)){
@@ -8,7 +10,7 @@ export function orderRoutes(game) {
     if(!destination)continue;
     const points=[{x:u.x,y:u.y},...(u.path||[]).slice(0,64),destination].filter((p,i,all)=>!i||Math.hypot(p.x-all[i-1].x,p.y-all[i-1].y)>3);
     if(points.length<2)continue;
-    routes.push({id:u.id,points,destination,type:order.type,color:['attack','attackMove','infiltrate'].includes(order.type)?'#f1a291':['collect','capture','defuse'].includes(order.type)?'#efd58c':'#91dfdf'});
+    routes.push({id:u.id,points,destination,type:order.type,queued:(u.orderQueue||[]).slice(0,ORDER_QUEUE_LIMIT).map(o=>({x:o.x,y:o.y,type:o.type})),color:['attack','attackMove','infiltrate'].includes(order.type)?'#f1a291':['collect','capture','defuse'].includes(order.type)?'#efd58c':'#91dfdf'});
     if(routes.length>=24)break;
   }
   return routes;

@@ -5,6 +5,8 @@ import { unitCostFor, unitHealthFor } from './unit-specs.js';
 import { bridgeBlocksDirectShot } from './bridge-fire.js';
 import { AI_DIFFICULTIES, BUILDINGS, CORE_BUILDINGS, FACTIONS, MAPS, ORE_VALUES, PRODUCERS, UNITS, WORLD, supportsMap } from './data.js';
 import { formationOffsets, separateUnits, UnitSpatialIndex, unitLayer, unitRadius } from './unit-spacing.js';
+import { commandQueue } from './command-queue.js';
+import { combatStanceCommands, supportsCombatStance, combatStance, weaponsHeld } from './combat-stance.js';
 import { modernCombat } from './modern-combat.js';
 import { productionDuration, productionExit } from './battlefield-details.js';
 import { equipmentProfile } from './equipment.js';
@@ -15,10 +17,12 @@ import { isLunarRobot, lunarBuildingProfile, lunarRobots, ROBOT_ENERGY, ROBOT_SP
 import { battlefieldMap, resourceLayout } from './battlefield-expansion.js';
 import { intelligenceCombat } from './intelligence.js';
 import { aiCounterUnit, retreatAIUnits } from './tactical-ai.js';
-import { createBattleStats, battleMetric, recordBattleDamage } from './battle-report.js';
+import { createBattleStats, battleMetric, recordBattleDamage, recordBattleEvent } from './battle-report.js';
 import { droneAutonomy, supportsDroneAutonomy } from './drone-autonomy.js';
 import { strategicCombat } from './strategic-combat.js';
 import { deterrenceCombat } from './deterrence.js';
+import { CHALLENGES, challengeCombat } from './challenges.js';
+import { createLossBreakdown } from './loss-breakdown.js';
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -40,6 +44,10 @@ let nextId = 1;
 
 export class Game {
   constructor(playerFaction, enemyFaction, events = {}, options = {}) {
+    if (!options.multiplayer && Object.hasOwn(CHALLENGES,options.challengeId)) {
+      options = { ...options, mapId: CHALLENGES[options.challengeId].mapId, difficulty: 'standard', victoryMode: 'annihilation', battlefieldScale: 1, nuclearEnabled:false, players: undefined };
+      playerFaction = 'china'; enemyFaction = 'asia';
+    }
     this.events = events;
     this.multiplayer = !!options.multiplayer;
     this.battleId = createBattleId();
@@ -92,6 +100,7 @@ export class Game {
     this.aiWaveTimer = this.difficulty.waveStart;
     this.initLogistics();
     this.initBases();
+    if (!this.multiplayer) this.initChallenge(options.challengeId);
     this.updateFog();
   }
 
@@ -117,7 +126,9 @@ export class Game {
     game.difficulty = AI_DIFFICULTIES[copy.config.difficulty];
     for (const key of SNAPSHOT_FIELDS) game[key] = copy.state[key];
     for(const p of game.players){p.nuclearCharge??=0;p.nuclearSpent??=false;p.nuclearPending??=null;}
-    game.battleStats = copy.state.battleStats || createBattleStats(game.time);
+    game.battleStats = copy.state.battleStats || createBattleStats(game.time,game.playerCount);
+    game.battleStats.unitLosses ||= createLossBreakdown(game.time,game.playerCount);
+    game.challenge = copy.state.challenge;
     // 旧战局不凭空追加可领奖的物资；新局和新存档才包含资源争夺点。
     game.resourceSites=copy.state.resourceSites||[];
     // 老版本战局保留原经济，避免已有矿车、货物与路线在读档时消失。
@@ -197,6 +208,8 @@ export class Game {
     unit.passengers = []; unit.embarkedIn = null; unit.stock = d.stock ?? null;
     unit.wing = d.wing ?? null; unit.heat = 0; unit.deployProgress = 0;
     if (type === 'supply') unit.autoSupply = true;
+    if (type === 'counterIntel') unit.counterIntelEnabled = true;
+    if (supportsCombatStance(unit)) unit.combatStance = 'free';
     if (supportsDroneAutonomy(unit)) { unit.autoDrone = true; unit.droneRole = 'guard'; }
     if (isLunarRobot(this.map, type)) { unit.battery = ROBOT_ENERGY.capacity; unit.ammo = null; }
     this.units.push(unit);
@@ -222,6 +235,7 @@ export class Game {
   }
 
   canBuild(side, type) {
+    if (this.challenge) return false;
     const d = BUILDINGS[type];
     return !!d && (!d.nuclear||this.nuclearEnabled) && (!d.naval || !!this.map.water) && (!d.map || d.map === this.mapId) && this.hasBuilding(side, 'hq') && (!d.requires || this.hasBuilding(side, d.requires));
   }
@@ -348,6 +362,7 @@ export class Game {
   unitCapacityUsed(side){return this.ownedUnits(side).length+this.ownedBuildings(side).reduce((n,b)=>n+b.queue.length+Number(!!b.active),0);}
 
   queueUnit(side, type) {
+    if (this.challenge) return false;
     if(this.isControlLocked(side)||this.players[side]?.eliminated)return false;
     if(this.playerCount===6&&this.unitCapacityUsed(side)>=40)return false;
     const d = UNITS[type];
@@ -402,8 +417,9 @@ export class Game {
     this.events.selection?.();
   }
 
-  command(x, y, attackMove = false, side = 0) {
+  command(x, y, attackMove = false, side = 0, append = false) {
     if(this.isControlLocked(side))return false;
+    if (append) { this.orderMode = null; return this.appendWaypoint(x, y, attackMove, side); }
     const patrol = this.orderMode === 'patrol';
     const selectedUnits = this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !e.embarkedIn && !FREIGHT_TYPES.includes(e.type));
     if (!selectedUnits.length) {
@@ -418,6 +434,7 @@ export class Game {
     const port = !attackMove && !patrol && this.ownedBuildings(side, 'dock').find(b => distance(b, { x, y }) <= b.size * .65);
     const offsets = formationOffsets(selectedUnits, { x, y });
     selectedUnits.forEach(u => {
+      u.orderQueue = [];
       const offset = offsets.get(u.id);
       if (patrol) {
         const goal = this.resolveMoveGoal(u, clamp(x + offset.x, 20, this.world.width - 20), clamp(y + offset.y, 20, this.world.height - 20));
@@ -435,6 +452,7 @@ export class Game {
         const goal = this.resolveMoveGoal(u, clamp(x + offset.x, 20, this.world.width - 20), clamp(y + offset.y, 20, this.world.height - 20));
         u.order = { type: attackMove ? 'attackMove' : 'move', ...goal, ...(selectedUnits.length > 1 ? { formation: true } : {}) };
       }
+      if (supportsCombatStance(u) && ['attack', 'attackMove', 'patrol'].includes(u.order?.type)) u.combatStance = 'free';
       u.resumeOrder = null; u.path = []; u.pathTimer = 0; u.deployProgress = 0;u.avoidSide=0;u.avoidUntil=0;delete u.navigationProgress;delete u.navigationStalled;delete u.navigationAttempts;
       this.setDroneMission(u);
     });
@@ -446,7 +464,7 @@ export class Game {
   stopSelected(side = 0) {
     if(this.isControlLocked(side))return false;
     if (this.selected.some(id => this.getEntity(id)?.kind === 'unit')) this.events.voice?.('stopOrder');
-    this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !FREIGHT_TYPES.includes(e.type)).forEach(u => { u.order = null; u.resumeOrder = null; u.path = []; if (u.type === 'supply') u.autoSupply = false; if (supportsDroneAutonomy(u)) u.droneRole = 'hold'; });
+    this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !FREIGHT_TYPES.includes(e.type)).forEach(u => { u.order = null; u.orderQueue = []; u.resumeOrder = null; u.path = []; if (u.type === 'supply') u.autoSupply = false; if (supportsDroneAutonomy(u)) u.droneRole = 'hold'; });
     this.orderMode = null;
   }
 
@@ -509,7 +527,7 @@ export class Game {
     for (const p of this.players) {
       battleMetric(this, p.side, 'oilSeconds', this.oil.filter(o => o.owner === p.side).length * dt);
       battleMetric(this, p.side, 'beaconSeconds', this.beacons.filter(o => o.owner === p.side).length * dt);
-      p.credits += this.oil.filter(o => o.owner === p.side).length * 11 * dt;
+      if (!this.challenge) p.credits += this.oil.filter(o => o.owner === p.side).length * 11 * dt;
       if (this.victoryMode === 'control') p.controlScore += this.beacons.filter(site => site.owner === p.side).length * dt;
       p.abilityCooldown = Math.max(0, p.abilityCooldown - dt);
       if (this.hasBuilding(p.side, 'super') && this.hasPower(p.side) && p.abilityCharge < 100) p.abilityCharge = Math.min(100, p.abilityCharge + dt * 0.85);
@@ -536,14 +554,14 @@ export class Game {
     this.effects = this.effects.filter(e => e.age < e.duration);
     this.fogTimer -= dt;
     if (this.fogTimer <= 0) { this.updateFog(); this.fogTimer = 0.22; }
-    if (this.players.some(p=>this.isAI(p.side)&&!p.eliminated)) {
+    if (!this.challenge && this.players.some(p=>this.isAI(p.side)&&!p.eliminated)) {
     this.aiTimer -= dt;
     if (this.aiTimer <= 0) { for(const p of this.players)if(this.isAI(p.side)&&!p.eliminated)this.updateAI(p.side); this.aiTimer = this.difficulty.thinkInterval; }
     this.aiWaveTimer -= dt;
     if (this.aiWaveTimer <= 0) { for(const p of this.players)if(this.isAI(p.side)&&!p.eliminated)this.launchAIWave(p.side); this.aiWaveTimer = this.difficulty.waveInterval + random(-4, 5); }
     }
     if (this.selected.some(id => !this.getEntity(id) || this.getEntity(id).embarkedIn)) { this.selected = this.selected.filter(id => this.getEntity(id) && !this.getEntity(id).embarkedIn); this.events.selection?.(); }
-    this.checkVictory();
+    this.checkVictory(dt);
   }
 
   updateBuildQueue(p, dt) {
@@ -673,6 +691,7 @@ export class Game {
     }
     if (u.temporaryUntil && this.time >= u.temporaryUntil) { u.hp = 0; return; }
     if (FREIGHT_TYPES.includes(u.type)) { this.updateFreight(u, dt); return; }
+    this.advanceQueuedOrder(u);
     if(this.time>=u.stunUntil&&this.updateSpecialOrder(u,dt))return;
     if (u.type === 'harvester') {
       if (u.order?.type === 'move' || u.order?.type === 'attackMove') {
@@ -705,6 +724,7 @@ export class Game {
         if (site?.owner === u.owner) u.order = null;
         else if (site && distance(u, site) < 38) {
           site.owner = u.owner; u.hp = 0;
+          recordBattleEvent(this,{kind:'captured',owner:u.owner,type:site.kind==='resource'?'depot':site.id.startsWith('oil')?'oil':'beacon'});
           this.recalculatePower();
           this.fogTimer = 0;
           this.effects.push({ type: 'capture', x: site.x, y: site.y, age: 0, duration: 1.2, owner: site.owner });
@@ -722,15 +742,22 @@ export class Game {
       }
       return;
     }
+    if (weaponsHeld(u)) {
+      if (u.order?.type === 'move') {
+        if (distance(u, u.order) > 10) this.moveUnit(u, u.order, dt, 8);
+        else u.order = null;
+      }
+      return;
+    }
     let target = u.order?.type === 'attack' ? this.getEntity(u.order.targetId) : null;
     if (target && (!this.canSeeEntity(u.owner, target) || !this.canAttack(u, target))) {
       u.order = { type: 'attackMove', x: u.order.x, y: u.order.y };
       target = null;
     }
     if (!target || target.hp <= 0) { if (u.order?.type === 'attack') u.order = null; target = null; }
-    const holdingDrone = supportsDroneAutonomy(u) && u.droneRole === 'hold';
-    const acquisition = u.order?.type !== 'move' && !holdingDrone ? d.tags.includes('artillery') ? Math.max(d.sight, d.range) : d.sight : d.range * 0.85;
-    if (!target) target = this.closestEnemy(u, acquisition, u.owner);
+    const holdingDrone = supportsDroneAutonomy(u) && u.droneRole === 'hold', guarding = combatStance(u) === 'guard';
+    const acquisition = guarding ? d.range : u.order?.type !== 'move' && !holdingDrone ? d.tags.includes('artillery') ? Math.max(d.sight, d.range) : d.sight : d.range * 0.85;
+    if (!target) target = this.closestEnemy(u, acquisition, u.owner, guarding);
     if (target) {
       const range = this.unitRange(u, target);
       const reach = u.type === 'bomber' ? 28 : range + (target.kind === 'building' ? target.size * 0.36 : 0);
@@ -750,11 +777,11 @@ export class Game {
         }
       }
       if (u.order?.type === 'move') this.moveUnit(u, u.order, dt, 8);
-      else if (d.minRange && dist < d.minRange) {
+      else if (!guarding && d.minRange && dist < d.minRange) {
         const angle = Math.atan2(u.y - target.y, u.x - target.x);
         const goal = this.resolveMoveGoal(u, clamp(u.x + Math.cos(angle) * 100, 20, this.world.width - 20), clamp(u.y + Math.sin(angle) * 100, 20, this.world.height - 20));
         this.moveUnit(u, goal, dt, 8); u.deployProgress = 0;
-      } else if (!clear || dist > reach * .96) this.moveUnit(u, target, dt, clear ? reach * .85 : 8);
+      } else if (!guarding && (!clear || dist > reach * .96)) this.moveUnit(u, target, dt, clear ? reach * .85 : 8);
       if (u.type !== 'bomber' && clear && dist <= reach * .96 && d.tags.includes('jet') && d.damage > 0) {
         const angle = Math.atan2(u.y - target.y, u.x - target.x) + dt * .9;
         this.moveUnit(u, this.resolveMoveGoal(u, target.x + Math.cos(angle) * reach * .7, target.y + Math.sin(angle) * reach * .7), dt, 3);
@@ -967,6 +994,7 @@ export class Game {
       if (UNITS[target.type]?.capacity) this.unloadTransport(target, true);
       if (target.freight?.value > 0) {
         this.logistics[target.owner].lost += target.freight.value;
+        recordBattleEvent(this,{kind:'intercepted',owner:target.owner,type:target.type,value:target.freight.value});
         if (target.owner === 0) this.events.notice?.(`后勤运输被截断，损失 ${target.freight.value} 待交付物资`);
       }
       this.effects.push({ type: 'explosion', x: target.x, y: target.y, targetType: target.type, age: 0, duration: 1.2, owner: attackerSide, size: target.kind === 'building' ? target.size : 40 });
@@ -976,13 +1004,16 @@ export class Game {
     }
   }
 
-  closestEnemy(source, range, owner) {
-    let nearest = null, best = range;
+  closestEnemy(source, range, owner, stationary = false) {
+    let nearest = null, best = stationary ? Infinity : range;
     for (const target of [...this.units, ...this.buildings]) {
       if (target.owner === owner || target.hp <= 0 || !this.canAttack(source, target) || !this.droneGuardAllows(source, target)) continue;
       if (source.kind === 'building' && !this.hasLineOfFire(source, target)) continue;
       const d = distance(source, target) - (target.kind === 'building' ? target.size * 0.3 : 0);
-      if (d >= range) continue;
+      if (stationary) {
+        const gap = distance(source, target), reach = this.unitRange(source, target) + (target.kind === 'building' ? target.size * .36 : 0);
+        if (gap < (UNITS[source.type].minRange || 0) || gap > reach || !this.canSeeEntity(owner, target) || !this.hasLineOfFire(source, target)) continue;
+      } else if (d >= range) continue;
       const airborne = target.kind === 'unit' && UNITS[target.type].tags.includes('air') && !this.aircraftGrounded(target);
       const primaryAir = ['fighter','navalFighter'].includes(source.type), primaryGround = ['strike','navalStrike'].includes(source.type);
       const priority = primaryAir ? airborne ? .3 : 1 : primaryGround ? airborne ? 1 : .3 : ['aa', 'frigate'].includes(source.type) && target.kind === 'unit' && UNITS[target.type].tags.includes('jet') ? .65 : 1;
@@ -1035,6 +1066,15 @@ export class Game {
     }
     if (UNITS[u.type].tags.includes('ship')) {
       const destination = this.navalGoal(goal.x, goal.y, unitRadius(u));
+      const radius=unitRadius(u);
+      if(u.type==='landing'&&['move','attackMove'].includes(u.order?.type)&&distance(u.order,goal)<1&&distance(u,destination)<=16&&this.canOccupyUnit(u,u)){
+        const nearby=(this.unitIndex||new UnitSpatialIndex(this.units)).nearby(u);
+        const parked=nearby.filter(v=>v.owner===u.owner&&unitLayer(v)===unitLayer(u)&&!v.order);
+        if(parked.some(v=>distance(v,destination)<unitRadius(v)+radius+4)&&nearby.every(v=>distance(v,u)>=unitRadius(v)+radius+2)){
+          // 友舰已经占住泊位时在近侧安全位置停航，避免最后几米反复绕行而无法卸载。
+          u.order=null;u.path=[];return;
+        }
+      }
       this.moveWithAvoidance(u, destination, dt, stopDistance);
       return;
     }
@@ -1432,7 +1472,8 @@ export class Game {
     return this.castAbility(x, y, side);
   }
 
-  checkVictory() {
+  checkVictory(dt=0) {
+    if (this.challenge) { this.updateChallenge(dt); return; }
     if(this.playerCount===6){
       for(const p of this.players)if(!p.eliminated){const lost=this.victoryMode==='annihilation'?this.ownedBuildings(p.side).length===0&&this.ownedUnits(p.side).filter(u=>!FREIGHT_TYPES.includes(u.type)).length===0:!this.ownedBuildings(p.side).some(b=>CORE_BUILDINGS.includes(b.type));if(lost){p.eliminated=true;p.buildQueue=null;p.readyBuilding=null;this.units=this.units.filter(u=>u.owner!==p.side);this.buildings=this.buildings.filter(b=>b.owner!==p.side);for(const site of [...this.oil,...this.beacons,...this.resourceSites])if(site.owner===p.side)site.owner=null;}}
       const alive=this.players.filter(p=>!p.eliminated);if(alive.length<=1)this.endGame(alive[0]?.side??'draw');
@@ -1459,4 +1500,4 @@ export class Game {
   }
 }
 
-Object.assign(Game.prototype, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat, droneAutonomy, strategicCombat,deterrenceCombat);
+Object.assign(Game.prototype, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat, droneAutonomy, strategicCombat,deterrenceCombat,commandQueue,challengeCombat,combatStanceCommands);

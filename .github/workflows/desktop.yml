@@ -60,8 +60,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
-          releaseName: '大国崛起 v__VERSION__ 战略威慑更新'
-          releaseBody: '新增战略纵深、现代装备模型、异构蜂群与默认关闭的核威慑规则。联机启用核规则需要双方明确确认；准备、预警、反导和疏散形成完整反制。浏览器、离线单机与Tauri桌面包，双人与独立六方实验入口。Mac未Apple公证，Windows未代码签名；Linux需要WebKitGTK 4.1和WebGL2，麒麟/UOS及具体硬件须实机验证。它是走向2.0的一次更新，不代表全部路线图完成。'
+          releaseName: '大国崛起 v__VERSION__ 战术挑战与模型精修'
+          releaseBody: '新增四关战术挑战与独立成绩档案、连续航点、陆军交战姿态、事件与兵种战损复盘；精修F-22、阿帕奇、战略发射车、人物材质和登陆舰，改善补给及近岸停航。浏览器、离线单机与Tauri桌面包，双人与独立六方实验入口。核规则仍默认关闭。Mac未Apple公证，Windows未代码签名；Linux需要WebKitGTK 4.1和WebGL2，麒麟/UOS及具体硬件须实机验证。这是走向2.0的阶段发行，不代表路线图全部完成。'
           # 复用同标签公开发行，避免已有网页包时额外生成同标签草稿。
           releaseDraft: false
           prerelease: false

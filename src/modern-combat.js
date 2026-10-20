@@ -6,6 +6,7 @@ import { isLunarRobot } from './lunar-robots.js';
 import { battleMetric } from './battle-report.js';
 import { DETERRENCE } from './deterrence-rules.js';
 import { SUPPLY, ammoStockCost } from './supply-rules.js';
+import { weaponsHeld } from './combat-stance.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const alive = u => u.hp > 0 && !u.embarkedIn;
@@ -180,7 +181,7 @@ export const modernCombat = {
   updateProjectiles(dt) {
     const list = [...this.projectiles];
     // 优先拦截入境弹药；与普通射击共享射击间隔及弹药，不能同时无限输出。
-    for (const defender of this.units.filter(u => alive(u) && this.time >= u.stunUntil && u.fireTimer <= 0)) {
+    for (const defender of this.units.filter(u => alive(u) && !weaponsHeld(u) && this.time >= u.stunUntil && u.fireTimer <= 0)) {
       const d = UNITS[defender.type];
       if (!['abm', 'laser', 'aa', 'frigate', 'destroyer', 'fighter', 'aegis', 'navalFighter'].includes(defender.type) || defender.ewSuppressedUntil > this.time || defender.overheated || d.ammo && defender.ammo <= 0 || defender.order?.type === 'rearm') continue;
       if(defender.type==='abm'&&(!this.hasPower(defender.owner)||!this.hasBuilding(defender.owner,'radar')))continue;
@@ -430,7 +431,7 @@ export const modernCombat = {
   unloadTransport(transport, emergency = false) {
     if (!transport || !UNITS[transport.type]?.capacity || !transport.passengers) return 0;
     if (transport.type === 'carrier') return this.launchDeckAircraft(transport, emergency);
-    if (!emergency && (!this.transportGrounded(transport) || ['move', 'attackMove'].includes(transport.order?.type))) {
+    if (!emergency && (!this.transportGrounded(transport) || ['move', 'attackMove', 'patrol'].includes(transport.order?.type))) {
       if (transport.owner === 0) this.events.notice?.('运输单位需要在安全位置停驻后卸载');
       return 0;
     }

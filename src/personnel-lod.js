@@ -6,7 +6,16 @@ export function personnelLOD(source, track = value => value) {
   const material = track(new THREE.MeshStandardMaterial({ name: '远景人物合批', vertexColors: true, roughness: .83, metalness: .05 }));
   // 同一套人物配件与关节使用低分段几何，远景不用近景的细密曲面。
   const palette = new Map();
-  source.traverse(mesh => { if (mesh.isMesh) palette.set(mesh.material.name, mesh.material.color); });
+  source.traverse(mesh => {
+    if (!mesh.isMesh) return;
+    const color=mesh.material.color.clone(),map=mesh.material.map;
+    if(map?.userData.surfaceKind==='uniform') {
+      const data=map.image.data,total=data.length/4,channels=[0,0,0];
+      for(let i=0;i<data.length;i+=4)for(let c=0;c<3;c++)channels[c]+=data[i+c];
+      color.multiply(new THREE.Color(...channels.map(v=>v/total/255)).convertSRGBToLinear());
+    }
+    palette.set(mesh.material.name,color);
+  });
   const distant = createPersonnel(source.name, { distant: true });
   const copy = node => {
     const group = new THREE.Group(); group.name = node.name;

@@ -1,4 +1,5 @@
 import { unitRadius } from './unit-spacing.js';
+import { recordBattleEvent } from './battle-report.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 export const FREIGHT_TYPES = ['freightPlane', 'containerShip'];
@@ -35,6 +36,7 @@ export const logisticsEconomy = {
   },
 
   updateLogistics(dt) {
+    if (this.challenge) return;
     if (this.economyMode !== 'convoy') return;
     for (const route of this.logistics) for (const [channel, sea, type] of [['Air', false, 'freightPlane'], ['Sea', true, 'containerShip']]) {
       if (sea && !this.map.water || this.time < route[`next${channel}`]) continue;
@@ -114,6 +116,7 @@ export const logisticsEconomy = {
     if (f.progress + 1e-6 < rule.unload) return;
     this.players[u.owner].credits += f.value;
     this.logistics[u.owner].delivered += f.value;
+    recordBattleEvent(this,{kind:'delivered',owner:u.owner,type:u.type,value:f.value});
     this.effects.push({ type: 'capture', x: home.x, y: home.y, owner: u.owner, age: 0, duration: 1.2 });
     if (u.owner === 0) this.events.notice?.(`${sea ? '集装箱船' : '后勤运输机'}卸货完成：+${f.value} 资金`);
     f.value = 0; f.phase = 'outbound'; f.progress = 0;

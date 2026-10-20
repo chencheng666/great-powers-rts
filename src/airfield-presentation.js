@@ -25,19 +25,25 @@ export function glideProfile(distance, groundRadius) {
 export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight) {
   if (!fixedWingPresentation(entity.type, game.map.future) || entity.deployment || entity.deckApproach || entity.embarkedIn) return null;
   const grounded = game.aircraftGrounded(entity);
+  let groundOffset = entry.model?.userData.groundClearance ? entry.model.userData.groundClearance * entry.scale + .2 : 4;
+  if(entry.model?.userData.groundClearance){
+    // 跑道的可视铺装高于地形，轮胎接触面不能仍按裸地高度计算。
+    const pavement=game.ownedBuildings?.(entity.owner,'airfield').find(b=>{const scale=b.size/7.2;return Math.abs(entity.x-b.x)<=6.9*scale&&Math.abs(entity.y-b.y-2.1*scale)<=1.1*scale;});
+    if(pavement)groundOffset+=pavement.size/7.2*.5;
+  }
   if (entry.wasGrounded && !grounded) entry.takeoffOrigin = { x: entity.x, y: entity.y };
   entry.wasGrounded = grounded;
-  if (grounded) { entry.takeoffOrigin = null; return { height: groundHeight + 4, pitch: 0 }; }
+  if (grounded) { entry.takeoffOrigin = null; return { height: groundHeight + groundOffset, pitch: 0 }; }
   if (entry.takeoffOrigin) {
     const travel = Math.hypot(entity.x - entry.takeoffOrigin.x, entity.y - entry.takeoffOrigin.y), fraction = clamp((travel - 22) / 180);
     if (fraction >= 1) entry.takeoffOrigin = null;
-    return { height: groundHeight + 4 + (cruiseHeight - groundHeight - 4) * fraction, pitch: fraction > 0 && fraction < 1 ? .08 : 0 };
+    return { height: groundHeight + groundOffset + (cruiseHeight - groundHeight - groundOffset) * fraction, pitch: fraction > 0 && fraction < 1 ? .08 : 0 };
   }
   if (entity.order?.type !== 'rearm' || entity.homeCarrierId) return null;
   const home = game.ownedBuildings(entity.owner, 'airfield').sort((a, b) => Math.hypot(a.x - entity.x, a.y - entity.y) - Math.hypot(b.x - entity.x, b.y - entity.y))[0];
   if (!home) return null;
   const profile = glideProfile(Math.hypot(home.x - entity.x, home.y - entity.y), home.size * .55 + 24);
-  return { height: groundHeight + 4 + (cruiseHeight - groundHeight - 4) * profile.fraction, pitch: profile.pitch };
+  return { height: groundHeight + groundOffset + (cruiseHeight - groundHeight - groundOffset) * profile.fraction, pitch: profile.pitch };
 }
 
 export function refineAirfieldRunway(model) {

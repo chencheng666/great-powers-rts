@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { bodyLoft, craftedMaterial, mergeParts, roundedPart } from './model-craft.js';
+import { refinePriorityModel } from './priority-model-detail.js';
 
 export const STRATEGIC_MODELS=['fighter_nato','helicopter','ballistic','abm','counterIntel','swarmCarrier','swarmScout','swarmDecoy'];
 
@@ -9,7 +10,7 @@ export function createStrategicModel(type) {
   const dark=craftedMaterial('深色金属','#283335','coating',.43,.68);
   const metal=craftedMaterial('钛合金','#a3b0b5','coating',.36,.76);
   const rubber=craftedMaterial('轮胎橡胶','#1d2525','rubber',.95,0);
-  const glass=new THREE.MeshPhysicalMaterial({name:'座舱玻璃',color:'#286278',metalness:.08,roughness:.12,clearcoat:1,transparent:true,opacity:.87});
+  const glass=new THREE.MeshPhysicalMaterial({name:'座舱玻璃',color:type==='fighter_nato'?'#b9ab84':type==='helicopter'?'#6c8b94':'#385965',metalness:.08,roughness:.14,clearcoat:1,transparent:true,opacity:['fighter_nato','helicopter'].includes(type)?.55:.82,depthWrite:false});
   const team=craftedMaterial('阵营标识','#59d7ec','coating',.5,.25);
   const panels=craftedMaterial('分区蒙皮','#74858b','coating',.77,.2);
   const add=(g,m,p=[0,0,0],r=[0,0,0],parent=root)=>{const mesh=new THREE.Mesh(g,m);mesh.position.set(...p);mesh.rotation.set(...r);parent.add(mesh);return mesh;};
@@ -50,9 +51,12 @@ export function createStrategicModel(type) {
         for(const z of [-.57,.57])for(const y of [2.3,2.9])box([.08,.38,.38],dark,[.93,y+.43,z],[0,0,.22],weapon);
         box([.22,1.1,1.7],dark,[1.3,3,0],[0,0,-.12]);
       } else {
-        tube(.07,2.6,metal,[-1,3.3,0],[0,0,0]);
-        box([.15,1.25,2.7],metal,[-1,4.1,0],[0,0,.18]);
-        for(const z of [-.95,.95])tube(.035,1.7,dark,[-2.25,3.4,z],[0,0,0]);
+        const mast=new THREE.Group();mast.name='counter_intel_mast';mast.position.set(-1,2.4,0);root.add(mast);
+        tube(.07,2.6,metal,[0,.9,0],[0,0,0],mast);
+        const array=new THREE.Group();array.name='counter_intel_array';array.position.y=1.7;mast.add(array);
+        box([.15,1.25,2.7],metal,[0,0,0],[0,0,.18],array);
+        for(const z of [-.9,-.3,.3,.9])box([.08,.85,.44],panels,[.1,0,z],[0,0,.18],array);
+        for(const z of [-.95,.95])tube(.035,1.7,dark,[-1.25,1,z],[0,0,0],mast);
       }
       box([1.4,.12,1.4],team,[-1.5,2.43,0]);
     }
@@ -81,8 +85,6 @@ export function createStrategicModel(type) {
     for(const angle of [0,Math.PI/2])box([11,.045,.22],dark,[0,0,0],[0,angle,0],rotor);
     const tailRotor=new THREE.Group();tailRotor.name='rotor_1_tail';tailRotor.userData.rotationAxis='z';tailRotor.position.set(-3.65,1.5,.3);root.add(tailRotor);
     for(const angle of [0,Math.PI/2])box([1.4,.08,.04],metal,[0,0,0],[0,0,angle],tailRotor);
-    tube(.09,1.2,dark,[2.8,.88,0]);box([.38,.32,.5],dark,[2.6,1.3,0]);
-    add(new THREE.SphereGeometry(.27,16,12),dark,[2.58,1.03,0]);add(new THREE.SphereGeometry(.16,12,8),glass,[2.8,1.04,0]);
     for(const side of [-1,1]) {
       box([2.4,.045,.06],metal,[.9,1.75,side*.58],[0,0,-.07]);
       for(let i=0;i<5;i++)box([.04,.3,.35],panels,[-.7-i*.23,2.21,side*1.2]);
@@ -130,5 +132,6 @@ export function createStrategicModel(type) {
     if(scout)add(new THREE.SphereGeometry(.21,12,8),glass,[.95,-.25,0]);
     else for(const z of [-.38,.38])tube(.09,1.4,dark,[-.2,-.1,z]);
   }
+  refinePriorityModel(root,type);
   return mergeParts(root);
 }

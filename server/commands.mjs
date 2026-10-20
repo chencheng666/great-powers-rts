@@ -4,7 +4,7 @@ export function executeCommand(game, side, message) {
   if (!Number.isInteger(side)||!game.players[side]||game.players[side].eliminated||!game.running || game.paused || game.isControlLocked(side)) return false;
   const own = id => { const e = game.getEntity(id); return e?.owner === side && e.hp > 0 ? e : null; };
   const point = () => Number.isFinite(message.x) && Number.isFinite(message.y) && message.x >= 0 && message.y >= 0 && message.x <= game.world.width && message.y <= game.world.height;
-  const selected = Array.isArray(message.selected) && message.selected.length <= 120 ? message.selected.filter(id => Number.isSafeInteger(id) && own(id)) : [];
+  const selected = Array.isArray(message.selected) && message.selected.length <= 120 ? [...new Set(message.selected.filter(id => Number.isSafeInteger(id) && own(id)))] : [];
   const entity = own(message.id);
   switch (message.action) {
     case 'build': return Object.hasOwn(BUILDINGS, type) && game.startBuild(side, type);
@@ -19,6 +19,13 @@ export function executeCommand(game, side, message) {
     case 'unload': return entity?.kind === 'unit' && game.unloadTransport(entity);
     case 'auto-supply': return entity?.kind === 'unit' && game.toggleAutoSupply(entity);
     case 'auto-drone': return entity?.kind === 'unit' && game.toggleAutoDrone(entity);
+    case 'counter-intel': return entity?.kind === 'unit' && game.toggleCounterIntel(entity);
+    case 'combat-stance':
+    case 'clear-waypoints': {
+      const saved = game.selected; game.selected = selected;
+      try { return message.action === 'combat-stance' ? game.setCombatStance(message.stance,side) : game.clearQueuedOrders(side); }
+      finally { game.selected = saved; }
+    }
     case 'group-resupply':
     case 'group-unload': return selected.filter(id=>own(id)?.kind==='unit').map(id=>message.action==='group-resupply'?game.requestResupply(own(id)):game.unloadTransport(own(id))).some(Boolean);
     case 'ability': return point() && game.castAbility(message.x, message.y, side);
@@ -27,9 +34,9 @@ export function executeCommand(game, side, message) {
     case 'nuclear': return point() && game.launchNuclear(message.x,message.y,side);
     case 'move':
     case 'stop': {
-      if (!selected.length || message.action === 'move' && !point()) return false;
+      if (!selected.length || message.action === 'move' && (!point() || message.append !== undefined && typeof message.append !== 'boolean')) return false;
       const saved = game.selected; game.selected = selected; game.orderMode = message.mode === 'patrol' ? 'patrol' : null;
-      try { if (message.action === 'stop') game.stopSelected(side); else game.command(message.x, message.y, message.attackMove === true, side); }
+      try { if (message.action === 'stop') game.stopSelected(side); else return game.command(message.x, message.y, message.attackMove === true, side, message.append === true) !== false; }
       finally { game.selected = saved; game.orderMode = null; }
       return true;
     }
