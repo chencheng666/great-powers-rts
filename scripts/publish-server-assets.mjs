@@ -4,24 +4,33 @@ import { createHash } from 'node:crypto';
 import { GAME_VERSION } from '../src/version.js';
 
 const repo='chencheng666/great-powers-rts',tag=`v${GAME_VERSION}`,draftId=process.env.DRAFT_RELEASE_ID;
-if(!/^1\.\d+\.\d+$/.test(GAME_VERSION)||!/^\d+$/.test(draftId||'')||!process.env.GH_TOKEN)throw Error('缺少有效版本、草稿编号或发行授权');
+if(!/^1\.\d+\.\d+$/.test(GAME_VERSION)||draftId&&!/^\d+$/.test(draftId)||!process.env.GH_TOKEN)throw Error('缺少有效版本、草稿编号或发行授权');
 const api=path=>JSON.parse(execFileSync('gh',['api',`repos/${repo}/${path}`],{encoding:'utf8'}));
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 const manifest=JSON.parse(await readFile('public/downloads/manifest.json','utf8'));
 const offline=manifest.files.find(f=>f.name===`packages/Great-Powers-RTS-${tag}.zip`);
 if(manifest.releaseTag!==tag||!offline||!/^[a-f0-9]{64}$/.test(offline.sha256))throw Error('下载清单与发行版本不一致');
-const zip=`public/downloads/${offline.name}`,draft=api(`releases/${draftId}`);
-const staged=draft.assets.find(a=>a.name===`Great-Powers-RTS-${tag}.zip`);
-if(!draft.draft||draft.tag_name!==tag||!staged||staged.state!=='uploaded'||staged.size!==offline.size||staged.digest!==`sha256:${offline.sha256}`)throw Error('临时草稿的文件、版本或校验值不符');
+const zip=`public/downloads/${offline.name}`,draft=draftId?api(`releases/${draftId}`):null;
+const staged=draft?.assets.find(a=>a.name===`Great-Powers-RTS-${tag}.zip`);
+if(draft&&(!draft.draft||draft.tag_name!==tag||!staged||staged.state!=='uploaded'||staged.size!==offline.size||staged.digest!==`sha256:${offline.sha256}`))throw Error('临时草稿的文件、版本或校验值不符');
 
 if(process.argv[2]==='recover'){
+  if(!draft){
+    execFileSync('npm',['run','package:offline'],{stdio:'inherit'});
+    const generated=JSON.parse(await readFile('releases/offline-package.json','utf8')),bytes=await readFile(generated.archive);
+    offline.size=bytes.length;offline.sha256=digest(bytes);
+    await mkdir('public/downloads/packages',{recursive:true});await writeFile(zip,bytes);
+    await writeFile('public/downloads/manifest.json',JSON.stringify(manifest,null,2)+'\n');
+    console.log('免安装包已生成',JSON.stringify({bytes:bytes.length,sha256:offline.sha256}));
+  }else{
   const bytes=execFileSync('gh',['api',`repos/${repo}/releases/assets/${staged.id}`,'-H','Accept: application/octet-stream'],{maxBuffer:128*1024*1024});
   if(bytes.length!==offline.size||digest(bytes)!==offline.sha256)throw Error('免安装包下载校验失败');
   await mkdir('public/downloads/packages',{recursive:true});await writeFile(zip,bytes);
   console.log('免安装包已验证',JSON.stringify({bytes:bytes.length,sha256:offline.sha256}));
+  }
 }else if(process.argv[2]==='publish'){
   const release=api(`releases/tags/${tag}`);
-  if(release.draft||release.id===draft.id)throw Error('公开发行尚未就绪');
+  if(release.draft||release.id===draft?.id)throw Error('公开发行尚未就绪');
   const desktop=release.assets.filter(a=>a.name.startsWith(`Great.Powers_${GAME_VERSION}_`)&&/\.(dmg|deb|AppImage|exe|app\.tar\.gz)$/.test(a.name));
   if(desktop.length!==9||desktop.some(a=>!/^sha256:[a-f0-9]{64}$/.test(a.digest)))throw Error('桌面资产未完成');
   const paths=[zip,`releases/great-powers-server-${tag}.tar.gz`,'scripts/deploy-strategic-release.py'];
@@ -40,9 +49,9 @@ if(process.argv[2]==='recover'){
   }
   const final=api(`releases/${release.id}`);
   if(files.some(f=>!final.assets.some(a=>a.name===f.name&&a.size===f.size&&a.digest===`sha256:${f.sha256}`)))throw Error('公开发行缺少已验证资产');
-  const report={version:GAME_VERSION,sourceCommit:process.env.GITHUB_SHA,url:final.html_url,assets:final.assets.map(a=>({name:a.name,size:a.size,sha256:a.digest.slice(7)}))};
+  const report={version:GAME_VERSION,sourceCommit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),url:final.html_url,assets:final.assets.map(a=>({name:a.name,size:a.size,sha256:a.digest.slice(7)}))};
   await mkdir('releases',{recursive:true});await writeFile('releases/published-assets.json',JSON.stringify(report,null,2));
   // 只清理本轮重复草稿；公开文件验证完成前绝不删除已上传的唯一副本。
-  if(draft.assets.length===1)execFileSync('gh',['api','--method','DELETE',`repos/${repo}/releases/${draft.id}`]);
+  if(draft?.assets.length===1)execFileSync('gh',['api','--method','DELETE',`repos/${repo}/releases/${draft.id}`]);
   console.log(JSON.stringify({version:GAME_VERSION,assets:report.assets.length,url:report.url}));
 }else throw Error('请指定 recover 或 publish');

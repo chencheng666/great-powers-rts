@@ -61,4 +61,6 @@ if (process.platform === 'darwin') {
 }
 execFileSync('/usr/bin/unzip', ['-t', archive], { stdio: 'inherit' });
 const bytes = (await stat(archive)).size;
-console.log(JSON.stringify({ archive, html: join(destination, 'PLAY.html'), bytes, sizeMB: Number((bytes / 1024 / 1024).toFixed(2)) }, null, 2));
+const report = { archive, html: join(destination, 'PLAY.html'), bytes, sizeMB: Number((bytes / 1024 / 1024).toFixed(2)) };
+await writeFile(join(releaseRoot, 'offline-package.json'), JSON.stringify(report, null, 2));
+console.log(JSON.stringify(report, null, 2));

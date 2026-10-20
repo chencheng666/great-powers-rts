@@ -4,7 +4,7 @@ on:
     inputs:
       draftReleaseId:
         description: 已上传免安装 ZIP 的本次临时草稿编号
-        required: true
+        required: false
         type: string
 permissions:
   contents: write
@@ -26,12 +26,22 @@ jobs:
           git fetch --depth=1 origin "refs/tags/$TAG:refs/tags/$TAG"
           git diff --exit-code "$TAG" -- src server index.html package.json package-lock.json src-tauri
       - run: npm ci --registry=https://registry.npmjs.org
-      - name: 校验并恢复已上传的免安装包
+      - name: 生成或校验恢复免安装包
         run: node scripts/publish-server-assets.mjs recover
+      - name: 同步已核验的下载清单
+        run: |
+          node scripts/sync-release-manifest.mjs
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/downloads/manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m '同步1.2发行包的实际大小与校验值'
+            git push origin HEAD:main
+          fi
       - run: npm test
       - run: npm run build
       - name: 记录服务端构建来源
-        run: node --input-type=module -e 'import{writeFileSync}from"node:fs";import{GAME_VERSION}from"./src/version.js";writeFileSync("dist/release.json",JSON.stringify({version:GAME_VERSION,sourceCommit:process.env.GITHUB_SHA,workflow:process.env.GITHUB_RUN_ID},null,2));'
+        run: node --input-type=module -e 'import{writeFileSync}from"node:fs";import{execFileSync}from"node:child_process";import{GAME_VERSION}from"./src/version.js";writeFileSync("dist/release.json",JSON.stringify({version:GAME_VERSION,sourceCommit:execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim(),workflow:process.env.GITHUB_RUN_ID},null,2));'
       - run: node scripts/package-server.mjs
       - name: 发布网页包、服务端包和校验清单
         run: node scripts/publish-server-assets.mjs publish
