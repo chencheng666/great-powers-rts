@@ -1,0 +1,42 @@
+name: Web and server release
+on:
+  workflow_dispatch:
+    inputs:
+      draftReleaseId:
+        description: 已上传免安装 ZIP 的本次临时草稿编号
+        required: true
+        type: string
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DRAFT_RELEASE_ID: ${{ inputs.draftReleaseId }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - name: 核对发行标签与源码一致
+        run: |
+          TAG="v$(node -p 'require("./package.json").version')"
+          git fetch --depth=1 origin "refs/tags/$TAG:refs/tags/$TAG"
+          git diff --exit-code "$TAG" -- src server index.html package.json package-lock.json src-tauri
+      - run: npm ci --registry=https://registry.npmjs.org
+      - name: 校验并恢复已上传的免安装包
+        run: node scripts/publish-server-assets.mjs recover
+      - run: npm test
+      - run: npm run build
+      - name: 记录服务端构建来源
+        run: node --input-type=module -e 'import{writeFileSync}from"node:fs";import{GAME_VERSION}from"./src/version.js";writeFileSync("dist/release.json",JSON.stringify({version:GAME_VERSION,sourceCommit:process.env.GITHUB_SHA,workflow:process.env.GITHUB_RUN_ID},null,2));'
+      - run: node scripts/package-server.mjs
+      - name: 发布网页包、服务端包和校验清单
+        run: node scripts/publish-server-assets.mjs publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-server-release-report
+          path: releases/published-assets.json
+          if-no-files-found: error
