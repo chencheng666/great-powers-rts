@@ -29,24 +29,45 @@ for(const count of [2,6]){
     if(count===2&&!starts.every(s=>s.config.nuclearEnabled))throw Error('核规则同步失败');
     const unit=starts[0].view.units.find(u=>u.owner===0&&u.type==='tank');send(host,{type:'command',action:'move',selected:[unit.id],x:unit.x+160,y:unit.y+120,seq:1});if(!(await wait(host,m=>m.type==='ack'&&m.seq===1)).ok)throw Error('公网移动指令被拒绝');
     await wait(host,m=>m.type==='snapshot'&&m.view.units.some(u=>u.id===unit.id&&Math.hypot(u.x-unit.x,u.y-unit.y)>10));
-    if(count===2){send(host,{type:'command',action:'nuclear',x:3000,y:1800,seq:2});if((await wait(host,m=>m.type==='ack'&&m.seq===2)).ok)throw Error('无前置核指令未被拒绝');}
+    for(const[seq,stance]of [[2,'guard'],[3,'ceasefire'],[4,'free']]){
+      send(host,{type:'command',action:'combat-stance',selected:[unit.id],stance,seq});if(!(await wait(host,m=>m.type==='ack'&&m.seq===seq)).ok)throw Error('公网交战姿态被拒绝');
+      await wait(host,m=>m.type==='snapshot'&&m.view.units.some(u=>u.id===unit.id&&u.combatStance===stance));
+    }
+    const route={x:unit.x+300,y:unit.y+180};send(host,{type:'command',action:'move',selected:[unit.id],...route,seq:5});if(!(await wait(host,m=>m.type==='ack'&&m.seq===5)).ok)throw Error('公网航点起点被拒绝');
+    send(host,{type:'command',action:'move',selected:[unit.id],x:unit.x+400,y:unit.y+260,append:true,seq:6});if(!(await wait(host,m=>m.type==='ack'&&m.seq===6)).ok)throw Error('公网追加航点被拒绝');
+    await wait(host,m=>m.type==='snapshot'&&m.view.units.some(u=>u.id===unit.id&&u.orderQueue?.length===1));
+    send(clients[1],{type:'command',action:'combat-stance',selected:[unit.id],stance:'ceasefire',seq:1});if((await wait(clients[1],m=>m.type==='ack'&&m.seq===1)).ok)throw Error('敌方可以操纵我方交战姿态');
+    send(host,{type:'command',action:'clear-waypoints',selected:[unit.id],seq:7});if(!(await wait(host,m=>m.type==='ack'&&m.seq===7)).ok)throw Error('公网清空航点被拒绝');
+    await wait(host,m=>m.type==='snapshot'&&m.view.units.some(u=>u.id===unit.id&&u.orderQueue?.length===0));
+    if(count===2){send(host,{type:'command',action:'nuclear',x:3000,y:1800,seq:8});if((await wait(host,m=>m.type==='ack'&&m.seq===8)).ok)throw Error('无前置核指令未被拒绝');}
     send(clients.at(-1),{type:'leave'});
     if(count===6)await wait(host,m=>m.type==='snapshot'&&m.view.running&&m.view.players.some(p=>p.actualSide===5&&p.eliminated));
     for(let i=1;i<count-1;i++)send(clients[i],{type:'leave'});
     const ended=await wait(host,m=>m.type==='snapshot'&&!m.view.running&&m.view.battleReport);
     if(ended.view.winner!==0||ended.view.battleReport.sides.length!==count)throw Error('公网结算视图错误');
-    results.push({players:count,protocol,sameBattle:true,movement:true,nuclearConsent:count===2?true:null,invalidNuclearRejected:count===2?true:null,independentElimination:count===6?true:null,reportSides:count,compression:host.ws.extensions||'none'});
+    results.push({players:count,protocol,sameBattle:true,movement:true,combatStance:true,queuedWaypoints:true,opponentCommandRejected:true,nuclearConsent:count===2?true:null,invalidNuclearRejected:count===2?true:null,independentElimination:count===6?true:null,reportSides:count,compression:host.ws.extensions||'none'});
   }finally{
     identities.push({directory:count===6?'six':'main',ids,battleId});await writeFile(`${out}/identities.json`,JSON.stringify(identities,null,2),{mode:0o600});
     for(const c of clients){if(c.ws.readyState===1)send(c,{type:'leave'});c.ws.close();}
   }
 }
 const js=(await readdir('dist/assets')).filter(f=>/^index-.*\.js$/.test(f));if(js.length!==1)throw Error('不能唯一确定网页入口');
+await writeFile(`${out}/report.json`,JSON.stringify({version:GAME_VERSION,results,checks,filesComplete:false},null,2));
 const manifest=JSON.parse(await readFile('dist/downloads/manifest.json','utf8')),archive=manifest.files.find(f=>f.name===`packages/Great-Powers-RTS-v${GAME_VERSION}.zip`);
 for(const path of ['/',`/assets/${js[0]}`,'/official/','/downloads/manifest.json',`/downloads/${archive.name}`]){
   const local=path==='/'?'dist/index.html':path==='/official/'?'dist/official/index.html':'dist'+path;
+  if(path.endsWith('.zip')&&!process.argv.includes('--full-download')){
+    const head=await fetch(origin+path,{method:'HEAD',signal:AbortSignal.timeout(30000)});
+    if(!head.ok||Number(head.headers.get('content-length'))!==archive.size)throw Error('公网下载大小不符');
+    const sample=await fetch(origin+path,{headers:{Range:'bytes=0-65535'},signal:AbortSignal.timeout(30000)}),bytes=Buffer.from(await sample.arrayBuffer()),expected=(await readFile(local)).subarray(0,65536);
+    const sha=b=>createHash('sha256').update(b).digest('hex');
+    if(sample.status!==206||sample.headers.get('content-range')!==`bytes 0-65535/${archive.size}`||bytes.length!==65536||sha(bytes)!==sha(expected))throw Error('公网分段下载校验失败');
+    checks.push({path,mode:'range',size:archive.size,bytes:65536,sha256:sha(bytes),match:true,fullDownload:false});
+    await writeFile(`${out}/report.json`,JSON.stringify({version:GAME_VERSION,results,checks,filesComplete:false},null,2));continue;
+  }
   const response=await fetch(origin+path,{signal:AbortSignal.timeout(180000)});if(!response.ok)throw Error('下载或网页请求失败：'+path);
   const sha=b=>createHash('sha256').update(b).digest('hex'),remote=sha(Buffer.from(await response.arrayBuffer())),expected=sha(await readFile(local));
-  if(remote!==expected||path.endsWith('.zip')&&remote!==archive.sha256)throw Error('公网文件校验失败：'+path);checks.push({path,sha256:remote,match:true});
+  if(remote!==expected||path.endsWith('.zip')&&remote!==archive.sha256)throw Error('公网文件校验失败：'+path);checks.push({path,mode:'full',sha256:remote,match:true});
+  await writeFile(`${out}/report.json`,JSON.stringify({version:GAME_VERSION,results,checks,filesComplete:false},null,2));
 }
-await writeFile(`${out}/report.json`,JSON.stringify({version:GAME_VERSION,results,checks},null,2));console.log({version:GAME_VERSION,results,checks});
+await writeFile(`${out}/report.json`,JSON.stringify({version:GAME_VERSION,results,checks,filesComplete:true},null,2));console.log({version:GAME_VERSION,results,checks});

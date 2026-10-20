@@ -1,0 +1,69 @@
+{
+  "version": "1.2.0",
+  "results": [
+    {
+      "players": 2,
+      "protocol": 4,
+      "sameBattle": true,
+      "movement": true,
+      "combatStance": true,
+      "queuedWaypoints": true,
+      "opponentCommandRejected": true,
+      "nuclearConsent": true,
+      "invalidNuclearRejected": true,
+      "independentElimination": null,
+      "reportSides": 2,
+      "compression": "none"
+    },
+    {
+      "players": 6,
+      "protocol": 5,
+      "sameBattle": true,
+      "movement": true,
+      "combatStance": true,
+      "queuedWaypoints": true,
+      "opponentCommandRejected": true,
+      "nuclearConsent": null,
+      "invalidNuclearRejected": null,
+      "independentElimination": true,
+      "reportSides": 6,
+      "compression": "permessage-deflate"
+    }
+  ],
+  "checks": [
+    {
+      "path": "/",
+      "mode": "full",
+      "sha256": "98d0d568105c663926bc546a5288a530e26df71b3e265371f8891bad77df3008",
+      "match": true
+    },
+    {
+      "path": "/assets/index-vQWd5Xi2.js",
+      "mode": "full",
+      "sha256": "d582647ed8095b11da73e9eb2b43373767d4277ad5e55ef5844962fa5b3290df",
+      "match": true
+    },
+    {
+      "path": "/official/",
+      "mode": "full",
+      "sha256": "c5ec77eeaff0a7663c3aca0bb5db11db1a75eaddf58adcc07301fd607d859c11",
+      "match": true
+    },
+    {
+      "path": "/downloads/manifest.json",
+      "mode": "full",
+      "sha256": "17f714dc2d25b36d6fbb31fdb37908c51c38009838aeae853e8d3c8f754997bc",
+      "match": true
+    },
+    {
+      "path": "/downloads/packages/Great-Powers-RTS-v1.2.0.zip",
+      "mode": "range",
+      "size": 54842094,
+      "bytes": 65536,
+      "sha256": "1547694d778dfd437e611c77aef0b87de5815bf2344b485d582d691e07d694e4",
+      "match": true,
+      "fullDownload": false
+    }
+  ],
+  "filesComplete": true
+}
