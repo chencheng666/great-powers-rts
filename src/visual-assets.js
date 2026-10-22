@@ -165,7 +165,7 @@ export function prepareVisualAssets() {
     ground.colorSpace = THREE.SRGBColorSpace; ground.wrapS = ground.wrapT = THREE.RepeatWrapping;
     meridian.colorSpace = THREE.SRGBColorSpace;
     library = { models, ground, buildings, foliage, armory, meridian }; return library;
-  });
+  }).catch(error => { pending = null; throw error; });
   return pending;
 }
 

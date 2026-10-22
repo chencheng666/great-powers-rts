@@ -43,6 +43,7 @@ import { COMBAT_STANCES, supportsCombatStance, combatStance } from './combat-sta
 import { isLifeline, LIFELINE, lifelineSummary, harborPlan, freightRules } from './maritime-logistics.js';
 import { isIslandWatch, watchPanelHTML, watchSummary } from './island-watch.js';
 import { lifelinePanelHTML } from './lifeline-ui.js';
+import { loadChallengeThumbnails } from './challenge-thumbnails.js';
 
 const candidateMode=/^\/candidate(?:\/|$)/.test(location.pathname);
 const $ = selector => document.querySelector(selector);
@@ -789,10 +790,22 @@ function showChallenges(notice='',danger=false) {
   const history=recent.length?`<details class="challenge-history"><summary>最近挑战 · ${profile.results.length} 次尝试</summary><ol>${recent.map(r=>`<li><div><strong>${CHALLENGES[r.challengeId].name}</strong><small>${new Date(r.at).toLocaleString('zh-CN')}</small></div><span>${r.winner===0?`${r.stars} 星`:'未完成'}</span><time>${challengeTime(r.time)}</time></li>`).join('')}</ol></details>`:'';
   showModal('战术挑战',`${overview}<p id="challenge-profile-message" class="${error||danger?'challenge-warning':'challenge-notice'}" role="${error||danger?'alert':'status'}" ${error||notice?'':'hidden'}></p><div class="challenge-list">${Object.entries(CHALLENGES).map(([id,d])=>{
     const r=records[id];
-    return `<article class="challenge-choice"><img src="${modelThumbnail(equipmentModel('china',d.targetType,false),teamVisual(0).color)}" alt="${d.targetName}"><div><h3>${d.name}</h3><div class="challenge-personal-best">${challengeStars(r.bestStars)}<span>${error?'成绩暂不可读取':r.wins?`最快 ${challengeTime(r.fastestTime)} · ${r.wins} / ${r.attempts} 次通关`:`尚未通关 · ${r.attempts} 次尝试`}</span></div><p>${d.briefing}</p><p>${d.limit} 秒时限 · ${d.budget} 起始整备资金 · ${d.freight?'海运护航 · 有限补发':'固定编队'}</p><button class="primary-btn" data-modal="challenge-${id}">${icon('play')} ${r.attempts?'再次挑战':'开始挑战'}</button></div></article>`;
+    return `<article class="challenge-choice"><img data-challenge-model="${equipmentModel('china',d.targetType,false)}" alt="${d.targetName}" style="visibility:hidden"><div><h3>${d.name}</h3><div class="challenge-personal-best">${challengeStars(r.bestStars)}<span>${error?'成绩暂不可读取':r.wins?`最快 ${challengeTime(r.fastestTime)} · ${r.wins} / ${r.attempts} 次通关`:`尚未通关 · ${r.attempts} 次尝试`}</span></div><p>${d.briefing}</p><p>${d.limit} 秒时限 · ${d.budget} 起始整备资金 · ${d.freight?'海运护航 · 有限补发':'固定编队'}</p><button class="primary-btn" data-modal="challenge-${id}">${icon('play')} ${r.attempts?'再次挑战':'开始挑战'}</button></div></article>`;
   }).join('')}</div>${history}<p class="challenge-local-note">本机挑战成绩 · 不计普通荣誉 · 未与服务器同步</p>`, `<button class="secondary-btn" data-modal="resume">返回</button><button class="icon-btn" data-modal="challenge-export" title="导出挑战成绩备份" aria-label="导出挑战成绩备份" ${error?'disabled':''}>${icon('download')}</button><button class="icon-btn" data-modal="challenge-import" title="合并导入挑战成绩" aria-label="合并导入挑战成绩">${icon('upload')}</button>`,'独立任务');
   $('#challenge-profile-message').textContent=error||notice;
   $('#modal .modal-actions').classList.add('challenge-profile-actions');
+  const list = $('#modal .challenge-list');
+  const images = [...list.querySelectorAll('[data-challenge-model]')];
+  loadChallengeThumbnails({
+    prepare: () => Renderer.prepare(), images,
+    thumbnail: model => modelThumbnail(model, teamVisual(0).color),
+    isCurrent: () => state.modalMode === '战术挑战' && $('#modal .challenge-list') === list && !$('#modal').classList.contains('hidden'),
+    onFailure: () => {
+      const message = $('#challenge-profile-message');
+      message.hidden = false;
+      message.textContent = [error || notice, '模型资料暂未载入，仍可查看任务；开始作战时会重试加载。'].filter(Boolean).join(' ');
+    }
+  }).then(ready => { if (ready) images.forEach(image => { image.style.visibility = "visible"; }); });
 }
 
 function exportChallengeRecords() {
