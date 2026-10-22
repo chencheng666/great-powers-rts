@@ -1,0 +1,90 @@
+{
+  "version": "1.3.1",
+  "url": "https://github.com/chencheng666/great-powers-rts/releases/tag/v1.3.1",
+  "assets": [
+    {
+      "name": "deploy-strategic-release.py",
+      "bytes": 8567,
+      "sha256": "74a0406ca686e7f4201982e6e97fa21f7745182dc7682d82b5cc69c4aead16c6",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/deploy-strategic-release.py"
+    },
+    {
+      "name": "downloads-manifest-v1.3.1.json",
+      "bytes": 4642,
+      "sha256": "22b6f3d76ca63d0bd4416f72e838817fb6e60f75133ea42ab4467ebecc2d7d63",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/downloads-manifest-v1.3.1.json"
+    },
+    {
+      "name": "Great-Powers-RTS-v1.3.1.zip",
+      "bytes": 59070095,
+      "sha256": "a2ab15eee85b4d5f1168ccb40e5515a5036594b2f6b25148591998058717bec4",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/Great-Powers-RTS-v1.3.1.zip"
+    },
+    {
+      "name": "great-powers-server-v1.3.1.tar.gz",
+      "bytes": 144436379,
+      "sha256": "727108a8822bd98343ac02c3b4a58c226c3ca181cd404c94b853250abc41c8d5",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/great-powers-server-v1.3.1.tar.gz"
+    },
+    {
+      "name": "Great.Powers_1.3.1_aarch64.app.tar.gz",
+      "bytes": 75563262,
+      "sha256": "5c271b23de49c4ea89bd0597959b65fedacd93ce084e07869b9481a856a68ec6",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/Great.Powers_1.3.1_aarch64.app.tar.gz"
+    },
+    {
+      "name": "Great.Powers_1.3.1_aarch64.AppImage",
+      "bytes": 152144392,
+      "sha256": "e4cc98d98dafa05244482ea0c67698f2710b79058f263f62dcc6a82bb1d5dd7f",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/Great.Powers_1.3.1_aarch64.AppImage"
+    },
+    {
+      "name": "Great.Powers_1.3.1_aarch64.dmg",
+      "bytes": 75632828,
+      "sha256": "2d83a04500ae70a6f9441ef6e3ce2acd16676ca2e716d8fcb71c14428a9b15ae",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/Great.Powers_1.3.1_aarch64.dmg"
+    },
+    {
+      "name": "Great.Powers_1.3.1_amd64.AppImage",
+      "bytes": 153983480,
+      "sha256": "c3cab440304d13c689428d460f3c9839f797010654ecea5f35f8ff235b0f4245",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/Great.Powers_1.3.1_amd64.AppImage"
+    },
+    {
+      "name": "Great.Powers_1.3.1_amd64.deb",
+      "bytes": 75611610,
+      "sha256": "f6ea94d32dc723193bc705d21c9f8c13b39160c03b68b0618fa994db6b33678e",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/Great.Powers_1.3.1_amd64.deb"
+    },
+    {
+      "name": "Great.Powers_1.3.1_arm64.deb",
+      "bytes": 75657040,
+      "sha256": "0b7f55f71d943e96acdf70e0b0289a25fafd910e781ff9590e42b8524954c97e",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/Great.Powers_1.3.1_arm64.deb"
+    },
+    {
+      "name": "Great.Powers_1.3.1_x64-setup.exe",
+      "bytes": 291758767,
+      "sha256": "ee39b47dca00c86ea34a52f83d53207effa5456c7d68f77f4aca4d589f2f34d6",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/Great.Powers_1.3.1_x64-setup.exe"
+    },
+    {
+      "name": "Great.Powers_1.3.1_x64.app.tar.gz",
+      "bytes": 76191947,
+      "sha256": "abaa060feba2ae5b9d4819ca64f0f606b7ebe470e333b9515e73dd60366ca460",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/Great.Powers_1.3.1_x64.app.tar.gz"
+    },
+    {
+      "name": "Great.Powers_1.3.1_x64.dmg",
+      "bytes": 76261760,
+      "sha256": "9b937fba3fbf5b428230cee0cd175f2908fede77c31fad600b5563b619afa588",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/Great.Powers_1.3.1_x64.dmg"
+    },
+    {
+      "name": "SHA256SUMS-v1.3.1.txt",
+      "bytes": 1173,
+      "sha256": "647d1421db6f769dc2d710e2fff5fe6b3d65cca8e8b79d280a57a8eb4d1e62c4",
+      "url": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.3.1/SHA256SUMS-v1.3.1.txt"
+    }
+  ]
+}

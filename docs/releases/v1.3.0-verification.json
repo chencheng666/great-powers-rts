@@ -1,13 +1,13 @@
 {
   "version": "1.3.0",
   "date": "2026-10-22",
-  "status": "统一发布进行中",
+  "status": "已发布后发现慢网挑战入口问题，由1.3.1修订版取代",
   "tests": {"passed": 468, "failed": 0, "log": "releases/v130-tests.txt"},
   "productionBuild": true,
   "browserMission": {"winner": 0, "time": 233.8863, "stars": 2, "receipts": [1,2], "hold": 20, "scriptErrors": [], "glError": 0, "sampledColors": 7099, "resultSaved": true},
   "offline": {"bytes": 59069658, "sha256": "a1eb4c262c3859a17a989df04ce9bcbcc72974238f289fcd7089e1aff094abc1", "zipIntegrity": true, "runtime": "直接以file协议打开并启动列岛守望", "sampledColors":1686,"glError":0,"scriptErrors":[],"externalRequests":[],"desktopWidths":[1280,1920],"horizontalOverflow":false},
-  "github": {"pushed": false, "release": false, "desktopBuilds": "待触发"},
-  "domestic": {"deployed": false, "origin": "https://www.daguojueqi.site/", "fullZipDownloadVerified": false, "twoPlayer": "待验收", "sixPlayer": "待验收"},
+  "github": {"pushed": true, "sourceCommit":"01861a3174de06f727f3933bd1ee581b19f11773","release": true, "desktopBuilds": "9个文件构建成功", "workflowRun":39728904112},
+  "domestic": {"deployed": true, "origin": "https://www.daguojueqi.site/", "fullZipDownloadVerified": true, "twoPlayer": "通过", "sixPlayer": "通过", "historicalGuestsPreserved":[1,0], "testDataCleaned":true},
   "newMapOnlineSupported": false,
   "official20": false,
   "externalModelsImportedThisIteration": 0

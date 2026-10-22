@@ -1,0 +1,18 @@
+{
+  "version":"1.3.1",
+  "date":"2026-10-22",
+  "status":"统一发布完成",
+  "sourceCommit":"8ddc8401ba2260035dfadb94550b73ae4722b954",
+  "tests":{"passed":472,"failed":0,"log":"releases/v131-tests.txt"},
+  "productionBuild":true,
+  "missionRegression":{"baseVersion":"1.3.0","winner":0,"time":233.8863,"stars":2,"resultSaved":true,"gameplayChangedInPatch":false},
+  "fix":"挑战列表先显示文字；模型异步加载及失败接管；关闭或替换面板后忽略旧请求；失败加载可重试",
+  "offline":{"bytes":59070095,"sha256":"a2ab15eee85b4d5f1168ccb40e5515a5036594b2f6b25148591998058717bec4","zipIntegrity":true,"runtimeVerified":true,"mission":"列岛守望","externalRequests":[]},
+  "browser":{"failureCase":{"blockedModelRequests":true,"challengeEntries":6,"scriptErrors":[],"recoveredImages":6},"live":{"version":"1.3.1","challengeEntries":6,"horizontalOverflow":false}},
+  "github":{"pushed":true,"release":true,"desktopBuilds":"9个文件全部构建成功","workflowConclusion":"success","workflowRun":39731891265,"assets":14,"assetReport":"v1.3.1-assets.json","url":"https://github.com/chencheng666/great-powers-rts/releases/tag/v1.3.1"},
+  "finalManifest":{"files":10,"sha256":"22b6f3d76ca63d0bd4416f72e838817fb6e60f75133ea42ab4467ebecc2d7d63","publicMatchesLocal":true,"note":"桌面CI齐备后单独更新下载清单；online报告保留此前仅ZIP清单的原始验收哈希"},
+  "domestic":{"origin":"https://www.daguojueqi.site/","deployed":true,"release":"/opt/great-powers/releases/20261022-v131","backup":"/opt/great-powers/backups/20261022-v131","archiveSHA256":"727108a8822bd98343ac02c3b4a58c226c3ca181cd404c94b853250abc41c8d5","fullZipDownloadVerified":true,"twoPlayer":"通过","sixPlayer":"通过","onlineReport":"v1.3.1-online.json","historicalGuestsPreserved":[1,0],"testGuestsRemoved":[2,6],"testBattlesRemoved":[1,1],"resumePreserved":true},
+  "newMapOnlineSupported":false,
+  "official20":false,
+  "externalModelsImportedThisIteration":0
+}
