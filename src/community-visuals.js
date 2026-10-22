@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { lunarReliefGLSL } from './lunar-terrain.js';
+import { surfaceMaps } from './model-craft.js';
+import { islandHeightGLSL } from './island-map.js';
 
 export const COMMUNITY_3D_BUILDINGS = ['dock', 'radar', 'airfield', 'lab', 'super'];
 
@@ -13,7 +15,9 @@ export function conformGroundMark(material, game) {
   ].join('\n');
   material.onBeforeCompile = shader => {
     shader.vertexShader = `${lunarReliefGLSL(game)}
+    ${islandHeightGLSL(game.map)}
     float craterElevation(vec2 p) {
+      ${game.map.islands?'return islandHeight(p)+1.2;':''}
       ${checks}
       float edge = min(p.x, ${game.world.width.toFixed(1)} - p.x);
       float road = clamp((abs(p.y - ${game.homeY.toFixed(1)}) - 70.0) / 150.0, 0.0, 1.0);
@@ -97,6 +101,10 @@ export function createHarbor(weather = material => material) {
     if (!batches.has(kind)) batches.set(kind, []);
     batches.get(kind).push(geometry);
   };
+  Object.assign(materials.concrete,surfaceMaps('coating'));
+  Object.assign(materials.roof,surfaceMaps('coating'));
+  Object.assign(materials.steel,surfaceMaps('armor'));
+  Object.assign(materials.dark,surfaceMaps('rubber'));
   const box = (size, position, kind) => add(new THREE.BoxGeometry(...size), position, kind);
   box([7.2, .35, 8], [0, .2, 0], 'concrete');
   box([3.6, 2.5, 6], [-1.65, 1.6, 0], 'panel');
@@ -115,6 +123,8 @@ export function createHarbor(weather = material => material) {
     box([.22, .45, 1.1], [11.9, .55, z], 'dark');
     add(new THREE.CylinderGeometry(.08, .1, .35, 10), [11.45, .94, z + .75], 'steel');
     box([.12, .02, 2], [11.55, .745, z], 'amber');
+    box([.25,.08,.7],[11.4,1,z+.75],'steel');
+    for(const dy of [-.1,.1])box([.3,.05,.8],[12.05,.52+dy,z],'dark');
   }
   for (const z of [-5.6, 5.6]) {
     for (const x of [8.9, 11.1]) box([.2, 4.7, .2], [x, 3.1, z], 'steel');

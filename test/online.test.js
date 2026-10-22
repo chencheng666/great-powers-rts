@@ -62,6 +62,7 @@ test('两个游客建房准备、权威对战、重连暂停和认输只结算�
   async function wait(client,predicate){const end=Date.now()+5000;while(Date.now()<end){const index=client.messages.findIndex(predicate);if(index>=0)return client.messages.splice(index,1)[0];await new Promise(r=>setTimeout(r,15));}throw new Error('等待消息超时');}
   const send=(client,value)=>client.ws.send(JSON.stringify(value));
   await wait(first,m=>m.type==='hello');await wait(second,m=>m.type==='hello');
+  send(first,{type:'create',mapId:'islandwatch',victoryMode:'quick',faction:'china'});await wait(first,m=>m.type==='error');assert.equal(app.rooms.size,0);
   send(first,{type:'create',mapId:'valley',victoryMode:'quick',faction:'china'});const code=(await wait(first,m=>m.type==='room')).room.code;
   send(second,{type:'join',code,faction:'nato'});await wait(second,m=>m.type==='room');
   send(first,{type:'start'});await wait(first,m=>m.type==='error');

@@ -697,6 +697,8 @@ test('高空战机跨越建筑，制空、对地和防空形成明确克制', ()
 
 test('攻击机弹药耗尽后返场，断电暂停补给，恢复供电后继续任务', () => {
   const game = new Game('china', 'russia');
+  // 隔离初始坦克，避免其随机射击干扰飞弹延迟断言。
+  game.units = [];
   game.updateAI = () => {};
   game.aiWaveTimer = Infinity;
   game.addBuilding(0, 'airfield', 800, 700);

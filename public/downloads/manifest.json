@@ -1,78 +1,14 @@
 {
-  "version": "1.2.1",
-  "releaseTag": "v1.2.1",
-  "desktopOnline": "国内HTTPS试玩 https://www.daguojueqi.site/play/ ，六方实验 /candidate/ 。离线ZIP仅单机；桌面旧版文件请留意版本，升级前导出存档。",
+  "version": "1.3.0",
+  "releaseTag": "v1.3.0",
+  "createdAt": "2026-10-22T05:23:48.502Z",
   "files": [
     {
-      "name": "packages/Great-Powers-RTS-v1.2.1.zip",
-      "label": "1.2.1 · 离线单机 ZIP · 免安装",
-      "size": 59052735,
-      "sha256": "6398ec742b67a84ca9648a50f0573648126767810af328fd4c2c500f5ffad545",
-      "status": "本轮CAI反馈修复，模型、音乐、中文男女声内置；完整解压打开PLAY.html，仅单机。"
-    },
-    {
-      "name": "packages/v1.2.1/Great.Powers_1.2.1_aarch64.app.tar.gz",
-      "label": "1.2.1 · macOS Apple Silicon · Great.Powers_1.2.1_aarch64.app.tar.gz",
-      "size": 71779396,
-      "sha256": "ef4a5f6d9e0124cee86e58e67cf0f0c753699555dbdaf061d68bd9baf387d09c",
-      "status": "CI构建通过；国内镜像完整文件大小及SHA256已校验。Mac未公证、Windows未签名，具体硬件仍需实测。"
-    },
-    {
-      "name": "packages/v1.2.1/Great.Powers_1.2.1_aarch64.AppImage",
-      "label": "1.2.1 · Linux ARM64 · Great.Powers_1.2.1_aarch64.AppImage",
-      "size": 148363784,
-      "sha256": "438813b3fbc642f2e47ca644030bddb2b5872d3423c4ed696df4bd2162e7c8e0",
-      "status": "CI构建通过；国内镜像完整文件大小及SHA256已校验。Mac未公证、Windows未签名，具体硬件仍需实测。"
-    },
-    {
-      "name": "packages/v1.2.1/Great.Powers_1.2.1_aarch64.dmg",
-      "label": "1.2.1 · macOS Apple Silicon · Great.Powers_1.2.1_aarch64.dmg",
-      "size": 71864688,
-      "sha256": "49eb33a38a3a3e3fa95bdad01e178beecefa28186fe6d37d53716d477d76890e",
-      "status": "CI构建通过；国内镜像完整文件大小及SHA256已校验。Mac未公证、Windows未签名，具体硬件仍需实测。"
-    },
-    {
-      "name": "packages/v1.2.1/Great.Powers_1.2.1_amd64.AppImage",
-      "label": "1.2.1 · Linux x64 · Great.Powers_1.2.1_amd64.AppImage",
-      "size": 150215160,
-      "sha256": "9613c3af85240091b4e9dec2cdf2a53eb15cacee653c6c9f1846223795d0032f",
-      "status": "CI构建通过；国内镜像完整文件大小及SHA256已校验。Mac未公证、Windows未签名，具体硬件仍需实测。"
-    },
-    {
-      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.2.1/Great.Powers_1.2.1_amd64.deb",
-      "label": "1.2.1 · Linux x64 · Great.Powers_1.2.1_amd64.deb",
-      "size": 71837366,
-      "sha256": "c3c75daabd385886585576760ed25b083bcbd0b3f04d4ecf00ed8f671c031f9e",
-      "status": "本版GitHub备用下载，国内镜像尚未完成。可先用国内免安装ZIP。CI构建通过，Mac未公证、Windows未签名。"
-    },
-    {
-      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.2.1/Great.Powers_1.2.1_arm64.deb",
-      "label": "1.2.1 · Linux ARM64 · Great.Powers_1.2.1_arm64.deb",
-      "size": 71879892,
-      "sha256": "b0a950af8a14f4c33dc6611e85542b32cc69f581c31f42e48c4ffc36d94b002f",
-      "status": "本版GitHub备用下载，国内镜像尚未完成。可先用国内免安装ZIP。CI构建通过，Mac未公证、Windows未签名。"
-    },
-    {
-      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.2.1/Great.Powers_1.2.1_x64-setup.exe",
-      "label": "1.2.1 · Windows x64 · Great.Powers_1.2.1_x64-setup.exe",
-      "size": 288025667,
-      "sha256": "aa7801ecbda29044b1333e108de3b6ac72e44a71532054089b87db2f06fa909e",
-      "status": "本版GitHub备用下载，国内镜像尚未完成。可先用国内免安装ZIP。CI构建通过，Mac未公证、Windows未签名。"
-    },
-    {
-      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.2.1/Great.Powers_1.2.1_x64.app.tar.gz",
-      "label": "1.2.1 · macOS Intel · Great.Powers_1.2.1_x64.app.tar.gz",
-      "size": 72387094,
-      "sha256": "21b6efe634cccbe1534340ec9ae469d43436047e7a46a4acffa03c44d444978e",
-      "status": "本版GitHub备用下载，国内镜像尚未完成。可先用国内免安装ZIP。CI构建通过，Mac未公证、Windows未签名。"
-    },
-    {
-      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v1.2.1/Great.Powers_1.2.1_x64.dmg",
-      "label": "1.2.1 · macOS Intel · Great.Powers_1.2.1_x64.dmg",
-      "size": 72459242,
-      "sha256": "f2a95f54a20a55396c402e8acce0ba0b33710b12ee7ecbc413173c9703656905",
-      "status": "本版GitHub备用下载，国内镜像尚未完成。可先用国内免安装ZIP。CI构建通过，Mac未公证、Windows未签名。"
+      "name": "packages/Great-Powers-RTS-v1.3.0.zip",
+      "label": "1.3.0 · 山海防线先行版 · 免安装单机 ZIP",
+      "size": 59069658,
+      "sha256": "a1eb4c262c3859a17a989df04ce9bcbcc72974238f289fcd7089e1aff094abc1",
+      "status": "完整解压后打开 PLAY.html；新群岛仅限单机，非正式2.0；桌面构建完成后另行列出"
     }
-  ],
-  "archiveTags": []
+  ]
 }

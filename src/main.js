@@ -40,6 +40,9 @@ import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
 import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
 import { COMBAT_STANCES, supportsCombatStance, combatStance } from './combat-stance.js';
+import { isLifeline, LIFELINE, lifelineSummary, harborPlan, freightRules } from './maritime-logistics.js';
+import { isIslandWatch, watchPanelHTML, watchSummary } from './island-watch.js';
+import { lifelinePanelHTML } from './lifeline-ui.js';
 
 const candidateMode=/^\/candidate(?:\/|$)/.test(location.pathname);
 const $ = selector => document.querySelector(selector);
@@ -47,6 +50,10 @@ const fmt = amount => Math.floor(amount).toLocaleString('zh-CN');
 const seconds = value => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
 const selectionStatus = entity => {
   const d = UNITS[entity.type];
+  if (isLifeline(state.game) && entity.owner===0 && entity.order?.type==='rearm' && d?.tags.includes('ship')) {
+    const home = state.game.getEntity(entity.order.homeId), plan = home?.hp>0&&home.owner===0 ? harborPlan(state.game,entity,home) : null;
+    return `生命 ${Math.ceil(entity.hp)} / ${entity.maxHp} · ${!plan?'正在改派港口':plan.waiting?`外海等待 · 第 ${plan.position} 顺位`:!state.game.hasPower(0)?'断电，整备暂停':state.game.players[0].credits<10?'资金不足，等待恢复':'返港整备'}${d.ammo?` · 弹药 ${entity.ammo} / ${d.ammo}`:''}`;
+  }
   if (entity.type === 'counterIntel' && entity.owner === 0) return `生命 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)} · ${COUNTER_INTEL_LABELS[state.game.counterIntelState(entity)] || '状态同步中'}`;
   if(entity.type==='nuclearSilo'){const p=state.game.players[entity.owner];return `生命 ${Math.ceil(entity.hp)} / ${entity.maxHp} · ${p.nuclearSpent?'本局已发射':p.nuclearPending?'发射准备中':`准备 ${Math.floor(p.nuclearCharge||0)} / 240 秒`}`;}
   if (entity.kind === 'unit' && isLunarRobot(state.game.map, entity.type)) return `机体 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)} · 电池 ${Math.ceil(entity.battery)}%${entity.order?.type === 'rearm' ? entity.battery <= 0 ? ' · 电池耗尽，等待供电救援' : ' · 返场充电／维修' : ''}${entity.stunUntil > state.game.time ? ' · 瘫痪' : ''}`;
@@ -407,7 +414,7 @@ function updateUI(force = false) {
   if(locked){state.drag=null;state.renderer.dragBox=null;}
   $('#save-btn').disabled = !g.running || !!g.online;
   if (g.victoryMode === 'control') $('#battle-objective').textContent = `信标积分 ${Math.floor(p.controlScore)} : ${Math.floor(g.players[1].controlScore)} / 240`;
-  if (g.challenge) { const s=challengeStatus(g);$('#battle-objective').textContent=`${s.definition.name} · 剩余 ${s.seconds} 秒 · ${g.challenge.intel?`情报 ${g.challenge.intel.completed} / ${s.definition.nodes.length} · `:g.challenge.beachhead?`驻守 ${Math.floor(g.challenge.beachhead.hold)} / ${s.definition.holdTime} 秒 · `:''}${s.definition.targetName} ${s.health}%`; }
+  if (g.challenge) { const s=challengeStatus(g);$('#battle-objective').textContent=`${s.definition.name} · 剩余 ${s.seconds} 秒 · ${isIslandWatch(g)?watchSummary(g).status+' · ':''}${isLifeline(g)?`海运 ${lifelineSummary(g).delivered} / ${freightRules(g).goal} · `:g.challenge.intel?`情报 ${g.challenge.intel.completed} / ${s.definition.nodes.length} · `:g.challenge.beachhead?`驻守 ${Math.floor(g.challenge.beachhead.hold)} / ${s.definition.holdTime} 秒 · `:''}${s.definition.targetName} ${s.health}%`; }
   const environmentStatus = $('#environment-status');
   environmentStatus.hidden = !g.map.future;
   if (g.map.future) { const weather = weatherState(g.map, g.time); environmentStatus.textContent = `${weather.phase === 'storm' ? '离子扰动' : weather.phase === 'warning' ? '扰动预警' : '通信稳定'} · ${Math.ceil(weather.remaining)} 秒`; }
@@ -452,6 +459,20 @@ function updateUI(force = false) {
 function updateSidebar(force = false) {
   const g = state.game; if (!g) return;
   const root = $('#sidebar-content');
+  if (isLifeline(g)) {
+    const s=lifelineSummary(g), key=`lifeline:${Math.ceil(g.time)}:${g.paused}:${g.players[0].credits<10}:${g.hasPower(0)}:${JSON.stringify(s.control)}:${s.ports.map(p=>p.id)}:${s.ships.map(u=>`${u.id}:${u.freight.blockedReason}:${u.freight.phase}`)}`;
+    if(!force&&(root.dataset.renderKey===key||root.contains(document.activeElement)&&document.activeElement.matches('select')))return;
+    root.dataset.renderKey=key;root.innerHTML=(isIslandWatch(g)?watchPanelHTML(g,icon):'')+lifelinePanelHTML(g,icon,state.renderer.freightRoutesVisible!==false);
+    root.querySelectorAll('[data-watch-focus]').forEach(button=>button.addEventListener('click',()=>{const e=g.getEntity(button.dataset.watchFocus);if(e)state.renderer.centerOn(e.x,e.y);}));
+    root.querySelectorAll('[data-freight]').forEach(input=>input.addEventListener('change',()=>{
+      const field=input.dataset.freight;
+      if(field==='routes')state.renderer.freightRoutesVisible=input.checked;
+      else g.configureFreight(0,{[field]:field==='paused'?input.checked:field==='homeId'?Number(input.value):input.value});
+      updateSidebar(true);
+    }));
+    root.querySelectorAll('[data-lifeline-focus]').forEach(button=>button.addEventListener('click',()=>{const e=g.getEntity(Number(button.dataset.lifelineFocus));if(e)state.renderer.centerOn(e.x,e.y);}));
+    refreshIcons();return;
+  }
   if (g.challenge) {
     const s=challengeStatus(g),key=`challenge:${g.challenge.id}:${s.seconds}:${s.health}:${s.remaining}:${g.challenge.wave}:${g.challenge.intel?.completed}:${Math.floor((g.challenge.intel?.progress||0)*5)}:${Math.floor((g.challenge.beachhead?.hold||0)*5)}:${s.activity}:${state.tab}`;
     if (!force&&root.dataset.renderKey===key) return;
@@ -725,7 +746,7 @@ function locateAttack() {
 function showHelp() {
   if (state.game?.running) state.game.paused = true;
   gameAudio.setPaused(true);
-  showModal('操作说明', `<p>${state.game?.challenge ? CHALLENGES[state.game.challenge.id].briefing+' 固定编队与整备资金，不开放生产和外部收入。' : VICTORY_MODES[state.game?.victoryMode || 'quick'].description+'即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。'}补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
+  showModal('操作说明', `<p>${state.game?.challenge ? CHALLENGES[state.game.challenge.id].briefing+(isLifeline(state.game)?' 固定护航编队，海运抵港才结算，应急空运不计任务交付。':' 固定编队与整备资金，不开放生产和外部收入。') : VICTORY_MODES[state.game?.victoryMode || 'quick'].description+'即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。'}补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
     <div class="keyline"><span>选择 / 框选部队</span><kbd>左键 / 拖动</kbd></div>
     <div class="keyline"><span>移动 / 攻击目标</span><kbd>右键</kbd></div>
     <div class="keyline"><span>攻击移动 / 停止</span><kbd>A / S</kbd></div>
@@ -768,7 +789,7 @@ function showChallenges(notice='',danger=false) {
   const history=recent.length?`<details class="challenge-history"><summary>最近挑战 · ${profile.results.length} 次尝试</summary><ol>${recent.map(r=>`<li><div><strong>${CHALLENGES[r.challengeId].name}</strong><small>${new Date(r.at).toLocaleString('zh-CN')}</small></div><span>${r.winner===0?`${r.stars} 星`:'未完成'}</span><time>${challengeTime(r.time)}</time></li>`).join('')}</ol></details>`:'';
   showModal('战术挑战',`${overview}<p id="challenge-profile-message" class="${error||danger?'challenge-warning':'challenge-notice'}" role="${error||danger?'alert':'status'}" ${error||notice?'':'hidden'}></p><div class="challenge-list">${Object.entries(CHALLENGES).map(([id,d])=>{
     const r=records[id];
-    return `<article class="challenge-choice"><img src="${modelThumbnail(equipmentModel('china',d.targetType,false),teamVisual(0).color)}" alt="${d.targetName}"><div><h3>${d.name}</h3><div class="challenge-personal-best">${challengeStars(r.bestStars)}<span>${error?'成绩暂不可读取':r.wins?`最快 ${challengeTime(r.fastestTime)} · ${r.wins} / ${r.attempts} 次通关`:`尚未通关 · ${r.attempts} 次尝试`}</span></div><p>${d.briefing}</p><p>${d.limit} 秒时限 · ${d.budget} 整备资金 · 固定编队</p><button class="primary-btn" data-modal="challenge-${id}">${icon('play')} ${r.attempts?'再次挑战':'开始挑战'}</button></div></article>`;
+    return `<article class="challenge-choice"><img src="${modelThumbnail(equipmentModel('china',d.targetType,false),teamVisual(0).color)}" alt="${d.targetName}"><div><h3>${d.name}</h3><div class="challenge-personal-best">${challengeStars(r.bestStars)}<span>${error?'成绩暂不可读取':r.wins?`最快 ${challengeTime(r.fastestTime)} · ${r.wins} / ${r.attempts} 次通关`:`尚未通关 · ${r.attempts} 次尝试`}</span></div><p>${d.briefing}</p><p>${d.limit} 秒时限 · ${d.budget} 起始整备资金 · ${d.freight?'海运护航 · 有限补发':'固定编队'}</p><button class="primary-btn" data-modal="challenge-${id}">${icon('play')} ${r.attempts?'再次挑战':'开始挑战'}</button></div></article>`;
   }).join('')}</div>${history}<p class="challenge-local-note">本机挑战成绩 · 不计普通荣誉 · 未与服务器同步</p>`, `<button class="secondary-btn" data-modal="resume">返回</button><button class="icon-btn" data-modal="challenge-export" title="导出挑战成绩备份" aria-label="导出挑战成绩备份" ${error?'disabled':''}>${icon('download')}</button><button class="icon-btn" data-modal="challenge-import" title="合并导入挑战成绩" aria-label="合并导入挑战成绩">${icon('upload')}</button>`,'独立任务');
   $('#challenge-profile-message').textContent=error||notice;
   $('#modal .modal-actions').classList.add('challenge-profile-actions');
@@ -821,6 +842,7 @@ function showResult(winner) {
   $('#menu-toast-container').replaceChildren();$('#toast-container').replaceChildren();
   const game=state.game,win=winner===0,draw=winner==='draw';
   if (game.challenge) {
+    updateUI(true);
     $('#battle-status').textContent=win?'挑战完成':'挑战未完成';
     showChallengeResult(game,win);state.keys.clear();return;
   }
@@ -1169,7 +1191,7 @@ const onlineClient=new OnlineClient({
   onInterrupted:()=>{if(state.game?.online){state.game.running=false;showModal('战局已取消','<p>服务器维护或房间已过期，本局未记录胜负。</p>','<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button>');}}
 });
 drawFactionPicker();
-$('#map-select').innerHTML = Object.entries(MAPS).filter(([,map])=>!candidateMode||map.maxPlayers===6).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
+$('#map-select').innerHTML = Object.entries(MAPS).filter(([,map])=>!map.missionOnly&&(!candidateMode||map.maxPlayers===6)).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
 $('#map-select').value = state.mapId;
 const updateNuclearOption=()=>{const enabled=$('#map-select').value==='strategic';$('#nuclear-option').hidden=!enabled;if(!enabled)$('#nuclear-enabled').checked=false;};
 $('#map-select').addEventListener('change',updateNuclearOption);updateNuclearOption();

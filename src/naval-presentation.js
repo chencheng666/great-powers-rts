@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { craftedMaterial, bodyLoft, mergeParts, roundedPart } from './model-craft.js';
 import { UNITS } from './data.js';
+import { islandDistance } from './island-map.js';
 
 const HULLS = {
   patrol: [-3.75, 4.1, 2.2, -.3, .6, .74],
@@ -76,7 +77,7 @@ export function animateLandingCraft(entry,unit,game,dt) {
   if(unit.type!=='landing')return;
   const ramp=entry.landingRamp??(entry.landingRamp=entry.model.getObjectByName('landing_ramp'));if(!ramp)return;
   const water=game.map.water,forward=Math.cos(entry.heading??unit.angle??0);
-  const nearShore=water&&(forward>.55?Math.abs(unit.x-water.x2)<=160:forward<-.55&&Math.abs(unit.x-water.x1)<=160);
+  const nearShore=game.map.islands?Math.abs(islandDistance(game.map,unit.x,unit.y))<=190:water&&(forward>.55?Math.abs(unit.x-water.x2)<=160:forward<-.55&&Math.abs(unit.x-water.x1)<=160);
   const stopped=!['move','attackMove','patrol'].includes(unit.order?.type)&&game.time-(unit.lastMovedAt??-10)>=.35;
   const target=nearShore&&stopped?1:0,previous=entry.rampDeployment??0;
   entry.rampDeployment=previous+(target-previous)*(1-Math.exp(-5*Math.max(0,dt)));

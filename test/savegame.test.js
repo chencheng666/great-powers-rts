@@ -10,8 +10,8 @@ const memoryStorage = () => {
   return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
 };
 
-test('六张地图完整保存双方资源、队列、迷雾、AI 和时间，不重复部署基地', () => {
-  for (const mapId of Object.keys(MAPS)) {
+test('常规地图完整保存双方资源、队列、迷雾、AI 和时间，不重复部署基地', () => {
+  for (const mapId of Object.keys(MAPS).filter(id=>!MAPS[id].missionOnly)) {
     const g = new Game('china', 'nato', {}, { mapId, difficulty: 'veteran', victoryMode: 'control' });
     g.startBuild(0, 'power'); g.queueUnit(0, 'tank'); g.queueUnit(0, 'rifle');
     advance(g, 4);

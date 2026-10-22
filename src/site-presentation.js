@@ -7,9 +7,17 @@ export function facilityRotation(building, future = false) {
   return (building.type === 'armory' ? 0 : Math.PI / 2) - angle;
 }
 
-export function sceneryClearance(point, buildings, units = [], foliage = false) {
+export function sceneryClearance(point, buildings, units = [], foliage = false, worldWidth = null) {
   const radius = foliage ? Math.max(12, (point.width || point.scale * 4) * .28) : (point.scale || 16) * .8;
-  if (buildings.some(b => b.hp > 0 && Math.hypot(b.x - point.x, b.y - point.z) < b.size * .95 + radius)) return true;
+  if (buildings.some(b => {
+    if(b.hp<=0)return false;
+    if(b.type==='dock'){
+      const scale=b.size/7.2,angle=b.harborAngle??(worldWidth?(b.x<worldWidth/2?0:Math.PI):(b.owner?Math.PI:0)),dx=point.x-b.x,dz=point.z-b.y;
+      const x=dx*Math.cos(angle)+dz*Math.sin(angle),z=-dx*Math.sin(angle)+dz*Math.cos(angle);
+      if(x>=-3.6*scale-radius&&x<=12.4*scale+radius&&Math.abs(z)<=10.3*scale+radius)return true;
+    }
+    return Math.hypot(b.x-point.x,b.y-point.z)<b.size*.95+radius;
+  })) return true;
   return units.some(u => u.hp > 0 && !u.embarkedIn && !u.airborne &&
     Math.hypot(u.x - point.x, u.y - point.z) < unitRadius(u) + radius + 8);
 }

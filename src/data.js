@@ -1,4 +1,5 @@
 import {sixPlayerMap} from './six-player-map.js';
+import { islandWatchMap } from './island-map.js';
 import { STRATEGIC_UNITS, strategicMap } from './strategic-data.js';
 export const WORLD = { width: 2240, height: 1440, cell: 40, fog: 80 };
 export const CORE_BUILDINGS = ['hq', 'refinery', 'barracks', 'factory', 'armory', 'airfield', 'dock'];
@@ -92,7 +93,7 @@ Object.assign(UNITS, STRATEGIC_UNITS);
 BUILDINGS.nuclearSilo={name:'战略威慑发射井',cost:2400,time:70,hp:950,power:-100,size:90,icon:'radiation',requires:'lab',map:'strategic',nuclear:true,desc:'仅开局启用核威慑规则可造；240 秒准备，4500 资金，8 秒可中止准备与20 秒公开飞行预警，每方每局一次实际发射。需雷达、实验室和供电；准备期摧毁设施或断网可取消，投入资金不退。区域反导、分散和疏散可反制，友军亦受损。'};
 BUILD_ORDER.push('nuclearSilo');
 UNIT_ORDER.push('ewPlane', ...Object.keys(STRATEGIC_UNITS).filter(type => STRATEGIC_UNITS[type].producer));
-export const supportsMap = (required, mapId) => !required || required === mapId || required === 'ocean' && mapId === 'archipelago';
+export const supportsMap = (required, mapId) => !required || required === mapId || required === 'ocean' && ['archipelago','islandwatch'].includes(mapId);
 UNITS.carrier.capacity = 3;
 UNITS.carrier.desc = '可驻泊三架自行生产的兼容舰载机；停航着舰、维修补弹、弹射起飞。编入真实舰载机后不再同时出动自带攻击编组，需反潜护卫。';
 
@@ -105,6 +106,7 @@ export const ORE_LAYOUT = [
 ];
 
 export const MAPS = {
+  islandwatch: islandWatchMap(),
   strategic: strategicMap(),
   sixfront: sixPlayerMap(),
   archipelago: {

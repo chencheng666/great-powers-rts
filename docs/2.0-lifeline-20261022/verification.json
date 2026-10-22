@@ -1,0 +1,49 @@
+{
+  "checkedAt": "2026-10-22T04:12:32.518Z",
+  "status": "local-development",
+  "releaseVersion": "1.2.1",
+  "productionChanged": false,
+  "githubPushed": false,
+  "tests": {
+    "total": 459,
+    "passed": 459,
+    "added": 13
+  },
+  "build": {
+    "passed": true,
+    "knownWarning": "主分包超过500kB，尚未完成代码拆分与大军团GPU性能验收"
+  },
+  "browser": {
+    "normalMenuCompletions": 2,
+    "firstStars": 3,
+    "secondStars": 2,
+    "secondFinalHUD": "2700 / 2700",
+    "manipulatedObjectiveOrMoney": false,
+    "viewports": [
+      {
+        "width": 1280,
+        "height": 720,
+        "horizontalOverflow": false
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "horizontalOverflow": false
+      }
+    ],
+    "nonBlankCanvas": {
+      "width": 2376,
+      "height": 1412,
+      "sampledLitPixels": 51745,
+      "distinctRGB": 5177
+    },
+    "emptyFreighterVerified": true,
+    "harborSceneryClearanceVerified": true
+  },
+  "limitations": [
+    "复用无桥海图，尚无独立远海群岛地形",
+    "新规则仅单机试航，不对外开放双人或六方",
+    "120/240单位真实GPU基线和国产硬件尚待验收",
+    "其余八大战区的新任务尚未完成"
+  ]
+}

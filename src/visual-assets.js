@@ -43,6 +43,9 @@ const thumbnails = new Map();
 let portraitRenderer;
 
 export function weatherMaterial(material, domain = 'land') {
+  if (material.name.startsWith('货箱')) {
+    const result=material.clone();Object.assign(result,surfaceMaps('coating'));result.normalScale.setScalar(.2);result.roughness=.76;result.metalness=.24;return result;
+  }
   if (material.name === '玻璃') return new THREE.MeshPhysicalMaterial({ name: '玻璃', color: '#294953', roughness: .14, metalness: .03, transparent: true, opacity: .82, depthWrite: false, clearcoat: 1, clearcoatRoughness: .08, envMapIntensity: 1.2, map: material.map, normalMap: material.normalMap });
   if (!['装甲钢', '浅色金属', '深色钢', '航空涂层', '建筑面板', '混凝土', '屋顶', '岩石', '矿石', '矿晶', '航天复合外墙', '航天浅色合金', '热防护屋面', '月表陶瓷装甲', '机器人钛合金', '橡胶', '作战服'].includes(material.name)) return material;
   const result = material.clone(), stone = ['岩石', '矿石', '矿晶'].includes(material.name);
@@ -116,6 +119,7 @@ export function prepareVisualAssets() {
           if (leg) { limb = `leg_${leg[1]}`; pivot = new THREE.Vector3().setFromMatrixPosition(parent.matrixWorld); break; }
           if (/^rotor_\d+_/.test(parent.name)) { limb = parent.name; pivot = new THREE.Vector3().setFromMatrixPosition(parent.matrixWorld); break; }
         }
+        if(name==='containerShip'&&/^(标准集装箱|箱壁加强筋|箱门锁杆)/.test(mesh.name))limb='cargo_load';
         const key = `${material.uuid}:${articulated}:${limb}`;
         const domain = ['patrol', 'frigate', 'destroyer', 'destroyer_china', 'carrier', 'submarine', 'landing', 'containerShip'].includes(name) ? 'naval' : name.startsWith('future_') || name.startsWith('robot_') ? 'space' : 'land';
         if (!batches.has(key)) batches.set(key, { material: weatherMaterial(material, domain), geometries: [], articulated, limb, pivot });
@@ -127,7 +131,7 @@ export function prepareVisualAssets() {
       for (const { material, geometries, articulated, limb, pivot } of batches.values()) {
         let parent = articulated ? weapon : template;
         if (limb) {
-          if (!legs.has(limb)) { const joint = new THREE.Group(); joint.name = limb; if (pivot) joint.position.copy(pivot); else if (limb !== 'barrel') joint.position.set(-.05, .88, limb === 'leg_left' ? -.15 : .15); (limb === 'barrel' ? weapon : template).add(joint); legs.set(limb, joint); }
+          if (!legs.has(limb)) { const joint = new THREE.Group(); joint.name = limb; if (pivot) joint.position.copy(pivot); else if (!['barrel','cargo_load'].includes(limb)) joint.position.set(-.05, .88, limb === 'leg_left' ? -.15 : .15); (limb === 'barrel' ? weapon : template).add(joint); legs.set(limb, joint); }
           parent = legs.get(limb);
         }
         const geometry = mergeGeometries(geometries, false);

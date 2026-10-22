@@ -7,6 +7,9 @@ import { battleMetric } from './battle-report.js';
 import { DETERRENCE } from './deterrence-rules.js';
 import { SUPPLY, ammoStockCost } from './supply-rules.js';
 import { weaponsHeld } from './combat-stance.js';
+import { isLifeline, harborPlan } from './maritime-logistics.js';
+import { legalIslandLanding, islandIndex } from './island-map.js';
+import { watchDepot } from './island-watch.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const alive = u => u.hp > 0 && !u.embarkedIn;
@@ -34,6 +37,9 @@ export const modernCombat = {
     if (!this.serviceReady(u) || isLunarRobot(this.map, u.type) || UNITS[u.type].tags.some(t => ['air', 'ship', 'logistics'].includes(t))) return false;
     const infantry = UNITS[u.type].tags.includes('infantry');
     home ||= this.ownedBuildings(u.owner).find(b => (infantry ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type)) && distance(b, u) <= b.size * .55 + 40);
+    const depot=watchDepot(this,u.owner);
+    if(!home && depot && distance(depot,u)<=depot.size*.55+40)home=depot;
+    if(home?.id==='island-power'&&!depot)return false;
     if (!home || home.hp <= 0 || home.owner !== u.owner || distance(home, u) > home.size * .55 + 40) return false;
     const p = this.players[u.owner], repaired = Math.min((infantry ? 12 : 22) * dt, u.maxHp - u.hp, p.credits / .3);
     u.hp += repaired; p.credits = Math.max(0, p.credits - repaired * .3); battleMetric(this, u.owner, 'repairHP', repaired);
@@ -47,11 +53,16 @@ export const modernCombat = {
   refillStationAmmo(u, dt) {
     const d = UNITS[u.type];
     if (!d.ammo || isLunarRobot(this.map, u.type) || u.ammo >= d.ammo || !this.serviceReady(u)) return;
+    if (isLifeline(this) && d.tags.includes('ship')) {
+      const home = this.getEntity(u.order?.homeId), plan = home?.owner === u.owner && home.hp > 0 && home.type === 'dock' ? harborPlan(this,u,home) : null;
+      if (!plan?.assigned || plan.waiting || distance(u,plan) > 95) return;
+    }
     const interval = d.rearmTime / d.ammo;
     u.rearmProgress = Math.min(interval * 2, u.rearmProgress + dt);
     const cost = d.ammoCost ?? 10;
     while (u.rearmProgress + 1e-9 >= interval && u.ammo < d.ammo && this.players[u.owner].credits >= cost) {
       this.players[u.owner].credits -= cost; u.ammo++; u.rearmProgress = Math.max(0, u.rearmProgress - interval);
+      if (d.tags.includes('ship')) battleMetric(this, u.owner, 'portAmmoCost', cost);
     }
   },
 
@@ -91,6 +102,7 @@ export const modernCombat = {
   },
 
   shipBerth(u, home) {
+    if (isLifeline(this)) return harborPlan(this,u,home);
     const peers = this.activeUnits(u.owner).filter(v => UNITS[v.type].tags.includes('ship') && v.order?.type === 'rearm' && (!v.order.homeId || v.order.homeId === home.id))
       .sort((a, b) => a.id - b.id);
     const slot = Math.max(0, peers.findIndex(v => v.id === u.id));
@@ -102,10 +114,15 @@ export const modernCombat = {
     if (u.hp >= u.maxHp || this.time - (u.lastDamageAt ?? -10) <= 3 || this.time - (u.lastMovedAt ?? -10) < .5 || !this.hasPower(u.owner)) return;
     home ||= this.ownedBuildings(u.owner, 'dock').find(b => distance(u, this.navalGoal(b.x, b.y, unitRadius(u) + 10)) <= 115);
     if (!home || home.owner !== u.owner || home.type !== 'dock' || home.hp <= 0) return;
+    if (isLifeline(this)) {
+      const plan = harborPlan(this,u,home);
+      if (!plan.assigned || plan.waiting || distance(u,plan) > 95) return;
+    }
     // 港口泊位沿岸展开，维修不能在远海或持续交火中发生。
     if (distance(u, this.shipBerth(u, home)) > 95 && distance(u, this.navalGoal(home.x, home.y, unitRadius(u) + 10)) > 115) return;
     const p = this.players[u.owner], repair = Math.min(30 * dt, u.maxHp - u.hp, p.credits / .35);
     u.hp += repair; p.credits = Math.max(0, p.credits - repair * .35); battleMetric(this, u.owner, 'repairHP', repair);
+    battleMetric(this,u.owner,'portRepairCost',repair*.35);
     if (repair > 0 && this.time >= (u.serviceFXAt || 0)) {
       u.serviceFXAt = this.time + .7;
       this.effects.push({ type: 'shot', style: 'repair', x: home.x, y: home.y, toX: u.x, toY: u.y, targetType: u.type, owner: u.owner, age: 0, duration: .6 });
@@ -260,12 +277,14 @@ export const modernCombat = {
       const price = d.ammo && u.ammo < d.ammo ? d.ammoCost ?? 10 : 1;
       if (truck && this.players[u.owner].credits >= price) { u.path = []; return; }
     }
-    const homes = this.ownedBuildings(u.owner).filter(b => naval ? b.type === 'dock' : d.tags.includes('infantry') ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type));
+    let homes = this.ownedBuildings(u.owner).filter(b => naval ? b.type === 'dock' : d.tags.includes('infantry') ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type));
+    if(!naval && this.map.islands){const depot=watchDepot(this,u.owner);if(depot)homes.push(depot);homes=homes.filter(b=>islandIndex(this.map,b)===islandIndex(this.map,u));}
     const home = homes.find(b => b.id === u.order?.homeId) || homes.sort((a, b) => distance(a, u) - distance(b, u))[0];
     if (naval && u.order?.type === 'rearm' && home) u.order.homeId = home.id;
     if (!home) return;
     const berth = naval ? this.shipBerth(u, home) : home;
     if (distance(u, berth) > (naval ? 75 : home.size * .55 + 40)) { u.rearmProgress = 0; this.moveUnit(u, berth, dt, naval ? 48 : home.size * .55 + 24); return; }
+    if (naval && berth.waiting) { u.rearmProgress = 0; return; }
     if (!this.hasPower(u.owner)) return;
     if (naval) this.serviceShip(u, dt, home);
     else this.serviceGroundUnit(u, dt, home);
@@ -293,7 +312,8 @@ export const modernCombat = {
   },
 
   updateSupply(u, dt) {
-    const p = this.players[u.owner], home = this.ownedBuildings(u.owner, 'factory').sort((a, b) => distance(a, u) - distance(b, u))[0];
+    const p = this.players[u.owner],depot=watchDepot(this,u.owner);
+    const home = [...this.ownedBuildings(u.owner,'factory'),...(depot?[depot]:[])].filter(b=>!this.map.islands||islandIndex(this.map,b)===islandIndex(this.map,u)).sort((a, b) => distance(a, u) - distance(b, u))[0];
     const manualMove = ['move', 'attackMove'].includes(u.order?.type);
     if (u.stock < 8 && home && !manualMove) {
       if (u.order?.type !== 'restock') { u.resumeOrder = u.order; u.order = { type: 'restock' }; }
@@ -428,11 +448,16 @@ export const modernCombat = {
     this.fogTimer = 0; this.events.selection?.();
   },
 
-  unloadTransport(transport, emergency = false) {
+  unloadTransport(transport, emergency = false, step = false) {
     if (!transport || !UNITS[transport.type]?.capacity || !transport.passengers) return 0;
     if (transport.type === 'carrier') return this.launchDeckAircraft(transport, emergency);
     if (!emergency && (!this.transportGrounded(transport) || ['move', 'attackMove', 'patrol'].includes(transport.order?.type))) {
       if (transport.owner === 0) this.events.notice?.('运输单位需要在安全位置停驻后卸载');
+      return 0;
+    }
+    if(this.map.islands && transport.type==='landing' && !emergency && !step){
+      transport.unloadQueue=!transport.unloadQueue;
+      this.events.notice?.(transport.unloadQueue?'登陆卸载已排队，若无合法沙滩请取消后重新靠岸':'已取消后续卸载，未下船部队仍在舰内');
       return 0;
     }
     let unloaded = 0;
@@ -443,16 +468,18 @@ export const modernCombat = {
       for (let n = 0; n < 180; n++) {
         const angle = n * 2.399963, reach = 50 + Math.floor(n / 12) * 12;
         const candidate = { x: transport.x + Math.cos(angle) * reach, y: transport.y + Math.sin(angle) * reach };
-        if (this.canOccupyUnit(passenger, candidate) && !this.units.some(v => alive(v) && unitLayer(v) === 'ground' && distance(v, candidate) < unitRadius(v) + unitRadius(passenger) + 4)) { spot = candidate; break; }
+        if ((!this.map.islands || transport.type!=='landing' || legalIslandLanding(this.map,candidate)) && this.canOccupyUnit(passenger, candidate) && !this.units.some(v => alive(v) && unitLayer(v) === 'ground' && distance(v, candidate) < unitRadius(v) + unitRadius(passenger) + 4)) { spot = candidate; break; }
       }
       if (!spot && !emergency) continue;
       passenger.embarkedIn = null;
       if (spot) { passenger.x = spot.x; passenger.y = spot.y; if (emergency) { passenger.hp *= .5; passenger.lastDamageAt = this.time; } unloaded++; }
       else this.damage(passenger, passenger.maxHp * 3, transport.lastAttacker ?? null);
       transport.passengers = transport.passengers.filter(value => value !== id);
+      if(this.map.islands && !emergency)break;
     }
     if (unloaded) { this.fogTimer = 0; this.events.selection?.(); }
-    if (!emergency && transport.owner === 0) this.events.notice?.(unloaded ? `${unloaded} 个作战单位已卸载` : '周围没有安全的陆地卸载位置，请靠岸或移至空地');
+    if (!emergency && transport.owner === 0 && (!step || !unloaded && !transport.unloadBlocked)) this.events.notice?.(unloaded ? `${unloaded} 个作战单位已卸载` : '周围没有安全的陆地卸载位置，请靠近标记沙滩或取消卸载');
+    if(step)transport.unloadBlocked=!unloaded;
     return unloaded;
   },
 

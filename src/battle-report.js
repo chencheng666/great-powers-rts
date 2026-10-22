@@ -3,7 +3,8 @@ import { createLossBreakdown,recordUnitLoss,validateLossBreakdown,copyLossBreakd
 
 export const REPORT_FIELDS = ['damageDealt', 'damageTaken', 'kills', 'losses', 'buildingsDestroyed', 'buildingsLost', 'unitsProduced', 'repairHP', 'resupplies', 'oilSeconds', 'beaconSeconds'];
 export const REPORT_EVENT_LIMIT = 96;
-const missionNames = { corridor: '补给走廊', airshield: '低空防线',recon:'静默回传',beachhead:'抢滩接力' };
+const OPTIONAL_METRICS = ['portRepairCost','portAmmoCost'];
+const missionNames = { corridor: '补给走廊', airshield: '低空防线',recon:'静默回传',beachhead:'抢滩接力',lifeline:'深蓝生命线',islandwatch:'列岛守望' };
 const resourceNames = { oil:'油井',beacon:'雷达信标',depot:'补给仓库' };
 export function recordBattleEvent(game,event) {
   if (!game.running || !game.battleStats) return;
@@ -13,10 +14,10 @@ export function recordBattleEvent(game,event) {
   if (overflow) game.battleStats.events.splice(0,overflow);
 }
 export function createBattleStats(since = 0,count = 2) {
-  return { since, complete: since === 0, sides: Array.from({length:count},() => Object.fromEntries(REPORT_FIELDS.map(key => [key, 0]))), events: [],unitLosses:createLossBreakdown(since,count) };
+  return { since, complete: since === 0, sides: Array.from({length:count},() => Object.fromEntries([...REPORT_FIELDS,...OPTIONAL_METRICS].map(key => [key, 0]))), events: [],unitLosses:createLossBreakdown(since,count) };
 }
 export function battleMetric(game, side, key, amount) {
-  if (game.running && game.battleStats?.sides[side] && Number.isFinite(amount) && amount > 0) game.battleStats.sides[side][key] += amount;
+  if (game.running && game.battleStats?.sides[side] && Number.isFinite(amount) && amount > 0) game.battleStats.sides[side][key] = (game.battleStats.sides[side][key] || 0) + amount;
 }
 export function recordBattleDamage(game, target, amount, attacker) {
   const actual = Math.min(target.hp, amount);
@@ -36,7 +37,7 @@ export function battleReport(game) {
 }
 export function validateBattleStats(stats, time,count=2) {
   return stats && Number.isFinite(stats.since) && stats.since >= 0 && stats.since <= time && typeof stats.complete === 'boolean' &&
-    Array.isArray(stats.sides) && stats.sides.length === count && stats.sides.every(side => REPORT_FIELDS.every(key => Number.isFinite(side[key]) && side[key] >= 0)) &&
+    Array.isArray(stats.sides) && stats.sides.length === count && stats.sides.every(side => REPORT_FIELDS.every(key => Number.isFinite(side[key]) && side[key] >= 0) && OPTIONAL_METRICS.every(key => side[key] === undefined || Number.isFinite(side[key]) && side[key] >= 0)) &&
     (stats.omittedEvents===undefined||Number.isSafeInteger(stats.omittedEvents)&&stats.omittedEvents>=0) &&
     (stats.unitLosses===undefined||validateLossBreakdown(stats.unitLosses,stats.since,time,count)) &&
     Array.isArray(stats.events) && stats.events.length <= REPORT_EVENT_LIMIT && stats.events.every(e => Number.isFinite(e.time) && e.time >= stats.since && e.time <= time && Number.isInteger(e.owner)&&e.owner>=0&&e.owner<count &&
@@ -55,7 +56,8 @@ export function reportEventLabel(event) {
 export function battleReportHTML(game) {
   const report = battleReport(game); if (!report) return '';
   const rows = [['击毁部队', 'kills'], ['战损部队', 'losses'], ['摧毁建筑', 'buildingsDestroyed'], ['建筑损失', 'buildingsLost'], ['有效伤害', 'damageDealt'], ['承受伤害', 'damageTaken'], ['新造部队', 'unitsProduced'], ['修复生命', 'repairHP'], ['完成整备', 'resupplies'], ['物资交付', 'delivered'], ['运输损失', 'intercepted'], ['油井控制·分钟', 'oilSeconds'], ['信标控制·分钟', 'beaconSeconds']];
-  const value = (side, key) => key.endsWith('Seconds') ? (side[key] / 60).toFixed(1) : Math.round(side[key]).toLocaleString('zh-CN');
+  rows.push(['港口维修支出','portRepairCost'],['舰艇补弹支出','portAmmoCost']);
+  const value = (side, key) => key.endsWith('Seconds') ? ((side[key] || 0) / 60).toFixed(1) : Math.round(side[key] || 0).toLocaleString('zh-CN');
   const own = report.sides[0];
   const advice = own.intercepted > own.delivered * .25 ? '后勤损失偏高，下次尝试为运输线路配置防空与海军护航。' : own.losses > own.kills && own.resupplies < 2 ? '交换战损偏高，可尝试保留补给车辆，并将重伤、低弹药部队及时撤回整备。' : own.oilSeconds + own.beaconSeconds < 60 && game.time > 180 ? '中立设施控制时间较短，可以用工程师与护卫编队增加资源和据点收益。' : '结合反制配兵、侦察和整备节奏，再比较下一场的战损与资源控制。';
   const events = report.events.map(e => `<li data-event-kind="${category(e.kind)}"><time>${Math.floor(e.time / 60).toString().padStart(2, '0')}:${Math.floor(e.time % 60).toString().padStart(2, '0')}</time><span>${reportEventLabel(e)}</span></li>`).join('');

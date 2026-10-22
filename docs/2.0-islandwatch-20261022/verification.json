@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-22",
+  "status": "本地先行内容，统一发布待验收",
+  "sourceVersion": "1.2.1",
+  "automatedTests": {"passed": 468, "failed": 0, "log": "releases/islandwatch-tests.txt"},
+  "productionBuild": {"passed": true, "log": "releases/islandwatch-build.txt", "warning": "主入口仍有大于 500 KB 的分块提示，未作全部硬件帧率保证"},
+  "playableSimulation": {"seeds": [1, 2, 3], "lanes": ["coastal", "direct"], "restoredAfterFirstDelivery": true, "normalCommandsOnly": true},
+  "browser": {
+    "origin": "http://127.0.0.1:5182/",
+    "menuLaunch": true,
+    "nativeMouseSelectionAndLandingOrder": true,
+    "keyboardUnload": true,
+    "threeNodesCaptured": true,
+    "freighterDispatched": true,
+    "scriptErrorsAtConnectedStage": [],
+    "finalWin": "待回收浏览器控制后核验，不把已出发等同于抵港或通关",
+    "screenshots": ["03-unloaded.png", "04-connected.png"]
+  },
+  "offlinePackage": {
+    "path": "releases/大国崛起-离线试玩版-20261022125152.zip",
+    "bytes": 59069650,
+    "sha256": "11e85abfb69b3376a3ccb4bebf9b1db41d46aed0c227061d23f9872a8e6b4c23",
+    "archiveIntegrity": true,
+    "runtimeValidation": "待浏览器核验，非正式发行包"
+  },
+  "release": {"githubPushed": false, "publicDownloadUpdated": false, "serverDeployed": false, "blocker": "腾讯云微信 MFA 待用户完成；保留现有公开 1.2.1，不发布未验收内容"},
+  "communityAssets": {"policy": "优先复用原作者授权清楚的模型，记录署名、许可、改动和性能预算", "importedExternalModelsThisIteration": 0, "candidateList": "../2.0社区资产复用清单-20261022.md"}
+}

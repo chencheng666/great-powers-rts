@@ -1,0 +1,14 @@
+{
+  "version": "1.3.0",
+  "date": "2026-10-22",
+  "status": "统一发布进行中",
+  "tests": {"passed": 468, "failed": 0, "log": "releases/v130-tests.txt"},
+  "productionBuild": true,
+  "browserMission": {"winner": 0, "time": 233.8863, "stars": 2, "receipts": [1,2], "hold": 20, "scriptErrors": [], "glError": 0, "sampledColors": 7099, "resultSaved": true},
+  "offline": {"bytes": 59069658, "sha256": "a1eb4c262c3859a17a989df04ce9bcbcc72974238f289fcd7089e1aff094abc1", "zipIntegrity": true, "runtime": "直接以file协议打开并启动列岛守望", "sampledColors":1686,"glError":0,"scriptErrors":[],"externalRequests":[],"desktopWidths":[1280,1920],"horizontalOverflow":false},
+  "github": {"pushed": false, "release": false, "desktopBuilds": "待触发"},
+  "domestic": {"deployed": false, "origin": "https://www.daguojueqi.site/", "fullZipDownloadVerified": false, "twoPlayer": "待验收", "sixPlayer": "待验收"},
+  "newMapOnlineSupported": false,
+  "official20": false,
+  "externalModelsImportedThisIteration": 0
+}

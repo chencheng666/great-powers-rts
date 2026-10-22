@@ -111,7 +111,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
         if (msg.type === 'create') {
           if (r) throw new Error('请先退出当前房间');
           if (rooms.size >= 20) throw new Error('房间已满，请稍后重试');
-          if (maxPlayers===6&&msg.mapId!=='sixfront'||maxPlayers===2&&MAPS[msg.mapId]?.maxPlayers===6|| !Object.hasOwn(MAPS,msg.mapId) || !Object.hasOwn(FACTIONS,msg.faction) || !Object.hasOwn(VICTORY_MODES,msg.victoryMode)) throw new Error('作战配置无效');
+          if (MAPS[msg.mapId]?.missionOnly||maxPlayers===6&&msg.mapId!=='sixfront'||maxPlayers===2&&MAPS[msg.mapId]?.maxPlayers===6|| !Object.hasOwn(MAPS,msg.mapId) || !Object.hasOwn(FACTIONS,msg.faction) || !Object.hasOwn(VICTORY_MODES,msg.victoryMode)) throw new Error('作战配置无效');
           if(msg.nuclearEnabled===true&&(maxPlayers!==2||msg.mapId!=='strategic'))throw new Error('核威慑仅限战略纵深双人战区');
           let code; do { code=String(randomInt(100000,1000000)); } while (rooms.has(code));
           r={ code, host:0, config:{ mapId:msg.mapId, victoryMode:msg.victoryMode, battlefieldScale:maxPlayers===6||MAPS[msg.mapId].fixedScale?1:1.5,...(maxPlayers===6?{playerCount:6}: {}) }, members:Array.from({length:maxPlayers},(_,seat)=>seat===0?{user,faction:msg.faction,ready:false,seat,controlType:'human'}:null), expires:now+600000, memory:Array.from({length:maxPlayers},()=>new Map()),spectators:new Map(),allowSpectators:maxPlayers===6&&msg.allowSpectators===true,disconnects:0,deadlines:new Map() };

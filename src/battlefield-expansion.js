@@ -17,6 +17,7 @@ export const RESOURCE_TYPES = {
 };
 
 export function resourceLayout(map) {
+  if(map.resources)return map.resources.map(site=>({...site,kind:'resource',owner:null,amount:RESOURCE_TYPES[site.type].amount,max:RESOURCE_TYPES[site.type].amount,progress:0}));
   if(map.maxPlayers===6)return sixResources();
   if(map.strategic)return [['cache',1280,1120],['salvage',2240,2640],['depot',2520,1360],['depot',2520,2800],['cache',3040,2080]].flatMap(([type,x,y],i)=>[0,1].map(side=>({id:`resource-strategic-${i}-${side}`,kind:'resource',type,x:side?6400-x:x,y,owner:null,amount:RESOURCE_TYPES[type].amount,max:RESOURCE_TYPES[type].amount,progress:0})));
   const world=map.world||WORLD,w=world.width,h=world.height;

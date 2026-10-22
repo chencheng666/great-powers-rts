@@ -13,7 +13,7 @@ export const emptyChallengeProfile = () => ({ version: 1, results: [] });
 function validateResult(result) {
   if (!result || typeof result !== 'object' || Array.isArray(result) || Object.keys(result).some(key=>!fields.includes(key))) invalid();
   const d = Object.hasOwn(CHALLENGES,result.challengeId) && CHALLENGES[result.challengeId];
-  if (!d || !validBattleId(result.battleId) || ![0,1].includes(result.winner) || !integer(result.stars) || !integer(result.losses) || result.losses > d.force.length ||
+  if (!d || !validBattleId(result.battleId) || ![0,1].includes(result.winner) || !integer(result.stars) || !integer(result.losses) || result.losses > d.force.length + (d.freight ? 5 : 0) ||
     !Number.isFinite(result.health) || result.health < 0 || result.health > 1 || !Number.isFinite(result.time) || result.time < 0 || result.time > d.limit + .051 || !integer(result.at) || result.at > 8.64e15) invalid();
   const stars = result.winner === 0 ? 1 + Number(result.health >= .7) + Number(result.losses <= 1) : 0;
   const earliest = d.earliestWin ?? (result.challengeId === 'corridor' ? 45 : d.waves.at(-1).at);

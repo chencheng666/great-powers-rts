@@ -24,6 +24,9 @@ import { deterrenceCombat } from './deterrence.js';
 import { CHALLENGES, challengeCombat } from './challenges.js';
 import { createLossBreakdown } from './loss-breakdown.js';
 import { runwayAircraft, airfieldApron } from './airfield-rules.js';
+import { islandDistance } from './island-map.js';
+import { navalPath, nearestSeaPoint } from './island-navigation.js';
+import { updateIslandCapture } from './island-watch.js';
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -54,7 +57,7 @@ export class Game {
     this.battleId = createBattleId();
     this.victoryMode = ['annihilation', 'control'].includes(options.victoryMode) ? options.victoryMode : 'quick';
     this.difficulty = AI_DIFFICULTIES[options.difficulty] || AI_DIFFICULTIES.standard;
-    this.mapId = MAPS[options.mapId] ? options.mapId : 'valley';
+    this.mapId = MAPS[options.mapId] && (!MAPS[options.mapId].missionOnly || !this.multiplayer && CHALLENGES[options.challengeId]?.mapId === options.mapId) ? options.mapId : 'valley';
     this.battlefieldScale = !MAPS[this.mapId].fixedScale && options.battlefieldScale === 1.5 ? 1.5 : 1;
     this.map = battlefieldMap(this.mapId,this.battlefieldScale);
     this.world = this.map.world || WORLD;
@@ -157,7 +160,7 @@ export class Game {
   ownedUnits(side, type) { return this.units.filter(item => item.owner === side && item.hp > 0 && (!type || item.type === type)); }
   hasBuilding(side, type) { return this.ownedBuildings(side, type).length > 0; }
   hasPower(side) { const p = this.players[side]; return p.powerIn >= p.powerOut; }
-  hasRadarIntel(side) { return this.beacons.some(site => site.owner === side) || (this.hasBuilding(side, 'radar') && this.hasPower(side)); }
+  hasRadarIntel(side) { return this.challenge?.id==='islandwatch' || this.beacons.some(site => site.owner === side) || (this.hasBuilding(side, 'radar') && this.hasPower(side)); }
 
   sides(){return this.players.map(p=>p.side);}
   enemySides(side){return this.sides().filter(s=>s!==side&&!this.players[s].eliminated);}
@@ -167,6 +170,7 @@ export class Game {
   enemyObjective(side){const target=this.nearestEnemySide(side);return this.enemyBuildings(side,'hq').find(b=>b.owner===target&&this.canSeeEntity(side,b))||this.map.spawns?.[target]||{x:side?300:this.world.width-300,y:this.homeY};}
   nearestEnemySide(side){const home=this.ownedBuildings(side,'hq')[0]||this.map.spawns?.[side]||{x:this.world.width/2,y:this.homeY};return this.enemySides(side).sort((a,b)=>distance(home,this.map.spawns?.[a]||this.ownedBuildings(a,'hq')[0]||home)-distance(home,this.map.spawns?.[b]||this.ownedBuildings(b,'hq')[0]||home))[0];}
   initBases() {
+    if (this.map.missionOnly) return;
     for (const side of this.sides()) {
       const mirror = (x,y) => this.playerCount===6 ? (()=>{const p=sixPoint(side,x-205,y-720);return[p.x,p.y];})() : side === 0 ? [x, y + this.homeY - 720] : [this.world.width - x, this.world.height - y - this.homeY + 720];
       for (const [type, x, y] of [
@@ -722,6 +726,7 @@ export class Game {
     if (u.type === 'engineer') {
       if (u.order?.type === 'capture') {
         const site = this.getEntity(u.order.targetId);
+        if (updateIslandCapture(this,u,site,dt)) return;
         if (site?.owner === u.owner) u.order = null;
         else if (site && distance(u, site) < 38) {
           site.owner = u.owner; u.hp = 0;
@@ -852,17 +857,19 @@ export class Game {
   }
 
   isGroundBlocked(x, y, radius = 0) {
+    if (this.map.islands) return islandDistance(this.map,x,y) < radius;
     return this.map.barriers.some(rect => intersectsRect(x, y, radius, rect));
   }
 
   isNavalBlocked(x, y, radius = 0) {
     const water = this.map.water;
-    return !water || x - radius < water.x1 || x + radius > water.x2 || y - radius < water.y1 || y + radius > water.y2;
+    return !water || x - radius < water.x1 || x + radius > water.x2 || y - radius < water.y1 || y + radius > water.y2 || !!this.map.islands && islandDistance(this.map,x,y) > -radius;
   }
 
   navalGoal(x, y, radius = 20) {
     const water = this.map.water;
     if (!water) return { x, y };
+    if (this.map.islands) return nearestSeaPoint(this,x,y,radius);
     return { x: clamp(x, water.x1 + radius, water.x2 - radius), y: clamp(y, water.y1 + radius, water.y2 - radius) };
   }
 
@@ -995,6 +1002,8 @@ export class Game {
       target.hp = 0;
       if (UNITS[target.type]?.capacity) this.unloadTransport(target, true);
       if (target.freight?.value > 0) {
+        const control = this.logistics[target.owner].seaControl;
+        if (target.freight.batch && control && !control.lostBatches.includes(target.freight.batch) && !control.receipts.includes(target.freight.batch)) control.lostBatches.push(target.freight.batch);
         this.logistics[target.owner].lost += target.freight.value;
         recordBattleEvent(this,{kind:'intercepted',owner:target.owner,type:target.type,value:target.freight.value});
         if (target.owner === 0) this.events.notice?.(`后勤运输被截断，损失 ${target.freight.value} 待交付物资`);
@@ -1068,6 +1077,19 @@ export class Game {
     }
     if (UNITS[u.type].tags.includes('ship')) {
       const destination = this.navalGoal(goal.x, goal.y, unitRadius(u));
+      if (this.map.islands) {
+        const key = `${destination.x.toFixed(1)},${destination.y.toFixed(1)}`;
+        const progress=u.navalProgress;
+        if(!progress || progress.goal!==key)u.navalProgress={goal:key,distance:distance(u,destination),until:this.time+3};
+        else if(this.time>=progress.until){if(progress.distance-distance(u,destination)<10){u.path=[];u.navalRetryAt=0;}progress.distance=distance(u,destination);progress.until=this.time+3;}
+        if (u.pathGoal !== key || !u.path.length && this.time >= (u.navalRetryAt || 0)) {
+          u.path = navalPath(this,u,destination);u.pathGoal=key;u.navalRetryAt=this.time+2;
+        }
+        while(u.path.length && distance(u,u.path[0])<14)u.path.shift();
+        const point=u.path[0] || destination;
+        if (!this.moveWithAvoidance(u,point,dt,u.path.length?0:stopDistance)&&this.time>=u.navalRetryAt){u.path=[];u.navalRetryAt=this.time+.4;}
+        return;
+      }
       const radius=unitRadius(u);
       if(u.type==='landing'&&['move','attackMove'].includes(u.order?.type)&&distance(u.order,goal)<1&&distance(u,destination)<=16&&this.canOccupyUnit(u,u)){
         const nearby=(this.unitIndex||new UnitSpatialIndex(this.units)).nearby(u);
@@ -1180,7 +1202,7 @@ export class Game {
     const cols = this.world.width / cell, rows = this.world.height / cell;
     const grid = new PF.Grid(cols, rows);
     const terrainRadius = UNITS[u.type].tags.includes('infantry') ? 6 : 14;
-    if (this.map.barriers.length) for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+    if (this.map.barriers.length || this.map.islands) for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
       if (this.isGroundBlocked(cx * cell + cell / 2, cy * cell + cell / 2, terrainRadius)) grid.setWalkableAt(cx, cy, false);
     }
     for (const b of this.buildings) {

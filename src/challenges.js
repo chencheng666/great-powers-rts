@@ -1,8 +1,23 @@
 import { recordBattleEvent } from './battle-report.js';
 import { supportsDroneAutonomy } from './drone-autonomy.js';
 import { UNITS } from './data.js';
+import { LIFELINE, lifelineSummary, freightRules } from './maritime-logistics.js';
+import { isIslandWatch, updateWatchOperation, watchSummary, WATCH, validWatchState } from './island-watch.js';
 
 export const CHALLENGES = {
+  islandwatch: { name:'列岛守望',mapId:'islandwatch',limit:600,budget:1800,targetType:'hq',targetName:'后方指挥中心',earliestWin:80,freight:true,
+    briefing:'护送满载登陆舰前往守望主岛西侧沙滩，停驻后按 U 分批卸载。工程师接管通信、能源与港务三个节点（每站 6 秒，可重复使用），链路接通后护送两批海运物资抵港，再守住节点 20 秒。敌军独占节点 12 秒会切断链路，可派工程师夺回。保住指挥中心与前线港，无需全歼敌军。',
+    base:{x:520,y:2540},camera:{x:1590,y:2060},objective:{x:2380,y:1640,radius:430},docks:[{x:2200,y:1720}],
+    cargo:['tank','supply','engineer','engineer','rifle','rifle'],
+    force:[['landing',1360,2480],['tank',850,2400],['supply',800,2500],['engineer',850,2570],['engineer',900,2610],['rifle',900,2700],['rifle',820,2680],['destroyer',1560,2190],['frigate',1660,1890],['patrol',1790,2360]],
+    waves:[{at:65,x:2760,y:1330,units:['rifle','rifle'],goal:{x:2320,y:1470}},{at:135,x:2880,y:1860,units:['tank','rifle'],goal:{x:2260,y:1790}},{at:205,x:2800,y:1250,units:['rifle','rifle'],goal:{x:2600,y:1560}},{at:240,x:1600,y:1120,units:['patrol'],goal:{x:1850,y:1660}}]
+  },
+  lifeline: { name: '深蓝生命线 · 试航', mapId: 'archipelago', limit: 420, budget: 1200, targetType: 'hq', targetName: '后方指挥中心', earliestWin: 100, freight: true,
+    briefing: '护送集装箱船抵港，累计完成 2700 海运物资。每批 900，最多派出 5 批；首船损失不会立即失败。可选择下一班航道、暂停派船或改派友港。舰艇可返港付费维修补弹；至少保住一个接收港和指挥中心，无需全歼敌军。',
+    objective: { x: 950, y: 900, radius: 200 }, camera: { x: 1500, y: 1030 }, docks: [{ x: 950, y: 900 }, { x: 950, y: 1600 }],
+    force: [['destroyer',1350,1120],['frigate',1460,800],['frigate',1450,1550],['patrol',1650,500],['patrol',1800,1250],['supply',750,1200]],
+    waves: [{ at: 25, x: 2320, y: 760, units: ['patrol','patrol'], goal: { x: 1450, y: 900 } }, { at: 85, x: 2300, y: 1480, units: ['frigate'], goal: { x: 1380, y: 1500 } }, { at: 110, x: 2250, y: 520, units: ['patrol','patrol'], goal: { x: 1430, y: 900 } }]
+  },
   corridor: { name: '补给走廊', mapId: 'valley', limit: 150, budget: 1400, targetType: 'apc', targetName: '任务运输车',
     briefing: '护送任务运输车抵达东侧撤离区。接应在第 45 秒开放，附近 220 范围内不得有敌军，运输车损失即失败。',
     objective: { x: 1570, y: 1030, radius: 100 },
@@ -29,6 +44,7 @@ export const CHALLENGES = {
 
 export function challengeDefinition(game) { return Object.hasOwn(CHALLENGES,game.challenge?.id) ? CHALLENGES[game.challenge.id] : null; }
 export function challengeLosses(game) {
+  if (challengeDefinition(game)?.freight) return Math.max(0, game.challenge.initialCount - game.ownedUnits(0).filter(u => !UNITS[u.type].tags.includes('logistics')).length) + game.logistics[0].seaControl.lostBatches.length;
   return game.challenge.id==='beachhead'?game.battleStats.sides[0].losses:Math.max(0,game.challenge.initialCount-game.ownedUnits(0).length);
 }
 export function beachheadActivity(game) {
@@ -70,7 +86,7 @@ export function validChallengeState(state, config, time, entities, sites=[]) {
     Number.isFinite(intel.progress) && intel.progress>=0 && intel.progress<d.scanTime && (intel.completed<d.nodes.length||intel.progress===0) && intel.completed*d.scanTime+intel.progress<=time+.001 : intel===undefined;
   const beachhead=state.beachhead,validBeachhead=d?.holdTime ? beachhead&&Object.keys(beachhead).length===1&&Number.isFinite(beachhead.hold)&&beachhead.hold>=0&&beachhead.hold<d.holdTime&&beachhead.hold<=time+.001&&(beachhead.hold===0||sites.some(s=>s.id===d.objective.siteId&&s.owner===0)) : beachhead===undefined;
   return !!d && config.challengeId === state.id && config.mapId === d.mapId && config.battlefieldScale === 1 && config.difficulty === 'standard' && config.victoryMode === 'annihilation' &&
-    validIntel && validBeachhead && (!(d.nodes||d.holdTime) || config.nuclearEnabled===false) &&
+    validIntel && validBeachhead && validWatchState(state,config,time,entities,sites) && (!(d.nodes||d.holdTime) || config.nuclearEnabled===false) &&
     time < d.limit && Number.isInteger(state.wave) && state.wave >= 0 && state.wave <= d.waves.length &&
     d.waves.slice(0,state.wave).every(w => w.at <= time) && (!d.waves[state.wave] || d.waves[state.wave].at > time) &&
     Number.isInteger(state.targetId) && entities.some(e => e.id === state.targetId && e.type === d.targetType && e.owner === 0 && e.hp > 0) &&
@@ -81,20 +97,28 @@ export const challengeCombat = {
   initChallenge(id) {
     const d = Object.hasOwn(CHALLENGES,id) ? CHALLENGES[id] : null; if (!d) return;
     this.units = []; this.buildings = [];
-    const baseY=d.camera?.y||720;
-    this.addBuilding(0,'hq',240,baseY); this.addBuilding(0,'power',360,baseY-140); this.addBuilding(0,'factory',400,baseY+90);
+    const baseY=d.base?.y||d.camera?.y||720,baseX=d.base?.x||240;
+    this.addBuilding(0,'hq',baseX,baseY); this.addBuilding(0,'power',baseX+120,baseY-140); this.addBuilding(0,'factory',baseX+160,baseY+90);
     if(d.nodes)this.addBuilding(0,'barracks',380,baseY-280);
     if(d.dock)this.addBuilding(0,'dock',d.dock.x,d.dock.y);
+    if(d.docks)for(const point of d.docks)this.addBuilding(0,'dock',point.x,point.y);
     let target;
     for (const [type,x,y] of d.force) { const u = this.addUnit(0,type,x,y); if (type === d.targetType && !target) target = u; }
     if (d.targetType === 'radar') target = this.addBuilding(0,'radar',d.objective.x,d.objective.y);
+    if (d.targetType === 'hq') target = this.ownedBuildings(0, 'hq')[0];
     if(d.cargo)for(const type of d.cargo){
       const u=this.ownedUnits(0).find(u=>u.type===type&&!u.embarkedIn);
-      if(u&&this.canBoardTransport(u,target)){target.passengers.push(u.id);u.embarkedIn=target.id;u.x=target.x;u.y=target.y;}
+      const transport=d.targetType==='landing'?target:this.ownedUnits(0,'landing')[0];
+      if(u&&this.canBoardTransport(u,transport)){transport.passengers.push(u.id);u.embarkedIn=transport.id;u.x=transport.x;u.y=transport.y;}
     }
     this.players.forEach(p => { p.credits = p.side === 0 ? d.budget : 0; p.unitCount = this.ownedUnits(p.side).length; });
     this.resourceSites.forEach(site=>{site.amount=0;});
     this.challenge = { id, targetId: target.id, wave: 0, initialCount: d.force.length, stars: 0, reason: '' };
+    if(id==='islandwatch')this.challenge.watch={hold:0,raids:[0,0,0]};
+    if (d.freight) {
+      this.logistics[0].seaControl = { paused: false, lane: 'coastal', homeId: this.ownedBuildings(0,'dock')[0].id, dispatched: 0, airDispatched: 0, recoverySpent: 0, receipts: [], lostBatches: [] };
+      this.logistics[0].nextSea = 3; this.logistics[0].nextAir = 30;
+    }
     if(d.nodes)this.challenge.intel={completed:0,progress:0};
     if(d.holdTime)this.challenge.beachhead={hold:0};
     recordBattleEvent(this,{kind:'challengeStart',owner:0,type:id});
@@ -112,6 +136,19 @@ export const challengeCombat = {
     // 同帧目标被毁优先判负，不把抵达坐标或清场误判为胜利。
     if (!target || target.hp <= 0) { finish(false,`${d.targetName}被摧毁`); return; }
     if (this.time >= d.limit) { finish(false,'任务时限已到'); return; }
+    if (d.freight) {
+      const rules=freightRules(this);
+      const s = lifelineSummary(this);
+      if (!s.ports.length) { finish(false,'接收港全部损失，海运通道中断'); return; }
+      if (!isIslandWatch(this) && s.delivered >= rules.goal) { finish(true,'海运物资交付达标，港口与指挥中心存续'); return; }
+      if ((rules.batches - s.control.lostBatches.length) * 900 < rules.goal) { finish(false,'运输损失超过补发额度，无法完成交付'); return; }
+      if(isIslandWatch(this)){
+        const watch=watchSummary(this);
+        if(watch.captured<3&&!this.ownedUnits(0,'engineer').length){finish(false,'工程师全部损失，无法恢复节点链路');return;}
+        updateWatchOperation(this,Math.max(0,Math.min(.05,dt)));
+        if(this.challenge.watch.hold>=WATCH.hold-1e-9){finish(true,'登陆据点、能源链路与两批海运补给全部保障完成');return;}
+      }
+    }
     if(d.holdTime&&this.getEntity(d.objective.siteId)?.owner!==0&&!this.ownedUnits(0,'engineer').length){finish(false,'工程师损失，无法接管通信站');return;}
     while (this.challenge.wave < d.waves.length && this.time >= d.waves[this.challenge.wave].at) {
       const index = this.challenge.wave++, wave = d.waves[index];

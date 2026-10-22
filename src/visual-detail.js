@@ -1,7 +1,9 @@
 import { lunarRelief } from './lunar-terrain.js';
+import { islandHeight } from './island-map.js';
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 export function terrainHeight(game, x, z) {
+  if(game.map.islands)return islandHeight(game.map,x,z);
   const water = game.map.water;
   if (water && x > water.x1 && x < water.x2) return -15;
   if (!game.map.future && game.map.barriers.some(r => x > r.x1 && x < r.x2 && z > r.y1 && z < r.y2)) return -28;

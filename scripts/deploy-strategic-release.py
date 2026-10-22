@@ -38,17 +38,21 @@ def link(path,target):
     temporary.symlink_to(target);os.replace(temporary,path)
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('archive');parser.add_argument('sha256');parser.add_argument('release');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('archive');parser.add_argument('sha256');parser.add_argument('release');parser.add_argument('--domestic',action='store_true');args=parser.parse_args()
+    services=['great-powers-domestic','great-powers-domestic-six'] if args.domestic else SERVICES
+    data=[pathlib.Path('/var/lib/great-powers-domestic/main'),pathlib.Path('/var/lib/great-powers-domestic/six')] if args.domestic else DATA
     if not args.release.replace('-','').isalnum():raise RuntimeError('发布编号无效')
     archive=pathlib.Path(args.archive)
     if hashlib.sha256(archive.read_bytes()).hexdigest()!=args.sha256:raise RuntimeError('发布包校验失败')
     lock=(BASE/'deploy.lock').open('a');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-    for service in SERVICES:run(['systemctl','is-active','--quiet',service])
+    for service in services:run(['systemctl','is-active','--quiet',service])
     idle()
     if shutil.disk_usage(BASE).free<1_200_000_000:raise RuntimeError('剩余空间不足，保留现有服务')
     stage=BASE/'releases'/args.release;backup=BASE/'backups'/args.release
     if stage.exists() or backup.exists():raise RuntimeError('发布或备份编号已存在，禁止覆盖')
-    links={BASE/'current':(BASE/'current').resolve(),BASE/'candidate-current':(BASE/'candidate-current').resolve(),BASE/'official/current':(BASE/'official/current').resolve()}
+    paths=[BASE/'current'] if args.domestic else [BASE/'current',BASE/'candidate-current',BASE/'official/current']
+    links={path:path.resolve() for path in paths}
+    if args.domestic and not pathlib.Path('/www/server/panel/vhost/nginx/extension/www.daguojueqi.site/20-great-powers.conf').is_file():raise RuntimeError('国内路由未就绪，拒绝在其他实例使用国内发布模式')
     if any(not str(p).startswith(str(BASE)+'/') for p in links.values()):raise RuntimeError('旧发布路径不符合预期')
     stage.mkdir()
     with tarfile.open(archive) as tar:
@@ -82,13 +86,13 @@ for(const count of [2,6]){const d=await mkdtemp(join(tmpdir(),'gp-preflight-')),
     (backup/'previous.json').write_text(json.dumps({str(k):str(v) for k,v in links.items()},indent=2))
     stopped=False;switched=False
     try:
-        stopped=True;run(['systemctl','stop',*SERVICES])
-        for index,path in enumerate(DATA):shutil.copytree(path,backup/f'data-{index}',symlinks=True)
+        stopped=True;run(['systemctl','stop',*services])
+        for index,path in enumerate(data):shutil.copytree(path,backup/f'data-{index}',symlinks=True)
         check="""import{DatabaseSync}from'node:sqlite';for(const path of process.argv.slice(1)){const db=new DatabaseSync(path,{readOnly:true});if(db.prepare('PRAGMA integrity_check').get().integrity_check!=='ok')throw Error('数据库损坏');console.log(path,JSON.stringify({guests:db.prepare('SELECT count(*) n FROM guests').get().n,matches:db.prepare('SELECT count(*) n FROM matches').get().n}));db.close();}"""
         print(run([str(node),'--input-type=module','-e',check,*[str(backup/f'data-{i}/guests.sqlite') for i in [0,1]]]),flush=True)
         switched=True
-        link(BASE/'current',stage);link(BASE/'candidate-current',stage);link(BASE/'official/current',stage/'dist/official')
-        run(['systemctl','start',*SERVICES]);stopped=False
+        for path in paths:link(path,stage/'dist/official' if path==BASE/'official/current' else stage)
+        run(['systemctl','start',*services]);stopped=False
         for attempt in range(25):
             try:
                 values=[health(p) for p in [8088,8089]]
@@ -99,7 +103,7 @@ for(const count of [2,6]){const d=await mkdtemp(join(tmpdir(),'gp-preflight-')),
         for port in [8088,8089]:
             content=urllib.request.urlopen(f'http://127.0.0.1:{port}/',timeout=5).read()
             if hashlib.sha256(content).digest()!=hashlib.sha256((stage/'dist/index.html').read_bytes()).digest():raise RuntimeError('网页内容不一致')
-        for index,path in enumerate(DATA):
+        for index,path in enumerate(data):
             compare="""import{DatabaseSync}from'node:sqlite';const dbs=process.argv.slice(1).map(p=>new DatabaseSync(p,{readOnly:true}));const count=(db,table)=>db.prepare(\"SELECT 1 FROM sqlite_master WHERE type='table' AND name=?\").get(table)?db.prepare('SELECT count(*) n FROM '+table).get().n:0;for(const table of ['guests','matches','multi_matches','match_members'])if(count(dbs[1],table)<count(dbs[0],table))throw Error('历史记录减少：'+table);const sql='SELECT coalesce(sum(wins+losses+draws),0) n FROM guests';if(dbs[1].prepare(sql).get().n<dbs[0].prepare(sql).get().n)throw Error('历史战绩减少');dbs.forEach(d=>d.close());"""
             run([str(node),'--input-type=module','-e',compare,str(backup/f'data-{index}/guests.sqlite'),str(path/'guests.sqlite')])
         report={'version':version,'services':values,'release':str(stage),'backup':str(backup),'sha256':args.sha256}
@@ -107,7 +111,7 @@ for(const count of [2,6]){const d=await mkdtemp(join(tmpdir(),'gp-preflight-')),
     except Exception:
         if switched:
             for path,target in links.items():link(path,target)
-        if stopped or switched:run(['systemctl','restart',*SERVICES])
+        if stopped or switched:run(['systemctl','restart',*services])
         print('发布失败，已恢复原链接与服务；不覆盖现库，备份保留。',flush=True)
         raise
 

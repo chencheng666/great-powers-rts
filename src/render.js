@@ -32,6 +32,7 @@ import { submarinePose, animateLandingCraft, landingCargoLayout, landingDetailPl
 import { animateFacility, drawRepairBadge } from './facility-motion.js';
 import { unitAnimation, weaponElevation } from './unit-animation.js';
 import { animateStrategicEquipment } from './deterrence-models.js';
+import { isLifeline, FREIGHT_LANES, freightLanePoints } from './maritime-logistics.js';
 import { createDeterrenceBlast,animateDeterrenceBlast } from './deterrence-fx.js';
 import { DETERRENCE } from './deterrence-rules.js';
 import { animateTracks } from './track-motion.js';
@@ -41,6 +42,8 @@ import { CHALLENGES } from './challenges.js';
 import { COMBAT_STANCES, combatStance, supportsCombatStance } from './combat-stance.js';
 import { animatePriorityAircraft } from './priority-model-detail.js';
 import { facilityRotation, sceneryClearance, shorelineWidth } from './site-presentation.js';
+import { islandHarbor, islandDistance } from './island-map.js';
+import { paintIslandTerrain, createIslandShore, createIslandInfrastructure } from './island-scenery.js';
 
 // 实体与部署预览共用同一名单，避免三维建筑读取不存在的旧贴图。
 const MODEL_ONLY_BUILDINGS = new Set(['nuclearSilo','turret','refinery',...COMMUNITY_3D_BUILDINGS,...REALISM_BUILDINGS]);
@@ -185,7 +188,7 @@ export class Renderer {
       ctx.setLineDash([18, 25]); trace(); ctx.strokeStyle = 'rgba(222,218,183,.43)'; ctx.lineWidth = 1.4; ctx.stroke(); ctx.setLineDash([]);
     };
     const cy = this.game.homeY;
-    if (!this.game.map.future) road([[-20, cy], [520, cy], [this.world.width - 520, cy], [this.world.width + 20, cy]], 54);
+    if (!this.game.map.future && !this.game.map.islands) road([[-20, cy], [520, cy], [this.world.width - 520, cy], [this.world.width + 20, cy]], 54);
     if (this.game.mapId === 'ocean') for (const bridge of this.game.map.bridges) {
       const y = (bridge.y1 + bridge.y2) / 2;
       road([[410, cy], [850, y], [this.world.width - 850, y], [this.world.width - 410, cy]], 36);
@@ -225,6 +228,7 @@ export class Renderer {
       ctx.fillStyle = '#242e2c'; ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
       ctx.fillStyle = 'rgba(98,99,84,.55)'; ctx.fillRect(rect.x1 - 12, rect.y1, 22, rect.y2 - rect.y1); ctx.fillRect(rect.x2 - 10, rect.y1, 22, rect.y2 - rect.y1);
     }
+    if(this.game.map.islands)paintIslandTerrain(ctx,this.game.map,image);
     const texture = this.track(new THREE.CanvasTexture(canvas)); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = Math.min(8, this.webgl.capabilities.getMaxAnisotropy()); this.terrainTexture = texture;
     const geometry = this.track(new THREE.PlaneGeometry(this.world.width, this.world.height, 192, 128)); geometry.rotateX(-Math.PI / 2); geometry.translate(this.world.width / 2, 0, this.world.height / 2);
     const positions = geometry.attributes.position;
@@ -299,6 +303,12 @@ export class Renderer {
   }
 
   createShoreline() {
+    if(this.game.map.islands){
+      for(const group of [createIslandShore(this.game.map),createIslandInfrastructure(this.game.map)]){
+        group.traverse(part=>{if(part.geometry)this.track(part.geometry);if(part.material)this.track(part.material);});this.scene.add(group);
+      }
+      return;
+    }
     const water = this.game.map.water, canvas = makeCanvas(64, 256), ctx = canvas.getContext('2d');
     const pixels = ctx.createImageData(64, 256);
     for (let y = 0; y < 256; y++) for (let x = 0; x < 64; x++) {
@@ -345,6 +355,7 @@ export class Renderer {
     const water = this.game.map.water;
     const mesh = new THREE.Mesh(this.track(new THREE.PlaneGeometry(water.x2 - water.x1, this.world.height)), this.track(new THREE.MeshStandardMaterial({ color: '#32626a', metalness: .45, roughness: .32, normalMap: normal, normalScale: new THREE.Vector2(.19, .19), transparent: true, opacity: .97, depthWrite: false })));
     mesh.renderOrder = 1;
+    if(this.game.map.islands){mesh.material.color.set('#29545a');mesh.material.normalScale.set(.065,.065);mesh.material.metalness=.25;mesh.material.roughness=.42;}
     mesh.rotation.x = -Math.PI / 2; mesh.position.set((water.x1 + water.x2) / 2, .8, this.world.height / 2); mesh.receiveShadow = true; this.scene.add(mesh);
   }
 
@@ -393,6 +404,7 @@ export class Renderer {
     const density = Math.min(850, Math.round(this.world.width * this.world.height / (2240 * 1440) * 230));
     for (let i = 0; i < density; i++) {
       const x = 45 + hash(i, 91) * (this.world.width - 90), z = 40 + hash(i, 193) * (this.world.height - 80);
+      if(this.game.map.islands && islandDistance(this.game.map,x,z)<55)continue;
       if (Math.abs(z - this.game.homeY) < 145 || forbidden.some(item => Math.hypot(item.x - x, item.y - z) < Math.max(100, (item.size || 0) * 1.2))) continue;
       if (this.game.map.noBuild.some(rect => x > rect.x1 - 25 && x < rect.x2 + 25)) continue;
       const kind = this.game.map.future ? 'rock' : hash(i, 71) > .24 ? 'tree' : 'rock'; points[kind].push({ x, z, scale: kind === 'tree' ? 8 + hash(i, 25) * 7 : 12 + hash(i, 45) * 11, angle: hash(i, 33) * TAU });
@@ -407,7 +419,7 @@ export class Renderer {
       for(let z=rect.y1+20;z<rect.y2;z+=60)for(const x of [rect.x1+14,rect.x2-14])points.rock.push({x,z,scale:50,verticalScale:95,heightOffset:-10,angle:hash(x,z,17)*TAU});
       for(let x=rect.x1+40;x<rect.x2;x+=60)for(const z of [rect.y1+14,rect.y2-14])points.rock.push({x,z,scale:50,verticalScale:95,heightOffset:-10,angle:hash(x,z,19)*TAU});
     }
-    if (this.game.map.water) for (let z = 30; z < this.world.height; z += 64) for (const x of [this.game.map.water.x1 - 12, this.game.map.water.x2 + 12]) {
+    if (this.game.map.water && !this.game.map.islands) for (let z = 30; z < this.world.height; z += 64) for (const x of [this.game.map.water.x1 - 12, this.game.map.water.x2 + 12]) {
       if (this.game.map.bridges.some(bridge => z > bridge.y1 - 30 && z < bridge.y2 + 30)) continue;
       const n = hash(x, z, 45); points.rock.push({ x: x + (n - .5) * 22, z: z + (hash(z, x, 23) - .5) * 30, scale: 8 + n * 13, heightOffset: -5, angle: n * TAU });
     }
@@ -530,13 +542,13 @@ export class Renderer {
     }
     const fog = this.fogCanvas.getContext('2d'); fog.clearRect(0, 0, 560, 360); fog.filter = 'blur(9px)'; fog.drawImage(this.fogSmall, -5, -5, 570, 370); fog.filter = 'none'; this.fogTexture.needsUpdate = true;
     const dummy = new THREE.Object3D(), sceneryVisible = new Map();
-    const knownBuildings = this.game.buildings.filter(b => b.owner === 0 || this.game.canSeeEntity(0, b));
+    const knownBuildings = this.game.buildings.filter(b => b.owner === 0 || this.game.canSeeEntity(0, b)).map(b=>{const harbor=islandHarbor(this.game.map,b);return harbor?{...b,harborAngle:harbor.angle}:b;});
     const knownGroundUnits = this.game.units.filter(u => !UNITS[u.type].tags.includes('air') && (u.owner === 0 || this.game.canSeeEntity(0, u)));
     for (const mesh of this.bridges) mesh.visible = this.game.hasExploredFor(0, mesh.position.x, mesh.position.z);
     for (const { mesh, transforms, foliage, angle } of this.environment) {
       transforms.forEach((point, index) => {
         if (!sceneryVisible.has(point)) {
-          point.cleared ||= sceneryClearance(point, knownBuildings, [], !!foliage);
+          point.cleared ||= sceneryClearance(point, knownBuildings, [], !!foliage, this.world.width);
           const occupied = sceneryClearance(point, [], knownGroundUnits, !!foliage);
           point.known = !point.cleared && !occupied && this.game.hasExploredFor(0, point.x, point.z);
           sceneryVisible.set(point, point.known);
@@ -923,9 +935,13 @@ export class Renderer {
           entry.model.rotation.x = entry.bank; entry.model.rotation.z = entry.pitch;
           if (tags.includes('drone')) height += Math.sin(this.game.time * 2.3 + entity.id * .7) * .7;
         }
-      } else if (entity.type === 'dock') entry.model.rotation.y = entity.x > this.world.width / 2 ? Math.PI : 0;
+      } else if (entity.type === 'dock') entry.model.rotation.y = -(islandHarbor(this.game.map,entity)?.angle ?? (entity.x > this.world.width / 2 ? Math.PI : 0));
       else if (entity.type === 'turret') entry.model.rotation.y = -entity.angle;
       if (entity.kind==='unit') animatePriorityAircraft(entry,entity,this.game,dt,height-this.elevation(entity.x,entity.y));
+      if(entity.type==='containerShip') {
+        entry.cargoLoad??=entry.model.getObjectByName('cargo_load');
+        if(entry.cargoLoad)entry.cargoLoad.visible=(entity.freight?.value??900)>0;
+      }
       animateFacility(entry.model, entity, this.game);
       entry.model.position.set(entity.x, height, entity.y);
       const submerged = entity.type === 'submarine' && entry.submergedMaterials?.[0]?.mesh.material === entry.submergedMaterials?.[0]?.hidden;
@@ -1141,6 +1157,14 @@ export class Renderer {
     }
     const selected = new Set(this.game.selected), bars = [], viewportRect = this.canvas.getBoundingClientRect();
     this.drawOrderRoutes();
+    if(isLifeline(this.game)&&this.freightRoutesVisible!==false){
+      const c=this.game.logistics[0].seaControl,home=this.game.freightDestination(0,true);
+      if(home)for(const lane of Object.keys(FREIGHT_LANES)){
+        const points=[this.game.freightEntry(0,true),...freightLanePoints(lane,home,this.game.map),islandHarbor(this.game.map,home)?.approach || this.game.navalGoal(home.x,home.y,100)];
+        ctx.save();ctx.strokeStyle=lane===c.lane?'#83d9d1aa':'#e2bb7666';ctx.lineWidth=lane===c.lane?2:1;ctx.setLineDash([8,9]);ctx.beginPath();
+        points.forEach((v,i)=>{const p=this.worldToScreen(v.x,v.y,4);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.stroke();ctx.restore();
+      }
+    }
     const zone=(x,y,radius,color)=>{ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color+'14';ctx.lineWidth=2;ctx.setLineDash([9,7]);ctx.beginPath();for(let i=0;i<=72;i++){const a=i/72*TAU,p=this.worldToScreen(x+Math.cos(a)*radius,y+Math.sin(a)*radius,3);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);}ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();};
     for(const w of this.game.nuclearWarnings()) {zone(w.x,w.y,DETERRENCE.radius,'#ffc785');const p=this.worldToScreen(w.x,w.y,8);ctx.save();ctx.font='600 13px "Noto Sans SC",sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#111b21';const label=`核威慑落区 · ${Math.ceil(w.remaining)} 秒`;ctx.strokeText(label,p.x,p.y);ctx.fillStyle='#ffd49e';ctx.fillText(label,p.x,p.y);ctx.restore();}
     if(this.game.pendingNuclear&&this.pointer)zone(this.pointer.x,this.pointer.y,DETERRENCE.radius,'#ffc785');
@@ -1353,6 +1377,7 @@ export class Renderer {
     ctx.drawImage(this.terrainTexture.image, 0, 0, width, height);
     const sx = width / this.world.width, sy = height / this.world.height;
     if (this.game.map.water) { const water = this.game.map.water; ctx.fillStyle = '#315662'; ctx.fillRect(water.x1 * sx, 0, (water.x2 - water.x1) * sx, height); }
+    if(this.game.map.islands)for(const island of this.game.map.islands){ctx.beginPath();island.points.forEach(([x,y],i)=>i?ctx.lineTo(x*sx,y*sy):ctx.moveTo(x*sx,y*sy));ctx.closePath();ctx.fillStyle='#778268';ctx.fill();ctx.strokeStyle='#b8ac7f';ctx.lineWidth=1;ctx.stroke();}
     for (const bridge of this.game.map.bridges) { ctx.fillStyle = '#a0a296'; ctx.fillRect((this.game.map.water ? this.game.map.water.x1 - 38 : 1010) * sx, bridge.y1 * sy, (this.game.map.water ? this.game.map.water.x2 - this.game.map.water.x1 + 76 : 220) * sx, (bridge.y2 - bridge.y1) * sy); }
     for (const ore of this.game.ore) if (ore.amount > 0) { ctx.fillStyle = ore.kind === 'gem' ? '#93b9b8' : '#c6ae75'; ctx.fillRect(ore.x * sx - 2, ore.y * sy - 2, 4, 4); }
     for (const site of [...this.game.oil, ...this.game.beacons]) { ctx.fillStyle = teamVisual(site.owner).color; ctx.fillRect(site.x * sx - 2, site.y * sy - 2, 5, 5); }

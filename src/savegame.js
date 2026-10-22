@@ -9,6 +9,7 @@ import { DETERRENCE as R } from './deterrence-rules.js';
 import { ORDER_QUEUE_LIMIT } from './command-queue.js';
 import { validChallengeState } from './challenges.js';
 import { COMBAT_STANCES, supportsCombatStance } from './combat-stance.js';
+import { validMaritimeSave } from './maritime-logistics.js';
 
 export const SAVE_VERSION = 1;
 export const SAVE_LIMIT = 8 * 1024 * 1024;
@@ -60,6 +61,7 @@ export function validateSave(save) {
     if(player.cyberPending!==undefined&&player.cyberPending!==null&&(!object(player.cyberPending)||!Number.isSafeInteger(player.cyberPending.sourceId)||(player.cyberPending.targetSide!==undefined&&(!Number.isInteger(player.cyberPending.targetSide)||player.cyberPending.targetSide<0||player.cyberPending.targetSide>=count||player.cyberPending.targetSide===side))||!finite(player.cyberPending.executeAt)||player.cyberPending.executeAt<0||player.cyberPending.executeAt>s.time+INTELLIGENCE_RULES.cyberWarning+.01))invalid();
   }
   const map=battlefieldMap(config.mapId,config.battlefieldScale||1),world = map.world || WORLD, ids = new Set();
+  if(map.missionOnly&&!s.challenge)invalid();
   const point = value => object(value) && finite(value.x) && finite(value.y);
   const checkOrder = order => {
     if (order === null) return;
@@ -85,6 +87,8 @@ export function validateSave(save) {
           }
         }
         const d = UNITS[entity.type];
+        if(entity.unloadQueue!==undefined&&(entity.type!=='landing'||typeof entity.unloadQueue!=='boolean'))invalid();
+        if(entity.nextUnloadAt!==undefined&&(entity.type!=='landing'||!finite(entity.nextUnloadAt)||entity.nextUnloadAt<0||entity.nextUnloadAt>s.time+.76))invalid();
         if (entity.combatStance !== undefined && (!supportsCombatStance(entity) || typeof entity.combatStance !== 'string' || !Object.hasOwn(COMBAT_STANCES, entity.combatStance))) invalid();
         if(entity.swarmParentId!==undefined&&(!Number.isSafeInteger(entity.swarmParentId)||entity.swarmParentId<1||entity.temporaryUntil<=s.time||!['swarmScout','swarmDecoy','drone'].includes(entity.type)))invalid();
         if (entity.battery !== undefined && (!isLunarRobot(MAPS[config.mapId], entity.type) || !finite(entity.battery) || entity.battery < 0 || entity.battery > ROBOT_ENERGY.capacity)) invalid();
@@ -156,11 +160,12 @@ export function validateSave(save) {
   for (const projectile of s.projectiles) if(projectile.flightRole!==undefined&&!['air-to-air','air-to-ground','surface'].includes(projectile.flightRole))invalid();
   if (save.view !== undefined && !object(save.view)) invalid();
   if (s.battleStats !== undefined && !validateBattleStats(s.battleStats, s.time,count)) invalid();
-  if (!validChallengeState(s.challenge, config, s.time, [...s.units,...s.buildings],s.beacons) || s.challenge && count !== 2) invalid();
+  if (!validChallengeState(s.challenge, config, s.time, [...s.units,...s.buildings],[...s.beacons,...(s.resourceSites||[])]) || s.challenge && count !== 2) invalid();
   if (s.logistics !== undefined) {
     if (!Array.isArray(s.logistics) || s.logistics.length !== count) invalid();
     for (const [side, route] of s.logistics.entries()) if (!object(route) || route.side !== side || !['nextAir', 'nextSea', 'delivered', 'lost'].every(key => finite(route[key]) && route[key] >= 0)) invalid();
   } else if (config.economyMode === 'convoy') invalid();
+  if (!validMaritimeSave(s,config)) invalid();
   return save;
 }
 
