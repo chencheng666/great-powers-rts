@@ -17,7 +17,7 @@ test('挑战固定地图、阵营和标准难度，不开放建造生产和外�
     const g=create(id),d=CHALLENGES[id];assert.equal(g.mapId,d.mapId);assert.equal(g.players[0].faction,'china');assert.equal(g.victoryMode,'annihilation');assert.equal(g.battlefieldScale,1);
     assert.equal(g.startBuild(0,'power'),false);assert.equal(g.queueUnit(0,'tank'),false);
     const money=g.players[0].credits;g.updateLogistics(100);assert.equal(g.units.some(u=>u.freight),false);assert.equal(g.players[0].credits,money);
-    assert.ok(g.resourceSites.every(s=>s.amount===0));assert.equal(g.units.length,d.force.length);assert.equal(challengeStatus(g).nextIn,d.waves[0].at);
+    assert.ok(g.resourceSites.every(s=>s.amount===0));assert.equal(g.units.filter(u=>u.type!=='evacuee').length,d.force.length);assert.equal(challengeStatus(g).nextIn,d.waves[0].at);
   }
 });
 test('暂停不触发波次、每波只刷一次，读档保留目标、波次与复盘',()=>{

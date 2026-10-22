@@ -4,7 +4,17 @@
 
 ## 项目素材
 
-社区模型接入优先遵循 [2.0 社区资产复用清单](docs/2.0社区资产复用清单-20261022.md)。目前清单中的第三方模型仍为候选，未导入游戏，不混入下方原创 MIT 素材范围。
+社区模型接入优先遵循 [2.0 社区资产复用清单](docs/2.0社区资产复用清单-20261022.md)。2026-10-22 已接入下列第一批开放资产；它们不属于下方原创 MIT 素材范围。完整署名及修改说明见 [THIRD-PARTY-ASSETS.txt](THIRD-PARTY-ASSETS.txt)，该文件随离线包分发。
+
+| 开放资产 | 原作者与来源 | 许可与实际用途 |
+| --- | --- | --- |
+| Abrams tank | Sketlux、yd；https://opengameart.org/content/abrams-tank | CC0；西陆普通坦克，独立炮塔、炮管、近远景与共享材质 |
+| F-22 Raptor | andertan；https://sketchfab.com/3d-models/lockheed-martin-f-22-raptor-7e7b3c372e374dda98e70208d09cfdcf | CC BY 4.0；西陆战机，原 UV 与蒙皮贴图，减面与起落架适配。GLB 由 Airframe Archive 360 公开展示版取得 |
+| Overhead Crane | Timothy3D；https://polyhaven.com/a/overhead_crane | CC0；港口两组吊机，减面、PBR材质与既有码头组合 |
+| Aerial Grass Rock | Rob Tuytel；https://polyhaven.com/a/aerial_grass_rock | CC0；常规地图1K地表颜色、法线和粗糙度 |
+| Concrete Floor Worn 001 | Dimitrios Savva、Rico Cilliers；https://polyhaven.com/a/concrete_floor_worn_001 | CC0；港口混凝土，统一纹理尺度 |
+
+资产实际文件位于 `assets/third-party/`。改动不改变伤害、射程、碰撞、生产及补给规则；其他阵营模型仍使用项目既有资产。源文件缓存不随公开包分发，转换脚本为 `scripts/build-open-assets.py`。
 
 | 素材 | 文件与来源 | 编辑方式 |
 | --- | --- | --- |
@@ -62,4 +72,4 @@ Three.js、PathFinding.js、ws 使用 MIT 许可；heap.js 保留 PSF 许可文�
 
 ## 2026-10-22 群岛官网素材
 
-`public/official/assets/v130-islands.png` 复用本次“列岛守望”的实际登陆截图 `docs/2.0-islandwatch-20261022/03-unloaded.png`，不是概念图；官网原有图鉴与视频保留相应来源标注。模型候选仍未下载混入公开资产。
+`public/official/assets/v130-islands.png` 复用本次“列岛守望”的实际登陆截图 `docs/2.0-islandwatch-20261022/03-unloaded.png`，不是概念图；官网原有图鉴与视频保留相应来源标注。上述截图拍摄早于本次开放资产接入。

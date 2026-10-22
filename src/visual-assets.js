@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { createChineseTank, createChineseDestroyer } from './domestic-models.js';
 import { createSpaceAircraft } from './feedback-models.js';
 import { createPersonnel,createResourceModel } from './personnel-models.js';
 import { createHarbor, refineFacility, COMMUNITY_3D_BUILDINGS } from './community-visuals.js';
@@ -13,6 +14,7 @@ import { createModernAircraft } from './aircraft-models.js';
 import { createStrategicModel, STRATEGIC_MODELS } from './strategic-models.js';
 import { createNuclearSilo } from './deterrence-models.js';
 import { finishAirframe } from './airframe-finish.js';
+import { loadOpenAssets, installOpenModels } from './open-assets.js';
 
 const modelURL = new URL('../assets/models/military-library.glb', import.meta.url).href;
 const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url).href;
@@ -81,7 +83,7 @@ ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothste
 }
 
 export function prepareVisualAssets() {
-  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL), new GLTFLoader().loadAsync(logisticsURL), new GLTFLoader().loadAsync(convoyURL), new GLTFLoader().loadAsync(robotURL), new GLTFLoader().loadAsync(realismURL)]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics, convoy, robots, realism]) => {
+  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL), new GLTFLoader().loadAsync(logisticsURL), new GLTFLoader().loadAsync(convoyURL), new GLTFLoader().loadAsync(robotURL), new GLTFLoader().loadAsync(realismURL), loadOpenAssets()]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics, convoy, robots, realism, openAssets]) => {
     const models = new Map();
     gltf.scene.updateMatrixWorld(true);
     modern.scene.updateMatrixWorld(true);
@@ -146,14 +148,14 @@ export function prepareVisualAssets() {
       models.set(name, template);
     }
     for (const type of ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane']) models.set(`space_${type}`, createSpaceAircraft(type));
-    for(const type of ['rifle','engineer','scout']){
+    for(const type of ['rifle','engineer','scout','evacuee']){
       const model=createPersonnel(type);model.traverse(m=>{if(m.isMesh&&m.material.name==='作战服')m.material=weatherMaterial(m.material);});models.set(type,model);
     }
     for(const type of ['fighter_china','freightPlane','airlift'])models.set(type,createModernAircraft(type));
     for(const type of STRATEGIC_MODELS)models.set(type,createStrategicModel(type));
     models.set('nuclearSilo',createNuclearSilo());
     for(const type of ['cache','salvage','depot'])models.set(`resource_${type}`,createResourceModel(type));
-    models.set('dock', createHarbor(weatherMaterial));
+    models.set('dock', createHarbor(weatherMaterial, openAssets));
     for (const type of COMMUNITY_3D_BUILDINGS.filter(type => type !== 'dock')) refineFacility(models.get(type), type, weatherMaterial);
     const electronic = models.get('strike').clone(); electronic.name = 'ewPlane';
     const podMaterial = new THREE.MeshStandardMaterial({ color: '#687667', roughness: .65, metalness: .5 });
@@ -162,9 +164,12 @@ export function prepareVisualAssets() {
     refineAirfieldRunway(models.get('airfield'));
     for (const name of ['fighter', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'ghost']) refineAircraftCanopy(models.get(name));
     for (const name of ['fighter', 'fighter_china', 'fighter_nato', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'helicopter', 'swarmCarrier', 'swarmScout', 'swarmDecoy', 'drone', 'ghost', 'aegis', ...['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane'].map(type => `space_${type}`)]) finishAirframe(models.get(name));
+    installOpenModels(models, openAssets, weatherMaterial);
+    models.set('tank_china', createChineseTank(weatherMaterial));
+    models.set('destroyer_china', createChineseDestroyer());
     ground.colorSpace = THREE.SRGBColorSpace; ground.wrapS = ground.wrapT = THREE.RepeatWrapping;
     meridian.colorSpace = THREE.SRGBColorSpace;
-    library = { models, ground, buildings, foliage, armory, meridian }; return library;
+    library = { models, ground: openAssets.ground?.map || ground, groundSurface: openAssets.ground, buildings, foliage, armory, meridian }; return library;
   }).catch(error => { pending = null; throw error; });
   return pending;
 }

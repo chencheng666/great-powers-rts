@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { lunarReliefGLSL } from './lunar-terrain.js';
 import { surfaceMaps } from './model-craft.js';
 import { islandHeightGLSL } from './island-map.js';
+import { ridgeGLSL } from './theater-scenery.js';
 
 export const COMMUNITY_3D_BUILDINGS = ['dock', 'radar', 'airfield', 'lab', 'super'];
 
@@ -17,6 +18,8 @@ export function conformGroundMark(material, game) {
     shader.vertexShader = `${lunarReliefGLSL(game)}
     ${islandHeightGLSL(game.map)}
     float craterElevation(vec2 p) {
+      ${ridgeGLSL(game.map)}
+      ${game.map.industrial?'return 1.2;':''}
       ${game.map.islands?'return islandHeight(p)+1.2;':''}
       ${checks}
       float edge = min(p.x, ${game.world.width.toFixed(1)} - p.x);
@@ -83,12 +86,12 @@ export function refineFacility(model, type, weather = material => material) {
   return model;
 }
 
-export function createHarbor(weather = material => material) {
+export function createHarbor(weather = material => material, assets = {}) {
   const group = new THREE.Group(); group.name = 'dock';
   const materials = {
     concrete: new THREE.MeshStandardMaterial({ name: '混凝土', color: '#626960', roughness: .92 }),
-    roof: new THREE.MeshStandardMaterial({ name: '屋顶', color: '#596354', roughness: .8, metalness: .25 }),
-    panel: new THREE.MeshStandardMaterial({ name: '建筑面板', color: '#737d6c', roughness: .75, metalness: .3 }),
+    roof: new THREE.MeshStandardMaterial({ name: '港口金属屋面', color: '#425e68', roughness: .7, metalness: .3 }),
+    panel: new THREE.MeshStandardMaterial({ name: '港口外墙', color: '#ffffff', vertexColors: true, roughness: .78, metalness: .2 }),
     steel: new THREE.MeshStandardMaterial({ name: '港机钢', color: '#869499', roughness: .55, metalness: .65 }),
     dark: new THREE.MeshStandardMaterial({ name: '港口橡胶', color: '#202930', roughness: .9 }),
     amber: new THREE.MeshStandardMaterial({ name: '安全黄', color: '#c5aa57', roughness: .65 }),
@@ -98,17 +101,38 @@ export function createHarbor(weather = material => material) {
   const batches = new Map();
   const add = (geometry, position, kind, rotation = 0) => {
     geometry.rotateY(rotation); geometry.translate(...position);
+    if (['panel', 'cargoBlue', 'cargoRed'].includes(kind)) {
+      const tint = new THREE.Color(kind === 'cargoBlue' ? '#456b7c' : kind === 'cargoRed' ? '#985346' : '#81908d');
+      const colors = new Float32Array(geometry.attributes.position.count * 3);
+      for (let i = 0; i < colors.length; i += 3) tint.toArray(colors, i);
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3)); kind = 'panel';
+    }
+    if (kind === 'concrete' && assets.concrete) {
+      const positions = geometry.attributes.position, normals = geometry.attributes.normal, uv = geometry.attributes.uv;
+      for (let i = 0; i < positions.count; i++) uv.setXY(i, (Math.abs(normals.getX(i)) > .5 ? positions.getZ(i) : positions.getX(i)) / 4, (Math.abs(normals.getY(i)) > .5 ? positions.getZ(i) : positions.getY(i)) / 4);
+    }
     if (!batches.has(kind)) batches.set(kind, []);
     batches.get(kind).push(geometry);
   };
   Object.assign(materials.concrete,surfaceMaps('coating'));
+  if (assets.concrete) {
+    Object.assign(materials.concrete, assets.concrete);
+    materials.concrete.color.set('#c6c8bf');
+    materials.concrete.normalScale.setScalar(.45);
+  }
   Object.assign(materials.roof,surfaceMaps('coating'));
   Object.assign(materials.steel,surfaceMaps('armor'));
   Object.assign(materials.dark,surfaceMaps('rubber'));
+  Object.assign(materials.panel, surfaceMaps('coating'));
   const box = (size, position, kind) => add(new THREE.BoxGeometry(...size), position, kind);
   box([7.2, .35, 8], [0, .2, 0], 'concrete');
   box([3.6, 2.5, 6], [-1.65, 1.6, 0], 'panel');
   box([3.85, .2, 6.3], [-1.65, 2.96, 0], 'roof');
+  for (let x = -3.4; x < .2; x += .3) box([.035, .045, 6.1], [x, 3.075, 0], 'steel');
+  for (const z of [-1.6, 1.6]) {
+    box([.7, .25, 1.15], [-1.6, 3.18, z], 'steel');
+    for (let x = -1.85; x < -1.3; x += .09) box([.035, .035, .95], [x, 3.32, z], 'dark');
+  }
   for (let z = -2.5; z <= 2.5; z += 1) {
     box([.08, 2.35, .09], [.2, 1.6, z], 'steel');
     box([.1, .58, .62], [.2, 2.15, z], 'glass');
@@ -127,6 +151,20 @@ export function createHarbor(weather = material => material) {
     for(const dy of [-.1,.1])box([.3,.05,.8],[12.05,.52+dy,z],'dark');
   }
   for (const z of [-5.6, 5.6]) {
+    if (assets.crane) {
+      const crane = assets.crane.clone(); crane.name = '开放资产装卸吊机';
+      crane.position.set(10.8, 5.1, z); crane.rotation.y = Math.PI / 2;
+      crane.traverse(mesh => { if (mesh.isMesh) mesh.castShadow = mesh.receiveShadow = true; }); group.add(crane);
+      for (const x of [10, 11.5]) {
+        for (const offset of [-2.45, 2.45]) {
+          box([.2, 4.0, .2], [x, 2.8, z + offset], 'amber');
+          box([.36, .25, .46], [x, .85, z + offset], 'dark');
+        }
+        box([.2, .24, 5.4], [x, 4.8, z], 'steel');
+        add(new THREE.BoxGeometry(.1, 5.9, .1).rotateX(.94), [x, 2.8, z], 'steel');
+      }
+      continue;
+    }
     for (const x of [8.9, 11.1]) box([.2, 4.7, .2], [x, 3.1, z], 'steel');
     box([5.1, .3, .4], [10.2, 5.5, z], 'amber');
     box([.04, 2.2, .04], [12.25, 4.3, z], 'dark');
@@ -134,11 +172,13 @@ export function createHarbor(weather = material => material) {
     box([.55, .8, .75], [9.15, 5.1, z], 'glass');
   }
   for (const z of [-8.7, 8.7]) for (const x of [2.4, 4.1]) {
-    box([1.45, 1, 2.3], [x, .88, z], 'panel');
-    for (let i = 0; i < 6; i++) box([.035, 1.03, .035], [x + .74, .88, z - 1 + i * .4], 'steel');
+    const color = (x < 3) === (z < 0) ? 'cargoBlue' : 'cargoRed';
+    box([1.45, 1, 2.3], [x, .88, z], color);
+    for (let i = 0; i < 10; i++) for (const side of [-1, 1]) box([.035, .95, .035], [x + side * .74, .88, z - 1 + i * .22], color);
+    box([1.4, .035, .035], [x, 1.395, z - 1.12], 'steel');
   }
   for (const [kind, geometries] of batches) {
-    const mesh = new THREE.Mesh(mergeGeometries(geometries, false), weather(materials[kind]));
+    const mesh = new THREE.Mesh(mergeGeometries(geometries, false), kind === 'concrete' && assets.concrete ? materials[kind] : weather(materials[kind]));
     mesh.castShadow = mesh.receiveShadow = true; group.add(mesh);
     geometries.forEach(geometry => geometry.dispose());
   }

@@ -10,6 +10,7 @@ import { weaponsHeld } from './combat-stance.js';
 import { isLifeline, harborPlan } from './maritime-logistics.js';
 import { legalIslandLanding, islandIndex } from './island-map.js';
 import { watchDepot } from './island-watch.js';
+import { theaterServiceSites, theaterServiceAllowed } from './theater-operations.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const alive = u => u.hp > 0 && !u.embarkedIn;
@@ -20,7 +21,7 @@ export const modernCombat = {
 
   aircraftServiceSites(u) {
     const rotorDrone = UNITS[u.type].tags.includes('drone');
-    return this.ownedBuildings(u.owner).filter(b => b.type === 'airfield' || rotorDrone && b.type === 'armory');
+    return this.ownedBuildings(u.owner).filter(b => (b.type === 'airfield' || rotorDrone && b.type === 'armory') && theaterServiceAllowed(this,b));
   },
 
   serviceReady(u) {
@@ -36,11 +37,11 @@ export const modernCombat = {
   serviceGroundUnit(u, dt, home = null) {
     if (!this.serviceReady(u) || isLunarRobot(this.map, u.type) || UNITS[u.type].tags.some(t => ['air', 'ship', 'logistics'].includes(t))) return false;
     const infantry = UNITS[u.type].tags.includes('infantry');
-    home ||= this.ownedBuildings(u.owner).find(b => (infantry ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type)) && distance(b, u) <= b.size * .55 + 40);
+    home ||= [...this.ownedBuildings(u.owner).filter(b => infantry ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type)),...theaterServiceSites(this,u.owner)].find(b => theaterServiceAllowed(this,b) && distance(b, u) <= b.size * .55 + 40);
     const depot=watchDepot(this,u.owner);
     if(!home && depot && distance(depot,u)<=depot.size*.55+40)home=depot;
     if(home?.id==='island-power'&&!depot)return false;
-    if (!home || home.hp <= 0 || home.owner !== u.owner || distance(home, u) > home.size * .55 + 40) return false;
+    if (!home || !theaterServiceAllowed(this,home) || home.hp <= 0 || home.owner !== u.owner || distance(home, u) > home.size * .55 + 40) return false;
     const p = this.players[u.owner], repaired = Math.min((infantry ? 12 : 22) * dt, u.maxHp - u.hp, p.credits / .3);
     u.hp += repaired; p.credits = Math.max(0, p.credits - repaired * .3); battleMetric(this, u.owner, 'repairHP', repaired);
     if (repaired > 0 && this.time >= (u.serviceFXAt || 0)) {
@@ -278,6 +279,7 @@ export const modernCombat = {
       if (truck && this.players[u.owner].credits >= price) { u.path = []; return; }
     }
     let homes = this.ownedBuildings(u.owner).filter(b => naval ? b.type === 'dock' : d.tags.includes('infantry') ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type));
+    if(!naval)homes=[...homes,...theaterServiceSites(this,u.owner)].filter(b=>theaterServiceAllowed(this,b));
     if(!naval && this.map.islands){const depot=watchDepot(this,u.owner);if(depot)homes.push(depot);homes=homes.filter(b=>islandIndex(this.map,b)===islandIndex(this.map,u));}
     const home = homes.find(b => b.id === u.order?.homeId) || homes.sort((a, b) => distance(a, u) - distance(b, u))[0];
     if (naval && u.order?.type === 'rearm' && home) u.order.homeId = home.id;
@@ -313,7 +315,7 @@ export const modernCombat = {
 
   updateSupply(u, dt) {
     const p = this.players[u.owner],depot=watchDepot(this,u.owner);
-    const home = [...this.ownedBuildings(u.owner,'factory'),...(depot?[depot]:[])].filter(b=>!this.map.islands||islandIndex(this.map,b)===islandIndex(this.map,u)).sort((a, b) => distance(a, u) - distance(b, u))[0];
+    const home = [...this.ownedBuildings(u.owner,'factory'),...theaterServiceSites(this,u.owner),...(depot?[depot]:[])].filter(b=>theaterServiceAllowed(this,b)&&(!this.map.islands||islandIndex(this.map,b)===islandIndex(this.map,u))).sort((a, b) => distance(a, u) - distance(b, u))[0];
     const manualMove = ['move', 'attackMove'].includes(u.order?.type);
     if (u.stock < 8 && home && !manualMove) {
       if (u.order?.type !== 'restock') { u.resumeOrder = u.order; u.order = { type: 'restock' }; }
@@ -481,6 +483,15 @@ export const modernCombat = {
     if (!emergency && transport.owner === 0 && (!step || !unloaded && !transport.unloadBlocked)) this.events.notice?.(unloaded ? `${unloaded} 个作战单位已卸载` : '周围没有安全的陆地卸载位置，请靠近标记沙滩或取消卸载');
     if(step)transport.unloadBlocked=!unloaded;
     return unloaded;
+  },
+
+  updateLandingUnload(transport) {
+    if(transport.type!=='landing'||!transport.unloadQueue)return;
+    if(['move','attackMove','patrol'].includes(transport.order?.type)){transport.unloadQueue=false;return;}
+    if(this.time>=(transport.nextUnloadAt||0)){
+      this.unloadTransport(transport,false,true);transport.nextUnloadAt=this.time+.75;
+      if(!transport.passengers.length)transport.unloadQueue=false;
+    }
   },
 
   carrierAircraft(carrier) { return this.ownedUnits(carrier.owner).filter(u => UNITS[u.type].tags.includes('deck') && u.homeCarrierId === carrier.id); },

@@ -63,7 +63,8 @@ test('可按中文职责、原始名称、现实型号和组合关键词搜索�
   const categories = Object.keys(CATALOG_CATEGORIES).filter(k => k !== 'all');
   assert.equal(categories.flatMap(category => catalogEntries({category})).length, catalogEntries().length);
   assert.equal(catalogEntries({category:'building'}).length, Object.keys(BUILDINGS).length);
-  assert.equal(catalogEntries({category:'infantry'}).length, 3);
+  assert.equal(catalogEntries({category:'infantry'}).length, 4);
+  assert.equal(catalogEntry('unit','evacuee').availability.available, false);
 });
 
 test('月表人物使用机器人名称、模型和电池规则，常规战区保持士兵与弹药', () => {

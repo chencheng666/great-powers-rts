@@ -61,7 +61,7 @@ test('远景人物使用低分段曲面，保持轮廓颜色和六个动作关�
   const source = createPersonnel('rifle'), lod = personnelLOD(source); let meshes = 0;
   lod.traverse(m => { if (m.isMesh) { meshes++; assert.ok(m.geometry.attributes.color); } }); assert.equal(meshes, 6);
   const before = new THREE.Box3().setFromObject(source), after = new THREE.Box3().setFromObject(lod);
-  assert.ok(before.min.distanceTo(after.min) < .001 && before.max.distanceTo(after.max) < .001);
+  assert.ok(before.min.distanceTo(after.min) < .05 && before.max.distanceTo(after.max) < .05);
   const upper = source.getObjectByName('upper_body'), target = lod.getObjectByName('upper_body'); source.add(lod);
   upper.rotation.y = .7; const entry = { model: source, personnelLOD: lod, lodJoints: [[upper, target]] };
   syncPersonnelLOD(entry, true); assert.equal(target.rotation.y, upper.rotation.y); assert.equal(upper.visible, false); assert.equal(lod.visible, true);

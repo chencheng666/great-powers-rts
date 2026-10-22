@@ -27,6 +27,7 @@ import { runwayAircraft, airfieldApron } from './airfield-rules.js';
 import { islandDistance } from './island-map.js';
 import { navalPath, nearestSeaPoint } from './island-navigation.js';
 import { updateIslandCapture } from './island-watch.js';
+import { theaterFacility, theaterCaptureTarget, updateTheaterEngineer, protectedPassenger, recordTheaterMining } from './theater-operations.js';
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -426,13 +427,13 @@ export class Game {
     if(this.isControlLocked(side))return false;
     if (append) { this.orderMode = null; return this.appendWaypoint(x, y, attackMove, side); }
     const patrol = this.orderMode === 'patrol';
-    const selectedUnits = this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !e.embarkedIn && !FREIGHT_TYPES.includes(e.type));
+    const selectedUnits = this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !e.embarkedIn && !protectedPassenger(e) && !FREIGHT_TYPES.includes(e.type));
     if (!selectedUnits.length) {
       for (const id of this.selected) this.setRallyPoint(side, id, x, y);
       return;
     }
     const enemy = [...this.units, ...this.buildings].filter(e => e.owner !== side && e.hp > 0 && this.canSeeEntity(side, e) && distance(e, { x, y }) < (e.kind === 'building' ? e.size * 0.55 : 25)).at(-1);
-    const site = [...this.oil, ...this.beacons, ...(this.resourceSites||[]).filter(s=>s.type==='depot')].find(item => distance(item, { x, y }) < 40 && item.owner !== side && this.hasExploredFor(side, item.x, item.y));
+    const site = theaterCaptureTarget(this,{x,y},side) || [...this.oil, ...this.beacons, ...(this.resourceSites||[]).filter(s=>s.type==='depot')].find(item => distance(item, { x, y }) < 40 && item.owner !== side && this.hasExploredFor(side, item.x, item.y));
     const cache=(this.resourceSites||[]).find(s=>s.type!=='depot'&&s.amount>0&&distance(s,{x,y})<45&&this.hasExploredFor(side,s.x,s.y));
     const bomb=this.ownedBuildings(side).find(b=>b.sabotage&&distance(b,{x,y})<b.size*.55);
     const transport = !attackMove && this.activeUnits(side).find(v => UNITS[v.type].capacity && !this.selected.includes(v.id) && distance(v, { x, y }) < (v.type === 'carrier' ? 95 : v.type === 'landing' ? 75 : 45));
@@ -554,7 +555,7 @@ export class Game {
     this.unitIndex = null;
     for (const hit of this.pendingHits) this.applyHit(hit);
     this.units = this.units.filter(u => u.hp > 0);
-    this.buildings = this.buildings.filter(b => b.hp > 0);
+    this.buildings = this.buildings.filter(b => b.hp > 0 || theaterFacility(this,b.id));
     this.effects.forEach(e => { e.age += dt; });
     this.effects = this.effects.filter(e => e.age < e.duration);
     this.fogTimer -= dt;
@@ -688,6 +689,7 @@ export class Game {
   }
 
   updateUnit(u, dt) {
+    if (protectedPassenger(u)) { u.order = null; return; }
     if (isLunarRobot(this.map, u.type) && (this.time < u.stunUntil || this.updateRobotEnergy(u, dt))) return;
     if (u.deployment) {
       if (this.time < u.stunUntil) return;
@@ -706,6 +708,7 @@ export class Game {
       return;
     }
     if (this.time < u.stunUntil) return;
+    this.updateLandingUnload(u);
     this.updateDroneAutonomy(u);
     u.fireTimer -= dt * (u.jammedUntil > this.time ? .4 : 1);
     const d = UNITS[u.type];
@@ -726,6 +729,7 @@ export class Game {
     if (u.type === 'engineer') {
       if (u.order?.type === 'capture') {
         const site = this.getEntity(u.order.targetId);
+        if (updateTheaterEngineer(this,u,site,dt)) return;
         if (updateIslandCapture(this,u,site,dt)) return;
         if (site?.owner === u.owner) u.order = null;
         else if (site && distance(u, site) < 38) {
@@ -857,7 +861,7 @@ export class Game {
   }
 
   isGroundBlocked(x, y, radius = 0) {
-    if (this.map.islands) return islandDistance(this.map,x,y) < radius;
+    if (this.map.islands && islandDistance(this.map,x,y) < radius) return true;
     return this.map.barriers.some(rect => intersectsRect(x, y, radius, rect));
   }
 
@@ -1018,13 +1022,17 @@ export class Game {
   closestEnemy(source, range, owner, stationary = false) {
     let nearest = null, best = stationary ? Infinity : range;
     for (const target of [...this.units, ...this.buildings]) {
-      if (target.owner === owner || target.hp <= 0 || !this.canAttack(source, target) || !this.droneGuardAllows(source, target)) continue;
-      if (source.kind === 'building' && !this.hasLineOfFire(source, target)) continue;
-      const d = distance(source, target) - (target.kind === 'building' ? target.size * 0.3 : 0);
+      if (target.owner === owner || target.hp <= 0 || target.embarkedIn) continue;
+      // 待接管的任务设施不触发我方自动开火，仍允许玩家主动破坏并承担修复代价。
+      if(owner===0&&target.kind==='building'&&theaterFacility(this,target.id))continue;
+      const gap = distance(source, target), d = gap - (target.kind === 'building' ? target.size * 0.3 : 0);
+      // 先排除射程外目标，再做桥梁遮挡、反潜和视野判断；不改变目标优先级。
       if (stationary) {
-        const gap = distance(source, target), reach = this.unitRange(source, target) + (target.kind === 'building' ? target.size * .36 : 0);
-        if (gap < (UNITS[source.type].minRange || 0) || gap > reach || !this.canSeeEntity(owner, target) || !this.hasLineOfFire(source, target)) continue;
+        const reach = this.unitRange(source, target) + (target.kind === 'building' ? target.size * .36 : 0);
+        if (gap < (UNITS[source.type].minRange || 0) || gap > reach) continue;
       } else if (d >= range) continue;
+      if (!this.canAttack(source, target) || !this.droneGuardAllows(source, target)) continue;
+      if ((stationary || source.kind === 'building') && !this.hasLineOfFire(source, target)) continue;
       const airborne = target.kind === 'unit' && UNITS[target.type].tags.includes('air') && !this.aircraftGrounded(target);
       const primaryAir = ['fighter','navalFighter'].includes(source.type), primaryGround = ['strike','navalStrike'].includes(source.type);
       const priority = primaryAir ? airborne ? .3 : 1 : primaryGround ? airborne ? 1 : .3 : ['aa', 'frigate'].includes(source.type) && target.kind === 'unit' && UNITS[target.type].tags.includes('jet') ? .65 : 1;
@@ -1041,6 +1049,7 @@ export class Game {
       u.harvestState = 'return';
       if (distance(u, home) < home.size * 0.57 + 20) {
         this.players[u.owner].credits += u.cargoValue;
+        if(u.owner===0)recordTheaterMining(this,u.cargoValue);
         if (u.owner === 0 && u.cargoValue >= 100) this.effects.push({ type: 'income', x: home.x, y: home.y - 30, amount: Math.round(u.cargoValue), age: 0, duration: 1.1 });
         u.cargo = 0; u.cargoValue = 0; u.harvestState = 'find'; u.path = [];
       } else this.moveUnit(u, home, dt, home.size * 0.52 + 12);
@@ -1080,10 +1089,10 @@ export class Game {
       if (this.map.islands) {
         const key = `${destination.x.toFixed(1)},${destination.y.toFixed(1)}`;
         const progress=u.navalProgress;
-        if(!progress || progress.goal!==key)u.navalProgress={goal:key,distance:distance(u,destination),until:this.time+3};
-        else if(this.time>=progress.until){if(progress.distance-distance(u,destination)<10){u.path=[];u.navalRetryAt=0;}progress.distance=distance(u,destination);progress.until=this.time+3;}
+        if(!progress || progress.goal!==key){u.navalProgress={goal:key,distance:distance(u,destination),until:this.time+3};u.navalStalled=false;}
+        else if(this.time>=progress.until){u.navalStalled=progress.distance-distance(u,destination)<10;if(u.navalStalled){u.path=[];u.navalRetryAt=0;}progress.distance=distance(u,destination);progress.until=this.time+3;}
         if (u.pathGoal !== key || !u.path.length && this.time >= (u.navalRetryAt || 0)) {
-          u.path = navalPath(this,u,destination);u.pathGoal=key;u.navalRetryAt=this.time+2;
+          u.path = navalPath(this,u,destination,stopDistance);u.pathGoal=key;u.navalRetryAt=this.time+2;
         }
         while(u.path.length && distance(u,u.path[0])<14)u.path.shift();
         const point=u.path[0] || destination;

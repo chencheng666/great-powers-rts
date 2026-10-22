@@ -4,6 +4,7 @@ const clamp = v => Math.max(0, Math.min(1, v));
 
 export function lunarCraters(game) {
   if (!game.map.future) return [];
+  if(game.map.craters)return game.map.craters.map(c=>({...c,depth:c.depth??32}));
   const { width, height = 2080 } = game.world, key = `${width}:${height}:${game.homeY}`;
   if (!layouts.has(game.map)) layouts.set(game.map, new Map());
   const cache = layouts.get(game.map);

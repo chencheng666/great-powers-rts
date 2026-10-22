@@ -16,7 +16,8 @@ export function islandWatchMap() {
       { name: '东南礁岛', points: ellipse(3940, 2660, 340, 340) },
       { name: '远海岩岛', points: ellipse(3920, 620, 260, 280) }
     ],
-    beaches: [{ x1: 1940, y1: 1400, x2: 2280, y2: 1780 }, { x1: 1070, y1: 2390, x2: 1380, y2: 2640 }],
+    beaches: [{ x1: 1940, y1: 1400, x2: 2280, y2: 1780 }, { x1: 1070, y1: 2390, x2: 1380, y2: 2640 },
+      {x1:900,y1:700,x2:1250,y2:1000},{x1:3460,y1:2530,x2:3750,y2:2810}],
     beacons: [{ id: 'island-signal', x: 2320, y: 1470 }, { id: 'island-port', x: 2260, y: 1790 }],
     resources: [{ id: 'island-power', type: 'depot', x: 2600, y: 1560 }],
     harbors: [{ x: 2200, y: 1720, angle: Math.PI, approach: { x: 1900, y: 1920 } }],

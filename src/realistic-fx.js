@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { modelShotOrigin } from './open-assets.js';
 import { impactProfile, tracerEndpoints } from './visual-detail.js';
 import { createCraterDebris, conformGroundMark } from './community-visuals.js';
 
@@ -57,11 +58,13 @@ export const realisticEffects = {
   },
 
   createWeaponEffect(effect, group) {
-    const from = this.effectHeight(effect.sourceType, effect.x, effect.y), to = this.effectHeight(effect.targetType, effect.toX, effect.toY);
+    const origin = modelShotOrigin(effect, this.entities.get(effect.sourceId));
+    if (origin) effect = { ...effect, ...origin };
+    const from = effect.sourceHeight ?? this.effectHeight(effect.sourceType, effect.x, effect.y), to = this.effectHeight(effect.targetType, effect.toX, effect.toY);
     const color = ['laser', 'robotPulse'].includes(effect.style) ? '#85eaff' : effect.style === 'repair' ? '#77dcb7' : effect.style === 'railgun' ? '#b9e9f5' : '#ffcf91';
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([point(effect.x, effect.y, from), point(effect.toX, effect.toY, to)]), new THREE.LineBasicMaterial({ color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     const flash = this.effectSprite('#fff0c5'), flare = this.effectSprite(color);
-    group.add(line, flash, flare); group.userData.weapon = { from, to, color };
+    group.add(line, flash, flare); group.userData.weapon = { from, to, color, origin };
     const { muzzle, beam } = tracerEndpoints(effect), x = effect.x + (effect.toX - effect.x) * muzzle, y = effect.y + (effect.toY - effect.y) * muzzle;
     if (effect.style !== 'repair') this.combatFlash(x, y, from, color, beam ? 1600 : effect.sourceType === 'tank' ? 6500 : 1200, .09);
     if (!beam && this.trails.length < 120) {
@@ -71,6 +74,7 @@ export const realisticEffects = {
   },
 
   animateWeaponEffect(effect, group) {
+    if (group.userData.weapon.origin) effect = { ...effect, ...group.userData.weapon.origin };
     const { from, to, color } = group.userData.weapon, { muzzle, beam, head, tail, flash } = tracerEndpoints(effect), t = effect.age / effect.duration;
     group.position.set(0, 0, 0);
     const [line, core, flare] = group.children, positions = line.geometry.attributes.position;

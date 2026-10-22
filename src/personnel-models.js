@@ -7,8 +7,8 @@ export function createPersonnel(type, { distant = false } = {}) {
   const root = new THREE.Group(); root.name = type;
   const group = new THREE.Group(); group.name = 'upper_body'; root.add(group);
   const weaponPose = new THREE.Group(); weaponPose.name = 'weapon_pose'; group.add(weaponPose);
-  const spy = type === 'scout', engineer = type === 'engineer';
-  const fabric = craftedMaterial(spy ? '黑色西装' : '作战服', spy ? '#11151a' : engineer ? '#8b957b' : '#b1b99a', spy ? 'fabric' : 'uniform', .95, 0);
+  const spy = type === 'scout', engineer = type === 'engineer' || type === 'evacuee';
+  const fabric = craftedMaterial(spy ? '黑色西装' : '作战服', spy ? '#11151a' : type === 'evacuee' ? '#d6a56c' : engineer ? '#8b957b' : '#b1b99a', spy ? 'fabric' : 'uniform', .95, 0);
   const dark = craftedMaterial('皮革与橡胶', '#252b2d', 'rubber', .87, 0);
   const armor = craftedMaterial('携行具', '#485549', 'fabric', .9, 0);
   const steel = craftedMaterial('武器金属', '#677176', 'coating', .5, .65);
@@ -18,11 +18,12 @@ export function createPersonnel(type, { distant = false } = {}) {
   const mesh = (parent, geometry, material, position, rotation) => {
     const m = new THREE.Mesh(geometry, material); m.position.set(...position); if (rotation) m.rotation.set(...rotation); parent.add(m); return m;
   };
-  const box = (parent, mat, pos, size, rotation) => mesh(parent, distant ? new THREE.BoxGeometry(...size) : roundedPart(size, .02), mat, pos, rotation);
-  const sphere = (parent, mat, pos, radius, scale = [1, 1, 1]) => { const m = mesh(parent, new THREE.SphereGeometry(radius, distant ? 8 : 16, distant ? 6 : 12), mat, pos); m.scale.set(...scale); return m; };
+  const box = (parent, mat, pos, size, rotation) => mesh(parent, distant || Math.min(...size) < .025 ? new THREE.BoxGeometry(...size) : roundedPart(size, .02), mat, pos, rotation);
+  const sphere = (parent, mat, pos, radius, scale = [1, 1, 1]) => { const m = mesh(parent, new THREE.SphereGeometry(radius, distant ? 6 : 12, distant ? 4 : 8), mat, pos); m.scale.set(...scale); return m; };
   const limb = (parent, mat, from, to, radius) => {
     const a = new THREE.Vector3(...from), b = new THREE.Vector3(...to), length = a.distanceTo(b);
-    const m = mesh(parent, new THREE.CapsuleGeometry(radius, Math.max(.01, length - radius * 2), distant ? 1 : 5, distant ? 6 : 12), mat, a.clone().add(b).multiplyScalar(.5).toArray());
+    const geometry=distant?new THREE.CylinderGeometry(radius,radius,length,4):new THREE.CapsuleGeometry(radius,Math.max(.01,length-radius*2),3,10);
+    const m = mesh(parent, geometry, mat, a.clone().add(b).multiplyScalar(.5).toArray());
     m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.sub(a).normalize()); return m;
   };
   mesh(group, bodyLoft([[.88,.12,.16],[1.03,.145,.18],[1.18,.145,.19],[1.35,.15,.22],[1.45,.12,.24],[1.51,.075,.13]], distant ? 8 : 20), fabric, [0,0,0]);
@@ -40,15 +41,19 @@ export function createPersonnel(type, { distant = false } = {}) {
       box(group, dark, [.116,1.786,side*.044], [.012,.008,.034], [side*.1,0,0]);
     }
     const leg = new THREE.Group(); leg.name = side < 0 ? 'leg_left' : 'leg_right'; leg.position.set(-.01,.91,side*.105); root.add(leg);
-    mesh(leg, bodyLoft([[-.44,.067,.075],[-.32,.083,.085],[-.10,.095,.089],[0,.09,.085]], distant ? 8 : 20), fabric, [0,0,0]);
+    mesh(leg, bodyLoft([[-.44,.067,.075],[-.36,.079,.08],[-.32,.073,.078],[-.27,.086,.086],[-.10,.095,.089],[0,.09,.085]], distant ? 8 : 14), fabric, [0,0,0]);
     const knee = new THREE.Group(); knee.name = side < 0 ? 'knee_left' : 'knee_right'; knee.position.y = -.43; leg.add(knee);
-    mesh(knee, bodyLoft([[-.36,.045,.055],[-.25,.064,.06],[-.10,.072,.068],[.035,.065,.075]], distant ? 8 : 20), fabric, [0,0,0]);
+    mesh(knee, bodyLoft([[-.36,.045,.055],[-.30,.059,.064],[-.26,.05,.056],[-.22,.066,.066],[-.10,.072,.068],[.035,.065,.075]], distant ? 8 : 14), fabric, [0,0,0]);
     box(knee, dark, [.033,-.375,0], [.205,.12,.138]);
     box(knee, dark, [.033,-.437,0], [.21,.02,.142]);
     for (const x of [-.025,.015,.055,.085]) box(knee, dark, [x,-.45,0], [.015,.011,.14]);
     if (!spy) {
       sphere(knee, armor, [.071,.0,0], .071, [.37,1.15,.88]);
       box(leg, fabric, [-.01,-.16,side*.075], [.10,.15,.025]);
+      if (!distant) {
+        box(knee, dark, [.079,-.045,0], [.009,.015,.10]);
+        box(leg, fabric, [-.01,-.11,side*.092], [.10,.023,.008]);
+      }
     }
   }
   // 步枪手的前臂与手腕围绕枪托、握把和护木布置，避免武器悬空。
@@ -68,7 +73,7 @@ export function createPersonnel(type, { distant = false } = {}) {
   if (spy) {
     box(group, shirt, [.135,1.35,0], [.025,.25,.12]); box(group, dark, [.154,1.34,0], [.015,.23,.023]);
     for (const side of [-1,1]) box(group, fabric, [.133,1.40,side*.079], [.035,.18,.075], [side*.22,0,0]);
-    const hair = mesh(group, new THREE.SphereGeometry(.13,distant ? 8 : 20,distant ? 6 : 12,0,Math.PI*2,0,Math.PI*.48), dark, [.003,1.76,0]); hair.scale.set(.86,1.09,.89);
+    const hair = mesh(group, new THREE.SphereGeometry(.13,distant ? 6 : 20,distant ? 4 : 12,0,Math.PI*2,0,Math.PI*.48), dark, [.003,1.76,0]); hair.scale.set(.86,1.09,.89);
     for (const side of [-1,1]) box(group, dark, [.12,1.764,side*.049], [.022,.041,.061]);
     box(group, steel, [.13,1.766,0], [.015,.007,.039]);
     box(group, dark, [.04,.76,.28], [.11,.29,.33]); box(group, steel, [.10,.79,.28], [.01,.022,.028]);
@@ -76,13 +81,20 @@ export function createPersonnel(type, { distant = false } = {}) {
     limb(group, dark, [.035,.91,.225], [.035,.96,.225], .012); limb(group, dark, [.035,.91,.335], [.035,.96,.335], .012);
     limb(group, dark, [.035,.96,.225], [.035,.96,.335], .012);
   } else {
-    const helmet = mesh(group, new THREE.SphereGeometry(.14,distant ? 8 : 20,distant ? 6 : 12,0,Math.PI*2,0,Math.PI*.59), engineer ? shirt : armor, [0,1.79,0]); helmet.scale.set(1,.82,1.02);
+    const helmet = mesh(group, new THREE.SphereGeometry(.14,distant ? 6 : 20,distant ? 4 : 12,0,Math.PI*2,0,Math.PI*.59), engineer ? shirt : armor, [0,1.79,0]); helmet.scale.set(1,.82,1.02);
     const rim = mesh(group, new THREE.TorusGeometry(.137,.009,distant ? 3 : 6,distant ? 8 : 28), dark, [0,1.783,0], [Math.PI/2,0,0]); rim.scale.y=1.02;
     for (const side of [-1,1]) {
       limb(group, dark, [-.015,1.77,side*.115], [.08,1.64,side*.048], .007);
       box(group, armor, [.105,1.31,side*.135], [.05,.37,.055], [0,side*.1,0]);
       limb(group, armor, [-.16,1.43,side*.14], [.15,1.34,side*.14], .015);
+      if (!distant) {
+        box(group, dark, [.0,1.82,side*.137], [.13,.035,.012]);
+        box(group, armor, [-.03,1.727,side*.13], [.055,.075,.025]);
+        limb(group, dark, [-.03,1.706,side*.14], [.10,1.69,side*.075], .006);
+        for (const y of [1.15,1.22,1.29]) box(group, dark, [-.294,y,side*.073], [.006,.008,.062]);
+      }
     }
+    if (!distant) box(group, dark, [.135,1.845,0], [.025,.045,.041]);
     box(group, armor, [.147,1.255,0], [.07,.34,.29]); box(group, armor, [-.17,1.255,0], [.065,.32,.27]);
     for (const z of [-.095,0,.095]) {
       box(group, fabric, [.205,1.17,z], [.065,.115,.085]); box(group, dark, [.24,1.22,z], [.008,.025,.074]);
@@ -110,7 +122,12 @@ export function createPersonnel(type, { distant = false } = {}) {
       limb(weaponPose, dark, [-.01,1.26,.03], [.36,1.10,.03], .006);
     }
   }
-  root.userData.detailVersion = 2;
+  root.userData.detailVersion = 3;
+  if(distant){
+    const removed=[];
+    root.traverse(m=>{if(!m.isMesh||m.material===team)return;m.geometry.computeBoundingBox();const size=m.geometry.boundingBox.getSize(new THREE.Vector3());if(Math.max(size.x,size.y,size.z)<.095||Math.min(size.x,size.y,size.z)<.013)removed.push(m);});
+    for(const m of removed){m.removeFromParent();m.geometry.dispose();}
+  }
   compact(root); group.position.y = 1;
   for (const child of group.children) child.position.y -= 1;
   return root;

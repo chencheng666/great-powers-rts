@@ -1,0 +1,53 @@
+第三方美术资产署名与许可
+核验日期：2026-10-22
+
+这些资产不因本项目的 MIT 许可证而改变原许可。模型是爱好者作品，
+不是武器厂商授权的精密复刻，也不表示相关作者、厂商为本项目背书。
+
+Abrams tank
+作者：Sketlux；基于 yd 为 Freeciv 制作的原坦克模型修改。
+来源：https://opengameart.org/content/abrams-tank
+许可：CC0 1.0，https://creativecommons.org/publicdomain/zero/1.0/
+本项目文件：assets/third-party/abrams.glb
+修改：坐标与尺度统一、炮塔校正、独立炮管、减面、远景网格、UV与材质重制，
+增加原创阵营标记及实例化履带。仅替换西陆同盟普通坦克外观。
+
+Lockheed Martin F-22 Raptor
+作者：andertan
+原始作品：https://sketchfab.com/3d-models/lockheed-martin-f-22-raptor-7e7b3c372e374dda98e70208d09cfdcf
+许可：CC BY 4.0，https://creativecommons.org/licenses/by/4.0/
+完整许可：https://creativecommons.org/licenses/by/4.0/legalcode
+取得的 GLB：Airframe Archive 360 公开展示转换版，
+https://models.airframearchive360.com/f22.glb?v=models-2026-08-25
+转换来源与署名：https://airframearchive360.com/model-licenses.json
+本项目文件：assets/third-party/f22.glb
+修改：方向与尺度统一、去掉预制喷焰、合并网格、远景减面、玻璃及涂层调整，
+复用原始 UV、颜色和法线贴图；接入项目原创起落架、弹舱与阵营标记。
+再分发时请保留以上作者、原作品链接、许可链接和修改说明。
+
+Overhead Crane
+作者：Timothy3D / Poly Haven
+来源：https://polyhaven.com/a/overhead_crane
+许可：CC0 1.0，https://polyhaven.com/license
+本项目文件：assets/third-party/harbor-crane.glb
+修改：约九万面减至约一万面、尺度整理、材质合批；保留PBR贴图。
+港口基座、仓储、支架、护舷及玩法仍为项目原有内容，不声称整座港口来自该作者。
+
+Aerial Grass Rock
+作者：Rob Tuytel / Poly Haven
+来源：https://polyhaven.com/a/aerial_grass_rock
+许可：CC0 1.0，https://polyhaven.com/license
+本项目文件：assets/third-party/ground-*.jpg
+修改：采用1K颜色、OpenGL法线、粗糙度贴图；游戏内叠加道路、岸带和地表颜色变化。
+用于常规地图，不替换子午月壤。
+
+Concrete Floor Worn 001
+作者：Dimitrios Savva（摄影）、Rico Cilliers（处理）/ Poly Haven
+来源：https://polyhaven.com/a/concrete_floor_worn_001
+许可：CC0 1.0，https://polyhaven.com/license
+本项目文件：assets/third-party/concrete-*.jpg
+修改：采用1K颜色、OpenGL法线、粗糙度贴图；应用于港口混凝土并统一纹理尺度。
+
+所有资产在游戏运行时从本地加载，不连接上述素材网站。未采用 NC、
+授权不一致的转载或已知其他商业游戏提取模型。来源声明不能替代权利人保证；
+发现权利争议请提供原作品与证据，以便及时核查、停用或替换。

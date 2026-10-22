@@ -33,6 +33,7 @@ await writeFile(join(destination, 'PLAY.html'), html);
 await copyFile(join(root, 'packaging/README.txt'), join(destination, 'README.txt'));
 await copyFile(join(root, 'LICENSE'), join(destination, 'LICENSE'));
 await copyFile(join(root, 'ASSETS.md'), join(destination, 'ASSETS.md'));
+await copyFile(join(root, 'THIRD-PARTY-ASSETS.txt'), join(destination, 'THIRD-PARTY-ASSETS.txt'));
 await copyFile(join(root, 'EQUIPMENT.md'), join(destination, 'EQUIPMENT.md'));
 const voiceGuide = await readFile(join(root, 'docs/中文语音使用教程.md'), 'utf8');
 await writeFile(join(destination, '中文语音使用教程.md'), voiceGuide.replace('wechat-feedback-20261007/images/04-chinese-voice.png', '中文语音设置.png'));
@@ -41,7 +42,7 @@ for (const name of ['启动游戏-Linux.sh', '安装到用户菜单-Linux.sh']) 
   await copyFile(join(root, 'packaging', name), join(destination, name));
   await chmod(join(destination, name), 0o755);
 }
-const licenses = [];
+const licenses = [await readFile(join(root, 'THIRD-PARTY-ASSETS.txt'), 'utf8')];
 for (const [name, path, readmeSection] of [
   ['Three.js', 'node_modules/three/LICENSE', false],
   ['Lucide', 'node_modules/lucide/LICENSE', false],

@@ -9,6 +9,7 @@ import { supportsDroneAutonomy } from './drone-autonomy.js';
 export const CATALOG_CATEGORIES = { all: '全部', infantry: '人物／机器人', ground: '地面装备', air: '空中装备', naval: '舰艇', building: '建筑' };
 // 这里只补充战术说明；造价、生命、弹药、前置和地图限制读取实际规则。
 const GUIDES = {
+  evacuee:['撤离保护目标','归航行动中等待登陆舰接运；抵达安全出口并完成停驻才计入撤离人数。','无武装、不能生产或下达作战命令。运输途中仍可能受损，重复装卸不增加撤离积分。'],
   helicopter:['低空反装甲','越障接近装甲，有限导弹、机场整备；配合制空护航。','不能攻击飞行目标；高空制空机与防空车克制，激光车不能代替常规防空。'],
   ballistic:['常规纵深打击','以共享实时视野锁定发射时坐标，展开 5 秒后发射高弧线常规弹。','有最小射程、飞行时间和两发容量；目标可疏散，区域反导可拦截，发射车怕突击。不是核武器。'],
   abm:['有限区域反导','有电和雷达站支持时拦截可见弹道弹，通常两枚拦截弹应对一枚来袭弹。','只能反导；四发弹药、付费补给，断电、饱和打击、地面突击都能削弱它。不是现实反核保证。'],
@@ -78,6 +79,7 @@ export function catalogAvailability(kind, type, faction, mapId) {
   const map = MAPS[mapId], d = kind === 'unit' ? UNITS[type] : BUILDINGS[type];
   if (d.faction && d.faction !== faction) return { available: false, reason: `仅 ${FACTIONS[d.faction].name} 可生产` };
   if(d.tags?.includes('swarm'))return {available:false,reason:'异构母机释放的临时子机，不可独立生产'};
+  if(type==='evacuee')return {available:false,reason:'归航行动保护目标，不可生产'};
   if (type === 'harvester' && !map.future) return { available: false, reason: '新战局仅子午采矿经济使用；旧采矿存档例外' };
   if (d.tags?.includes('logistics')) return { available: false, reason: map.future ? '月表采用本地采矿，不启用外部运输班次' : type === 'containerShip' && !map.water ? '仅常规海图自动运行，不可手动生产' : '外部援助自动运行，不可手动生产' };
   if ((d.naval || d.tags?.includes('ship')) && !map.water) return { available: false, reason: '需要海域战区' };

@@ -42,6 +42,8 @@ import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
 import { COMBAT_STANCES, supportsCombatStance, combatStance } from './combat-stance.js';
 import { isLifeline, LIFELINE, lifelineSummary, harborPlan, freightRules } from './maritime-logistics.js';
 import { isIslandWatch, watchPanelHTML, watchSummary } from './island-watch.js';
+import { theaterDefinition } from './theater-operations.js';
+import { theaterPanelHTML, theaterSummary } from './theater-ui.js';
 import { lifelinePanelHTML } from './lifeline-ui.js';
 import { loadChallengeThumbnails } from './challenge-thumbnails.js';
 
@@ -415,7 +417,7 @@ function updateUI(force = false) {
   if(locked){state.drag=null;state.renderer.dragBox=null;}
   $('#save-btn').disabled = !g.running || !!g.online;
   if (g.victoryMode === 'control') $('#battle-objective').textContent = `信标积分 ${Math.floor(p.controlScore)} : ${Math.floor(g.players[1].controlScore)} / 240`;
-  if (g.challenge) { const s=challengeStatus(g);$('#battle-objective').textContent=`${s.definition.name} · 剩余 ${s.seconds} 秒 · ${isIslandWatch(g)?watchSummary(g).status+' · ':''}${isLifeline(g)?`海运 ${lifelineSummary(g).delivered} / ${freightRules(g).goal} · `:g.challenge.intel?`情报 ${g.challenge.intel.completed} / ${s.definition.nodes.length} · `:g.challenge.beachhead?`驻守 ${Math.floor(g.challenge.beachhead.hold)} / ${s.definition.holdTime} 秒 · `:''}${s.definition.targetName} ${s.health}%`; }
+  if (g.challenge) { const s=challengeStatus(g);$('#battle-objective').textContent=`${s.definition.name} · 剩余 ${s.seconds} 秒 · ${isIslandWatch(g)?watchSummary(g).status+' · ':g.challenge.operation?theaterSummary(g)+' · ':''}${isLifeline(g)?`海运 ${lifelineSummary(g).delivered} / ${freightRules(g).goal} · `:g.challenge.intel?`情报 ${g.challenge.intel.completed} / ${s.definition.nodes.length} · `:g.challenge.beachhead?`驻守 ${Math.floor(g.challenge.beachhead.hold)} / ${s.definition.holdTime} 秒 · `:''}${s.definition.targetName} ${s.health}%`; }
   const environmentStatus = $('#environment-status');
   environmentStatus.hidden = !g.map.future;
   if (g.map.future) { const weather = weatherState(g.map, g.time); environmentStatus.textContent = `${weather.phase === 'storm' ? '离子扰动' : weather.phase === 'warning' ? '扰动预警' : '通信稳定'} · ${Math.ceil(weather.remaining)} 秒`; }
@@ -463,7 +465,8 @@ function updateSidebar(force = false) {
   if (isLifeline(g)) {
     const s=lifelineSummary(g), key=`lifeline:${Math.ceil(g.time)}:${g.paused}:${g.players[0].credits<10}:${g.hasPower(0)}:${JSON.stringify(s.control)}:${s.ports.map(p=>p.id)}:${s.ships.map(u=>`${u.id}:${u.freight.blockedReason}:${u.freight.phase}`)}`;
     if(!force&&(root.dataset.renderKey===key||root.contains(document.activeElement)&&document.activeElement.matches('select')))return;
-    root.dataset.renderKey=key;root.innerHTML=(isIslandWatch(g)?watchPanelHTML(g,icon):'')+lifelinePanelHTML(g,icon,state.renderer.freightRoutesVisible!==false);
+    root.dataset.renderKey=key;root.innerHTML=(isIslandWatch(g)?watchPanelHTML(g,icon):'')+theaterPanelHTML(g,icon)+lifelinePanelHTML(g,icon,state.renderer.freightRoutesVisible!==false);
+    bindTheaterFocus(root,g);
     root.querySelectorAll('[data-watch-focus]').forEach(button=>button.addEventListener('click',()=>{const e=g.getEntity(button.dataset.watchFocus);if(e)state.renderer.centerOn(e.x,e.y);}));
     root.querySelectorAll('[data-freight]').forEach(input=>input.addEventListener('change',()=>{
       const field=input.dataset.freight;
@@ -475,6 +478,11 @@ function updateSidebar(force = false) {
     refreshIcons();return;
   }
   if (g.challenge) {
+    if(g.challenge.operation){
+      const key=`theater:${Math.floor(g.time*2)}:${state.tab}`;
+      if(!force&&root.dataset.renderKey===key)return;
+      root.dataset.renderKey=key;root.innerHTML=theaterPanelHTML(g,icon);bindTheaterFocus(root,g);refreshIcons();return;
+    }
     const s=challengeStatus(g),key=`challenge:${g.challenge.id}:${s.seconds}:${s.health}:${s.remaining}:${g.challenge.wave}:${g.challenge.intel?.completed}:${Math.floor((g.challenge.intel?.progress||0)*5)}:${Math.floor((g.challenge.beachhead?.hold||0)*5)}:${s.activity}:${state.tab}`;
     if (!force&&root.dataset.renderKey===key) return;
     root.dataset.renderKey=key;
@@ -546,6 +554,14 @@ function updateSidebar(force = false) {
     root.querySelector('.tactic-details').insertAdjacentHTML('beforeend','<div>物资箱：陆军回收 300；设备回收场：工程师／矿车／补给车回收 900。</div><div>能源仓：工程师接管，40 电力、有限 1800 库存，可作为扩建前哨。</div>');
   }
   refreshIcons();
+}
+
+function bindTheaterFocus(root,g) {
+  root.querySelectorAll('[data-theater-focus]').forEach(button=>button.addEventListener('click',()=>{
+    const key=button.dataset.theaterFocus,d=theaterDefinition(g);
+    const point=key==='objective'?d.objective:key==='collection'?d.collection:g.getEntity(Number(key));
+    if(point)state.renderer.centerOn(point.x,point.y);
+  }));
 }
 
 function updateSelection() {
@@ -747,7 +763,9 @@ function locateAttack() {
 function showHelp() {
   if (state.game?.running) state.game.paused = true;
   gameAudio.setPaused(true);
-  showModal('操作说明', `<p>${state.game?.challenge ? CHALLENGES[state.game.challenge.id].briefing+(isLifeline(state.game)?' 固定护航编队，海运抵港才结算，应急空运不计任务交付。':' 固定编队与整备资金，不开放生产和外部收入。') : VICTORY_MODES[state.game?.victoryMode || 'quick'].description+'即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。'}补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
+  const mission = state.game?.challenge && CHALLENGES[state.game.challenge.id];
+  const missionRules = mission?.operation ? ' 固定任务编队，不开放自由生产；增援、运输、工业与采矿收入依本关规则。' : mission && isLifeline(state.game) ? ' 固定护航编队，海运抵港才结算，应急空运不计任务交付。' : ' 固定编队与整备资金，不开放生产和外部收入。';
+  showModal('操作说明', `<p>${mission ? mission.briefing+missionRules : VICTORY_MODES[state.game?.victoryMode || 'quick'].description+'即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。'}补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
     <div class="keyline"><span>选择 / 框选部队</span><kbd>左键 / 拖动</kbd></div>
     <div class="keyline"><span>移动 / 攻击目标</span><kbd>右键</kbd></div>
     <div class="keyline"><span>攻击移动 / 停止</span><kbd>A / S</kbd></div>
@@ -757,7 +775,8 @@ function showHelp() {
     <div class="keyline"><span>平移 / 缩放</span><kbd>右键或中键拖动 / 滚轮</kbd></div>
     <div class="keyline"><span>拖拽地图模式 / 集结点</span><kbd>M / 选中工厂后右键</kbd></div>
     <div class="keyline"><span>全屏 / 收起指挥面板</span><kbd>F / B</kbd></div>
-    <div class="keyline"><span>暂停 / 返回基地</span><kbd>Esc / H</kbd></div>`, '<button class="primary-btn" data-modal="resume">进入战场</button>');
+    <div class="keyline"><span>暂停 / 返回基地</span><kbd>Esc / H</kbd></div>
+    <p><a href="${new URL('../THIRD-PARTY-ASSETS.txt', import.meta.url).href}" download="第三方模型与材质署名.txt">第三方模型与材质署名</a></p>`, '<button class="primary-btn" data-modal="resume">进入战场</button>');
 }
 
 function showPause() {

@@ -56,14 +56,6 @@ export function updateWatchOperation(game, dt) {
       game.events.notice?.(`${WATCH_NODES[i].name}失守，海运暂停，请派工程师重新接管`);
     }
   }
-  for (const transport of game.activeUnits(0,'landing')) {
-    if (!transport.unloadQueue) continue;
-    if (['move','attackMove','patrol'].includes(transport.order?.type)) { transport.unloadQueue = false; continue; }
-    if (game.time >= (transport.nextUnloadAt || 0)) {
-      game.unloadTransport(transport,false,true); transport.nextUnloadAt = game.time + .75;
-      if (!transport.passengers.length) transport.unloadQueue = false;
-    }
-  }
   const s = watchSummary(game);
   state.hold = s.connected && s.delivered >= 1800 && s.guarded && !s.contested ? Math.min(WATCH.hold,state.hold + dt) : 0;
   return s;

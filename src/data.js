@@ -1,6 +1,7 @@
 import {sixPlayerMap} from './six-player-map.js';
 import { islandWatchMap } from './island-map.js';
 import { STRATEGIC_UNITS, strategicMap } from './strategic-data.js';
+import { theaterMaps } from './theater-maps.js';
 export const WORLD = { width: 2240, height: 1440, cell: 40, fog: 80 };
 export const CORE_BUILDINGS = ['hq', 'refinery', 'barracks', 'factory', 'armory', 'airfield', 'dock'];
 export const PRODUCERS = ['barracks', 'factory', 'armory', 'airfield', 'dock'];
@@ -65,11 +66,12 @@ export const UNITS = {
 };
 
 Object.assign(UNITS, {
+  evacuee: { name: '待撤离人员', cost: 0, time: 1, hp: 120, speed: 60, range: 0, damage: 0, cooldown: 1, sight: 100, icon: 'user-round', tags: ['infantry', 'civilian'], desc: '归航行动保护目标；在集合点等待登陆舰自动接运，不能作为作战部队下达指令。' },
   ewPlane: { name: '电子压制机', cost: 1350, time: 43, hp: 185, speed: 168, range: 230, damage: 0, cooldown: 1, sight: 410, producer: 'airfield', requires: 'lab', tags: ['air', 'jet', 'support'], icon: 'radio-tower', desc: '原创概念：每 10 秒在 230 范围内压制敌方防空 2.5 秒；自身无武装，制空机与范围外防空可反制。' },
   navalFighter: { ...UNITS.fighter, name: '舰载制空机', cost: 760, time: 29, hp: 225, ammo: 8, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'anti-air', 'deck'], desc: '优先制空，兼顾35%基础伤害对地；可编入本方航母，停航着舰、付费维修补弹。' },
   navalStrike: { ...UNITS.strike, name: '舰载攻击机', cost: 880, time: 33, hp: 245, ammo: 4, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'bomber', 'deck'], desc: '通用游戏舰载型，对地与对舰；可编入航母，每舰最多三架真实机体，与自带攻击编组互斥。' },
   freightPlane: { name: '后勤运输机', cost: 0, time: 1, hp: 290, speed: 160, range: 0, damage: 0, cooldown: 1, sight: 90, icon: 'package', tags: ['air', 'jet', 'logistics'], desc: '外部援助航班，按固定航线自动运抵后勤中心；无武装，可被防空和战机拦截，不受战斗指令控制。' },
-  containerShip: { name: '集装箱补给船', cost: 0, time: 1, hp: 620, speed: 92, range: 0, damage: 0, cooldown: 1, sight: 100, icon: 'container', tags: ['ship', 'naval', 'logistics'], desc: '沿海运路线自动回港卸货；无武装，可被舰艇和潜艇袭击，需要护航，不可载兵或刷补给资金。' },
+  containerShip: { name: '集装箱补给船', cost: 0, time: 1, hp: 620, speed: 92, range: 0, damage: 0, cooldown: 1, sight: 240, icon: 'container', tags: ['ship', 'naval', 'logistics'], desc: '沿海运路线自动回港卸货；近距观察避让水面舰艇，无反潜探测。无武装，需要护航，不可载兵或刷补给资金。' },
   landing: { name: '坦克登陆舰', cost: 900, time: 36, hp: 850, speed: 59, range: 0, damage: 0, cooldown: 1, sight: 310, capacity: 12, icon: 'ship', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'transport'], desc: '12 格载重：步兵 1 格、陆地车辆 4 格；靠近海岸装卸，深海无法卸载，需舰队护航。' },
   bomber: { name: '远程轰炸机', cost: 1250, time: 44, hp: 320, speed: 142, range: 300, damage: 105, splash: 60, cooldown: 2.8, sight: 380, ammo: 4, rearmTime: 14, icon: 'plane', producer: 'airfield', requires: 'lab', tags: ['air', 'jet', 'bomber'], desc: '有限炸弹，对地范围打击；无法空战，友军免伤是游戏化规则，返场付费维修补弹。' },
   airlift: { name: '重型运输机', cost: 1000, time: 38, hp: 380, speed: 158, range: 0, damage: 0, cooldown: 1, sight: 360, capacity: 8, rearmTime: 10, icon: 'plane-takeoff', producer: 'airfield', requires: 'radar', tags: ['air', 'jet', 'transport'], desc: '8 格载重，可运 8 名步兵或 2 辆坦克；停驻在安全陆地上装卸，不能海上空投，无武装。' },
@@ -93,7 +95,7 @@ Object.assign(UNITS, STRATEGIC_UNITS);
 BUILDINGS.nuclearSilo={name:'战略威慑发射井',cost:2400,time:70,hp:950,power:-100,size:90,icon:'radiation',requires:'lab',map:'strategic',nuclear:true,desc:'仅开局启用核威慑规则可造；240 秒准备，4500 资金，8 秒可中止准备与20 秒公开飞行预警，每方每局一次实际发射。需雷达、实验室和供电；准备期摧毁设施或断网可取消，投入资金不退。区域反导、分散和疏散可反制，友军亦受损。'};
 BUILD_ORDER.push('nuclearSilo');
 UNIT_ORDER.push('ewPlane', ...Object.keys(STRATEGIC_UNITS).filter(type => STRATEGIC_UNITS[type].producer));
-export const supportsMap = (required, mapId) => !required || required === mapId || required === 'ocean' && ['archipelago','islandwatch'].includes(mapId);
+export const supportsMap = (required, mapId) => !required || required === mapId || required === 'ocean' && (['archipelago','islandwatch'].includes(mapId)||MAPS[mapId]?.naval) || required === 'meridian' && mapId === 'moonsea' || required === 'strategic' && mapId === 'sentinel';
 UNITS.carrier.capacity = 3;
 UNITS.carrier.desc = '可驻泊三架自行生产的兼容舰载机；停航着舰、维修补弹、弹射起飞。编入真实舰载机后不再同时出动自带攻击编组，需反潜护卫。';
 
@@ -106,6 +108,7 @@ export const ORE_LAYOUT = [
 ];
 
 export const MAPS = {
+  ...theaterMaps(),
   islandwatch: islandWatchMap(),
   strategic: strategicMap(),
   sixfront: sixPlayerMap(),

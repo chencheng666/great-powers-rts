@@ -18,7 +18,7 @@ const advance = (g, seconds) => { for (let n = 0; n < seconds * 20; n++) g.updat
 
 test('只有月表三类步兵改为机器人，价格、血量和职责保留，常规地图不受影响', () => {
   for (const [id, map] of Object.entries(MAPS)) for (const type of ['rifle', 'engineer', 'scout']) {
-    const g = new Game('china', 'china', {}, { mapId: id });
+    const g = new Game('china', 'china', {}, { mapId: id, ...(map.missionOnly ? {challengeId:id} : {}) });
     const u = g.addUnit(0, type, 650, 900), future = Boolean(map.future);
     assert.equal(isLunarRobot(map, type), future);
     assert.equal(equipmentModel('china', type, future), future ? `robot_${type}` : type);

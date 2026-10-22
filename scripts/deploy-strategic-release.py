@@ -60,7 +60,7 @@ def main():
             if pathlib.PurePosixPath(item.name).is_absolute() or '..' in pathlib.PurePosixPath(item.name).parts or not(item.isfile() or item.isdir()):raise RuntimeError('压缩包包含不安全路径或链接')
         tar.extractall(stage)
     version=json.loads((stage/'package.json').read_text())['version']
-    if not re.fullmatch(r'1\.\d+\.\d+',version) or not(stage/'dist/official/index.html').is_file():raise RuntimeError('发布版本或官网文件缺失')
+    if not re.fullmatch(r'[12]\.\d+\.\d+',version) or not(stage/'dist/official/index.html').is_file():raise RuntimeError('发布版本或官网文件缺失')
     node=BASE/'runtime/bin/node';env=dict(os.environ,PATH=str(node.parent)+':'+os.environ['PATH'])
     print(run(['npm','ci','--omit=dev','--ignore-scripts','--registry=https://registry.npmjs.org'],cwd=stage,env=env),flush=True)
     for previous in set(links.values()):

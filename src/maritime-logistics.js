@@ -8,7 +8,7 @@ export const FREIGHT_LANES = {
   coastal: { name: '近岸绕航', points: [{ x: 2160, y: 180 }, { x: 1330, y: 360 }] }
 };
 export const FREIGHT_STATUS = { inbound: '航行中', queue: '外海等待', unloading: '卸货中', outbound: '空载返航', power: '断电暂停', network: '节点失守 · 链路中断', combat: '受袭暂停' };
-export const isLifeline = game => ['lifeline','islandwatch'].includes(game.challenge?.id);
+export const isLifeline = game => ['lifeline','islandwatch','deepblue','seabreach'].includes(game.challenge?.id);
 export const freightRules = game => ({...LIFELINE,goal:game.map?.freight?.goal || LIFELINE.goal});
 const gap = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -16,6 +16,19 @@ export function freightLanePoints(lane, home, map = null) {
   if(map?.freight)return [...map.freight.lanes[lane],islandHarbor(map,home).approach];
   const points = FREIGHT_LANES[lane]?.points || FREIGHT_LANES.coastal.points;
   return [...points, { x: lane === 'direct' ? 1750 : 1330, y: home.y }];
+}
+
+export function freightApproach(game, ship, home) {
+  const harbor=islandHarbor(game.map,home);
+  if(!harbor)return game.navalGoal(home.x,home.y,unitRadius(ship)+12);
+  const base=harbor.approach,along={x:-Math.sin(harbor.angle),y:Math.cos(harbor.angle)};
+  const peers=game.units.filter(u=>u!==ship&&u.hp>0&&!u.embarkedIn&&UNITS[u.type].tags.includes('ship')&&!UNITS[u.type].tags.includes('submerged')&&(u.owner===ship.owner||game.canSeeEntity(ship.owner,u)));
+  // 同一卸货水域内选择空闲泊点，避免把航线终点设在护航舰船体内部。
+  for(const offset of [0,190,-190,380,-380]){
+    const point={x:base.x+along.x*offset,y:base.y+along.y*offset};
+    if(!game.isNavalBlocked(point.x,point.y,unitRadius(ship)+12)&&!peers.some(u=>gap(u,point)<unitRadius(u)+unitRadius(ship)+20))return point;
+  }
+  return null;
 }
 
 export function harborPlan(game, ship, home) {
@@ -37,7 +50,7 @@ export function lifelineSummary(game) {
 }
 
 export function validMaritimeSave(state, config) {
-  const mission = ['lifeline','islandwatch'].includes(config.challengeId);
+  const mission = ['lifeline','islandwatch','deepblue','seabreach'].includes(config.challengeId);
   if (!mission) return !state.logistics?.some(r => r.seaControl !== undefined) && !state.units.some(u => u.freight?.batch !== undefined);
   const c = state.logistics?.[0]?.seaControl;
   const integer = n => Number.isSafeInteger(n) && n >= 0;

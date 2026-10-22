@@ -1,0 +1,107 @@
+{
+  "verifiedAt": "2026-10-22",
+  "attribution": "../../THIRD-PARTY-ASSETS.txt",
+  "records": [
+    {
+      "id": "abrams",
+      "author": "Sketlux; yd",
+      "license": "CC0-1.0",
+      "source": "https://opengameart.org/content/abrams-tank",
+      "files": [
+        {
+          "file": "abrams.glb",
+          "bytes": 1144304,
+          "sha256": "30ebf232c3faaa6858b6fe389fbc3a6529ecb519207fa4f91a61de2d74a0e66f"
+        }
+      ],
+      "geometry": {
+        "body_near": 8012,
+        "weapon_near": 3126,
+        "barrel_near": 168,
+        "body_far": 2055,
+        "weapon_far": 1883,
+        "barrel_far": 45
+      }
+    },
+    {
+      "id": "f22",
+      "author": "andertan",
+      "license": "CC-BY-4.0",
+      "source": "https://sketchfab.com/3d-models/lockheed-martin-f-22-raptor-7e7b3c372e374dda98e70208d09cfdcf",
+      "distribution": "https://models.airframearchive360.com/f22.glb?v=models-2026-08-25",
+      "files": [
+        {
+          "file": "f22.glb",
+          "bytes": 1103896,
+          "sha256": "e26de20bdb9423dd57e11c9370f46d6b3fa1fdc063b6ca04f7fa13245868bd6a"
+        }
+      ],
+      "geometry": {
+        "airframe_near": 10569,
+        "airframe_far": 3382
+      }
+    },
+    {
+      "id": "harbor-crane",
+      "author": "Timothy3D / Poly Haven",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/overhead_crane",
+      "files": [
+        {
+          "file": "harbor-crane.glb",
+          "bytes": 4790264,
+          "sha256": "a650d02902f79bb5448fcea69377b764ddf1893f9f6611b081765df3e0bb28cf"
+        }
+      ],
+      "geometry": {
+        "harbor_crane": 10844
+      }
+    },
+    {
+      "id": "ground",
+      "author": "Rob Tuytel / Poly Haven",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/aerial_grass_rock",
+      "files": [
+        {
+          "file": "ground-diff.jpg",
+          "bytes": 666655,
+          "sha256": "57b8041bfe0d0f01430e4dbaad45e7ddddf0a9fc97317f90dbc51f7b0d9e1b5d"
+        },
+        {
+          "file": "ground-nor_gl.jpg",
+          "bytes": 904956,
+          "sha256": "1aa3e23bff453f152e089b9f83aa36b4901651e019f7e2ca01d5331a9bbbda78"
+        },
+        {
+          "file": "ground-rough.jpg",
+          "bytes": 362214,
+          "sha256": "b9f3f76aba74007f708333c0dbe73c52eb83ea0c4187a13e2e994f888a25114a"
+        }
+      ]
+    },
+    {
+      "id": "concrete",
+      "author": "Dimitrios Savva; Rico Cilliers / Poly Haven",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/concrete_floor_worn_001",
+      "files": [
+        {
+          "file": "concrete-diff.jpg",
+          "bytes": 118806,
+          "sha256": "6e40c0fc908f4d66431836f5abe203f3a4eb064e88824378a91a46a26e2f464c"
+        },
+        {
+          "file": "concrete-nor_gl.jpg",
+          "bytes": 110906,
+          "sha256": "523bd94a1be5dd2f11c2ae2b7d7c77445cf5bd9e41604db515a7c8364dcba067"
+        },
+        {
+          "file": "concrete-rough.jpg",
+          "bytes": 181942,
+          "sha256": "069efe4ca018e0ef61fd8cc9964395ba8272284ae239da68d7f87988e2e9f488"
+        }
+      ]
+    }
+  ]
+}

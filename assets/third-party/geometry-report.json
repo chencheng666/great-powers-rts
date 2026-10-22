@@ -1,0 +1,26 @@
+{
+  "abrams": {
+    "bytes": 1144304,
+    "parts": {
+      "body_near": 8012,
+      "weapon_near": 3126,
+      "barrel_near": 168,
+      "body_far": 2055,
+      "weapon_far": 1883,
+      "barrel_far": 45
+    }
+  },
+  "f22": {
+    "bytes": 1103896,
+    "parts": {
+      "airframe_near": 10569,
+      "airframe_far": 3382
+    }
+  },
+  "harbor-crane": {
+    "bytes": 4790264,
+    "parts": {
+      "harbor_crane": 10844
+    }
+  }
+}

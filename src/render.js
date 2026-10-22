@@ -38,12 +38,16 @@ import { DETERRENCE } from './deterrence-rules.js';
 import { animateTracks } from './track-motion.js';
 import { personnelLOD, syncPersonnelLOD } from './personnel-lod.js';
 import { armyDetailPlan, inDetailViewport } from './army-detail.js';
+import { openAssetDetail, syncOpenAssetLOD } from './open-assets.js';
+import { ArmyBatches, armyRenderBudget } from './army-batches.js';
 import { CHALLENGES } from './challenges.js';
 import { COMBAT_STANCES, combatStance, supportsCombatStance } from './combat-stance.js';
 import { animatePriorityAircraft } from './priority-model-detail.js';
 import { facilityRotation, sceneryClearance, shorelineWidth } from './site-presentation.js';
 import { islandHarbor, islandDistance } from './island-map.js';
 import { paintIslandTerrain, createIslandShore, createIslandInfrastructure } from './island-scenery.js';
+import { paintTheaterGround, createTheaterScenery } from './theater-scenery.js';
+import { theaterFacilities } from './theater-operations.js';
 
 // 实体与部署预览共用同一名单，避免三维建筑读取不存在的旧贴图。
 const MODEL_ONLY_BUILDINGS = new Set(['nuclearSilo','turret','refinery',...COMMUNITY_3D_BUILDINGS,...REALISM_BUILDINGS]);
@@ -51,7 +55,7 @@ const MODEL_ONLY_BUILDINGS = new Set(['nuclearSilo','turret','refinery',...COMMU
 const TAU = Math.PI * 2;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const hash = (x, y, seed = 0) => { const value = Math.sin(x * 127.1 + y * 311.7 + seed * 47.7) * 43758.5453; return value - Math.floor(value); };
-const UNIT_SCALE = { rifle: 12, engineer: 12, scout: 12, tank: 10, harvester: 9.5, aa: 10, elite: 10, fighter: 11, strike: 11, drone: 10, ghost: 10, patrol: 10, frigate: 10 };
+const UNIT_SCALE = { evacuee: 12, rifle: 12, engineer: 12, scout: 12, tank: 10, harvester: 9.5, aa: 10, elite: 10, fighter: 11, strike: 11, drone: 10, ghost: 10, patrol: 10, frigate: 10 };
 Object.assign(UNIT_SCALE,{helicopter:10,ballistic:10,abm:10,counterIntel:10,swarmCarrier:11,swarmScout:9,swarmDecoy:9});
 Object.assign(UNIT_SCALE, { loiterer: 10, jammer: 10, laser: 10, rocket: 10, apc: 10, supply: 10, destroyer: 9, carrier: 8, submarine: 8 });
 UNIT_SCALE.ewPlane = 8;
@@ -105,6 +109,7 @@ export class Renderer {
     this.webgl.shadowMap.enabled = true; this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
     this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = .96;
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color('#10181d');
+    this.armyBatches = new ArmyBatches(this.scene);
     this.viewCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 8000);
     this.raycaster = new THREE.Raycaster(); this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const pmrem = new THREE.PMREMGenerator(this.webgl), room = new RoomEnvironment();
@@ -148,8 +153,9 @@ export class Renderer {
     this.quality = value === 'standard' ? 'standard' : 'high';
     if (this.quality === 'high' && !this.composer) this.createPostprocessing();
     if (this.ambientPass) this.ambientPass.enabled = this.quality === 'high';
-    this.webgl.setPixelRatio(this.game.map.maxPlayers===6&&this.quality==='standard'?1:Math.min(devicePixelRatio,innerWidth<700?1.5:2));
-    const shadowSize=this.game.map.maxPlayers===6&&this.quality==='standard'?1024:innerWidth<700?2048:4096;
+    const budget = armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio);
+    this.webgl.setPixelRatio(budget.pixelRatio);
+    const shadowSize = budget.shadowSize;
     if(this.sun.shadow.mapSize.x!==shadowSize){this.sun.shadow.mapSize.set(shadowSize,shadowSize);this.sun.shadow.map?.dispose();this.sun.shadow.map=null;}
     try { localStorage.setItem(this.qualityKey, this.quality); } catch { /* 当前战局仍可切换画质。 */ }
     this.updateFoliageLayers();
@@ -188,7 +194,7 @@ export class Renderer {
       ctx.setLineDash([18, 25]); trace(); ctx.strokeStyle = 'rgba(222,218,183,.43)'; ctx.lineWidth = 1.4; ctx.stroke(); ctx.setLineDash([]);
     };
     const cy = this.game.homeY;
-    if (!this.game.map.future && !this.game.map.islands) road([[-20, cy], [520, cy], [this.world.width - 520, cy], [this.world.width + 20, cy]], 54);
+    if (!this.game.map.future && !this.game.map.islands && !this.game.map.roads) road([[-20, cy], [520, cy], [this.world.width - 520, cy], [this.world.width + 20, cy]], 54);
     if (this.game.mapId === 'ocean') for (const bridge of this.game.map.bridges) {
       const y = (bridge.y1 + bridge.y2) / 2;
       road([[410, cy], [850, y], [this.world.width - 850, y], [this.world.width - 410, cy]], 36);
@@ -224,11 +230,12 @@ export class Renderer {
         ctx.fillStyle = shore; ctx.fillRect(edge - 54, 0, 108, this.world.height);
       }
       ctx.fillStyle = '#334044'; ctx.fillRect(water.x1, 0, water.x2 - water.x1, this.world.height);
-    } else if (!this.game.map.future) for (const rect of this.game.map.barriers) {
+    } else if (!this.game.map.future && !this.game.map.ridges && !this.game.map.industrial) for (const rect of this.game.map.barriers) {
       ctx.fillStyle = '#242e2c'; ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
       ctx.fillStyle = 'rgba(98,99,84,.55)'; ctx.fillRect(rect.x1 - 12, rect.y1, 22, rect.y2 - rect.y1); ctx.fillRect(rect.x2 - 10, rect.y1, 22, rect.y2 - rect.y1);
     }
     if(this.game.map.islands)paintIslandTerrain(ctx,this.game.map,image);
+    paintTheaterGround(ctx,this.game.map,road,image);
     const texture = this.track(new THREE.CanvasTexture(canvas)); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = Math.min(8, this.webgl.capabilities.getMaxAnisotropy()); this.terrainTexture = texture;
     const geometry = this.track(new THREE.PlaneGeometry(this.world.width, this.world.height, 192, 128)); geometry.rotateX(-Math.PI / 2); geometry.translate(this.world.width / 2, 0, this.world.height / 2);
     const positions = geometry.attributes.position;
@@ -244,7 +251,13 @@ export class Renderer {
     detailContext.putImageData(detail, 0, 0);
     const bump = this.track(new THREE.CanvasTexture(detailCanvas)); bump.wrapS = bump.wrapT = THREE.RepeatWrapping; bump.repeat.set(this.world.width / 100, this.world.height / 100);
     bump.anisotropy = Math.min(8, this.webgl.capabilities.getMaxAnisotropy());
-    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, bumpMap: bump, bumpScale: 1.15, roughness: .96, metalness: 0, envMapIntensity: .3 }))); terrain.receiveShadow = true; this.scene.add(terrain);
+    const surface = !this.game.map.future && visualLibrary().groundSurface;
+    const maps = {};
+    if (surface) for (const key of ['normalMap', 'roughnessMap']) {
+      const detailMap = this.track(surface[key].clone()); detailMap.repeat.set(this.world.width / 420, this.world.height / 420);
+      detailMap.offset.y = 1 - this.world.height / 420; maps[key] = detailMap;
+    }
+    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, ...maps, normalScale: new THREE.Vector2(.65, .65), bumpMap: surface ? null : bump, bumpScale: 1.15, roughness: .96, metalness: 0, envMapIntensity: .3 }))); terrain.receiveShadow = true; this.scene.add(terrain);
     if (this.game.map.water) { this.createWater(); this.createShoreline(); }
   }
 
@@ -400,13 +413,15 @@ export class Renderer {
   }
 
   createEnvironment() {
+    this.theaterScenery=createTheaterScenery(this.game,r=>this.track(r),(x,y)=>this.elevation(x,y));
+    for(const entry of this.theaterScenery)this.scene.add(entry.group);
     const points = { tree: [], rock: [] }, forbidden = [...this.game.buildings, ...this.game.ore, ...this.game.oil, ...this.game.beacons,...(this.game.resourceSites||[])];
     const density = Math.min(850, Math.round(this.world.width * this.world.height / (2240 * 1440) * 230));
     for (let i = 0; i < density; i++) {
       const x = 45 + hash(i, 91) * (this.world.width - 90), z = 40 + hash(i, 193) * (this.world.height - 80);
       if(this.game.map.islands && islandDistance(this.game.map,x,z)<55)continue;
       if (Math.abs(z - this.game.homeY) < 145 || forbidden.some(item => Math.hypot(item.x - x, item.y - z) < Math.max(100, (item.size || 0) * 1.2))) continue;
-      if (this.game.map.noBuild.some(rect => x > rect.x1 - 25 && x < rect.x2 + 25)) continue;
+      if (this.game.map.noBuild.some(rect => x > rect.x1 - 25 && x < rect.x2 + 25 && z > rect.y1 - 25 && z < rect.y2 + 25)) continue;
       const kind = this.game.map.future ? 'rock' : hash(i, 71) > .24 ? 'tree' : 'rock'; points[kind].push({ x, z, scale: kind === 'tree' ? 8 + hash(i, 25) * 7 : 12 + hash(i, 45) * 11, angle: hash(i, 33) * TAU });
     }
     if (this.game.mapId === 'canyon') for (const rect of this.game.map.barriers) {
@@ -418,6 +433,10 @@ export class Renderer {
     if(this.game.map.strategic)for(const rect of this.game.map.barriers) {
       for(let z=rect.y1+20;z<rect.y2;z+=60)for(const x of [rect.x1+14,rect.x2-14])points.rock.push({x,z,scale:50,verticalScale:95,heightOffset:-10,angle:hash(x,z,17)*TAU});
       for(let x=rect.x1+40;x<rect.x2;x+=60)for(const z of [rect.y1+14,rect.y2-14])points.rock.push({x,z,scale:50,verticalScale:95,heightOffset:-10,angle:hash(x,z,19)*TAU});
+    }
+    for(const [index,rect]of (this.game.map.ridges||[]).entries())for(let i=0;i<14;i++){
+      const x=rect.x1+(rect.x2-rect.x1)*(.18+hash(i,index,31)*.64),z=rect.y1+(rect.y2-rect.y1)*(.09+hash(i,index,37)*.82),n=hash(i,index,41);
+      points.rock.push({x,z,scale:28+n*24,verticalScale:36+n*38,heightOffset:this.elevation(x,z)-12,angle:n*TAU});
     }
     if (this.game.map.water && !this.game.map.islands) for (let z = 30; z < this.world.height; z += 64) for (const x of [this.game.map.water.x1 - 12, this.game.map.water.x2 + 12]) {
       if (this.game.map.bridges.some(bridge => z > bridge.y1 - 30 && z < bridge.y2 + 30)) continue;
@@ -497,7 +516,7 @@ export class Renderer {
     const steel = this.track(new THREE.MeshStandardMaterial({ color: '#9ba6ac', metalness: .65, roughness: .52 }));
     const cells = this.track(new THREE.MeshStandardMaterial({ color: '#293d46', metalness: .4, roughness: .37 }));
     const stripe = this.track(new THREE.MeshStandardMaterial({ color: '#dfbb66', roughness: .7 }));
-    for (const rect of this.game.map.barriers) {
+    for (const rect of this.game.map.craters?[]:this.game.map.barriers) {
       const x = (rect.x1 + rect.x2) / 2, y = (rect.y1 + rect.y2) / 2;
       const core = createModel('future_power', '#d6b363'); core.scale.setScalar(30); core.position.set(x, 1, y); this.scene.add(core); this.bridges.push(core);
       this.box(x, 1, y, rect.x2 - rect.x1, 2, rect.y2 - rect.y1, steel);
@@ -545,6 +564,7 @@ export class Renderer {
     const knownBuildings = this.game.buildings.filter(b => b.owner === 0 || this.game.canSeeEntity(0, b)).map(b=>{const harbor=islandHarbor(this.game.map,b);return harbor?{...b,harborAngle:harbor.angle}:b;});
     const knownGroundUnits = this.game.units.filter(u => !UNITS[u.type].tags.includes('air') && (u.owner === 0 || this.game.canSeeEntity(0, u)));
     for (const mesh of this.bridges) mesh.visible = this.game.hasExploredFor(0, mesh.position.x, mesh.position.z);
+    for(const entry of this.theaterScenery||[])entry.group.visible=this.game.hasExploredFor(0,entry.x,entry.y)&&(!entry.entityId||this.game.getEntity(entry.entityId)?.hp<=0);
     for (const { mesh, transforms, foliage, angle } of this.environment) {
       transforms.forEach((point, index) => {
         if (!sceneryVisible.has(point)) {
@@ -633,8 +653,12 @@ export class Renderer {
   }
   pickEntity(x, y) {
     this.screenToWorld(x, y);
-    const targets = [...this.entities.values(), ...this.sites].filter(entry => entry.model.visible).map(entry => entry.model);
-    const hits = this.raycaster.intersectObjects(targets, true);
+    const targets = [];
+    for (const entry of [...this.entities.values(), ...this.sites]) entry.model.traverseVisible(object => {
+      if (object.isMesh || object.isSprite) targets.push(object);
+    });
+    this.raycaster.layers.enable(1);
+    const hits = this.raycaster.intersectObjects(targets, false);
     if (!hits.length) return null;
     let model = hits[0].object;
     while (model && !model.userData.entity) model = model.parent;
@@ -834,6 +858,7 @@ export class Renderer {
     const targeted = new Set(this.game.selected.map(id => this.game.getEntity(id)).filter(entity => entity?.owner === 0).map(entity => entity.order?.targetId || entity.targetId).filter(Boolean));
     const visibility=new Map([...this.game.buildings,...this.game.units].map(e=>[e.id,e.hp>0&&this.game.canSeeEntity(0,e)]));
     const framed=new Set(this.game.units.filter(u=>visibility.get(u.id)&&inDetailViewport(this.worldToScreen(u.x,u.y,UNITS[u.type].tags.includes('air')?50:0),this.viewport)).map(u=>u.id));
+    this.framedUnits = framed;
     const detail=armyDetailPlan(this.game.units.filter(u=>framed.has(u.id)),this.camera.zoom,this.quality,this.game.selected,this.center,this.armyDetail);
     this.armyDetail=detail;
     this.cargoDetail=landingDetailPlan(this.game.units.filter(u=>framed.has(u.id)),this.camera.zoom,this.quality,this.game.selected,this.center,this.cargoDetail);
@@ -926,6 +951,7 @@ export class Renderer {
           if (knee) knee.rotation.z = -Math.max(0, -Math.sin(phase)) * .62 * animation.speed;
         });
         syncPersonnelLOD(entry, !detail.near.has(entity.id));
+        syncOpenAssetLOD(entry, openAssetDetail(this.camera.zoom, this.quality, framed.size, this.game.selected.includes(entity.id), entry.openAssetLevel));
         if (tags.includes('drone') || entry.rotors.length) {
           const activeFlight = this.game.time >= entity.stunUntil;
           entry.rotors.forEach((rotor, index) => { rotor.rotation[rotor.userData.rotationAxis||'y'] += dt * (activeFlight ? 47 : 7) * (index % 2 ? -1 : 1); });
@@ -1267,6 +1293,13 @@ export class Renderer {
       ctx.save();ctx.font='500 10px "Noto Sans SC",sans-serif';ctx.textAlign='center';ctx.strokeStyle='#101b20';ctx.lineWidth=3;const text=`${RESOURCE_TYPES[s.type].name} · ${s.type==='depot'?`${s.owner===0?'我方':s.owner===1?'敌方':'中立'} · `:''}${Math.ceil(s.amount)}`;ctx.strokeText(text,p.x,p.y);ctx.fillStyle=s.owner===1?'#ffa494':s.owner===0?'#8ce0d8':'#e6cd91';ctx.fillText(text,p.x,p.y);ctx.restore();
     }
     this.drawAttackFeedback();
+    for(const {entity:e,definition:d} of theaterFacilities(this.game))if(this.game.hasExploredFor(0,e.x,e.y)){
+      const p=this.worldToScreen(e.x,e.y,this.elevation(e.x,e.y)+(e.hp>0?65:12));
+      if(p.x<0||p.y<0||p.x>this.viewport.width||p.y>this.viewport.height)continue;
+      ctx.save();ctx.textAlign='center';ctx.font='600 11px sans-serif';ctx.lineWidth=4;ctx.strokeStyle='#172629';
+      const label=`${d.name} · ${e.hp<=0?'待修复':`${Math.ceil(e.hp/e.maxHp*100)}%`}`;
+      ctx.strokeText(label,p.x,p.y);ctx.fillStyle=e.owner===0?'#b8f0d8':'#f2cb88';ctx.fillText(label,p.x,p.y);ctx.restore();
+    }
     if (this.pointer && (this.game.pendingAbility || ['attackMove', 'rally'].includes(this.game.orderMode))) {
       const point = this.worldToScreen(this.pointer.x, this.pointer.y); ctx.strokeStyle = '#c4edf2'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(point.x, point.y, 18, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(point.x - 26, point.y); ctx.lineTo(point.x + 26, point.y); ctx.moveTo(point.x, point.y - 26); ctx.lineTo(point.x, point.y + 26); ctx.stroke();
     }
@@ -1317,6 +1350,17 @@ export class Renderer {
     if (now - this.lastFog >= 180) { this.updateFog(); this.lastFog = now; }
     if (this.waterNormal) this.waterNormal.offset.set(now * .000004, now * .000007);
     if (this.shoreMaterial) this.shoreMaterial.opacity = .4 + Math.sin(now * .0012) * .05;
+    const visibleUnits = this.framedUnits || new Set();
+    const budget = armyRenderBudget(this.quality, visibleUnits.size, devicePixelRatio);
+    if (this.webgl.getPixelRatio() !== budget.pixelRatio) { this.webgl.setPixelRatio(budget.pixelRatio); this.resize(); }
+    if (this.sun.shadow.mapSize.x !== budget.shadowSize) {
+      this.sun.shadow.mapSize.set(budget.shadowSize, budget.shadowSize); this.sun.shadow.map?.dispose(); this.sun.shadow.map = null;
+    }
+    this.webgl.shadowMap.autoUpdate = false;
+    // 换画质或军团预算导致阴影贴图重建时，不能跳过初始化帧。
+    this.webgl.shadowMap.needsUpdate = !this.sun.shadow.map || !this.lastShadowFrame || now - this.lastShadowFrame >= budget.shadowInterval;
+    if (this.webgl.shadowMap.needsUpdate) this.lastShadowFrame = now;
+    this.armyBatches.update(this.entities.values(), visibleUnits);
     if (this.quality === 'high' && this.composer) this.composer.render();
     else { this.webgl.setRenderTarget(null); this.webgl.render(this.scene, this.viewCamera); }
     this.drawOverlay();
@@ -1393,6 +1437,7 @@ export class Renderer {
   }
 
   dispose() {
+    this.armyBatches.dispose();
     this.webgl.setRenderTarget(null); this.webgl.resetState();
     this.composer?.passes.forEach(pass => pass.dispose()); this.composer?.dispose();
     this.projectileModels.forEach(model => model.children.at(-1)?.material?.dispose());

@@ -1,7 +1,7 @@
 import PF from 'pathfinding';
 import { unitRadius, unitLayer } from './unit-spacing.js';
 
-export function navalPath(game, unit, goal) {
+export function navalPath(game, unit, goal, stopDistance=0) {
   const radius = Math.max(18, unitRadius(unit)), cell = game.world.cell;
   const cols = game.world.width / cell, rows = game.world.height / cell;
   game.islandNavGrids ||= new Map();
@@ -13,7 +13,9 @@ export function navalPath(game, unit, goal) {
     game.islandNavGrids.set(radius, grid);
   }
   const grid = game.islandNavGrids.get(radius).clone();
-  for(const peer of game.activeUnits(unit.owner).filter(v=>v!==unit && !v.order && ['naval','submerged'].includes(unitLayer(v)) && Math.hypot(v.x-unit.x,v.y-unit.y)<900)){
+  // 沿岸受阻后绕开已知的敌我船体，不通过路径规划读取迷雾中的舰艇。
+  const peers=game.units.filter(v=>v!==unit&&v.hp>0&&!v.embarkedIn&&(!v.order||unit.navalStalled)&&unitLayer(v)===unitLayer(unit)&&(v.owner===unit.owner||game.canSeeEntity(unit.owner,v))&&Math.hypot(v.x-unit.x,v.y-unit.y)<900&&Math.hypot(v.x-goal.x,v.y-goal.y)>unitRadius(v)+radius+stopDistance);
+  for(const peer of peers){
     const clearance=radius+unitRadius(peer)+12;
     for(let y=Math.max(0,Math.floor((peer.y-clearance)/cell));y<Math.min(rows,Math.ceil((peer.y+clearance)/cell));y++)for(let x=Math.max(0,Math.floor((peer.x-clearance)/cell));x<Math.min(cols,Math.ceil((peer.x+clearance)/cell));x++){
       if(Math.hypot((x+.5)*cell-peer.x,(y+.5)*cell-peer.y)<clearance)grid.setWalkableAt(x,y,false);

@@ -1,8 +1,15 @@
 {
-  "version": "1.3.1",
-  "releaseTag": "v1.3.1",
-  "createdAt": "2026-10-22T06:03:00Z",
+  "version": "2.0.0",
+  "releaseTag": "v2.0.0",
+  "createdAt": "2026-10-22T11:20:00Z",
   "files": [
+    {
+      "name": "packages/Great-Powers-RTS-v2.0.0.zip",
+      "label": "2.0.0 · 山海防线 · 免安装单机 ZIP",
+      "size": 67317627,
+      "sha256": "e9e4d133c557dbd6638b3e93935ccce86c31247eb6a81b947ad55223ccf88527",
+      "status": "完整解压后打开 PLAY.html；九大战区和十四项挑战；模型、音乐与中文语音内置；已完成断网启动复核；新战区仅限单机。"
+    },
     {
       "name": "packages/Great-Powers-RTS-v1.3.1.zip",
       "label": "1.3.1 · 山海防线先行版 · 免安装单机 ZIP",

@@ -1,7 +1,8 @@
 import { unitRadius } from './unit-spacing.js';
 import { recordBattleEvent } from './battle-report.js';
-import { isLifeline, LIFELINE, FREIGHT_LANES, freightLanePoints } from './maritime-logistics.js';
+import { isLifeline, LIFELINE, FREIGHT_LANES, freightLanePoints, freightApproach } from './maritime-logistics.js';
 import { isIslandWatch, watchSummary } from './island-watch.js';
+import { theaterFreightReady } from './theater-operations.js';
 import { islandHarbor } from './island-map.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -35,6 +36,7 @@ export const logisticsEconomy = {
   },
 
   launchFreight(side, sea = false) {
+    if (sea && !theaterFreightReady(this)) return null;
     if (isIslandWatch(this) && (sea && !watchSummary(this).connected || !sea)) return null;
     const control = isLifeline(this) ? this.logistics[side].seaControl : null;
     if (isLifeline(this) && (side !== 0 || sea && (!control || control.dispatched >= LIFELINE.batches || control.paused) || !sea && control.airDispatched >= LIFELINE.airBatches)) return null;
@@ -80,6 +82,7 @@ export const logisticsEconomy = {
     for (const route of this.logistics) for (const [channel, sea, type] of [['Air', false, 'freightPlane'], ['Sea', true, 'containerShip']]) {
       if (isLifeline(this) && (route.side !== 0 || sea && route.seaControl.paused)) continue;
       if(isIslandWatch(this) && (!sea || !watchSummary(this).connected))continue;
+      if(sea&&!theaterFreightReady(this))continue;
       if (sea && !this.map.water || this.time < route[`next${channel}`]) continue;
       // 同侧同类线路在上一班退出后才放行；延误不追补，不改变每批物资价值。
       if (this.activeUnits(route.side, type).length) continue;
@@ -132,7 +135,8 @@ export const logisticsEconomy = {
     if (sea && f.batch && f.phase !== 'outbound') {
       const points = freightLanePoints(f.lane, home, this.map);
       if (f.leg < points.length) {
-        const point = points[f.leg];
+        const point = this.map.islands&&f.leg===points.length-1?freightApproach(this,u,home):points[f.leg];
+        if(!point){f.blockedReason='queue';return;}
         if (distance(u, point) > 42) { f.phase = 'inbound'; f.blockedReason = 'inbound'; this.moveUnit(u, point, dt, 24); return; }
         f.leg++;
       }
@@ -151,15 +155,15 @@ export const logisticsEconomy = {
         f.blockedReason = 'queue';
         f.phase = 'inbound'; this.moveUnit(u, goal, dt, 45); return;
       }
-      const harbor=islandHarbor(this.map,home);
-      const goal = harbor?.approach || this.navalGoal(home.x, home.y, unitRadius(u) + 12);
+      const goal = freightApproach(this,u,home);
+      if(!goal){f.blockedReason='queue';return;}
       if (distance(u, goal) > 95) {
         f.phase = 'inbound'; f.blockedReason = 'inbound'; f.progress = 0; this.moveUnit(u, goal, dt, 66.5); return;
       }
       u.angle = u.owner ? -Math.PI / 2 : Math.PI / 2;
     }
     f.phase = 'unloading';
-    f.blockedReason = !this.hasPower(u.owner) ? 'power' : isIslandWatch(this) && !watchSummary(this).connected ? 'network' : this.time - (u.lastDamageAt ?? -10) <= 3 || this.time - (home.lastDamageAt ?? -10) <= 3 ? 'combat' : 'unloading';
+    f.blockedReason = !this.hasPower(u.owner) ? 'power' : isIslandWatch(this) && !watchSummary(this).connected || sea && !theaterFreightReady(this) ? 'network' : this.time - (u.lastDamageAt ?? -10) <= 3 || this.time - (home.lastDamageAt ?? -10) <= 3 ? 'combat' : 'unloading';
     if (f.blockedReason !== 'unloading' || sea && this.time - (u.lastMovedAt ?? -10) < .5) return;
     if (!sea && this.time >= (f.dropFXAt || 0)) {
       f.dropFXAt = this.time + 2;
