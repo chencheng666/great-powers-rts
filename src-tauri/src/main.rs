@@ -22,7 +22,7 @@ fn desktop_fullscreen(window: WebviewWindow) -> Result<bool,String> {
  local(&window)?; let next=!window.is_fullscreen().map_err(|e|e.to_string())?;
  window.set_fullscreen(next).map_err(|e|e.to_string())?;Ok(next)
 }
-const ONLINE_URL: &str = "https://43.135.186.21:8443/";
+const ONLINE_URL: &str = "https://www.daguojueqi.site/play/";
 fn online_transport_allowed(scheme: &str) -> bool {
  scheme == "https"
 }

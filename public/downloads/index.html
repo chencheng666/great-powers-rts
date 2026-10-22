@@ -30,15 +30,15 @@
   </style>
 </head>
 <body>
-<header><b>大国崛起 <span style="color:#e4b66e">1.2</span></b><nav><a href="/official/">官网</a><a href="/">在线试玩</a><a href="https://github.com/chencheng666/great-powers-rts">源码</a></nav></header>
+<header><b>大国崛起 <span style="color:#e4b66e">1.2.1</span></b><nav><a href="https://www.daguojueqi.site/">官网</a><a href="https://www.daguojueqi.site/play/">在线试玩</a><a href="https://github.com/chencheng666/great-powers-rts">源码</a></nav></header>
 <main>
-  <div class="eyebrow">STRATEGIC UPDATE / 2026.10.19</div>
+  <div class="eyebrow">国内官网 / 2026.10.22</div>
   <h1>大国崛起 · 游戏下载</h1>
   <p class="intro">免安装包完整解压后打开 PLAY.html，即可离线单机。桌面文件按系统与架构选择；联网使用独立窗口，六方对战仍是实验入口。升级前分别导出战局和荣誉备份。</p>
-  <div class="actions"><a href="/downloads/packages/Great-Powers-RTS-v1.2.0.zip">下载 1.2 免安装单机 ZIP ↓</a><a href="https://github.com/chencheng666/great-powers-rts/releases/tag/v1.2.0">查看 GitHub 1.2 发行页 ↗</a></div>
+  <div class="actions"><a href="/downloads/packages/Great-Powers-RTS-v1.2.1.zip">下载 1.2.1 免安装单机 ZIP ↓</a><a href="https://github.com/chencheng666/great-powers-rts/releases/tag/v1.2.1">查看 GitHub 发行页 ↗</a></div>
   <section><h2>按系统选择文件</h2><p>只想单机试玩，可直接选择上方免安装 ZIP，完整解压后打开 PLAY.html。需要桌面应用，再按系统和芯片架构选择安装文件。</p><label class="file-filter">平台<select id="platform-filter"><option value="all">全部平台</option><option value="offline">免安装离线单机</option><option value="windows">Windows</option><option value="macos">macOS</option><option value="linux">Linux / 麒麟 / UOS</option></select></label><div id="current" aria-live="polite">正在读取文件…</div></section>
   <details><summary>查看历史版本文件（不含本轮新功能）</summary><div id="archive"></div></details>
-  <section><h2>安装与兼容</h2><div class="notes"><p>macOS 按 Intel / Apple Silicon 选择 DMG 或应用压缩包；目前未完成 Apple 公证。Windows x64 安装器未签名。请按系统正常的安全提示检查文件与校验值。</p><p>Linux 按 x64 / ARM64 选择 DEB 或 AppImage，需要 WebKitGTK 4.1、GTK3 和支持 WebGL2 的图形环境。麒麟、统信 UOS 需对应机器实测；目前没有龙芯、申威版本。</p></div><p>服务器位于硅谷，下载速度受网络线路影响。也可从 GitHub 发行页获取同一版本；国内镜像仍在规划中。</p></section>
+  <section><h2>安装与兼容</h2><div class="notes"><p>macOS 按 Intel / Apple Silicon 选择 DMG 或应用压缩包；目前未完成 Apple 公证。Windows x64 安装器未签名。请按系统正常的安全提示检查文件与校验值。</p><p>Linux 按 x64 / ARM64 选择 DEB 或 AppImage，需要 WebKitGTK 4.1、GTK3 和支持 WebGL2 的图形环境。麒麟、统信 UOS 需对应机器实测；目前没有龙芯、申威版本。</p></div><p>免安装 ZIP 由上海国内服务器提供。桌面安装包以清单标注的实际版本和地址为准，不能把旧包视为本轮更新。HTTPS 网页可直接联机，离线文件只提供单机。</p></section>
 </main>
 <footer>大国崛起 · 原创开源即时战略 · 1.2 战术挑战与模型精修</footer>
 <script>
@@ -47,7 +47,7 @@ fetch("manifest.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("清单�
   for(const f of [...(m.files||[])].sort((a,b)=>Number(!a.name.endsWith('.zip'))-Number(!b.name.endsWith('.zip')))){
     const u=new URL(f.name,location.href);
     const local=u.origin===location.origin&&u.pathname.startsWith("/downloads/packages/");
-    const github=u.protocol==="https:"&&u.hostname==="github.com"&&[m.releaseTag,"v1.0.0","desktop-v0.9.1","desktop-v0.9.0"].filter(Boolean).some(tag=>u.pathname.startsWith("/chencheng666/great-powers-rts/releases/download/"+tag+"/"));
+    const github=u.protocol==="https:"&&u.hostname==="github.com"&&[m.releaseTag,...(m.archiveTags||[]),"v1.0.0","desktop-v0.9.1","desktop-v0.9.0"].filter(Boolean).some(tag=>/^v?\d+\.\d+\.\d+$|^desktop-v0\.9\.[01]$/.test(tag)&&u.pathname.startsWith("/chencheng666/great-powers-rts/releases/download/"+tag+"/"));
     if(!local&&!github)continue;
     const item=document.createElement("div"),a=document.createElement("a"),size=document.createElement("span"),meta=document.createElement("small");
     item.className="file";item.dataset.platform=u.pathname.endsWith('.zip')?'offline':u.pathname.endsWith('.exe')?'windows':/\.(?:dmg|app\.tar\.gz)$/.test(u.pathname)?'macos':'linux';a.href=u.href;a.textContent=f.label;if(local)a.download=u.pathname.split("/").at(-1);else{a.target="_blank";a.rel="noopener noreferrer"}

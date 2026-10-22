@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export const BATTLE_READABILITY = Object.freeze({
-  groundFilter: 'saturate(1.05) contrast(1.12) brightness(.72)',
+  groundFilter: 'saturate(1.18) contrast(1.08) brightness(.88)',
   lunarFilter: 'saturate(.45) contrast(1.08) brightness(.66)',
   rimStrength: .09,
   infantryRimStrength: .18,

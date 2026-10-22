@@ -40,6 +40,7 @@ import { armyDetailPlan, inDetailViewport } from './army-detail.js';
 import { CHALLENGES } from './challenges.js';
 import { COMBAT_STANCES, combatStance, supportsCombatStance } from './combat-stance.js';
 import { animatePriorityAircraft } from './priority-model-detail.js';
+import { facilityRotation, sceneryClearance, shorelineWidth } from './site-presentation.js';
 
 // 实体与部署预览共用同一名单，避免三维建筑读取不存在的旧贴图。
 const MODEL_ONLY_BUILDINGS = new Set(['nuclearSilo','turret','refinery',...COMMUNITY_3D_BUILDINGS,...REALISM_BUILDINGS]);
@@ -195,7 +196,7 @@ export class Renderer {
     } else if (this.game.mapId === 'frontier') {
       for (const offset of [-1, 1]) road([[410, cy], [880, cy + offset * 380], [2240, cy + offset * 620], [3600, cy + offset * 380], [4070, cy]], 32);
       road([[2240, 100], [2240, this.world.height - 100]], 24);
-    } else if (!this.game.map.future) road([[410, -20], [680, 350], [930, 545], [1310, 895], [1560, 1090], [1830, 1460]], 30);
+    }
     for (const crater of lunarCraters(this.game)) {
       const gradient = ctx.createRadialGradient(crater.x, crater.y, 0, crater.x, crater.y, crater.radius * 1.3);
       gradient.addColorStop(0, 'rgba(26,30,34,.24)'); gradient.addColorStop(.55, 'rgba(37,42,46,.16)');
@@ -253,8 +254,8 @@ export class Renderer {
     }
     ctx.putImageData(pixels, 0, 0);
     const circle = (radius, color, width) => { ctx.beginPath(); ctx.arc(128, 128, radius, 0, TAU); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); };
-    circle(124, '#414b4b', 8); circle(115, '#aaa58c', 2);
-    for (let i = 0; i < 12; i++) {
+    if (this.game.map.future) circle(124, '#414b4b', 5);
+    for (let i = 0; i < (this.game.map.future ? 12 : 0); i++) {
       const angle = i / 12 * TAU;
       ctx.beginPath(); ctx.arc(128, 128, 121, angle + .07, angle + .30); ctx.strokeStyle = '#d5b15b'; ctx.lineWidth = 5; ctx.stroke();
       ctx.beginPath(); ctx.moveTo(128 + Math.cos(angle) * 83, 128 + Math.sin(angle) * 83); ctx.lineTo(128 + Math.cos(angle) * 113, 128 + Math.sin(angle) * 113);
@@ -262,10 +263,15 @@ export class Renderer {
       ctx.fillStyle = '#414b4b'; ctx.beginPath(); ctx.arc(128 + Math.cos(angle) * 108, 128 + Math.sin(angle) * 108, 1.5, 0, TAU); ctx.fill();
     }
     const texture = this.track(new THREE.CanvasTexture(canvas)); texture.colorSpace = THREE.SRGBColorSpace;
-    const geometry = this.track(new THREE.CylinderGeometry(.5, .5, 1, 64));
+    if (!this.game.map.future) {
+      ctx.strokeStyle = '#777b73'; ctx.lineWidth = 2;
+      for (const n of [64, 128, 192]) { ctx.beginPath(); ctx.moveTo(n, 0); ctx.lineTo(n, 256); ctx.moveTo(0, n); ctx.lineTo(256, n); ctx.stroke(); }
+    }
+    const geometry = this.track(this.game.map.future ? new THREE.CylinderGeometry(.5, .5, 1, 64) : new THREE.BoxGeometry(1, 1, .88));
     const top = this.track(new THREE.MeshStandardMaterial({ map: texture, roughness: .91, metalness: .04, polygonOffset: true, polygonOffsetFactor: -2 }));
     const edge = this.track(new THREE.MeshStandardMaterial({ color: '#49504d', roughness: .86, metalness: .16 }));
-    this.foundationMesh = new THREE.InstancedMesh(geometry, [edge, top, edge], 1024); this.foundationMesh.receiveShadow = true;
+    const materials = this.game.map.future ? [edge, top, edge] : [edge, edge, top, edge, edge, edge];
+    this.foundationMesh = new THREE.InstancedMesh(geometry, materials, 1024); this.foundationMesh.receiveShadow = true;
     this.foundationMesh.count = 0; this.foundationMesh.frustumCulled = false; this.scene.add(this.foundationMesh);
     this.foundationSlots = new Map(); this.foundationVisible = new Map(); this.foundationFree = []; this.foundationNext = 0; this.foundationDummy = new THREE.Object3D();
   }
@@ -307,7 +313,7 @@ export class Renderer {
     for (const [edge, side] of [[water.x1, 1], [water.x2, -1]]) {
       const steps = Math.ceil(this.world.height / 16), positions = [], uv = [], indices = [];
       for (let n = 0; n <= steps; n++) {
-        const z = n / steps * this.world.height, width = 22 + Math.sin(z * .025) * 3 + Math.sin(z * .009) * 5;
+        const z = n / steps * this.world.height, width = shorelineWidth(z);
         positions.push(edge - side * 9, 1.16, z, edge + side * width, 1.16, z);
         uv.push(0, n / steps, 1, n / steps);
         if (n < steps) { const a = n * 2; indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
@@ -316,12 +322,12 @@ export class Renderer {
       this.scene.add(new THREE.Mesh(this.track(geometry), this.shoreMaterial));
       const bank = [], bankIndices = [];
       for (let n = 0; n <= steps; n++) {
-        const z = n / steps * this.world.height, inward = 5 + Math.sin(z * .02) * 2;
-        bank.push(edge - side * 6, this.elevation(edge - side * 6, z) - .2, z, edge + side * inward, -6, z);
+        const z = n / steps * this.world.height, width = shorelineWidth(z);
+        bank.push(edge - side * (width + 12), this.elevation(edge - side * (width + 12), z) + .12, z, edge + side * width * .38, .65, z);
         if (n < steps) { const a = n * 2; bankIndices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
       }
       const bankGeometry = this.track(new THREE.BufferGeometry()); bankGeometry.setAttribute('position', new THREE.Float32BufferAttribute(bank, 3)); bankGeometry.setIndex(bankIndices); bankGeometry.computeVertexNormals();
-      const bankMaterial = this.track(new THREE.MeshStandardMaterial({ color: '#777f64', roughness: .98, side: THREE.DoubleSide }));
+      const bankMaterial = this.track(new THREE.MeshStandardMaterial({ color: '#9e9a73', roughness: .98, side: THREE.DoubleSide }));
       const bankMesh = new THREE.Mesh(bankGeometry, bankMaterial); bankMesh.receiveShadow = true; bankMesh.castShadow = true; this.scene.add(bankMesh);
     }
   }
@@ -387,7 +393,7 @@ export class Renderer {
     const density = Math.min(850, Math.round(this.world.width * this.world.height / (2240 * 1440) * 230));
     for (let i = 0; i < density; i++) {
       const x = 45 + hash(i, 91) * (this.world.width - 90), z = 40 + hash(i, 193) * (this.world.height - 80);
-      if (Math.abs(z - this.game.homeY) < 145 || forbidden.some(item => Math.hypot(item.x - x, item.y - z) < 100)) continue;
+      if (Math.abs(z - this.game.homeY) < 145 || forbidden.some(item => Math.hypot(item.x - x, item.y - z) < Math.max(100, (item.size || 0) * 1.2))) continue;
       if (this.game.map.noBuild.some(rect => x > rect.x1 - 25 && x < rect.x2 + 25)) continue;
       const kind = this.game.map.future ? 'rock' : hash(i, 71) > .24 ? 'tree' : 'rock'; points[kind].push({ x, z, scale: kind === 'tree' ? 8 + hash(i, 25) * 7 : 12 + hash(i, 45) * 11, angle: hash(i, 33) * TAU });
     }
@@ -524,17 +530,20 @@ export class Renderer {
     }
     const fog = this.fogCanvas.getContext('2d'); fog.clearRect(0, 0, 560, 360); fog.filter = 'blur(9px)'; fog.drawImage(this.fogSmall, -5, -5, 570, 370); fog.filter = 'none'; this.fogTexture.needsUpdate = true;
     const dummy = new THREE.Object3D(), sceneryVisible = new Map();
+    const knownBuildings = this.game.buildings.filter(b => b.owner === 0 || this.game.canSeeEntity(0, b));
+    const knownGroundUnits = this.game.units.filter(u => !UNITS[u.type].tags.includes('air') && (u.owner === 0 || this.game.canSeeEntity(0, u)));
     for (const mesh of this.bridges) mesh.visible = this.game.hasExploredFor(0, mesh.position.x, mesh.position.z);
     for (const { mesh, transforms, foliage, angle } of this.environment) {
       transforms.forEach((point, index) => {
         if (!sceneryVisible.has(point)) {
-          point.cleared ||= this.game.buildings.some(b => b.hp > 0 && (b.owner === 0 || this.game.canSeeEntity(0, b)) && Math.hypot(b.x - point.x, b.y - point.z) < b.size * .65 + (foliage ? point.width * .25 : 12));
-          point.known = !point.cleared && this.game.hasExploredFor(0, point.x, point.z);
+          point.cleared ||= sceneryClearance(point, knownBuildings, [], !!foliage);
+          const occupied = sceneryClearance(point, [], knownGroundUnits, !!foliage);
+          point.known = !point.cleared && !occupied && this.game.hasExploredFor(0, point.x, point.z);
           sceneryVisible.set(point, point.known);
         }
         const known = sceneryVisible.get(point);
         if (foliage) this.placeFoliage(dummy, point, foliage, angle, known);
-        else { dummy.position.set(point.x, point.heightOffset ?? 1, point.z); dummy.rotation.set(0, point.angle, 0); dummy.scale.set(known ? point.scale : 0, known ? point.verticalScale || point.scale : 0, known ? point.scale : 0); }
+        else { dummy.position.set(point.x, point.heightOffset ?? this.elevation(point.x, point.z), point.z); dummy.rotation.set(0, point.angle, 0); dummy.scale.set(known ? point.scale : 0, known ? point.verticalScale || point.scale : 0, known ? point.scale : 0); }
         dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix);
       }); mesh.instanceMatrix.needsUpdate = true;
     }
@@ -657,7 +666,8 @@ export class Renderer {
     }
     model.userData.entity = entity;
     const sprite = entity.kind === 'building' && !MODEL_ONLY_BUILDINGS.has(entity.type) && !this.game.map.future ? this.attachArchitecture(model, name, color) : null;
-    const entrance = entity.kind === 'building' && ['barracks', 'factory', 'armory', 'airfield'].includes(entity.type) ? this.createEntrance(entity, model, scale) : null;
+    if (entity.kind === 'building') model.rotation.y = facilityRotation(entity, this.game.map.future);
+    const entrance = entity.kind === 'building' && ['barracks', 'factory', 'armory'].includes(entity.type) ? this.createEntrance(entity, model, scale) : null;
     this.readableMaterials ||= new Map();
     const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry');
     model.traverse(mesh => {
@@ -779,18 +789,19 @@ export class Renderer {
 
   createEntrance(building, model, scale) {
     const infantry = building.type === 'barracks', exit = productionExit(building, infantry ? 'rifle' : 'tank');
-    const root = new THREE.Group(); root.scale.setScalar(1 / scale); root.position.set((exit.x - building.x) / scale, 0, (exit.y - building.y) / scale); root.rotation.y = building.owner ? Math.PI : 0;
+    const root = new THREE.Group(), rotation = model.rotation.y, dx = (exit.x - building.x) / scale, dz = (exit.y - building.y) / scale;
+    root.scale.setScalar(1 / scale); root.position.set(Math.cos(rotation) * dx - Math.sin(rotation) * dz, 0, Math.sin(rotation) * dx + Math.cos(rotation) * dz); root.rotation.y = -exit.angle - rotation;
     const steel = this.track(new THREE.MeshStandardMaterial({ color: '#59666a', roughness: .58, metalness: .62 }));
     const concrete = this.track(new THREE.MeshStandardMaterial({ color: '#808779', roughness: .94 }));
     const stripes = this.track(new THREE.MeshStandardMaterial({ color: '#d1b15f', roughness: .76 }));
     const lampMaterial = this.track(new THREE.MeshStandardMaterial({ color: '#8cedce', emissive: '#70c3ae', emissiveIntensity: .7 }));
     const height = infantry ? 20 : 31, width = infantry ? 23 : 48;
     const piece = (w, h, d, x, y, z, material) => { const mesh = new THREE.Mesh(this.track(new THREE.BoxGeometry(w, h, d)), material); mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; root.add(mesh); return mesh; };
-    piece(72, .6, width + 12, 28, .4, 0, concrete);
-    for (const z of [-width / 2, width / 2]) { piece(4, height, 4, 0, height / 2, z, steel); piece(61, .7, 1.6, 31, .9, z - Math.sign(z) * 3, stripes); }
+    piece(36, .6, width + 8, 12, .4, 0, concrete);
+    for (const z of [-width / 2, width / 2]) { piece(4, height, 4, 0, height / 2, z, steel); piece(30, .7, 1.6, 15, .9, z - Math.sign(z) * 3, stripes); }
     piece(5, 4, width + 4, 0, height, 0, steel);
     const door = piece(2, height - 4, width - 5, 0, height / 2 + 1, 0, steel);
-    for (let x = 7; x < 55; x += 12) piece(4, .7, 7, x, 1, width / 2 - 7, stripes);
+    for (let x = 7; x < 28; x += 12) piece(4, .7, 7, x, 1, width / 2 - 7, stripes);
     piece(4, 2, 5, 2, height + 3, width / 2, lampMaterial);
     model.add(root); return { root, door, lampMaterial, height };
   }
@@ -1269,7 +1280,7 @@ export class Renderer {
       const model = createModel(name), sprite = !this.game.map.future && !MODEL_ONLY_BUILDINGS.has(type) ? this.attachArchitecture(model, type, '#59d7ec') : null;
       if (sprite) sprite.material.opacity = .55;
       model.traverse(mesh => { if (!mesh.isMesh) return; if (!sprite) { mesh.material = this.track(mesh.material.clone()); mesh.material.transparent = true; mesh.material.opacity = .48; } mesh.castShadow = false; });
-      model.scale.setScalar(BUILDINGS[type].size / 7.2); this.scene.add(model); this.placement = { type, model, sprite };
+      model.scale.setScalar(BUILDINGS[type].size / 7.2); model.rotation.y = facilityRotation({ type, owner: 0, spawnAngle: this.game.map.spawns?.[0]?.angle }, this.game.map.future); this.scene.add(model); this.placement = { type, model, sprite };
     }
     const valid = this.game.canPlace(0, type, this.pointer.x, this.pointer.y); this.placement.model.visible = true; this.placement.model.position.set(this.pointer.x, this.elevation(this.pointer.x, this.pointer.y), this.pointer.y);
     this.placement.model.traverse(mesh => { if (mesh.isMesh) mesh.material.color.set(valid ? '#87d7b1' : '#ee7366'); });

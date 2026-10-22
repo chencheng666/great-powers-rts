@@ -1173,7 +1173,7 @@ $('#map-select').innerHTML = Object.entries(MAPS).filter(([,map])=>!candidateMod
 $('#map-select').value = state.mapId;
 const updateNuclearOption=()=>{const enabled=$('#map-select').value==='strategic';$('#nuclear-option').hidden=!enabled;if(!enabled)$('#nuclear-enabled').checked=false;};
 $('#map-select').addEventListener('change',updateNuclearOption);updateNuclearOption();
-if (location.protocol === 'file:') $('#desktop-download-link').href = 'https://43.135.186.21:8443/downloads/';
+if (location.protocol === 'file:') $('#desktop-download-link').href = 'https://www.daguojueqi.site/downloads/';
 setupControls();
 try { setSidebarCollapsed(localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(false); }
 updateAudioControls();

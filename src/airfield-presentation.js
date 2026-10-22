@@ -1,12 +1,11 @@
 import * as THREE from 'three';
-import { UNITS } from './data.js';
 import { mergeParts } from './model-craft.js';
+import { runwayAircraft } from './airfield-rules.js';
 
 const clamp = value => Math.max(0, Math.min(1, value));
 
 export function fixedWingPresentation(type, future = false) {
-  const tags = UNITS[type]?.tags || [];
-  return !future && tags.includes('jet') && !tags.includes('logistics') && type !== 'airlift';
+  return runwayAircraft(type, future);
 }
 
 export function glideProfile(distance, groundRadius) {
@@ -23,13 +22,18 @@ export function glideProfile(distance, groundRadius) {
 }
 
 export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight) {
-  if (!fixedWingPresentation(entity.type, game.map.future) || entity.deployment || entity.deckApproach || entity.embarkedIn) return null;
+  if (!fixedWingPresentation(entity.type, game.map.future) || entity.deckApproach || entity.embarkedIn) return null;
   const grounded = game.aircraftGrounded(entity);
   let groundOffset = entry.model?.userData.groundClearance ? entry.model.userData.groundClearance * entry.scale + .2 : 4;
   if(entry.model?.userData.groundClearance){
     // 跑道的可视铺装高于地形，轮胎接触面不能仍按裸地高度计算。
     const pavement=game.ownedBuildings?.(entity.owner,'airfield').find(b=>{const scale=b.size/7.2;return Math.abs(entity.x-b.x)<=6.9*scale&&Math.abs(entity.y-b.y-2.1*scale)<=1.1*scale;});
     if(pavement)groundOffset+=pavement.size/7.2*.5;
+  }
+  if (entity.deployment) {
+    const travel = Math.hypot(entity.x - entity.deployment.fromX, entity.y - entity.deployment.fromY);
+    const fraction = clamp((travel - 45) / 110);
+    return { height: groundHeight + groundOffset + (cruiseHeight - groundHeight - groundOffset) * fraction, pitch: fraction > 0 && fraction < 1 ? .08 : 0 };
   }
   if (entry.wasGrounded && !grounded) entry.takeoffOrigin = { x: entity.x, y: entity.y };
   entry.wasGrounded = grounded;

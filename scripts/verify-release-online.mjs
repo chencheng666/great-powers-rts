@@ -4,7 +4,8 @@ import { createHash } from 'node:crypto';
 import { PROTOCOL_VERSION,SIX_PROTOCOL_VERSION } from '../src/network-protocol.js';
 import { GAME_VERSION } from '../src/version.js';
 
-const origin=process.argv[2]||'https://43.135.186.21:8443',out=`releases/v${GAME_VERSION}-online`,results=[],identities=[],checks=[];
+const origin=process.argv[2]||'https://www.daguojueqi.site',out=`releases/v${GAME_VERSION}-online`,results=[],identities=[],checks=[];
+const domestic=process.argv.includes('--domestic'),gamePath=domestic?'/play/':'/';
 await mkdir(out,{recursive:true});
 const wait=async(c,p)=>{const end=Date.now()+45000;while(Date.now()<end){const i=c.messages.findIndex(p);if(i>=0)return c.messages.splice(i,1)[0];const error=c.messages.find(m=>m.type==='error');if(error)throw Error(error.message);await new Promise(r=>setTimeout(r,20));}throw Error('公网验收消息超时');};
 const send=(c,m)=>c.ws.send(JSON.stringify(m));
@@ -54,8 +55,8 @@ for(const count of [2,6]){
 const js=(await readdir('dist/assets')).filter(f=>/^index-.*\.js$/.test(f));if(js.length!==1)throw Error('不能唯一确定网页入口');
 await writeFile(`${out}/report.json`,JSON.stringify({version:GAME_VERSION,results,checks,filesComplete:false},null,2));
 const manifest=JSON.parse(await readFile('dist/downloads/manifest.json','utf8')),archive=manifest.files.find(f=>f.name===`packages/Great-Powers-RTS-v${GAME_VERSION}.zip`);
-for(const path of ['/',`/assets/${js[0]}`,'/official/','/downloads/manifest.json',`/downloads/${archive.name}`]){
-  const local=path==='/'?'dist/index.html':path==='/official/'?'dist/official/index.html':'dist'+path;
+for(const path of [...new Set([gamePath,...(domestic?['/']:[]),`/assets/${js[0]}`,'/official/','/downloads/manifest.json',`/downloads/${archive.name}`])]){
+  const local=path===gamePath?'dist/index.html':path==='/official/'||domestic&&path==='/'?'dist/official/index.html':'dist'+path;
   if(path.endsWith('.zip')&&!process.argv.includes('--full-download')){
     const head=await fetch(origin+path,{method:'HEAD',signal:AbortSignal.timeout(30000)});
     if(!head.ok||Number(head.headers.get('content-length'))!==archive.size)throw Error('公网下载大小不符');

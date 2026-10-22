@@ -1,8 +1,15 @@
 {
-  "version": "1.2.0",
-  "releaseTag": "v1.2.0",
-  "desktopOnline": "建议所有玩家刷新或升级到1.2；双人协议4、六方协议5。四关挑战仅单机，连续航点和交战姿态由服务端校验；核规则仍仅双人战略图且双方确认。",
+  "version": "1.2.1",
+  "releaseTag": "v1.2.1",
+  "desktopOnline": "国内HTTPS试玩 https://www.daguojueqi.site/play/ ，六方实验 /candidate/ 。离线ZIP仅单机；桌面旧版文件请留意版本，升级前导出存档。",
   "files": [
+    {
+      "name": "packages/Great-Powers-RTS-v1.2.1.zip",
+      "label": "1.2.1 · 离线单机 ZIP · 免安装",
+      "size": 59052735,
+      "sha256": "6398ec742b67a84ca9648a50f0573648126767810af328fd4c2c500f5ffad545",
+      "status": "本轮CAI反馈修复，模型、音乐、中文男女声内置；完整解压打开PLAY.html，仅单机。"
+    },
     {
       "name": "packages/Great-Powers-RTS-v1.2.0.zip",
       "label": "1.2.0 · 离线单机 ZIP · 免安装",
@@ -353,5 +360,8 @@
       "sha256": "f05a0a1c875ff7b6c9ea19da69e05b48510b49fb71fba0190547992a61581ab3",
       "status": "公开Release资产；官方API核验大小与SHA256，未在本机完整下载此CI包。Mac未公证，Windows未代码签名；其他系统未实机验收，桌面联网待HTTPS。"
     }
+  ],
+  "archiveTags": [
+    "v1.2.0"
   ]
 }

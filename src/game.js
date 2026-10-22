@@ -23,6 +23,7 @@ import { strategicCombat } from './strategic-combat.js';
 import { deterrenceCombat } from './deterrence.js';
 import { CHALLENGES, challengeCombat } from './challenges.js';
 import { createLossBreakdown } from './loss-breakdown.js';
+import { runwayAircraft, airfieldApron } from './airfield-rules.js';
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -614,7 +615,7 @@ export class Game {
     if (p.credits + 0.01 < need) return;
     p.credits -= need; b.active.paid += need; b.active.progress += dt;
     if (b.active.progress >= duration || b.active.paid >= cost - 0.1) {
-      const exit = productionExit(b, b.active.type);
+      const exit = productionExit(b, b.active.type, this.map.future);
       if(this.time<(b.spawnRetryAt||0))return;
       const spawn = d.tags.includes('ship') ? this.findNavalSpawn(b, b.active.type) : this.findSpawn(exit.x, exit.y, b.active.type);
       if(!spawn){b.spawnRetryAt=this.time+.3;return;}
@@ -802,9 +803,10 @@ export class Game {
       if (u.resumeOrder?.x !== undefined) this.moveUnit(u, u.resumeOrder, dt, 8);
       return;
     }
-    if (distance(u, home) > home.size * .55 + 24) {
+    const apron = runwayAircraft(u.type, this.map.future) ? airfieldApron(home) : home;
+    if (distance(u, apron) > (apron === home ? home.size * .55 + 24 : 12)) {
       u.rearmProgress = 0;
-      this.moveUnit(u, home, dt, home.size * .55 + 18);
+      this.moveUnit(u, apron, dt, apron === home ? home.size * .55 + 18 : 8);
       return;
     }
     if (!this.hasPower(u.owner)) return;
