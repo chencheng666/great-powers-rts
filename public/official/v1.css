@@ -3,6 +3,7 @@
 .hero h1 { font-size: 78px; }
 .section h2 { font-size: 45px; }
 .hero-content { max-width: 760px; }
+.hero-scene { filter: none; opacity: .92; }
 .hero-actions { align-items: stretch; }
 .hero-actions .button { min-width: 190px; }
 .downloads article { min-width: 0; }

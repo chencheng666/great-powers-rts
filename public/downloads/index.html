@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="大国崛起 1.2 下载中心，四关战术挑战、模型精修、离线单机与各平台桌面安装包。">
-  <title>大国崛起 1.2 · 下载中心</title>
+  <meta name="description" content="大国崛起 1.2.1 国内下载中心，玩家反馈修复、离线单机与各平台桌面安装包。">
+  <title>大国崛起 1.2.1 · 下载中心</title>
   <style>
     :root{color-scheme:dark;font-family:system-ui,-apple-system,"Noto Sans SC",sans-serif;background:#12181a;color:#e7ece8}
     *{box-sizing:border-box}body{margin:0}a{color:#9de0d5;text-decoration:none}a:hover{text-decoration:underline}
@@ -40,9 +40,9 @@
   <details><summary>查看历史版本文件（不含本轮新功能）</summary><div id="archive"></div></details>
   <section><h2>安装与兼容</h2><div class="notes"><p>macOS 按 Intel / Apple Silicon 选择 DMG 或应用压缩包；目前未完成 Apple 公证。Windows x64 安装器未签名。请按系统正常的安全提示检查文件与校验值。</p><p>Linux 按 x64 / ARM64 选择 DEB 或 AppImage，需要 WebKitGTK 4.1、GTK3 和支持 WebGL2 的图形环境。麒麟、统信 UOS 需对应机器实测；目前没有龙芯、申威版本。</p></div><p>免安装 ZIP 由上海国内服务器提供。桌面安装包以清单标注的实际版本和地址为准，不能把旧包视为本轮更新。HTTPS 网页可直接联机，离线文件只提供单机。</p></section>
 </main>
-<footer>大国崛起 · 原创开源即时战略 · 1.2 战术挑战与模型精修</footer>
+<footer>大国崛起 · 原创开源即时战略 · 1.2.1 国内战区与玩家反馈修复</footer>
 <script>
-fetch("manifest.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("清单暂不可用");return r.json()}).then(m=>{
+fetch("manifest.json?v=1.2.1&t="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("清单暂不可用");return r.json()}).then(m=>{
   const current=document.querySelector("#current"),archive=document.querySelector("#archive");current.replaceChildren();archive.replaceChildren();
   for(const f of [...(m.files||[])].sort((a,b)=>Number(!a.name.endsWith('.zip'))-Number(!b.name.endsWith('.zip')))){
     const u=new URL(f.name,location.href);

@@ -1,0 +1,391 @@
+{
+  "version": "1.2.1",
+  "checkedAt": "2026-10-22T02:01:52.903Z",
+  "origin": "https://www.daguojueqi.site",
+  "gameCommit": "64892cbfb323e1b81dbac9650291476fecb80c60",
+  "tests": 446,
+  "health": [
+    {
+      "prefix": "",
+      "ok": true,
+      "version": "1.2.1",
+      "protocol": 4,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    {
+      "prefix": "/candidate",
+      "ok": true,
+      "version": "1.2.1",
+      "protocol": 5,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  ],
+  "publicGameplay": [
+    {
+      "players": 2,
+      "protocol": 4,
+      "sameBattle": true,
+      "movement": true,
+      "combatStance": true,
+      "queuedWaypoints": true,
+      "opponentCommandRejected": true,
+      "nuclearConsent": true,
+      "invalidNuclearRejected": true,
+      "independentElimination": null,
+      "reportSides": 2,
+      "compression": "none"
+    },
+    {
+      "players": 6,
+      "protocol": 5,
+      "sameBattle": true,
+      "movement": true,
+      "combatStance": true,
+      "queuedWaypoints": true,
+      "opponentCommandRejected": true,
+      "nuclearConsent": null,
+      "invalidNuclearRejected": null,
+      "independentElimination": true,
+      "reportSides": 6,
+      "compression": "permessage-deflate"
+    }
+  ],
+  "initialAcceptance": {
+    "version": "1.2.1",
+    "results": [
+      {
+        "players": 2,
+        "protocol": 4,
+        "sameBattle": true,
+        "movement": true,
+        "combatStance": true,
+        "queuedWaypoints": true,
+        "opponentCommandRejected": true,
+        "nuclearConsent": true,
+        "invalidNuclearRejected": true,
+        "independentElimination": null,
+        "reportSides": 2,
+        "compression": "none"
+      },
+      {
+        "players": 6,
+        "protocol": 5,
+        "sameBattle": true,
+        "movement": true,
+        "combatStance": true,
+        "queuedWaypoints": true,
+        "opponentCommandRejected": true,
+        "nuclearConsent": null,
+        "invalidNuclearRejected": null,
+        "independentElimination": true,
+        "reportSides": 6,
+        "compression": "permessage-deflate"
+      }
+    ],
+    "checks": [
+      {
+        "path": "/play/",
+        "mode": "full",
+        "sha256": "b0192db9f1a5f4c6be83f99d8b723a24289b8e85935727ce2c00d5e72e17ceed",
+        "match": true
+      },
+      {
+        "path": "/",
+        "mode": "full",
+        "sha256": "3789c088b81e547e3b1493f38aca14983d32c4d10b530ee5c7ff30e67c483c8a",
+        "match": true
+      },
+      {
+        "path": "/assets/index-BQNcuCLQ.js",
+        "mode": "full",
+        "sha256": "1c9b02ceb97b031bcb1c70dba211da80a23f0c18d98c18fcf77c90a24e7703e8",
+        "match": true
+      },
+      {
+        "path": "/official/",
+        "mode": "full",
+        "sha256": "3789c088b81e547e3b1493f38aca14983d32c4d10b530ee5c7ff30e67c483c8a",
+        "match": true
+      },
+      {
+        "path": "/downloads/manifest.json",
+        "mode": "full",
+        "sha256": "320ecbb2ad4fc216b55b1dab51d3ecff9c26c5234151af2aab01e6283633d351",
+        "match": true
+      },
+      {
+        "path": "/downloads/packages/Great-Powers-RTS-v1.2.1.zip",
+        "mode": "full",
+        "sha256": "6398ec742b67a84ca9648a50f0573648126767810af328fd4c2c500f5ffad545",
+        "match": true
+      }
+    ],
+    "filesComplete": true
+  },
+  "finalFiles": [
+    {
+      "path": "/",
+      "mode": "full",
+      "bytes": 9938,
+      "sha256": "2fc4b9cebf1874fabf9463c07d636942d6bd36fd5164bfccd42ac0bb480d943a",
+      "match": true
+    },
+    {
+      "path": "/official/",
+      "mode": "full",
+      "bytes": 9938,
+      "sha256": "2fc4b9cebf1874fabf9463c07d636942d6bd36fd5164bfccd42ac0bb480d943a",
+      "match": true
+    },
+    {
+      "path": "/play/",
+      "mode": "full",
+      "bytes": 16364,
+      "sha256": "b0192db9f1a5f4c6be83f99d8b723a24289b8e85935727ce2c00d5e72e17ceed",
+      "match": true
+    },
+    {
+      "path": "/assets/index-BQNcuCLQ.js",
+      "mode": "full",
+      "bytes": 1606018,
+      "sha256": "1c9b02ceb97b031bcb1c70dba211da80a23f0c18d98c18fcf77c90a24e7703e8",
+      "match": true
+    },
+    {
+      "path": "/downloads/",
+      "mode": "full",
+      "bytes": 7251,
+      "sha256": "ca9ab2ce718f81d525136240d0ede63aa65b50f815bf299a6d54035761b6fefa",
+      "match": true
+    },
+    {
+      "path": "/downloads/manifest.json",
+      "mode": "full",
+      "bytes": 4648,
+      "sha256": "f7dc9d56642068fdd7ce962ce23ce74900bbde555ce1eb6b4cc074075c4875f8",
+      "match": true
+    },
+    {
+      "path": "/official/v1.css",
+      "mode": "full",
+      "bytes": 730,
+      "sha256": "94ee0dbc37451d6857b293ac9e204211b8349c27ae2825f917f3db7bd293bfef",
+      "match": true
+    },
+    {
+      "path": "/resume/",
+      "mode": "full",
+      "bytes": 8683,
+      "sha256": "fa78dc5a3c3cee90ea248766b15ac6c9c1ea7480c136b0284ab04548788f5dde",
+      "match": true
+    },
+    {
+      "path": "/resume/style.css",
+      "mode": "full",
+      "bytes": 10675,
+      "sha256": "f9583a13b5b151161986c80a83530a9ba8e27894f3ea996df231626db7265071",
+      "match": true
+    },
+    {
+      "path": "/official/assets/v121-battle.jpg",
+      "mode": "full",
+      "bytes": 565222,
+      "sha256": "53f706df1702edc8c3f2b518cf91d0c84b45ddb73b393fc2d91ae9cb8bed6451",
+      "match": true
+    },
+    {
+      "path": "/official/assets/v121-menu.jpg",
+      "mode": "full",
+      "bytes": 334091,
+      "sha256": "3a9495a2b690600404288a911b6306485d36c18969b9c27f2a2a0788007a1382",
+      "match": true
+    },
+    {
+      "path": "/official/assets/v121-facilities.jpg",
+      "mode": "full",
+      "bytes": 389599,
+      "sha256": "9a5c5c57bc94fae773303a4424813e4f00f46d531881797d6c37681a40dd4677",
+      "match": true
+    },
+    {
+      "path": "/official/assets/v121-shoreline.jpg",
+      "mode": "full",
+      "bytes": 345535,
+      "sha256": "cd04d915909c99b4c55a28edf2b9ddc751d7c5139a9036167972af7d927ee16e",
+      "match": true
+    },
+    {
+      "path": "/official/assets/v121-lobby.jpg",
+      "mode": "full",
+      "bytes": 93822,
+      "sha256": "b0450846a14f11084e29ec176775504e686969ae11f6e7b9e2ad382179ab477c",
+      "match": true
+    }
+  ],
+  "downloads": [
+    {
+      "path": "/downloads/packages/Great-Powers-RTS-v1.2.1.zip",
+      "size": 59052735,
+      "sha256": "6398ec742b67a84ca9648a50f0573648126767810af328fd4c2c500f5ffad545",
+      "publicHTTP": {
+        "mode": "range",
+        "bytes": 65536,
+        "fullDownload": false
+      },
+      "serverFullSHA256Verified": false,
+      "offlinePublicFullDownloadVerified": true
+    },
+    {
+      "path": "/downloads/packages/v1.2.1/Great.Powers_1.2.1_aarch64.app.tar.gz",
+      "size": 71779396,
+      "sha256": "ef4a5f6d9e0124cee86e58e67cf0f0c753699555dbdaf061d68bd9baf387d09c",
+      "publicHTTP": {
+        "mode": "range",
+        "bytes": 65536,
+        "fullDownload": false
+      },
+      "serverFullSHA256Verified": true,
+      "offlinePublicFullDownloadVerified": false
+    },
+    {
+      "path": "/downloads/packages/v1.2.1/Great.Powers_1.2.1_aarch64.AppImage",
+      "size": 148363784,
+      "sha256": "438813b3fbc642f2e47ca644030bddb2b5872d3423c4ed696df4bd2162e7c8e0",
+      "publicHTTP": {
+        "mode": "range",
+        "bytes": 65536,
+        "fullDownload": false
+      },
+      "serverFullSHA256Verified": true,
+      "offlinePublicFullDownloadVerified": false
+    },
+    {
+      "path": "/downloads/packages/v1.2.1/Great.Powers_1.2.1_aarch64.dmg",
+      "size": 71864688,
+      "sha256": "49eb33a38a3a3e3fa95bdad01e178beecefa28186fe6d37d53716d477d76890e",
+      "publicHTTP": {
+        "mode": "range",
+        "bytes": 65536,
+        "fullDownload": false
+      },
+      "serverFullSHA256Verified": true,
+      "offlinePublicFullDownloadVerified": false
+    },
+    {
+      "path": "/downloads/packages/v1.2.1/Great.Powers_1.2.1_amd64.AppImage",
+      "size": 150215160,
+      "sha256": "9613c3af85240091b4e9dec2cdf2a53eb15cacee653c6c9f1846223795d0032f",
+      "publicHTTP": {
+        "mode": "range",
+        "bytes": 65536,
+        "fullDownload": false
+      },
+      "serverFullSHA256Verified": true,
+      "offlinePublicFullDownloadVerified": false
+    }
+  ],
+  "nativeMirror": {
+    "version": "1.2.1",
+    "totalDesktopFiles": 9,
+    "mirroredFiles": 4,
+    "complete": false,
+    "files": [
+      {
+        "name": "Great.Powers_1.2.1_aarch64.app.tar.gz",
+        "size": 71779396,
+        "sha256": "ef4a5f6d9e0124cee86e58e67cf0f0c753699555dbdaf061d68bd9baf387d09c",
+        "mirrorVerified": true
+      },
+      {
+        "name": "Great.Powers_1.2.1_aarch64.AppImage",
+        "size": 148363784,
+        "sha256": "438813b3fbc642f2e47ca644030bddb2b5872d3423c4ed696df4bd2162e7c8e0",
+        "mirrorVerified": true
+      },
+      {
+        "name": "Great.Powers_1.2.1_aarch64.dmg",
+        "size": 71864688,
+        "sha256": "49eb33a38a3a3e3fa95bdad01e178beecefa28186fe6d37d53716d477d76890e",
+        "mirrorVerified": true
+      },
+      {
+        "name": "Great.Powers_1.2.1_amd64.AppImage",
+        "size": 150215160,
+        "sha256": "9613c3af85240091b4e9dec2cdf2a53eb15cacee653c6c9f1846223795d0032f",
+        "mirrorVerified": true
+      },
+      {
+        "name": "Great.Powers_1.2.1_amd64.deb",
+        "size": 71837366,
+        "sha256": "c3c75daabd385886585576760ed25b083bcbd0b3f04d4ecf00ed8f671c031f9e",
+        "mirrorVerified": false
+      },
+      {
+        "name": "Great.Powers_1.2.1_arm64.deb",
+        "size": 71879892,
+        "sha256": "b0a950af8a14f4c33dc6611e85542b32cc69f581c31f42e48c4ffc36d94b002f",
+        "mirrorVerified": false
+      },
+      {
+        "name": "Great.Powers_1.2.1_x64-setup.exe",
+        "size": 288025667,
+        "sha256": "aa7801ecbda29044b1333e108de3b6ac72e44a71532054089b87db2f06fa909e",
+        "mirrorVerified": false
+      },
+      {
+        "name": "Great.Powers_1.2.1_x64.app.tar.gz",
+        "size": 72387094,
+        "sha256": "21b6efe634cccbe1534340ec9ae469d43436047e7a46a4acffa03c44d444978e",
+        "mirrorVerified": false
+      },
+      {
+        "name": "Great.Powers_1.2.1_x64.dmg",
+        "size": 72459242,
+        "sha256": "f2a95f54a20a55396c402e8acce0ba0b33710b12ee7ecbc413173c9703656905",
+        "mirrorVerified": false
+      }
+    ]
+  },
+  "desktopBuild": {
+    "success": true,
+    "files": 9,
+    "run": "https://github.com/chencheng666/great-powers-rts/actions/runs/39703971083",
+    "allHardwareTested": false
+  },
+  "browserRoom": {
+    "https": true,
+    "created": true,
+    "left": true,
+    "multiplayerSessionWasReal": true
+  },
+  "offlineBrowser": {
+    "mode": "local-static-server",
+    "externalRequests": 0,
+    "nonBlankPixelSamples": 18827,
+    "fileProtocolTested": false
+  },
+  "caiScenario": {
+    "map": "strategic",
+    "nuclearEnabled": true,
+    "rendered": true,
+    "windowsHardwareTested": false
+  },
+  "cleanup": {
+    "recordedTestGuestsRemoved": 9,
+    "recordedTestMatchesRemoved": 2,
+    "unrecordedRowsPreserved": true,
+    "databaseIntegrity": "ok",
+    "uploadEndpointRemoved": true
+  },
+  "remaining": [
+    "完整机场进离场与泊位调度",
+    "任意自然海岸与全部模型写实化",
+    "五个桌面安装文件的国内镜像",
+    "Windows、国产系统及弱网长局实机验证",
+    "联机第二席位的建筑世界朝向与六方非房主建造预览逐席位视觉回归"
+  ]
+}

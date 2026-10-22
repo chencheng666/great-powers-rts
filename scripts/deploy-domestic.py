@@ -116,6 +116,7 @@ WantedBy=multi-user.target
         run('systemctl', 'enable', '--now', *SERVICES)
         report = [health(8088, version, 2), health(8089, version, 6)]
         headers = '''proxy_http_version 1.1;
+proxy_cache off;
 proxy_set_header Host $host;
 proxy_set_header X-Forwarded-Proto $scheme;
 proxy_set_header X-Forwarded-For $remote_addr;
@@ -129,6 +130,7 @@ proxy_read_timeout 120s;
                      'location ^~ /resume/ { root /opt/great-powers; index index.html; }']
         for path in ['/official/', '/downloads/', '/assets/', '/api/']:
             locations.append(f'location ^~ {path} {{ {headers} proxy_pass http://127.0.0.1:8088; }}')
+        locations.append(f'location = /downloads/manifest.json {{ {headers} proxy_hide_header Cache-Control; add_header Cache-Control "no-store" always; add_header Strict-Transport-Security "max-age=31536000" always; proxy_pass http://127.0.0.1:8088; }}')
         locations.append(f'location ^~ /play/ {{ {headers} proxy_pass http://127.0.0.1:8088/; }}')
         upgrade = 'proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_buffering off;'
         locations.append(f'location = /battle-socket {{ {headers} {upgrade} proxy_pass http://127.0.0.1:8088; }}')
