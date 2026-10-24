@@ -1,3 +1,4 @@
+import { rotorMotion } from './aircraft-flight.js';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -43,7 +44,7 @@ import { ArmyBatches, armyRenderBudget } from './army-batches.js';
 import { CHALLENGES } from './challenges.js';
 import { COMBAT_STANCES, combatStance, supportsCombatStance } from './combat-stance.js';
 import { animatePriorityAircraft } from './priority-model-detail.js';
-import { facilityRotation, sceneryClearance, shorelineWidth } from './site-presentation.js';
+import { facilityRotation, sceneryClearance, sceneryFootprint, shorelineWidth } from './site-presentation.js';
 import { islandHarbor, islandDistance } from './island-map.js';
 import { paintIslandTerrain, createIslandShore, createIslandInfrastructure } from './island-scenery.js';
 import { paintTheaterGround, createTheaterScenery } from './theater-scenery.js';
@@ -257,7 +258,7 @@ export class Renderer {
       const detailMap = this.track(surface[key].clone()); detailMap.repeat.set(this.world.width / 420, this.world.height / 420);
       detailMap.offset.y = 1 - this.world.height / 420; maps[key] = detailMap;
     }
-    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, ...maps, normalScale: new THREE.Vector2(.65, .65), bumpMap: surface ? null : bump, bumpScale: 1.15, roughness: .96, metalness: 0, envMapIntensity: .3 }))); terrain.receiveShadow = true; this.scene.add(terrain);
+    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, ...maps, normalScale: new THREE.Vector2(.28, .28), bumpMap: surface ? null : bump, bumpScale: .4, roughness: .96, metalness: 0, envMapIntensity: .3 }))); terrain.receiveShadow = true; this.scene.add(terrain);
     if (this.game.map.water) { this.createWater(); this.createShoreline(); }
   }
 
@@ -422,7 +423,10 @@ export class Renderer {
       if(this.game.map.islands && islandDistance(this.game.map,x,z)<55)continue;
       if (Math.abs(z - this.game.homeY) < 145 || forbidden.some(item => Math.hypot(item.x - x, item.y - z) < Math.max(100, (item.size || 0) * 1.2))) continue;
       if (this.game.map.noBuild.some(rect => x > rect.x1 - 25 && x < rect.x2 + 25 && z > rect.y1 - 25 && z < rect.y2 + 25)) continue;
-      const kind = this.game.map.future ? 'rock' : hash(i, 71) > .24 ? 'tree' : 'rock'; points[kind].push({ x, z, scale: kind === 'tree' ? 8 + hash(i, 25) * 7 : 12 + hash(i, 45) * 11, angle: hash(i, 33) * TAU });
+      const kind = this.game.map.future ? 'rock' : hash(i, 71) > .24 ? 'tree' : 'rock';
+      const point = { x, z, scale: kind === 'tree' ? 8 + hash(i, 25) * 7 : 12 + hash(i, 45) * 11, angle: hash(i, 33) * TAU };
+      if (['tree', 'rock'].some(otherKind => points[otherKind].some(other => Math.hypot(other.x - x, other.z - z) < sceneryFootprint(point, kind === 'tree') + sceneryFootprint(other, otherKind === 'tree') + 8))) continue;
+      points[kind].push(point);
     }
     if (this.game.mapId === 'canyon') for (const rect of this.game.map.barriers) {
       for (let z = rect.y1 + 12; z < rect.y2 - 8; z += 32) for (const [side, x] of [[0, rect.x1 + 10], [1, rect.x2 - 10]]) {
@@ -725,7 +729,8 @@ export class Renderer {
       const exhaust = this.effectSprite('#89c7ff'); exhaust.position.set(-4.2, .42, z); exhaust.scale.set(1.25, .43, 1); model.add(exhaust); exhausts.push(exhaust);
     }
     model.updateMatrixWorld(true);
-    const topHeight = new THREE.Box3().setFromObject(model).max.y;
+    const bounds = new THREE.Box3().setFromObject(model), topHeight = bounds.max.y;
+    const wakeStern = Math.max(35, -bounds.min.x + 8);
     const rotors = []; model.traverse(object => { if (/^rotor_\d+_/.test(object.name)) rotors.push(object); });
     if (entity.kind === 'unit' && !this.game.map.future && !UNITS[entity.type].tags.some(t => ['air', 'ship', 'infantry'].includes(t))) {
       if (!this.teamStarGeometry) {
@@ -755,7 +760,7 @@ export class Renderer {
     const damageMeshes = [];
     model.traverse(mesh => { if (mesh.isMesh) damageMeshes.push({ mesh, original: mesh.material }); });
     const tracks = []; model.traverse(object => { if (object.isInstancedMesh && object.name.startsWith('track_belt_')) tracks.push(object); });
-    const value = { model, ring, identity, entity, scale, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
+    const value = { model, ring, identity, entity, scale, wakeStern, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
   }
 
   setDamageStage(entry, stage) {
@@ -904,7 +909,10 @@ export class Renderer {
         if (entry.submergedMaterials) {
           const pose = submarinePose(this.game, entity, now); height = pose.height;
           entry.model.scale.y = entry.scale * pose.verticalScale; entry.displayTopHeight = entry.topHeight * pose.verticalScale;
-          entry.submergedMaterials.forEach(({ mesh, original, hidden }) => { mesh.material = pose.detected ? original : hidden; mesh.castShadow = pose.detected; mesh.renderOrder = pose.detected ? 0 : 2; });
+          entry.submergedMaterials.forEach(({ mesh, original, hidden }) => {
+            hidden.opacity = pose.detected ? .48 : .28;
+            mesh.material = pose.surfaced ? original : hidden; mesh.castShadow = pose.surfaced; mesh.renderOrder = pose.surfaced ? 0 : 2;
+          });
         }
         let bodyHeading = entity.angle;
         if (entry.upperBody) {
@@ -953,8 +961,9 @@ export class Renderer {
         syncPersonnelLOD(entry, !detail.near.has(entity.id));
         syncOpenAssetLOD(entry, openAssetDetail(this.camera.zoom, this.quality, framed.size, this.game.selected.includes(entity.id), entry.openAssetLevel));
         if (tags.includes('drone') || entry.rotors.length) {
-          const activeFlight = this.game.time >= entity.stunUntil;
-          entry.rotors.forEach((rotor, index) => { rotor.rotation[rotor.userData.rotationAxis||'y'] += dt * (activeFlight ? 47 : 7) * (index % 2 ? -1 : 1); });
+          const activeFlight = this.game.time >= entity.stunUntil && !this.game.aircraftGrounded(entity) && !entity.embarkedIn;
+          const rotorSpeed = rotorMotion(entry, activeFlight, dt);
+          entry.rotors.forEach((rotor, index) => { rotor.rotation[rotor.userData.rotationAxis||'y'] += dt * rotorSpeed * (index % 2 ? -1 : 1); });
           const smoothing = 1 - Math.exp(-dt * 7);
           entry.bank += ((activeFlight ? clamp(turn * .45, -.17, .17) : 0) - entry.bank) * smoothing;
           entry.pitch += ((moving && activeFlight ? -.09 : 0) - entry.pitch) * smoothing;
@@ -1012,9 +1021,15 @@ export class Renderer {
       if (entity.kind === 'unit' && visible && moving && this.game.time >= entry.trailAt && this.trails.length < 100) {
         const tags = UNITS[entity.type].tags, ship = tags.includes('ship');
         if (!tags.includes('air') && !tags.includes('infantry') && !tags.includes('submerged')) {
-          const sprite = this.effectSprite(ship ? '#d4e9e9' : '#a89a80', true);
-          sprite.position.set(entity.x - Math.cos(entity.angle) * (ship ? 35 : 20), ship ? 2 : height + 3, entity.y - Math.sin(entity.angle) * (ship ? 35 : 20));
-          sprite.scale.set(ship ? 25 : 13, ship ? 8 : 13, 1); sprite.material.opacity = .15;
+          let sprite;
+          if (ship) {
+            this.waterTrailGeometry ||= this.track(new THREE.PlaneGeometry(1, 1));
+            sprite = new THREE.Mesh(this.waterTrailGeometry, new THREE.MeshBasicMaterial({ map: this.smokeTexture, color: '#d4e9e9', transparent: true, depthWrite: false, opacity: .34 }));
+            sprite.rotation.x = -Math.PI / 2; sprite.rotation.z = -entity.angle; sprite.renderOrder = 3;
+          } else sprite = this.effectSprite('#a89a80', true);
+          const offset = ship ? entry.wakeStern : 20;
+          sprite.position.set(entity.x - Math.cos(entity.angle) * offset, ship ? 2.4 : height + 3, entity.y - Math.sin(entity.angle) * offset);
+          sprite.scale.set(ship ? 25 : 13, ship ? 12 : 13, 1); sprite.material.opacity = ship ? .34 : .15;
           this.scene.add(sprite); this.trails.push({ sprite, baseY: sprite.position.y, start: this.game.time, ship }); entry.trailAt = this.game.time + .14;
         }
       }
@@ -1093,7 +1108,7 @@ export class Renderer {
       const lifetime = trail.damageFire ? .5 : 1.6;
       if (age > lifetime) { this.scene.remove(trail.sprite); trail.sprite.material.dispose(); return false; }
       const size = trail.damageSize ? trail.damageSize * (1 + age * .65) : trail.explosionSize ? trail.explosionSize * (.6 + Math.max(0, age) * 1.2) : trail.muzzle ? 7 + age * 9 : trail.ship ? 25 + age * 13 : 13 + age * 12;
-      trail.sprite.scale.set(size, trail.ship ? 8 + age * 4 : size, 1); trail.sprite.material.opacity = Math.max(0, 1 - Math.max(0, age) / 1.6) * (trail.torpedo ? .42 : trail.damage ? .65 : trail.muzzle ? .2 : .15);
+      trail.sprite.scale.set(size, trail.ship ? 8 + age * 4 : size, 1); trail.sprite.material.opacity = Math.max(0, 1 - Math.max(0, age) / 1.6) * (trail.torpedo ? .42 : trail.damage ? .65 : trail.muzzle ? .2 : trail.ship ? .34 : .15);
       if (trail.damageFire) trail.sprite.material.opacity = Math.max(0, 1 - age / lifetime) * .8;
       if (!trail.ship) trail.sprite.position.y = trail.baseY + age * (trail.damage ? 13 : 3);
       trail.sprite.visible = this.game.isVisibleFor(0, trail.sprite.position.x, trail.sprite.position.z); return true;
@@ -1152,6 +1167,7 @@ export class Renderer {
             this.munitionTemplates.set(p.kind, template);
           }
           model = this.munitionTemplates.get(p.kind).clone();
+          if (p.kind === 'nuclear') model.scale.setScalar(2.2);
         }
         const plume = this.effectSprite(p.kind === 'torpedo' ? '#bbebee' : '#ffb578'); plume.position.set(p.kind === 'wing' ? -4.8 : -7, .4, 0); plume.scale.set(p.kind === 'wing' ? 2.5 : 12, p.kind === 'wing' ? .6 : 3, 1); model.add(plume);
         if (['bomb', 'torpedo'].includes(p.kind)) plume.visible = false;

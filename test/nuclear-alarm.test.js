@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { NuclearAlarm, NUCLEAR_SIREN, nuclearAlarmAudible, nuclearSirenSamples } from '../src/nuclear-alarm.js';
+import { NuclearAlarm, NUCLEAR_SIREN, nuclearAlarmAudible, nuclearSirenSamples, terminalNuclearWarning } from '../src/nuclear-alarm.js';
 
-test('防空警报为原创有界升降调PCM，不使用外部素材且循环接缝连续', () => {
+test('防空警报为原创有界升降调PCM，不使用外部素材且首尾波形有界', () => {
   for (const rate of [8000, 44100, 48000]) {
     const samples = nuclearSirenSamples(rate);
     assert.equal(samples.length, rate * NUCLEAR_SIREN.duration);
@@ -15,7 +15,7 @@ test('防空警报为原创有界升降调PCM，不使用外部素材且循环�
       for (let i = start; i < end; i++) if (samples[i] <= 0 && samples[i + 1] > 0) count++;
       return count;
     };
-    assert.ok(crossings(2.95) > crossings(0) * 1.6);
+    assert.ok(crossings(5.45) > crossings(0) * 1.6);
   }
   for (const value of [0, 7999, Infinity, NaN, 200000]) assert.throws(() => nuclearSirenSamples(value));
 });
@@ -43,11 +43,23 @@ function mockContext() {
 test('重复联机快照和准备转飞行不重复创建警报；解除威胁淡出，旧节点结束不清掉新的警报', () => {
   const { context, sources, buffers, gains } = mockContext(), alarm = new NuclearAlarm(context, {});
   for (let i = 0; i < 200; i++) alarm.setActive(true);
-  assert.equal(sources.length, 1); assert.equal(sources[0].loop, true); assert.ok(sources[0].started);
+  assert.equal(sources.length, 1); assert.equal(sources[0].loop, false); assert.ok(sources[0].started);
   alarm.setActive(false); assert.equal(alarm.source, null); assert.ok(Math.abs(sources[0].stopAt - 1.14) < 1e-9);
   alarm.setActive(true); assert.equal(sources.length, 2); assert.equal(buffers.length, 1);
   sources[0].onended(); assert.equal(alarm.source, sources[1]); assert.ok(gains[0].disconnected);
   alarm.setActive(false); sources[1].onended(); assert.equal(alarm.source, null);
   for (let i = 0; i < 10; i++) alarm.setActive(false);
   assert.equal(sources.length, 2);
+});
+
+
+test('核警报只在最后十一秒响一轮，自然结束后重复快照不重放，下一次威胁可再响', () => {
+  for (const remaining of [28, 20, 11.01, 0, -1, NaN]) assert.equal(terminalNuclearWarning([{remaining}]), false);
+  for (const remaining of [11, 10.9, .01]) assert.equal(terminalNuclearWarning([{remaining}]), true);
+  assert.equal(terminalNuclearWarning([{remaining:20},{remaining:8}]), true);
+  const { context, sources } = mockContext(), alarm = new NuclearAlarm(context, {});
+  alarm.setActive(true); sources[0].onended();
+  for (let i=0;i<200;i++) alarm.setActive(true);
+  assert.equal(sources.length,1); assert.equal(alarm.source,null);
+  alarm.setActive(false); alarm.setActive(true); assert.equal(sources.length,2);
 });

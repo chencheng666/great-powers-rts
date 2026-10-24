@@ -23,7 +23,10 @@ export const intelligenceCombat={
   },
   updateIntelligence(dt) {
     for(const b of this.buildings)if(b.hp>0&&b.sabotage&&b.sabotage.detonateAt<=this.time){
-      const owner=b.sabotage.owner;delete b.sabotage;this.damage(b,b.maxHp,owner);this.events.notice?.(`${lunarBuildingProfile(this.map.future,b.type,BUILDINGS[b.type]).name}定时破坏已引爆`);
+      const owner=b.sabotage.owner;delete b.sabotage;this.damage(b,b.maxHp,owner);
+      this.events.shot?.('sabotageBlast',owner);
+      if(b.hp>0)this.effects.push({type:'explosion',style:'sabotageBlast',x:b.x,y:b.y,targetType:b.type,size:b.size,age:0,duration:1.2,owner});
+      this.events.notice?.(`${lunarBuildingProfile(this.map.future,b.type,BUILDINGS[b.type]).name}定时破坏已引爆`);
     }
     for(const p of this.players){
       const active=this.hasBuilding(p.side,'super')&&this.hasPower(p.side);

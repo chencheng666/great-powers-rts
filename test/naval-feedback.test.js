@@ -79,7 +79,7 @@ test('联机两席位返港指令由服务器执行，浮航外观不依赖被�
 test('潜艇浮航只露出上半艇体；潜航轮廓低于水面且缩薄，不叠在水面军舰上', () => {
   const g = quiet(), sub = g.addUnit(0, 'submarine', 1400, 1100);
   const hidden = submarinePose(g, sub); assert.equal(hidden.detected, false); assert.equal(hidden.verticalScale, .16); assert.ok(hidden.height < 0);
-  sub.exposedUntil = 5; const detected = submarinePose(g, sub); assert.equal(detected.verticalScale, 1); assert.ok(detected.height < 0);
+  sub.exposedUntil = 5; const detected = submarinePose(g, sub); assert.equal(detected.verticalScale, .3); assert.equal(detected.surfaced, false); assert.ok(detected.height < 0);
   sub.exposedUntil = 0; g.requestResupply(sub); Object.assign(sub, g.shipBerth(sub, g.ownedBuildings(0, 'dock')[0]));
   const surfaced = submarinePose(g, sub); assert.equal(surfaced.surfaced, true); assert.ok(surfaced.height < 0);
 });

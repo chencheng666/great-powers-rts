@@ -70,11 +70,11 @@ test('着陆补给飞机可被坦克和炮塔攻击，飞行状态恢复原空�
   plane.order = { type: 'move', x: 1600, y: 600 }; assert.equal(g.aircraftGrounded(plane), false); assert.equal(g.canAttack(tank, plane), false); assert.equal(g.canAttack(aa, plane), true);
 });
 
-test('轰炸机必须飞临目标，炸弹垂直落下，不横向追踪；投弹后返航而非原地刷火力', () => {
+test('轰炸机必须飞临目标，炸弹垂直落下，不横向追踪；投弹后继续飞行而非原地刷火力', () => {
   const g = setup('frontier'), b = g.addBuilding(0, 'airfield', 650, 1000), u = g.addUnit(0, 'bomber', 800, 1000), enemy = g.addBuilding(1, 'factory', 1000, 1000);
   u.order = { type: 'attack', targetId: enemy.id, x: enemy.x, y: enemy.y }; u.fireTimer = 0;
   g.updateUnit(u, .05); assert.equal(g.projectiles.length, 0);
-  ticks(g, u, 2); assert.ok(g.projectiles.length > 0); assert.equal(u.order.type, 'rearm');
+  ticks(g, u, 2); assert.ok(g.projectiles.length > 0); assert.equal(u.order.type, 'attack'); assert.equal(u.ammo, 3);
   const p = g.projectiles[0]; assert.equal(p.startX, p.toX); assert.equal(p.startY, p.toY); const h = projectileFlightPose(p).height;
   g.updateProjectiles(.5); assert.ok(projectileFlightPose(p).height < h); assert.equal(enemy.hp, enemy.maxHp);
   g.updateProjectiles(.7); assert.ok(enemy.hp < enemy.maxHp); assert.equal(b.hp, b.maxHp);

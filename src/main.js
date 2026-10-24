@@ -920,7 +920,9 @@ function setupControls() {
     event.preventDefault();
     if (state.game && !state.loading) handleBattleFailure(new Error('图形设备连接中断，请等待设备恢复后重试流畅画质'));
   });
-  canvas.addEventListener('contextmenu', event => event.preventDefault());
+  $('#battlefield').addEventListener('contextmenu', event => {
+    if (state.game?.running && !event.target.closest('input, textarea, [contenteditable="true"]')) event.preventDefault();
+  });
   canvas.addEventListener('pointerdown', event => {
     const g = state.game, r = state.renderer; if (!g || !g.running) return;
     if (event.button !== 0 || g.placingBuilding || g.pendingAbility || g.orderMode || event.altKey || state.cameraPanMode) state.lastSelectionClick = null;

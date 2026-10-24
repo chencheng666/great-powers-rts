@@ -1,5 +1,5 @@
 import { COMMAND_LINES, normalizeAudioSettings, speechOptions, VOICE_COOLDOWN, VOICE_LINES, VOICE_PRIORITY, voiceFile } from './audio-data.js';
-import { NuclearAlarm, nuclearAlarmAudible } from './nuclear-alarm.js';
+import { NuclearAlarm, nuclearAlarmAudible, terminalNuclearWarning } from './nuclear-alarm.js';
 
 const assets = import.meta.glob('../assets/audio/*.m4a', { eager: true, query: '?url', import: 'default' });
 const portableVoices = import.meta.glob('../assets/audio/portable/*.wav', { eager: true, query: '?url', import: 'default' });
@@ -102,7 +102,7 @@ export class GameAudio {
   }
 
   syncNuclearWarnings(warnings) {
-    const wanted = Boolean(warnings?.length);
+    const wanted = terminalNuclearWarning(warnings);
     if (this.nuclearWarning === wanted) return;
     this.nuclearWarning = wanted; this.applySettings();
   }
@@ -224,7 +224,7 @@ export class GameAudio {
       beam.connect(envelope); envelope.connect(this.effectsBus); beam.start(start); beam.stop(start + .2);
       beam.onended = () => { beam.disconnect(); envelope.disconnect(); }; return;
     }
-    const heavy = ['tank','elite','turret','strike','frigate','rocket','destroyer','submarine'].includes(style), length = heavy ? .25 : .11;
+    const heavy = ['tank','elite','turret','strike','frigate','rocket','destroyer','submarine','sabotageBlast','bomber'].includes(style), length = heavy ? .25 : .11;
     const noise = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain();
     noise.buffer = this.noise; filter.type = 'lowpass'; filter.frequency.value = heavy ? 850 : 3700;
     gain.gain.setValueAtTime((heavy ? .16 : .065) * (owner ? .5 : 1), start); gain.gain.exponentialRampToValueAtTime(.0001, start + length);

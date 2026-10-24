@@ -23,6 +23,7 @@ import { strategicCombat } from './strategic-combat.js';
 import { deterrenceCombat } from './deterrence.js';
 import { CHALLENGES, challengeCombat } from './challenges.js';
 import { createLossBreakdown } from './loss-breakdown.js';
+import { aircraftStep, aircraftCanFire, aircraftAttackGoal } from './aircraft-flight.js';
 import { runwayAircraft, airfieldApron } from './airfield-rules.js';
 import { islandDistance } from './island-map.js';
 import { navalPath, nearestSeaPoint } from './island-navigation.js';
@@ -748,8 +749,13 @@ export class Game {
       if (this.patrolStep(u, dt)) return;
       if (u.order && ['move', 'attackMove', 'attack'].includes(u.order.type)) {
         if (distance(u, u.order) > 10) this.moveUnit(u, u.order, dt, 8);
-        else u.order = null;
-      }
+        else { u.order = null; this.cruiseAircraft(u, dt); }
+      } else this.cruiseAircraft(u, dt);
+      return;
+    }
+    if (d.tags.includes('air') && u.order?.type === 'move') {
+      if (distance(u, u.order) > 10) this.moveUnit(u, u.order, dt, 8);
+      else { u.order = null; this.cruiseAircraft(u, dt); }
       return;
     }
     if (weaponsHeld(u)) {
@@ -757,6 +763,7 @@ export class Game {
         if (distance(u, u.order) > 10) this.moveUnit(u, u.order, dt, 8);
         else u.order = null;
       }
+      this.cruiseAircraft(u, dt);
       return;
     }
     let target = u.order?.type === 'attack' ? this.getEntity(u.order.targetId) : null;
@@ -776,31 +783,40 @@ export class Game {
       const moving = u.order?.type === 'move' || this.time - (u.lastMovedAt ?? -10) < .12;
       if (d.deployTime) u.deployProgress = moving || dist > reach ? 0 : Math.min(d.deployTime, u.deployProgress + dt);
       const flights = u.type === 'carrier' ? this.projectiles.filter(p => !p.finished && p.sourceId === u.id && p.kind === 'wing').length : 0;
-      if (dist >= (d.minRange || 0) && dist <= reach && clear && u.fireTimer <= 0 && !(u.ewSuppressedUntil > this.time) && !u.overheated && (!d.deployTime || u.deployProgress >= d.deployTime) && (u.type !== 'carrier' || flights < u.wing)) {
+      if (dist >= (d.minRange || 0) && dist <= reach && clear && aircraftCanFire(u, target, this.map.future) && u.fireTimer <= 0 && !(u.ewSuppressedUntil > this.time) && !u.overheated && (!d.deployTime || u.deployProgress >= d.deployTime) && (u.type !== 'carrier' || flights < u.wing)) {
         u.turretAngle = Math.atan2(target.y - u.y, target.x - u.x);
         this.fire(u, target, this.unitDamage(u, target), u.type);
         if (d.ammo && !isLunarRobot(this.map, u.type)) u.ammo--;
         if (u.type === 'laser') this.laserHeat(u);
         u.fireTimer = d.cooldown;
-        if (u.type === 'bomber') {
+        if (u.type === 'bomber' && u.ammo <= 0) {
           this.requestResupply(u); return;
         }
       }
+      const flightGoal = aircraftAttackGoal(u, target, reach, this.map.future);
+      if (flightGoal) { this.moveUnit(u, flightGoal, dt, 0); return; }
       if (u.order?.type === 'move') this.moveUnit(u, u.order, dt, 8);
       else if (!guarding && d.minRange && dist < d.minRange) {
         const angle = Math.atan2(u.y - target.y, u.x - target.x);
         const goal = this.resolveMoveGoal(u, clamp(u.x + Math.cos(angle) * 100, 20, this.world.width - 20), clamp(u.y + Math.sin(angle) * 100, 20, this.world.height - 20));
         this.moveUnit(u, goal, dt, 8); u.deployProgress = 0;
       } else if (!guarding && (!clear || dist > reach * .96)) this.moveUnit(u, target, dt, clear ? reach * .85 : 8);
-      if (u.type !== 'bomber' && clear && dist <= reach * .96 && d.tags.includes('jet') && d.damage > 0) {
-        const angle = Math.atan2(u.y - target.y, u.x - target.x) + dt * .9;
+      if (u.order?.type !== 'move' && clear && dist <= reach * .96 && d.tags.includes('jet') && d.damage > 0) {
+        const angle = Math.atan2(u.y - target.y, u.x - target.x) + .65;
         this.moveUnit(u, this.resolveMoveGoal(u, target.x + Math.cos(angle) * reach * .7, target.y + Math.sin(angle) * reach * .7), dt, 3);
       }
     } else if (this.patrolStep(u, dt)) return;
     else if (u.order && ['move', 'attackMove'].includes(u.order.type)) {
       if (distance(u, u.order) > 10) this.moveUnit(u, u.order, dt, 8);
-      else u.order = null;
-    }
+      else { u.order = null; this.cruiseAircraft(u, dt); }
+    } else this.cruiseAircraft(u, dt);
+  }
+
+  cruiseAircraft(u, dt) {
+    if (!runwayAircraft(u.type, this.map.future) || u.embarkedIn || u.deckApproach || u.deployment) return;
+    if (this.aircraftGrounded(u) || this.aircraftServiceSites(u).some(b => distance(u, airfieldApron(b)) < 16)) return;
+    const angle = u.angle + .55;
+    this.moveUnit(u, { x: u.x + Math.cos(angle) * 240, y: u.y + Math.sin(angle) * 240 }, dt, 0);
   }
 
   updateRearm(u, dt) {
@@ -809,7 +825,8 @@ export class Game {
     if (u.homeCarrierId && this.returnToCarrier(u, dt)) return;
     const home = this.aircraftServiceSites(u).sort((a, b) => distance(a, u) - distance(b, u))[0];
     if (!home) {
-      if (u.resumeOrder?.x !== undefined) this.moveUnit(u, u.resumeOrder, dt, 8);
+      if (u.resumeOrder?.x !== undefined && distance(u, u.resumeOrder) > 10) this.moveUnit(u, u.resumeOrder, dt, 8);
+      else this.cruiseAircraft(u, dt);
       return;
     }
     const apron = runwayAircraft(u.type, this.map.future) ? airfieldApron(home) : home;
@@ -1081,6 +1098,13 @@ export class Game {
   moveUnitNow(u, goal, dt, stopDistance = 8) {
     if (distance(u, goal) <= stopDistance) return;
     if (UNITS[u.type].tags.includes('air')) {
+      const landing = u.order?.type === 'rearm' && this.aircraftServiceSites(u).some(b => distance(u, airfieldApron(b)) < 260);
+      const speedStep = UNITS[u.type].speed * dt * (u.jammedUntil > this.time ? .6 : 1);
+      const amount = Math.min(speedStep, Math.max(0, distance(u, goal) - stopDistance));
+      const step = landing ? null : aircraftStep(u, goal, dt, amount, this.world, this.map.future);
+      if (step) {
+        u.x = step.x; u.y = step.y; u.angle = step.heading; u.movePulse += dt * 7; u.lastMovedAt = this.time; u.deployProgress = 0; return;
+      }
       this.moveWithAvoidance(u, goal, dt, stopDistance);
       return;
     }

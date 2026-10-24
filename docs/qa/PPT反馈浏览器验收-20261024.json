@@ -1,0 +1,61 @@
+{
+  "movement": {
+    "order": {
+      "type": "move",
+      "x": 1250.0000018849025,
+      "y": 720.0000098444664
+    },
+    "before": {
+      "x": 850,
+      "y": 750
+    },
+    "after": {
+      "x": 1734.9418560326967,
+      "y": 963.7298984017535
+    },
+    "maxTurn": 0.0475000000000001,
+    "minGoal": 2.5376148975033224,
+    "ammo": 9,
+    "rotorSpeed": 0
+  },
+  "hudMenuSuppressed": true,
+  "naval": {
+    "sternOffset": 100,
+    "trails": 11,
+    "mesh": true,
+    "height": 2.4,
+    "renderOrder": 3
+  },
+  "submarines": [
+    {
+      "detected": false,
+      "height": -7.5,
+      "verticalScale": 0.16,
+      "material": "MeshBasicMaterial",
+      "opacity": 0.28
+    },
+    {
+      "detected": true,
+      "height": -7.5,
+      "verticalScale": 0.3,
+      "material": "MeshBasicMaterial",
+      "opacity": 0.48
+    }
+  ],
+  "bomber": {
+    "shots": 4,
+    "ammo": 0,
+    "order": "rearm",
+    "minTravel": 7.099999999999872,
+    "elapsed": 28.550000000000136
+  },
+  "nuclearScale": 2.2,
+  "alarm": {
+    "earlySilent": true,
+    "loop": false,
+    "duration": 11,
+    "sameSource": true
+  },
+  "errors": [],
+  "glError": 0
+}

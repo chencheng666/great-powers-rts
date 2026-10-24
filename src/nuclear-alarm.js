@@ -1,4 +1,4 @@
-export const NUCLEAR_SIREN = Object.freeze({ duration: 6, low: 280, high: 680, gain: .16 });
+export const NUCLEAR_SIREN = Object.freeze({ duration: 11, low: 280, high: 680, gain: .16 });
 
 // 原创合成的机械升降调，不包含其他游戏的录音或采样。
 export function nuclearSirenSamples(sampleRate) {
@@ -21,13 +21,15 @@ export const nuclearAlarmAudible = ({ active, paused, wanted, settings }) => Boo
 export class NuclearAlarm {
   constructor(context, destination) {
     this.context = context; this.destination = destination;
-    this.buffer = null; this.source = null;
+    this.buffer = null; this.source = null; this.active = false;
   }
 
   setActive(value) {
-    if (Boolean(this.source) === Boolean(value)) return;
+    if (this.active === Boolean(value)) return;
+    this.active = Boolean(value);
     const ctx = this.context, now = ctx.currentTime;
     if (!value) {
+      if (!this.source) return;
       const source = this.source, gain = this.gain; this.source = null; this.gain = null;
       gain.gain.cancelScheduledValues(now); gain.gain.setValueAtTime(gain.gain.value, now);
       gain.gain.linearRampToValueAtTime(0, now + .12); source.stop(now + .14);
@@ -38,7 +40,7 @@ export class NuclearAlarm {
       this.buffer = ctx.createBuffer(1, samples.length, ctx.sampleRate); this.buffer.copyToChannel(samples, 0);
     }
     const source = ctx.createBufferSource(), gain = ctx.createGain();
-    source.buffer = this.buffer; source.loop = true;
+    source.buffer = this.buffer; source.loop = false;
     gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(NUCLEAR_SIREN.gain, now + .3);
     source.connect(gain); gain.connect(this.destination);
     source.onended = () => {
@@ -48,3 +50,6 @@ export class NuclearAlarm {
     this.source = source; this.gain = gain; source.start();
   }
 }
+
+// 视觉落区仍全程提示，声音只在最后十一秒触发一轮。
+export const terminalNuclearWarning = warnings => Boolean(warnings?.some(w => Number.isFinite(w.remaining) && w.remaining > 0 && w.remaining <= 11));

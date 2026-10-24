@@ -7,8 +7,12 @@ export function facilityRotation(building, future = false) {
   return (building.type === 'armory' ? 0 : Math.PI / 2) - angle;
 }
 
+export function sceneryFootprint(point, foliage = false) {
+  return foliage ? Math.max(12, (point.width || point.scale * 4) * .28) : (point.scale || 16) * .8;
+}
+
 export function sceneryClearance(point, buildings, units = [], foliage = false, worldWidth = null) {
-  const radius = foliage ? Math.max(12, (point.width || point.scale * 4) * .28) : (point.scale || 16) * .8;
+  const radius = sceneryFootprint(point, foliage);
   if (buildings.some(b => {
     if(b.hp<=0)return false;
     if(b.type==='dock'){
