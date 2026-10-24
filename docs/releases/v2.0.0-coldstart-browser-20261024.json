@@ -1,0 +1,104 @@
+{
+  "checkedAt": "2026-10-24T06:15:07.969Z",
+  "audit": {
+    "errors": [],
+    "toasts": [
+      "战场已部署，外部后勤运输航线已建立。"
+    ]
+  },
+  "deploySeconds": 91.5,
+  "head": "大国崛起\n预备指挥官 · 等级 1\n快速对战 · 灰谷地带 · 纵深\n00:00\n1,550\n100 / 70\n4\n98%\n战区态势\n战斗进行中\n摧毁敌方全部生产核心\n我方：华夏防卫\n敌方：新月能源体\n当前选择\n未选择单位\n左键选择 · 框选部队 · 右键下达命令\n移动\n攻击\n巡逻\n全军\n停止\n基地\n战术终端\n华夏防卫\n灰谷地带 · 纵深\n战区 01\n建筑\n",
+  "resources": [
+    {
+      "file": "military-library-BfcZUja8.glb",
+      "ms": 21178,
+      "status": 200,
+      "transfer": 916352,
+      "decoded": 7972688,
+      "encoded": 916052
+    },
+    {
+      "file": "modern-library-X-tMBLMH.glb",
+      "ms": 4142,
+      "status": 200,
+      "transfer": 344989,
+      "decoded": 2933036,
+      "encoded": 344689
+    },
+    {
+      "file": "drone-library-SBNxfl9Q.glb",
+      "ms": 2622,
+      "status": 200,
+      "transfer": 123303,
+      "decoded": 849756,
+      "encoded": 123003
+    },
+    {
+      "file": "equipment-library-Cbw3lVNR.glb",
+      "ms": 7209,
+      "status": 200,
+      "transfer": 1119837,
+      "decoded": 13944628,
+      "encoded": 1119537
+    },
+    {
+      "file": "logistics-library-D7GH0g7t.glb",
+      "ms": 3982,
+      "status": 200,
+      "transfer": 101472,
+      "decoded": 810340,
+      "encoded": 101172
+    },
+    {
+      "file": "convoy-library-Shz1JtY3.glb",
+      "ms": 3178,
+      "status": 200,
+      "transfer": 273581,
+      "decoded": 4117468,
+      "encoded": 273281
+    },
+    {
+      "file": "robot-library-CDskevLY.glb",
+      "ms": 5318,
+      "status": 200,
+      "transfer": 169604,
+      "decoded": 829244,
+      "encoded": 169304
+    },
+    {
+      "file": "realism-library-BUfs2n70.glb",
+      "ms": 11858,
+      "status": 200,
+      "transfer": 974091,
+      "decoded": 11364152,
+      "encoded": 973791
+    },
+    {
+      "file": "abrams-ChSaAvsi.glb",
+      "ms": 7814,
+      "status": 200,
+      "transfer": 360761,
+      "decoded": 1144304,
+      "encoded": 360461
+    },
+    {
+      "file": "f22-SBz2W_DV.glb",
+      "ms": 21594,
+      "status": 200,
+      "transfer": 663491,
+      "decoded": 1103896,
+      "encoded": 663191
+    },
+    {
+      "file": "harbor-crane-BAVEAcLN.glb",
+      "ms": 38682,
+      "status": 200,
+      "transfer": 4587800,
+      "decoded": 4790264,
+      "encoded": 4587500
+    }
+  ],
+  "deployed": true,
+  "cacheDisabledForEntireRun": true,
+  "networkCondition": "本次浏览器临时直连本站，未使用系统代理"
+}
