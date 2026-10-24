@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 
 const root = resolve(import.meta.dirname, '..'), dist = join(root, 'dist');
 const release = process.argv[2];
+const sitePages = process.argv.includes('--site-pages');
 if (!/^[0-9A-Za-z-]+$/.test(release || '')) throw new Error('请提供合法的前端发布编号');
 const stage = await mkdtemp(join(tmpdir(), 'great-powers-frontend-'));
 try {
@@ -19,7 +20,15 @@ try {
     // 本轮仅改前端代码，媒体文件由哈希校验确认服务器已有，避免重复上传。
     if (/\.(js|css)$/.test(name)) await copyFile(join(dist, 'assets', name), join(stage, 'assets', name));
   }
-  checksums.push(`${createHash('sha256').update(await readFile(join(dist, 'index.html'))).digest('hex')}  index.html.next`);
+  const pages = ['index.html', ...(sitePages ? ['official/index.html', 'downloads/index.html'] : [])];
+  for (const page of pages) {
+    const content = await readFile(join(dist, page));
+    if (page !== 'index.html') {
+      await mkdir(join(stage, page.split('/')[0]), { recursive: true });
+      await copyFile(join(dist, page), join(stage, page));
+    }
+    checksums.push(`${createHash('sha256').update(content).digest('hex')}  ${page}.next`);
+  }
   await writeFile(join(stage, 'frontend.sha256'), checksums.join('\n') + '\n');
   await copyFile(join(root, 'scripts', 'deploy-frontend-update.sh'), join(stage, 'deploy-frontend-update.sh'));
   const archive = join(root, 'releases', `${release}.tar.gz`);
