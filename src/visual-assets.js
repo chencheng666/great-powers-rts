@@ -1,3 +1,4 @@
+import { loadAsset } from './asset-loading.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -83,7 +84,7 @@ ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothste
 }
 
 export function prepareVisualAssets() {
-  pending ||= Promise.all([new GLTFLoader().loadAsync(modelURL), new THREE.TextureLoader().loadAsync(groundURL), new THREE.TextureLoader().loadAsync(buildingsURL), new THREE.TextureLoader().loadAsync(foliageURL), new THREE.TextureLoader().loadAsync(armoryURL), new GLTFLoader().loadAsync(modernURL), new GLTFLoader().loadAsync(droneURL), new GLTFLoader().loadAsync(equipmentURL), new THREE.TextureLoader().loadAsync(meridianURL), new GLTFLoader().loadAsync(logisticsURL), new GLTFLoader().loadAsync(convoyURL), new GLTFLoader().loadAsync(robotURL), new GLTFLoader().loadAsync(realismURL), loadOpenAssets()]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics, convoy, robots, realism, openAssets]) => {
+  pending ||= Promise.all([loadAsset(modelURL, () => new GLTFLoader().loadAsync(modelURL)), loadAsset(groundURL, () => new THREE.TextureLoader().loadAsync(groundURL)), loadAsset(buildingsURL, () => new THREE.TextureLoader().loadAsync(buildingsURL)), loadAsset(foliageURL, () => new THREE.TextureLoader().loadAsync(foliageURL)), loadAsset(armoryURL, () => new THREE.TextureLoader().loadAsync(armoryURL)), loadAsset(modernURL, () => new GLTFLoader().loadAsync(modernURL)), loadAsset(droneURL, () => new GLTFLoader().loadAsync(droneURL)), loadAsset(equipmentURL, () => new GLTFLoader().loadAsync(equipmentURL)), loadAsset(meridianURL, () => new THREE.TextureLoader().loadAsync(meridianURL)), loadAsset(logisticsURL, () => new GLTFLoader().loadAsync(logisticsURL)), loadAsset(convoyURL, () => new GLTFLoader().loadAsync(convoyURL)), loadAsset(robotURL, () => new GLTFLoader().loadAsync(robotURL)), loadAsset(realismURL, () => new GLTFLoader().loadAsync(realismURL)), loadOpenAssets()]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics, convoy, robots, realism, openAssets]) => {
     const models = new Map();
     gltf.scene.updateMatrixWorld(true);
     modern.scene.updateMatrixWorld(true);

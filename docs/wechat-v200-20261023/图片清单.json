@@ -1,0 +1,32 @@
+[
+  {
+    "type": "image",
+    "file": "deepblue-command.png",
+    "caption": "深蓝生命线｜舰队、岛礁与双港航道。本文五张图片为2.0引擎受控实机，拍摄于10月22日；部分暂停并揭开迷雾，用于检查模型和地形，不是连续真人试玩录像。",
+    "url": "images/deepblue-command.png"
+  },
+  {
+    "type": "image",
+    "file": "destroyer-detail.png",
+    "caption": "国产驱逐舰近景｜舰体、甲板与武器轮廓经过本版精修。装备是游戏化简化模型，不代表现实军事性能。",
+    "url": "images/destroyer-detail.png"
+  },
+  {
+    "type": "image",
+    "file": "china-detail.png",
+    "caption": "寒境守望｜国产坦克、运输车、支援车辆与人员。右侧任务要求修复中转站，并护送运输车抵达不冻港。",
+    "url": "images/china-detail.png"
+  },
+  {
+    "type": "image",
+    "file": "passwatch-wide.png",
+    "caption": "山口防线全景｜山脊把南北通道分开。此图暂停并展开地图，用于展示路线；不是普通迷雾下玩家能同时看到的范围。",
+    "url": "images/passwatch-wide.png"
+  },
+  {
+    "type": "image",
+    "file": "moonsea-command.png",
+    "caption": "明日·月海基地｜太阳能阵列、通信中继与月表编队，使用独立的科幻任务规则。",
+    "url": "images/moonsea-command.png"
+  }
+]

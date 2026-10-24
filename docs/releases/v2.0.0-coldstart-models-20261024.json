@@ -1,0 +1,74 @@
+{
+  "checkedAt": "2026-10-24T03:43:50Z",
+  "scope": "本次尝试完整下载11个GLB；逐项记录完整文件的SHA256与失败，不能代表全部下载成功或浏览器启动成功",
+  "results": [
+    {
+      "file": "abrams-ChSaAvsi.glb",
+      "status": 200,
+      "bytes": 1144304,
+      "sha256": "30ebf232c3faaa6858b6fe389fbc3a6529ecb519207fa4f91a61de2d74a0e66f",
+      "matches": true,
+      "seconds": 59.67
+    },
+    {
+      "file": "convoy-library-Shz1JtY3.glb",
+      "status": 200,
+      "bytes": 4117468,
+      "sha256": "71744e4b9445eb561a431e8a5ac32074fa5d92ad3d0eb1263280f6f210d5c87c",
+      "matches": true,
+      "seconds": 313.99
+    },
+    {
+      "file": "drone-library-SBNxfl9Q.glb",
+      "status": 200,
+      "bytes": 849756,
+      "sha256": "908738e06212bf745a643b5c863df349b97c1af26d6c75f5ceb5f1b3534bd163",
+      "matches": true,
+      "seconds": 67.4
+    },
+    {
+      "file": "equipment-library-Cbw3lVNR.glb",
+      "status": 200,
+      "bytes": 13944628,
+      "sha256": "3f7b5ca68e29910aef914ea4b65100428a3448fc524dc4d68975b4c680569392",
+      "matches": true,
+      "seconds": 705.37
+    },
+    {
+      "file": "f22-SBz2W_DV.glb",
+      "error": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1082)>"
+    },
+    {
+      "file": "harbor-crane-BAVEAcLN.glb",
+      "error": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1082)>"
+    },
+    {
+      "file": "logistics-library-D7GH0g7t.glb",
+      "status": 200,
+      "bytes": 810340,
+      "sha256": "a5e338979a20a8f1185e92b1f55eb499176ce4c5256946aaaf7b61fe7b89eaa0",
+      "matches": true,
+      "seconds": 53.36
+    },
+    {
+      "file": "military-library-BfcZUja8.glb",
+      "error": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1082)>"
+    },
+    {
+      "file": "modern-library-X-tMBLMH.glb",
+      "error": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1082)>"
+    },
+    {
+      "file": "realism-library-BUfs2n70.glb",
+      "error": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1082)>"
+    },
+    {
+      "file": "robot-library-CDskevLY.glb",
+      "status": 200,
+      "bytes": 829244,
+      "sha256": "ca49bee91ea72aae5cd9ff41405dfae324c78985f0bce463a1e4e52b44a43769",
+      "matches": true,
+      "seconds": 54.31
+    }
+  ]
+}

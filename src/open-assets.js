@@ -1,3 +1,4 @@
+import { loadAsset } from './asset-loading.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { surfaceMaps } from './model-craft.js';
@@ -12,7 +13,7 @@ const urls = {
 };
 
 async function loadSurface(paths) {
-  const [map, normalMap, roughnessMap] = await Promise.all(paths.map(url => new THREE.TextureLoader().loadAsync(url)));
+  const [map, normalMap, roughnessMap] = await Promise.all(paths.map(url => loadAsset(url, () => new THREE.TextureLoader().loadAsync(url))));
   map.colorSpace = THREE.SRGBColorSpace;
   for (const texture of [map, normalMap, roughnessMap]) {
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -25,7 +26,7 @@ export async function loadOpenAssets() {
   // 第三方资源随本地包分发，单项损坏时保留对应的原模型，不影响开始游戏。
   const keys = ['tank', 'aircraft', 'crane', 'ground', 'concrete'];
   const results = await Promise.allSettled([
-    ...keys.slice(0, 3).map(key => new GLTFLoader().loadAsync(urls[key]).then(gltf => validateOpenModel(key, gltf.scene))),
+    ...keys.slice(0, 3).map(key => loadAsset(urls[key], () => new GLTFLoader().loadAsync(urls[key])).then(gltf => validateOpenModel(key, gltf.scene))),
     loadSurface(urls.ground), loadSurface(urls.concrete)
   ]);
   return Object.fromEntries(results.map((result, index) => {
