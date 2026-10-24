@@ -40,7 +40,7 @@
   <details><summary>查看历史版本文件（不含本轮新功能）</summary><div id="archive"></div></details>
   <section><h2>安装与兼容</h2><div class="notes"><p>macOS 按 Intel / Apple Silicon 选择 DMG 或应用压缩包；目前未完成 Apple 公证。Windows x64 安装器未签名。请按系统正常的安全提示检查文件与校验值。</p><p>Linux 按 x64 / ARM64 选择 DEB 或 AppImage，需要 WebKitGTK 4.1、GTK3 和支持 WebGL2 的图形环境。麒麟、统信 UOS 需对应机器实测；目前没有龙芯、申威版本。</p></div><p>免安装 ZIP 由上海国内服务器提供。桌面安装包以清单标注的实际版本和地址为准，不能把旧包视为本轮更新。HTTPS 网页可直接联机，离线文件只提供单机。</p></section>
 </main>
-<footer>大国崛起 · 原创开源即时战略 · 2.0.0 山海防线</footer>
+<footer>大国崛起 · 原创开源即时战略 · 2.0.0 山海防线<br><a href="https://beian.mps.gov.cn/#/query/webSearch?code=11010802050804" rel="noopener noreferrer" target="_blank">京公网安备11010802050804号</a></footer>
 <script>
 fetch("manifest.json?v=2.0.0&t="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("清单暂不可用");return r.json()}).then(m=>{
   const current=document.querySelector("#current"),archive=document.querySelector("#archive");current.replaceChildren();archive.replaceChildren();
