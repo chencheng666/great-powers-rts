@@ -1,3 +1,4 @@
+import { applySandbox, sandboxSpeed, unlimitedAmmo, refillSandboxAmmo } from './commander-sandbox.js';
 import { emitBattleSound, weaponSound, impactSound, destructionSound } from './battle-sound.js';
 import {sixPoint} from './six-player-map.js';
 import PF from 'pathfinding';
@@ -108,6 +109,7 @@ export class Game {
     this.initLogistics();
     this.initBases();
     if (!this.multiplayer) this.initChallenge(options.challengeId);
+    if (options.sandbox && !this.challenge && !this.multiplayer && this.playerCount === 2) applySandbox(this, options.sandbox);
     this.updateFog();
   }
 
@@ -136,6 +138,7 @@ export class Game {
     game.battleStats = copy.state.battleStats || createBattleStats(game.time,game.playerCount);
     game.battleStats.unitLosses ||= createLossBreakdown(game.time,game.playerCount);
     game.challenge = copy.state.challenge;
+    game.sandbox = copy.config.sandbox ? { ...copy.config.sandbox } : null;
     // 旧战局不凭空追加可领奖的物资；新局和新存档才包含资源争夺点。
     game.resourceSites=copy.state.resourceSites||[];
     // 老版本战局保留原经济，避免已有矿车、货物与路线在读档时消失。
@@ -525,6 +528,7 @@ export class Game {
   }
 
   update(dt) {
+    refillSandboxAmmo(this);
     if (!this.running || this.paused) return;
     dt = Math.max(0, Math.min(dt, 0.05));
     this.time += dt;
@@ -583,10 +587,11 @@ export class Game {
     }
     if (!q) return;
     const d = BUILDINGS[q.type];
-    const need = Math.min(d.cost - q.paid, d.cost / d.time * dt);
+    const duration = d.time / sandboxSpeed(this, p.side);
+    const need = Math.min(d.cost - q.paid, d.cost / duration * dt);
     if (p.credits + 0.01 < need) return;
     p.credits -= need; q.paid += need; q.progress += dt;
-    if (q.progress >= d.time || q.paid >= d.cost - 0.1) {
+    if (q.progress >= duration || q.paid >= d.cost - 0.1) {
       p.buildQueue = null;
       if (this.multiplayer) p.readyBuilding = q.type;
       if (this.isAI(p.side)) this.placeAIBuilding(q.type,p.side);
@@ -787,7 +792,7 @@ export class Game {
       if (dist >= (d.minRange || 0) && dist <= reach && clear && aircraftCanFire(u, target, this.map.future) && u.fireTimer <= 0 && !(u.ewSuppressedUntil > this.time) && !u.overheated && (!d.deployTime || u.deployProgress >= d.deployTime) && (u.type !== 'carrier' || flights < u.wing)) {
         u.turretAngle = Math.atan2(target.y - u.y, target.x - u.x);
         this.fire(u, target, this.unitDamage(u, target), u.type);
-        if (d.ammo && !isLunarRobot(this.map, u.type)) u.ammo--;
+        if (d.ammo && !isLunarRobot(this.map, u.type) && !unlimitedAmmo(this, u)) u.ammo--;
         if (u.type === 'laser') this.laserHeat(u);
         u.fireTimer = d.cooldown;
         if (u.type === 'bomber' && u.ammo <= 0) {

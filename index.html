@@ -72,13 +72,13 @@
       </main>
 
       <div id="start-screen" class="start-screen">
-        <div class="start-backdrop"></div>
+        <div class="start-backdrop"><video id="menu-background-video" muted loop playsinline preload="none" aria-hidden="true"></video></div>
         <div class="start-shade"></div>
         <header class="menu-topline"><span>大国崛起 2.0 / 山海防线</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
         <div class="start-content">
           <div class="start-kicker"><span class="live-dot"></span> 现代即时战略</div>
           <h1>大国<em>崛起</em></h1>
-          <p class="start-lede">指挥你的部队，掌握战场主动权。</p>
+          <p class="start-lede">指挥你的部队，掌握战场主动权。</p><blockquote class="peace-motto">故国虽大，好战必亡；<br>天下虽安，忘战必危。<cite>——《司马法·仁本》</cite></blockquote>
           <button id="honor-profile-btn" class="commander-profile" title="打开荣誉档案" aria-label="打开荣誉档案"></button>
           <section class="menu-saves" aria-label="保存的战局"><div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="secondary-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i> 导入存档</button><button id="menu-catalog-btn" class="secondary-btn"><i data-lucide="book-open"></i> 装备图鉴</button></div><small id="save-summary">暂无保存的战局</small></section>
         </div>
@@ -92,7 +92,7 @@
             <label class="enemy-select">对手 <span class="select-shell"><select id="enemy-select"><option value="random">随机阵营</option></select><i data-lucide="chevron-down"></i></span></label>
             <label class="enemy-select">难度 <span class="select-shell"><select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select><i data-lucide="chevron-down"></i></span></label>
             <a id="desktop-download-link" class="desktop-download-link" href="/downloads/index.html" target="_blank" rel="noopener noreferrer"><i data-lucide="download"></i> 下载游戏 · 免安装 / Windows / Mac / Linux</a>
-            <button id="challenge-btn" class="secondary-btn"><i data-lucide="flag"></i> 战术挑战</button>
+            <div class="menu-secondary-actions"><button id="menu-video-toggle" class="secondary-btn" aria-pressed="true">暂停实机背景</button><button id="sandbox-btn" class="secondary-btn">指挥官沙盘 · 忠实玩家奖励</button><button id="challenge-btn" class="secondary-btn"><i data-lucide="flag"></i> 战术挑战</button></div>
             <div class="battle-entry"><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 单机作战</button><button id="online-btn" class="secondary-btn"><i data-lucide="network"></i> 联网对战</button></div>
           </div>
         </div>
@@ -100,7 +100,7 @@
 
       <input id="save-file" type="file" accept=".json,application/json" hidden>
       <input id="challenge-profile-file" type="file" accept=".json,application/json" hidden>
-      <dialog id="nickname-dialog" class="online-dialog" aria-labelledby="nickname-title"><form><div class="online-kicker">指挥官档案</div><h2 id="nickname-title">你的作战呼号</h2><label class="online-field">昵称<input autocomplete="nickname" maxlength="32" required placeholder="输入昵称" aria-label="昵称"></label><p role="alert" class="online-error"></p><button type="submit" class="primary-btn"><i data-lucide="arrow-right"></i> 进入指挥中心</button></form></dialog>
+      <dialog id="nickname-dialog" class="online-dialog" aria-labelledby="nickname-title"><form><div class="online-kicker">指挥官档案</div><h2 id="nickname-title">你的作战呼号</h2><label class="online-field">昵称<input autocomplete="nickname" maxlength="32" required placeholder="输入昵称" aria-label="昵称"></label><p class="telemetry-note">在线试玩会统计昵称、设备类型和前台游玩时长，用于改进游戏；离线游戏不联网统计。</p><p role="alert" class="online-error"></p><button type="submit" class="primary-btn"><i data-lucide="arrow-right"></i> 进入指挥中心</button></form></dialog>
       <dialog id="online-dialog" class="online-dialog" aria-labelledby="online-title">
         <header><div><div class="online-kicker">联合作战网络</div><h2 id="online-title">双人对战</h2></div><button class="icon-btn" data-online="close" title="关闭大厅" aria-label="关闭大厅"><i data-lucide="x"></i></button></header>
         <p id="online-welcome"></p><p id="online-status" role="status"></p><p id="online-error" role="alert" class="online-error"></p>

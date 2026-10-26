@@ -99,6 +99,7 @@ function checkResult(result) {
 }
 
 export function applyHonorResult(original, result, at = Date.now()) {
+  if (result?.sandbox) throw new Error('沙盘演练不计正常荣誉');
   validateHonors(original); checkResult(result);
   if(!integer(at))throw new Error('结算时间无效');
   if(original.completedIds.includes(result.battleId))return {status:'duplicate',profile:original,rewards:[],gained:0,unlocked:[],fromRank:honorRank(original),toRank:honorRank(original)};
@@ -131,6 +132,7 @@ export function applyHonorResult(original, result, at = Date.now()) {
 }
 
 export function settleHonors(storage, result, at = Date.now()) {
+  if (result.sandbox) throw new Error('沙盘演练不计正常荣誉');
   const settlement=applyHonorResult(readHonors(storage),result,at);
   if(settlement.status==='duplicate')return settlement;
   // 先一次性保存积分、胜场与结算编号；成功后界面才展示已领取奖励。

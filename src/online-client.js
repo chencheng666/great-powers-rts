@@ -4,8 +4,8 @@ import { nickname, roomCode, PROTOCOL_VERSION,SIX_PROTOCOL_VERSION } from './net
 const key='great-powers-player-name-v1';
 const candidatePath=()=>/^\/candidate(?:\/|$)/.test(location.pathname);
 export class OnlineClient {
-  constructor({refreshIcons,prepare,onBattle,onSnapshot,onNotice,onStatus,onInterrupted,onAck,config}) {
-    Object.assign(this,{refreshIcons,prepare,onBattle,onSnapshot,onNotice,onStatus,onInterrupted,onAck,config});
+  constructor({refreshIcons,prepare,onBattle,onSnapshot,onNotice,onStatus,onInterrupted,onAck,onIdentity,config}) {
+    Object.assign(this,{refreshIcons,prepare,onBattle,onSnapshot,onNotice,onStatus,onInterrupted,onAck,onIdentity,config});
     this.prefix=candidatePath()?'/candidate':'';this.expectedProtocol=this.prefix?SIX_PROTOCOL_VERSION:PROTOCOL_VERSION;
     this.dialog=document.querySelector('#online-dialog');this.nameDialog=document.querySelector('#nickname-dialog');this.seq=0;this.retries=0;
     this.dialog.addEventListener('click',e=>{const action=e.target.closest('[data-online]')?.dataset.online;if(action!=='join')this.action(action,e.target.closest('[data-online]'));});
@@ -20,7 +20,7 @@ export class OnlineClient {
     this.name=name;this.renderName();if(!name)this.editName();
     if(name && !isDesktop())fetch(this.prefix+'/api/session').then(r=>r.ok?r.json():null).then(data=>{if(data?.user&&data.room?.code){this.user=data.user;this.room=data.room;this.connect().catch(()=>{});}}).catch(()=>{});
   }
-  renderName(){document.querySelector('#player-name').textContent=this.name||'指挥官';}
+  renderName(){document.querySelector('#player-name').textContent=this.name||'指挥官';this.onIdentity?.(this.name);}
   editName(){this.nameDialog.querySelector('input').value=this.name||'';this.nameDialog.querySelector('[role=alert]').textContent='';if(!this.nameDialog.open)this.nameDialog.showModal();}
   async saveName(){
     try{

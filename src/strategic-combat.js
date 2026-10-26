@@ -1,3 +1,4 @@
+import { unlimitedAmmo } from './commander-sandbox.js';
 import { UNITS } from './data.js';
 
 const gap = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
@@ -38,7 +39,7 @@ export const strategicCombat = {
           child.temporaryUntil=this.time+24;child.swarmParentId=u.id;
           child.order={type:'attackMove',x:target.x,y:target.y};
         }
-        u.ammo--;u.fireTimer=d.cooldown;u.lastFireAt=this.time;
+        if (!unlimitedAmmo(this, u)) u.ammo--;u.fireTimer=d.cooldown;u.lastFireAt=this.time;
         if(u.owner===0)this.events.notice?.('异构任务舱释放：侦察、诱饵、攻击子机各一架，24 秒任务窗口');
       }
     }

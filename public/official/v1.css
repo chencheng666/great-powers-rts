@@ -19,3 +19,4 @@
   .section h2 { font-size: 30px; }
   .hero-actions .button { min-width: 0; }
 }
+.peace-motto{margin:23px 0;padding:2px 0 2px 18px;border-left:3px solid #c7ab72;color:#f0dbad;font:600 clamp(18px,2.1vw,26px)/1.65 'Songti SC',serif;letter-spacing:.06em;text-shadow:0 2px 8px #000}.peace-motto cite{display:block;margin-top:7px;color:#d1c2a6;font:12px/1.6 sans-serif;letter-spacing:.08em}.peace-motto a{text-decoration:underline;text-underline-offset:3px}#hero-video-toggle{background:#08111588;border:1px solid #aabeb653;padding:6px 12px;font-size:11px;color:#e7d6a2}.hero video[hidden]{display:none}@media(max-width:700px){.hero{min-height:850px;max-height:none}.hero-content{margin-top:135px;margin-bottom:155px}.peace-motto{font-size:19px}.hero-bottom{align-items:center}}

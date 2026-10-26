@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { GAME_VERSION } from '../src/version.js';
 
 const repo='chencheng666/great-powers-rts',tag=`v${GAME_VERSION}`,draftId=process.env.DRAFT_RELEASE_ID;
-if(!/^1\.\d+\.\d+$/.test(GAME_VERSION)||draftId&&!/^\d+$/.test(draftId)||!process.env.GH_TOKEN)throw Error('缺少有效版本、草稿编号或发行授权');
+if(!/^[12]\.\d+\.\d+$/.test(GAME_VERSION)||draftId&&!/^\d+$/.test(draftId)||!process.env.GH_TOKEN)throw Error('缺少有效版本、草稿编号或发行授权');
 const api=path=>JSON.parse(execFileSync('gh',['api',`repos/${repo}/${path}`],{encoding:'utf8'}));
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 const manifest=JSON.parse(await readFile('public/downloads/manifest.json','utf8'));

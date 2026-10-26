@@ -1,3 +1,4 @@
+import { validSandbox } from './commander-sandbox.js';
 import { AI_DIFFICULTIES, BUILDINGS, FACTIONS, MAPS, UNITS, WORLD } from './data.js';
 import { isLunarRobot, ROBOT_ENERGY } from './lunar-robots.js';
 import { validBattleId } from './battle-identity.js';
@@ -33,6 +34,7 @@ function checkTree(value, depth = 0) {
 export function validateSave(save) {
   if (save?.format !== 'great-powers-rts' || ![1,2].includes(save.version)) throw new Error('无法读取此存档：文件类型或存档版本不兼容');
   checkTree(save);
+  if (save.config?.sandbox !== undefined && (!validSandbox(save.config.sandbox) || save.config.challengeId || save.state?.challenge || save.version === 2 || MAPS[save.config.mapId]?.missionOnly)) invalid();
   const s = save.state, config = save.config;
   const count=save.version===2?6:2,owners=Array.from({length:count},(_,i)=>i);
   if(save.version===2&&(config?.playerCount!==6||MAPS[config?.mapId]?.maxPlayers!==6))invalid();
@@ -179,7 +181,7 @@ export function parseSave(text) {
 export function createSave(game, view = {}, savedAt = Date.now()) {
   if (!game?.running || game.winner !== null) throw new Error('只能保存尚未结束的战局');
   const difficulty = Object.entries(AI_DIFFICULTIES).find(([, value]) => value === game.difficulty)?.[0];
-  const save = { format: 'great-powers-rts', version: game.playerCount===6?2:SAVE_VERSION, savedAt, config: { ...(game.challenge?{challengeId:game.challenge.id}:{}),...(game.playerCount===6?{playerCount:6}:{}),nuclearEnabled:!!game.nuclearEnabled,battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])),...(game.challenge?{challenge:game.challenge}:{}),pendingNuclear:!!game.pendingNuclear, logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
+  const save = { format: 'great-powers-rts', version: game.playerCount===6?2:SAVE_VERSION, savedAt, config: { ...(game.sandbox?{sandbox:{...game.sandbox}}:{}),...(game.challenge?{challengeId:game.challenge.id}:{}),...(game.playerCount===6?{playerCount:6}:{}),nuclearEnabled:!!game.nuclearEnabled,battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])),...(game.challenge?{challenge:game.challenge}:{}),pendingNuclear:!!game.pendingNuclear, logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
   validateSave(save);
   return JSON.parse(JSON.stringify(save));
 }

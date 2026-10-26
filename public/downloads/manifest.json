@@ -1,14 +1,84 @@
 {
   "version": "2.0.0",
   "releaseTag": "v2.0.0",
-  "createdAt": "2026-10-22T11:20:00Z",
+  "createdAt": "2026-10-26T05:03:00Z",
   "files": [
+    {
+      "name": "packages/Great-Powers-RTS-v2.0.0-20261026.zip",
+      "label": "2.0.0 · 10月26日音效与沙盘更新 · 最新免安装单机 ZIP",
+      "size": 69750209,
+      "sha256": "82ece905f4f9cf7ef47995499db058263a03476bbadf93091b0178eb548beb06",
+      "status": "武器与移动音效、忠实玩家指挥官沙盘、海陆空实机背景。完整解压后打开PLAY.html；离线不联网统计。"
+    },
     {
       "name": "packages/Great-Powers-RTS-v2.0.0.zip",
       "label": "2.0.0 · 山海防线 · 免安装单机 ZIP",
       "size": 67317627,
       "sha256": "e9e4d133c557dbd6638b3e93935ccce86c31247eb6a81b947ad55223ccf88527",
       "status": "完整解压后打开 PLAY.html；九大战区和十四项挑战；模型、音乐与中文语音内置；已完成断网启动复核；新战区仅限单机。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.0/Great.Powers_2.0.0_aarch64.app.tar.gz",
+      "label": "2.0.0 · macOS Apple Silicon · Great.Powers_2.0.0_aarch64.app.tar.gz",
+      "size": 92216561,
+      "sha256": "6c8029f402da6a11438c157c5170658652aeb4eaa9abfb580dd8b016d81256d1",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.0/Great.Powers_2.0.0_aarch64.AppImage",
+      "label": "2.0.0 · Linux ARM64 · Great.Powers_2.0.0_aarch64.AppImage",
+      "size": 168765960,
+      "sha256": "dbbe84587a8ac529ad58a17e5a353bf6af70408e6265e3f37a8760308a36ac92",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.0/Great.Powers_2.0.0_aarch64.dmg",
+      "label": "2.0.0 · macOS Apple Silicon · Great.Powers_2.0.0_aarch64.dmg",
+      "size": 92297365,
+      "sha256": "995612c005ea285c68f20ba550b0722b1491687f7802071cfedf366d5207b733",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.0/Great.Powers_2.0.0_amd64.AppImage",
+      "label": "2.0.0 · Linux x64 · Great.Powers_2.0.0_amd64.AppImage",
+      "size": 170609144,
+      "sha256": "9c0fde79f348cede02d2a0d13557b5f6efa2bd18fb79d42480c55e85a10dd05d",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.0/Great.Powers_2.0.0_amd64.deb",
+      "label": "2.0.0 · Linux x64 · Great.Powers_2.0.0_amd64.deb",
+      "size": 92233790,
+      "sha256": "aa7b8a76fb2edb026c91eff43a5408f4dbed35fde90fac3214ec6667c05d4dbd",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.0/Great.Powers_2.0.0_arm64.deb",
+      "label": "2.0.0 · Linux ARM64 · Great.Powers_2.0.0_arm64.deb",
+      "size": 92277178,
+      "sha256": "d3b930da2ea2642d7ce04f91446939024db108c77b221da11d42c264bc9c131c",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.0/Great.Powers_2.0.0_x64-setup.exe",
+      "label": "2.0.0 · Windows x64 · Great.Powers_2.0.0_x64-setup.exe",
+      "size": 308634325,
+      "sha256": "ed69ea2abe84083ea90d10e8f7c05a0cbcac0bd4a43643f1bc0fc682a76c0762",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.0/Great.Powers_2.0.0_x64.app.tar.gz",
+      "label": "2.0.0 · macOS Intel · Great.Powers_2.0.0_x64.app.tar.gz",
+      "size": 92943223,
+      "sha256": "93f5455b71dcf6b8d91d52197e688563befad84723714ab33786180150f6321a",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.0/Great.Powers_2.0.0_x64.dmg",
+      "label": "2.0.0 · macOS Intel · Great.Powers_2.0.0_x64.dmg",
+      "size": 93023101,
+      "sha256": "ae76a66342fcb0b999b44219f67c939d5026aeacff5987f51c047399e82de52c",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
     },
     {
       "name": "packages/Great-Powers-RTS-v1.3.1.zip",
@@ -80,5 +150,7 @@
       "sha256": "9b937fba3fbf5b428230cee0cd175f2908fede77c31fad600b5563b619afa588",
       "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
     }
-  ]
+  ],
+  "webReleaseTag": "web-20261026-analytics-sandbox-video",
+  "updatedAt": "2026-10-26T02:53:53.371632+00:00"
 }

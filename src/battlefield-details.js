@@ -1,3 +1,4 @@
+import { sandboxSpeed } from './commander-sandbox.js';
 import { BUILDINGS, FACTIONS, PRODUCERS, UNITS } from './data.js';
 import { equipmentProfile } from './equipment.js';
 import { unitRadius } from './unit-spacing.js';
@@ -14,7 +15,7 @@ export function productionExit(building, type, future = false) {
 }
 
 export function productionDuration(game, building, type) {
-  return UNITS[type].time * (game.players[building.owner].faction === 'nato' ? 1.06 : 1) * (!game.hasPower(building.owner) && ['armory', 'airfield', 'dock'].includes(building.type) ? 2 : 1);
+  return UNITS[type].time * (game.players[building.owner].faction === 'nato' ? 1.06 : 1) * (!game.hasPower(building.owner) && ['armory', 'airfield', 'dock'].includes(building.type) ? 2 : 1) / sandboxSpeed(game, building.owner);
 }
 
 export function buildingInformation(game, building) {

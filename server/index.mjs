@@ -1,3 +1,5 @@
+import { PlayerAnalytics } from './player-analytics.mjs';
+import { AdminAccess, playerCSV } from './admin-access.mjs';
 import { createServer } from 'node:http';
 import { stat } from 'node:fs/promises';
 import { serveFile } from './static-files.mjs';
@@ -11,14 +13,17 @@ import { PROTOCOL_VERSION,SIX_PROTOCOL_VERSION, nickname } from '../src/network-
 import { Accounts } from './accounts.mjs';
 import { executeCommand } from './commands.mjs';
 import { battleView } from './battle-view.mjs';
-import { GAME_VERSION } from '../src/version.js';
+import { GAME_VERSION, BUILD_ID } from '../src/version.js';
 import { SessionRateLimit } from './session-rate-limit.mjs';
 
-export function createBattleServer({ directory = process.env.DATA_DIRECTORY || resolve('server-data'), root = resolve('dist'), origin = process.env.PUBLIC_ORIGIN || '', additionalOrigins = process.env.PUBLIC_ORIGINS || '', maxPlayers=2, dev = process.env.NODE_ENV !== 'production' } = {}) {
+export function createBattleServer({ directory = process.env.DATA_DIRECTORY || resolve('server-data'), root = resolve('dist'), origin = process.env.PUBLIC_ORIGIN || '', additionalOrigins = process.env.PUBLIC_ORIGINS || '', maxPlayers=2, adminPasswordHash = process.env.ADMIN_PASSWORD_HASH || '', dev = process.env.NODE_ENV !== 'production' } = {}) {
+  root=resolve(root);
   if(![2,6].includes(maxPlayers))throw new Error('席位上限无效');
   const protocol=maxPlayers===6?SIX_PROTOCOL_VERSION:PROTOCOL_VERSION;
   const cookieName=maxPlayers===6?'gp_six_guest':'gp_guest',cookiePath=maxPlayers===6?'/candidate':'/';
   const accounts = new Accounts(directory,{cookieName}), rooms = new Map(), peers = new Map(), requests = new SessionRateLimit();
+  const analytics = new PlayerAnalytics(directory), admin = new AdminAccess(adminPasswordHash);
+  const telemetryRequests = new SessionRateLimit({limit:240,capacity:2048}), newVisitors = new SessionRateLimit({limit:40,capacity:2048});
   const send = (ws, value) => { if (ws?.readyState === WebSocket.OPEN && ws.bufferedAmount < 512*1024) ws.send(JSON.stringify(value)); };
   const extraOrigins = new Set(additionalOrigins.split(',').map(value=>value.trim()).filter(value=>{try{const u=new URL(value);return ['http:','https:'].includes(u.protocol)&&u.origin===value;}catch{return false;}}));
   const allowed = req => req.headers.origin === (origin || `http://${req.headers.host}`) || extraOrigins.has(req.headers.origin) || dev && ['http://localhost:4173','http://127.0.0.1:4173'].includes(req.headers.origin);
@@ -59,7 +64,40 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
     res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('X-Frame-Options','DENY'); res.setHeader('Referrer-Policy','same-origin');
     try {
       const url = new URL(req.url, 'http://local');
-      if (url.pathname === '/api/health') return json(200, { ok: true, version:GAME_VERSION, protocol, maxPlayers,rooms: rooms.size, battles: [...rooms.values()].filter(r => r.game?.running).length });
+      if (url.pathname === '/api/health') return json(200, { ok: true, version:GAME_VERSION, build:BUILD_ID, protocol, maxPlayers,rooms: rooms.size, battles: [...rooms.values()].filter(r => r.game?.running).length });
+      const secure = origin.startsWith('https:') || extraOrigins.has(req.headers.origin) && req.headers.origin.startsWith('https:');
+      const readBody = async () => { let text=''; for await (const chunk of req) { text+=chunk; if(Buffer.byteLength(text)>8192)throw Error('请求过大'); } return JSON.parse(text); };
+      if (url.pathname === '/api/telemetry') {
+        if(req.method!=='POST')return json(405,{error:'不支持的请求'});
+        if(!allowed(req))return json(403,{error:'请求来源不被允许'});
+        const player=analytics.player(req.headers.cookie),source=player?.id||req.socket.remoteAddress;
+        if(!(player?telemetryRequests:newVisitors).accept(source))return json(429,{error:'统计请求过于频繁'});
+        const result=analytics.ingest(await readBody(),{cookie:req.headers.cookie,ua:req.headers['user-agent'],guestId:accounts.find(req.headers.cookie)?.id});
+        if(result.token)res.setHeader('Set-Cookie',`gp_analytics=${result.token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000${secure?'; Secure':''}`);
+        return json(200,{ok:true});
+      }
+      if(url.pathname.startsWith('/api/admin/')) {
+        if(req.method==='POST'&&!allowed(req))return json(403,{error:'请求来源不被允许'});
+        if(url.pathname==='/api/admin/login'&&req.method==='POST'){
+          const result=admin.login((await readBody()).password,req.socket.remoteAddress);
+          if(result.error)return json(result.status,{error:result.error});
+          res.setHeader('Set-Cookie',`gp_admin=${result.token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${secure?'; Secure':''}`);return json(200,{ok:true});
+        }
+        if(!admin.authorized(req.headers.cookie))return json(401,{error:'请先登录管理员'});
+        if(url.pathname==='/api/admin/logout'&&req.method==='POST'){admin.logout(req.headers.cookie);res.setHeader('Set-Cookie','gp_admin=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return json(200,{ok:true});}
+        if(url.pathname==='/api/admin/status'&&req.method==='GET')return json(200,{ok:true});
+        if(url.pathname==='/api/admin/query'&&req.method==='POST'){
+          const filters=await readBody();
+          if(filters.view==='players')return json(200,analytics.players(filters));
+          if(filters.view==='export'){
+            const data=analytics.players({...filters,export:true});res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Cache-Control':'no-store','Content-Disposition':'attachment; filename="players.csv"','X-Export-Truncated':String(data.truncated)});return res.end(playerCSV(data));
+          }
+          const report=analytics.report(filters);report.environment=dev?'本地开发环境':'生产采集';
+          report.legacy={count:accounts.db.prepare('SELECT COUNT(*) n FROM guests').get().n,rows:accounts.db.prepare('SELECT id,name,wins,losses,draws FROM guests ORDER BY wins DESC LIMIT 100').all(),scope:'历史双人联网档案；没有采集到的UA与时长不能回补，名单最多展示100条'};
+          return json(200,report);
+        }
+        return json(404,{error:'接口不存在'});
+      }
       if (url.pathname === '/api/session') {
         let user = accounts.find(req.headers.cookie);
         if (req.method === 'POST') {
@@ -78,6 +116,9 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
       if (req.method !== 'GET' && req.method !== 'HEAD') return json(405, { error:'不支持的请求' });
       let file = resolve(root, '.'+decodeURIComponent(url.pathname));
       if (!file.startsWith(root+sep) && file !== root) return json(403, { error:'禁止访问' });
+      if (url.pathname === '/admin') { res.writeHead(302,{Location:'/admin/'});return res.end(); }
+      if (url.pathname === '/admin/') file=resolve(root,'admin/index.html');
+      if (url.pathname.startsWith('/admin/')) res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'");
       if (url.pathname === '/official') { res.writeHead(302,{Location:'/official/','Cache-Control':'no-cache'});return res.end(); }
       if (url.pathname === '/official/') file=resolve(root,'official/index.html');
       if (url.pathname === '/downloads') { res.writeHead(302, { Location:'/downloads/', 'Cache-Control':'no-cache' }); return res.end(); }
@@ -179,8 +220,8 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
     }
   },50);
   const heartbeat=setInterval(()=>wss.clients.forEach(ws=>{if(!ws.alive||ws.bufferedAmount>2*1024*1024)ws.terminate();else{ws.alive=false;ws.ping();}}),15000);
-  server.on('close',()=>{clearInterval(timer);clearInterval(heartbeat);wss.clients.forEach(ws=>ws.terminate());wss.close();accounts.db.close();});
-  return { server, rooms, accounts, wss };
+  server.on('close',()=>{clearInterval(timer);clearInterval(heartbeat);wss.clients.forEach(ws=>ws.terminate());wss.close();analytics.close();accounts.db.close();});
+  return { server, rooms, accounts, wss, analytics };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const { server }=createBattleServer({maxPlayers:Number(process.env.MAX_PLAYERS||2)}); server.listen(Number(process.env.PORT||4180),process.env.HOST||'127.0.0.1',()=>console.log(`对战服务已启动，端口 ${process.env.PORT||4180}`));

@@ -1,3 +1,7 @@
+import { setupMenuVideo } from './background-video.js';
+import { CommanderLoyalty, SANDBOX_FUNDS, applySandbox, canUseSandbox, sandboxSpeed } from './commander-sandbox.js';
+import { PlayerTelemetry } from './player-telemetry.js';
+import { GAME_VERSION, BUILD_ID } from './version.js';
 import { isDesktop, desktopInvoke, desktopNotice } from './desktop.js';
 import { createIcons, icons } from 'lucide';
 import { BUILDINGS, BUILD_ORDER, FACTIONS, MAPS, PRODUCERS, UNITS, UNIT_ORDER, VICTORY_MODES, supportsMap } from './data.js';
@@ -36,6 +40,7 @@ import './intelligence.css';
 import { OnlineClient } from './online-client.js';
 import { OnlineGame } from './online-game.js';
 import './online.css';
+import './commander-sandbox.css';
 import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
 import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
@@ -47,6 +52,9 @@ import { theaterPanelHTML, theaterSummary } from './theater-ui.js';
 import { lifelinePanelHTML } from './lifeline-ui.js';
 import { loadChallengeThumbnails } from './challenge-thumbnails.js';
 
+setupMenuVideo();
+const loyalty = new CommanderLoyalty(localStorage);
+let sandboxNoticePending = false;
 const candidateMode=/^\/candidate(?:\/|$)/.test(location.pathname);
 const $ = selector => document.querySelector(selector);
 const fmt = amount => Math.floor(amount).toLocaleString('zh-CN');
@@ -271,7 +279,7 @@ async function deployGame(save = null, onlinePayload = null) {
   state.mapId = $('#map-select').value;
   state.victoryMode = document.querySelector('[data-victory].active')?.dataset.victory || 'quick';
   const events = { notice: toast, shot: beep, voice: key => gameAudio.say(key), selection: updateSelection, end: showResult };
-  state.game = onlinePayload ? new OnlineGame(onlinePayload, events, onlineClient) : save ? Game.fromSave(save, events) : new Game(state.faction, enemy, events, { challengeId:state.launchChallenge,nuclearEnabled:$('#nuclear-enabled').checked,victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId,battlefieldScale:$('#expanded-map').checked?1.5:1 });
+  state.game = onlinePayload ? new OnlineGame(onlinePayload, events, onlineClient) : save ? Game.fromSave(save, events) : new Game(state.faction, enemy, events, { sandbox: state.launchChallenge ? null : loyalty.settings, challengeId:state.launchChallenge,nuclearEnabled:$('#nuclear-enabled').checked,victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId,battlefieldScale:$('#expanded-map').checked?1.5:1 });
   state.launchChallenge = null;
   if (state.game.challenge) { state.mapId=state.game.mapId; state.victoryMode=state.game.victoryMode;state.difficulty='standard'; }
   if (onlinePayload) { state.faction=state.game.players[0].faction;state.mapId=state.game.mapId;state.victoryMode=state.game.victoryMode;state.difficulty='standard'; }
@@ -295,10 +303,10 @@ async function deployGame(save = null, onlinePayload = null) {
   $('#side-faction').textContent = state.game.faction.name;
   $('#faction-short').textContent = `我方：${state.game.faction.name}`;
   $('#enemy-short').textContent = state.game.players.length>2?`其他 ${state.game.players.length-1} 方 · 六方实验 · 每席40单位`:`敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
-  $('#battle-status').textContent = '战斗进行中';
+  $('#battle-status').textContent = state.game.sandbox ? '指挥官沙盘 · 不计荣誉' : '战斗进行中';
   $('#battle-objective').textContent = VICTORY_MODES[state.victoryMode].description;
   $('.battlefield').classList.toggle('future', !!state.game.map.future);
-  $('#mission-label').textContent = `${VICTORY_MODES[state.victoryMode].name} · ${state.game.map.name}`;
+  $('#mission-label').textContent = `${state.game.sandbox ? '沙盘演练 · ' : ''}${VICTORY_MODES[state.victoryMode].name} · ${state.game.map.name}`;
   if (state.game.challenge) { const d=CHALLENGES[state.game.challenge.id];$('#mission-label').textContent=d.name+' · 战术挑战'; state.renderer.centerOn(d.camera?.x||(state.game.challenge.id==='corridor'?760:1000),d.camera?.y||(state.game.challenge.id==='corridor'?1030:720)); }
   $('#minimap-map').textContent = state.game.map.name;
   $('#minimap-sector').textContent = state.game.map.sector;
@@ -354,6 +362,12 @@ function advanceFrame(now, token) {
   }
   gameAudio.listener = state.renderer;
   state.game.update(dt);
+  playerTelemetry.tick(state.game);
+  if (loyalty.tick(state.game, !document.hidden)) {
+    sandboxNoticePending = true;
+    toast('指挥官沙盘已解锁。谢谢你的热爱，也记得休息片刻。');
+  }
+  if (sandboxNoticePending && !state.game.online && state.game.running && $('#modal').classList.contains('hidden')) { sandboxNoticePending = false; openSandbox(true); }
   if (!state.game.online && state.game.running && !state.game.paused && state.game.time >= state.nextAutoAt) {
     saveProgress('auto', false); state.nextAutoAt = state.game.time + 45;
   }
@@ -370,6 +384,7 @@ function advanceFrame(now, token) {
 }
 
 function handleBattleFailure(error, retry = {}) {
+  playerTelemetry.error('render');
   if (state.renderFailure) return;
   ++state.loopToken;
   state.renderFailure = retry;
@@ -436,8 +451,8 @@ function updateUI(force = false) {
   if (g.pendingBuilding) {
     $('#queue-title').textContent = lunarBuildingProfile(g.map.future, g.pendingBuilding, BUILDINGS[g.pendingBuilding]).name; $('#queue-time').textContent = '准备部署'; $('#queue-detail').textContent = g.placingBuilding ? '在基地附近的空地上左键放置' : '点击已完成的建筑，再选择部署位置'; $('#queue-progress').style.width = '100%';
   } else if (q) {
-    const d = lunarBuildingProfile(g.map.future, q.type, BUILDINGS[q.type]); $('#queue-title').textContent = d.name; $('#queue-time').textContent = `${Math.ceil(d.time - q.progress)} 秒`;
-    $('#queue-detail').textContent = p.credits < 5 ? '资金不足，建造暂停' : '建造中 · 资金随进度扣除'; $('#queue-progress').style.width = `${q.progress / d.time * 100}%`;
+    const d = lunarBuildingProfile(g.map.future, q.type, BUILDINGS[q.type]); $('#queue-title').textContent = d.name; $('#queue-time').textContent = `${Math.ceil(d.time / sandboxSpeed(g, 0) - q.progress)} 秒`;
+    $('#queue-detail').textContent = p.credits < 5 ? '资金不足，建造暂停' : '建造中 · 资金随进度扣除'; $('#queue-progress').style.width = `${q.progress / (d.time / sandboxSpeed(g, 0)) * 100}%`;
   } else if (activeProducer?.active) {
     const a = activeProducer.active, d = UNITS[a.type]; $('#queue-title').textContent = equipmentProfile(p.faction, a.type, g.map.future).name;
     const duration = productionDuration(g, activeProducer, a.type);
@@ -507,7 +522,7 @@ function updateSidebar(force = false) {
       const d = lunarBuildingProfile(g.map.future, type, BUILDINGS[type]), locked = !g.canBuild(0, type), queued = p.buildQueue?.type === type || g.pendingBuilding === type;
       const label = locked ? `需要 ${lunarBuildingProfile(g.map.future, d.requires, BUILDINGS[d.requires])?.name || '指挥中心'}` : d.desc;
       const ready = g.pendingBuilding === type;
-      return `<button class="action-card ${locked ? 'locked' : ''} ${queued ? 'queued' : ''}" data-build="${type}" ${!ready && (locked || p.buildQueue || g.pendingBuilding) ? 'disabled' : ''} title="${ready ? '建造完成，点击部署' : d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${d.name}</strong><small>${ready ? '已完成 · 点击部署' : label}</small></span><span class="action-cost">${ready ? '部署' : `¤ ${fmt(d.cost)}`}<small>${ready ? '待命' : `${d.time} 秒`}</small></span></button>`;
+      return `<button class="action-card ${locked ? 'locked' : ''} ${queued ? 'queued' : ''}" data-build="${type}" ${!ready && (locked || p.buildQueue || g.pendingBuilding) ? 'disabled' : ''} title="${ready ? '建造完成，点击部署' : d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${d.name}</strong><small>${ready ? '已完成 · 点击部署' : label}</small></span><span class="action-cost">${ready ? '部署' : `¤ ${fmt(d.cost)}`}<small>${ready ? '待命' : `${Math.ceil(d.time / sandboxSpeed(g,0))} 秒`}</small></span></button>`;
     }).join('')}</div>`;
     root.querySelectorAll('[data-build]').forEach(button => button.addEventListener('click', () => {
       if (g.pendingBuilding === button.dataset.build) { g.placingBuilding = true; g.orderMode = null; clearOrderButtons(); updateUI(true); }
@@ -523,7 +538,7 @@ function updateSidebar(force = false) {
         const d = UNITS[type], locked = !g.hasBuilding(0, d.producer) || d.requires && !g.hasBuilding(0, d.requires);
         const profile = equipmentProfile(p.faction, type, g.map.future);
         const label = locked ? `需要 ${lunarBuildingProfile(g.map.future, !g.hasBuilding(0, d.producer) ? d.producer : d.requires, BUILDINGS[!g.hasBuilding(0, d.producer) ? d.producer : d.requires]).name}` : isLunarRobot(g.map, type) ? '电池驱动 · 电力充能' : d.desc;
-        return `<button class="action-card ${locked ? 'locked' : ''}" data-unit="${type}" ${locked ? 'disabled' : ''} title="${profile.category} · ${profile.country}：${profile.description}；游戏定位：${d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${profile.name}</strong><small>${label} · ${profile.category}</small></span><span class="action-cost">¤ ${fmt(g.unitCost(0, type))}<small>${d.time} 秒</small></span></button>`;
+        return `<button class="action-card ${locked ? 'locked' : ''}" data-unit="${type}" ${locked ? 'disabled' : ''} title="${profile.category} · ${profile.country}：${profile.description}；游戏定位：${d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${profile.name}</strong><small>${label} · ${profile.category}</small></span><span class="action-cost">¤ ${fmt(g.unitCost(0, type))}<small>${Math.ceil(productionDuration(g, {owner:0,type:producer}, type))} 秒</small></span></button>`;
       }).join('')}</div></section>`;
     }).join('');
     root.querySelectorAll('[data-unit]').forEach(button => button.addEventListener('click', () => { if (!g.queueUnit(0, button.dataset.unit)) toast(UNITS[button.dataset.unit].limit?'该装备已达到数量上限（含生产队列），或队列已满':'生产队列已满', true); updateUI(true); }));
@@ -736,6 +751,8 @@ function returnToMenu() {
   if(state.game?.online)onlineClient.leave();
   ++state.loopToken; state.keys.clear(); state.game = null;
   state.renderFailure = null; state.lastSelectionClick = null;
+  playerTelemetry.tick(null);
+  loyalty.tick(null, !document.hidden);
   state.renderer?.dispose(); state.renderer = null; gameAudio.stopBattle();
   state.drag = state.panning = state.pointerPosition = null;
   state.touchPoints.clear(); state.inspectorId = state.dismissedInspectorId = null;
@@ -781,6 +798,22 @@ function showHelp() {
     <p><a href="${new URL('../THIRD-PARTY-ASSETS.txt', import.meta.url).href}" download="第三方模型与材质署名.txt">第三方模型与材质署名</a></p>`, '<button class="primary-btn" data-modal="resume">进入战场</button>');
 }
 
+function openSandbox(reward = false) {
+  if (state.game?.running && !state.game.online) { state.game.paused = true; gameAudio.setPaused(true); }
+  if (!loyalty.unlocked) {
+    showModal('指挥官沙盘 · 忠实玩家奖励', `<p>同一次打开游戏，累计前台有效游玩满 2 小时后解锁。暂停、后台和观战不计时，刷新页面会重置本次进度。</p><p>本次已游玩 ${Math.floor(loyalty.activeMs / 60000)} / 120 分钟。按自己的节奏玩，也记得休息。</p><p>解锁后可选择起始资金、2 倍或 3 倍生产速度，以及无限弹药。仅用于普通单机演练。</p>`, '<button class="primary-btn" data-modal="resume">知道了</button>', '指挥官福利'); return;
+  }
+  const settings = state.game?.sandbox || loyalty.settings || { credits: 100000, speed: 2, unlimitedAmmo: false };
+  showModal('指挥官沙盘', `${reward?'<p class="sandbox-reward">感谢你的热爱！你已解锁忠实玩家奖励。先休息一下，随时回来演练。</p>':''}<p>自由尝试战术的游戏修改器。仅普通双阵营单机可用，沙盘局独立标记，不计荣誉和挑战成绩。</p><div class="sandbox-fields"><label>起始 / 整备资金<select id="sandbox-credits">${SANDBOX_FUNDS.map(n=>`<option value="${n}" ${n===settings.credits?'selected':''}>${fmt(n)} 金币</option>`).join('')}</select></label><label>造兵与建造速度<select id="sandbox-speed"><option value="2" ${settings.speed===2?'selected':''}>2 倍 · 保留生产过程</option><option value="3" ${settings.speed===3?'selected':''}>3 倍 · 保留生产过程</option></select></label><label class="sandbox-check"><input type="checkbox" id="sandbox-ammo" ${settings.unlimitedAmmo?'checked':''}>无限弹药 · 无需补弹</label></div><p>只增强我方；维修、舰载机损失、机器人电量与射速维持原规则。资金用于新局；应用当前局时只补足到所选值，不降低已有资金。开启后本局始终属于沙盘演练。</p>${loyalty.storageError?'<p role="alert">本机存储不可用，设置仅在本次页面有效。</p>':''}`, `<button class="primary-btn" data-modal="sandbox-save">下次普通单机启用</button>${state.game?.running&&canUseSandbox(state.game)?'<button class="secondary-btn" data-modal="sandbox-apply">应用当前局并标记为沙盘</button>':''}<button class="secondary-btn" data-modal="sandbox-disable">下次恢复标准规则</button><button class="secondary-btn" data-modal="resume">暂不启用</button>`, '忠实玩家奖励');
+}
+function configureSandbox(current) {
+  const settings = { credits: Number($('#sandbox-credits').value), speed: Number($('#sandbox-speed').value), unlimitedAmmo: $('#sandbox-ammo').checked };
+  if (current) { applySandbox(state.game, settings); $('#mission-label').textContent = `沙盘演练 · ${state.game.map.name}`; $('#battle-status').textContent = '指挥官沙盘 · 不计荣誉'; }
+  loyalty.configure(settings);
+  toast(loyalty.storageError ? '设置已生效，本机存储不可用，刷新后需重新设置' : current ? '当前局已开启指挥官沙盘' : '下次新开普通单机将启用指挥官沙盘');
+  closeModal(); updateUI(true);
+}
+
 function showPause() {
   if (!state.game || !state.game.running) return;
   if(state.game.online){showModal('联网对战','<p>战斗继续进行，双方只能在掉线重连期间共同暂停。</p>','<button class="primary-btn" data-modal="resume">返回战场</button><button class="secondary-btn" data-modal="menu">退出对战</button>');return;}
@@ -788,7 +821,7 @@ function showPause() {
   gameAudio.setPaused(true);
   $('#pause-btn').innerHTML = icon('play'); refreshIcons();
   const graphics = `<label class="graphics-setting">画质<select data-quality aria-label="画质"><option value="high" ${state.renderer.quality === 'high' ? 'selected' : ''}>精细</option><option value="standard" ${state.renderer.quality === 'standard' ? 'selected' : ''}>流畅</option></select></label>`;
-  showModal('战斗暂停', `<p>${state.game.map.name} · 当前战斗时长 ${seconds(state.game.time)}</p>${graphics}`, `<button class="primary-btn" data-modal="resume">${icon('play')} 继续作战</button><button class="secondary-btn" data-modal="save">${icon('save')} 保存进度</button><button class="secondary-btn" data-modal="load">${icon('folder-open')} 读取存档</button><button class="secondary-btn" data-modal="export">${icon('download')} 导出存档</button><button class="secondary-btn" data-modal="menu">${icon('house')} 返回主界面</button><button class="secondary-btn" data-modal="restart">${icon('rotate-ccw')} 重新开始</button>`, '战场控制');
+  showModal('战斗暂停', `<p>${state.game.map.name} · 当前战斗时长 ${seconds(state.game.time)}</p>${graphics}`, `<button class="primary-btn" data-modal="resume">${icon('play')} 继续作战</button><button class="secondary-btn" data-modal="save">${icon('save')} 保存进度</button><button class="secondary-btn" data-modal="load">${icon('folder-open')} 读取存档</button><button class="secondary-btn" data-modal="export">${icon('download')} 导出存档</button><button class="secondary-btn" data-modal="menu">${icon('house')} 返回主界面</button><button class="secondary-btn" data-modal="restart">${icon('rotate-ccw')} 重新开始</button><button class="secondary-btn" data-modal="sandbox">指挥官沙盘${loyalty.unlocked?'':' · 待解锁'}</button>`, '战场控制');
 }
 
 function challengeTime(time) {
@@ -881,6 +914,10 @@ function showResult(winner) {
     showChallengeResult(game,win);state.keys.clear();return;
   }
   if(game.online){gameAudio.say(draw?'draw':win?'victory':'defeat');if(win)gameAudio.celebrate(false);showModal(draw?'战局平局':win?'对战胜利':'重整旗鼓',`<p>${game.map.name} · ${seconds(game.time)} · 战绩由服务器结算</p>${battleReportHTML(game)}`,'<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button><button class="secondary-btn" data-modal="menu">返回主界面</button>');return;}
+  if (game.sandbox) {
+    showModal('沙盘演练结束', `<p>${game.map.name} · ${seconds(game.time)} · ${win?'演练胜利':draw?'演练平局':'演练结束'}</p><p>本局使用指挥官沙盘，不计正常荣誉、挑战或联网战绩。</p>${battleReportHTML(game)}`, '<button class="primary-btn" data-modal="restart">再开一局</button><button class="secondary-btn" data-modal="menu">返回主界面</button>', '自由演练');
+    state.keys.clear(); return;
+  }
   let settlement,error='';
   try {
     settlement=settleHonors(localStorage,{battleId:game.battleId,winner,difficulty:state.difficulty,mode:game.victoryMode,mapId:game.mapId,faction:game.players[0].faction,time:game.time});
@@ -1140,6 +1177,7 @@ function setupControls() {
   document.querySelectorAll('[data-audio]').forEach(slider => slider.addEventListener('input', () => { gameAudio.setSettings({ [slider.dataset.audio]: Number(slider.value) / 100 }); updateAudioControls(); }));
   document.addEventListener('pointerdown', event => { if (!event.target.closest('#audio-panel, #sound-btn')) { $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false'); } });
   $('#start-btn').addEventListener('click', () => startGame());
+  $('#sandbox-btn').addEventListener('click', () => openSandbox());
   $('#challenge-btn').addEventListener('click', () => showChallenges());
   $('#challenge-profile-file').addEventListener('change',event=>{const file=event.target.files[0];event.target.value='';previewChallengeImport(file);});
   document.querySelectorAll('[data-victory]').forEach(button => button.addEventListener('click', () => {
@@ -1165,6 +1203,10 @@ function setupControls() {
     else if (action === 'resume') closeModal();
     else if (action === 'online-leave') returnToMenu();
     else if (action === 'online-lobby') { returnToMenu();onlineClient.open(); }
+    else if (action === 'sandbox') openSandbox();
+    else if (action === 'sandbox-save') configureSandbox(false);
+    else if (action === 'sandbox-apply') configureSandbox(true);
+    else if (action === 'sandbox-disable') { loyalty.configure(null); toast('后续普通单机恢复标准规则；当前沙盘局保留标记和设置'); closeModal(); }
     else if (action === 'honors') openHonors();
     else if (action === 'retry-honor' && state.game && state.game.winner!==null) showResult(state.game.winner);
     else if (action === 'retry-challenge') restartBattle();
@@ -1187,6 +1229,8 @@ function setupControls() {
     else if (action === 'discard-menu') returnToMenu();
   });
   document.addEventListener('visibilitychange', () => {
+    playerTelemetry.tick(state.game);
+    loyalty.tick(state.game, !document.hidden);
     gameAudio.setPaused(document.hidden || !!state.game?.paused);
     if (document.hidden && state.game?.running && !state.game.online) {
       saveProgress('auto', false); state.game.paused = true; gameAudio.setPaused(true);
@@ -1217,7 +1261,9 @@ function updateVoiceOptions() {
   if (select.selectedIndex < 0) select.value = 'auto';
 }
 
+const playerTelemetry=new PlayerTelemetry({version:`${GAME_VERSION}+${BUILD_ID}`,getGame:()=>state.game});
 const onlineClient=new OnlineClient({
+  onIdentity:name=>playerTelemetry.identify(name),
   refreshIcons, prepare:()=>Renderer.prepare(),onNotice:toast,
   onAck:action=>{const voice={build:'construction',train:'queued',place:'deployed',stop:'stopOrder',move:'moveOrder',cyber:'cyberLaunch',satellite:'ability'}[action];if(state.game?.online&&voice)gameAudio.say(voice);},
   config:()=>({mapId:$('#map-select').value,victoryMode:state.victoryMode,faction:state.faction,nuclearEnabled:$('#map-select').value==='strategic'&&$('#nuclear-enabled').checked}),
@@ -1227,7 +1273,7 @@ const onlineClient=new OnlineClient({
     if(state.game?.online&&onlineClient.latest?.config.battleId===state.game.battleId)state.game.apply(onlineClient.latest);
   },
   onSnapshot:payload=>{if(state.game?.online&&state.game.battleId===payload.config.battleId)state.game.apply(payload);},
-  onStatus:message=>{if(state.game?.online)$('#battle-status').textContent=message;},
+  onStatus:message=>{if(message.includes('中断'))playerTelemetry.error('network');if(state.game?.online)$('#battle-status').textContent=message;},
   onInterrupted:()=>{if(state.game?.online){state.game.running=false;showModal('战局已取消','<p>服务器维护或房间已过期，本局未记录胜负。</p>','<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button>');}}
 });
 drawFactionPicker();

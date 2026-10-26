@@ -76,6 +76,7 @@ export function applyChallengeResult(original,result) {
 }
 
 export function settleChallengeResult(storage,game,at=Date.now()) {
+  if (game.sandbox) throw new Error('沙盘演练不计挑战成绩');
   const settlement=applyChallengeResult(readChallengeProfile(storage),completedChallengeResult(game,at));
   // 同一战局只写一次，先落盘再展示刷新纪录，失败可用原战局重试。
   if (settlement.status==='recorded') writeChallengeProfile(storage,settlement.profile);

@@ -1,3 +1,4 @@
+import { unlimitedAmmo } from './commander-sandbox.js';
 import { emitBattleSound, weaponSound, impactSound } from './battle-sound.js';
 import { UNITS } from './data.js';
 import { unitLayer, unitRadius } from './unit-spacing.js';
@@ -209,7 +210,7 @@ export const modernCombat = {
       target.hp -= d.damage * (['laser','abm'].includes(defender.type) ? 1 : 1.8);
       defender.fireTimer = d.cooldown;
       defender.turretAngle = Math.atan2(target.y - defender.y, target.x - defender.x);
-      if (d.ammo) defender.ammo--;
+      if (d.ammo && !unlimitedAmmo(this, defender)) defender.ammo--;
       if (defender.type === 'laser') this.laserHeat(defender);
       this.effects.push({ type: 'shot', x: defender.x, y: defender.y, toX: target.x, toY: target.y, sourceType: defender.type, targetType: target.kind === 'wing' ? 'fighter' : 'drone', style: defender.type === 'laser' ? 'laser' : 'aa', owner: defender.owner, age: 0, duration: .2 });
       emitBattleSound(this, defender.type, defender, 'launch', { sourceId: defender.id });
