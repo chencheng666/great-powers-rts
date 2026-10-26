@@ -1,3 +1,4 @@
+import { emitBattleSound } from './battle-sound.js';
 import { UNITS } from './data.js';
 import { DETERRENCE as R } from './deterrence-rules.js';
 
@@ -37,6 +38,7 @@ export const deterrenceCombat={
         } else if(this.time>=pending.launchAt) {
           this.projectiles.push({id:this.nextProjectileId++,kind:'nuclear',owner:p.side,sourceId:silo.id,targetId:null,targetType:'nuclearSilo',x:silo.x,y:silo.y,startX:silo.x,startY:silo.y,toX:pending.x,toY:pending.y,angle:Math.atan2(pending.y-silo.y,pending.x-silo.x),age:0,jam:0,amount:R.damage,hp:R.projectileHP,speed:Math.max(1,distance(silo,pending)/R.flight),returning:false,flightRole:'surface'});
           p.nuclearSpent=true;p.nuclearPending=null;
+          emitBattleSound(this, 'nuclearLaunch', silo, 'launch', { sourceId: silo.id });
           this.effects.push({type:'explosion',style:'strategicLaunch',x:silo.x,y:silo.y,size:42,age:0,duration:1,owner:p.side});
         }
       }
@@ -62,6 +64,7 @@ export const deterrenceCombat={
   updateNuclearProjectile(p,dt) {
     if(p.hp<=0) {
       p.finished=true;
+      emitBattleSound(this, 'intercept', p, 'impact', { global: true });
       this.effects.push({type:'explosion',style:'nuclearIntercept',x:p.x,y:p.y,size:75,age:0,duration:1.4,owner:p.owner,height:160});
       this.events.notice?.('战略弹头拦截成功，落区威胁解除。');this.events.voice?.('nuclearIntercepted');return;
     }
@@ -78,7 +81,7 @@ export const deterrenceCombat={
       if(this.collectingHits)this.pendingHits.push(hit);else this.applyHit(hit);
     }
     this.effects.push({type:'nuclearBlast',x:p.toX,y:p.toY,size:R.radius,age:0,duration:7,owner:p.owner});
-    this.events.shot?.('bomber',p.owner);
+    emitBattleSound(this, 'nuclearImpact', { x: p.toX, y: p.toY, owner: p.owner }, 'impact', { global: true });
     this.events.notice?.('核威慑打击落地：区域内敌我均可能受损，无永久污染区。');
     this.events.voice?.('nuclearImpact');
   }

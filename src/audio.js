@@ -1,3 +1,5 @@
+import { SoundEffects } from './sound-effects.js';
+import { MovementSounds, soundPosition } from './battle-sound.js';
 import { COMMAND_LINES, normalizeAudioSettings, speechOptions, VOICE_COOLDOWN, VOICE_LINES, VOICE_PRIORITY, voiceFile } from './audio-data.js';
 import { NuclearAlarm, nuclearAlarmAudible, terminalNuclearWarning } from './nuclear-alarm.js';
 
@@ -12,8 +14,9 @@ export class GameAudio {
     this.settings = normalizeAudioSettings(saved || {});
     this.context = null; this.buffers = new Map(); this.pending = new Map();
     this.active = false; this.paused = false; this.session = 0; this.music = null;
-    this.voiceQueue = []; this.currentVoice = null; this.cooldowns = new Map(); this.variants = new Map(); this.lastSpeech = 0; this.lastShot = 0;
+    this.voiceQueue = []; this.currentVoice = null; this.cooldowns = new Map(); this.variants = new Map(); this.lastSpeech = 0;
     this.celebrationNodes = new Set();
+    this.movement = new MovementSounds(); this.listener = null;
     this.nuclearWarning = false; this.nuclearAlarm = null;
   }
 
@@ -29,9 +32,8 @@ export class GameAudio {
       this.master.connect(this.compressor); this.compressor.connect(this.analyser); this.analyser.connect(ctx.destination);
       this.musicBus.connect(this.master); this.effectsBus.connect(this.master); this.voiceBus.connect(this.master);
       this.nuclearAlarm = new NuclearAlarm(ctx, this.effectsBus);
+      this.soundEffects = new SoundEffects(ctx, this.effectsBus);
       this.radioFilter = ctx.createBiquadFilter(); this.radioFilter.type = 'lowpass'; this.radioFilter.frequency.value = 4700; this.radioFilter.connect(this.voiceBus);
-      this.noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const samples = this.noise.getChannelData(0);
-      for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
       this.applySettings();
     }
     try { await this.context.resume(); return this.context.state === 'running'; } catch { return false; }
@@ -61,6 +63,7 @@ export class GameAudio {
   }
 
   stopBattle() {
+    this.soundEffects?.stop(); this.movement.reset();
     this.session++; this.active = false; this.paused = false;
     this.nuclearWarning = false; this.nuclearAlarm?.setActive(false);
     for (const node of this.celebrationNodes) node.stop();
@@ -86,6 +89,7 @@ export class GameAudio {
   applySettings() {
     if (!this.context) return;
     const time = this.context.currentTime, settings = this.settings;
+    if (settings.muted || !settings.master || !settings.effects) { this.soundEffects?.stop(); this.movement.reset(); }
     this.master.gain.setTargetAtTime(settings.muted ? 0 : settings.master, time, .04);
     const alarm = nuclearAlarmAudible({ active: this.active, paused: this.paused, wanted: this.nuclearWarning, settings });
     this.nuclearAlarm?.setActive(alarm);
@@ -97,6 +101,7 @@ export class GameAudio {
   setPaused(value) {
     if (this.paused === value) return;
     this.paused = value;
+    if (value) { this.soundEffects?.stop(); this.movement.reset(); }
     if (value && !this.currentVoice?.preview) this.clearVoices();
     this.applySettings();
   }
@@ -214,27 +219,24 @@ export class GameAudio {
     });
   }
 
-  shot(style, owner = 0) {
-    if (!this.active || !this.context || this.paused || this.settings.muted || !this.settings.master || !this.settings.effects) return;
-    const ctx = this.context, start = ctx.currentTime;
-    if (start - this.lastShot < .06) return; this.lastShot = start;
-    if (style === 'laser') {
-      const beam = ctx.createOscillator(), envelope = ctx.createGain(); beam.type = 'sine'; beam.frequency.setValueAtTime(2100, start); beam.frequency.exponentialRampToValueAtTime(850, start + .16);
-      envelope.gain.setValueAtTime(.035 * (owner ? .5 : 1), start); envelope.gain.exponentialRampToValueAtTime(.0001, start + .19);
-      beam.connect(envelope); envelope.connect(this.effectsBus); beam.start(start); beam.stop(start + .2);
-      beam.onended = () => { beam.disconnect(); envelope.disconnect(); }; return;
+  syncBattle(game, listener, dt) {
+    this.listener = listener;
+    if (!this.active || this.paused || !game.running || this.settings.muted || !this.settings.master || !this.settings.effects) {
+      this.soundEffects?.syncMovement([]); this.movement.reset(); return;
     }
-    const heavy = ['tank','elite','turret','strike','frigate','rocket','destroyer','submarine','sabotageBlast','bomber'].includes(style), length = heavy ? .25 : .11;
-    const noise = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain();
-    noise.buffer = this.noise; filter.type = 'lowpass'; filter.frequency.value = heavy ? 850 : 3700;
-    gain.gain.setValueAtTime((heavy ? .16 : .065) * (owner ? .5 : 1), start); gain.gain.exponentialRampToValueAtTime(.0001, start + length);
-    noise.connect(filter); filter.connect(gain); gain.connect(this.effectsBus); noise.start(start); noise.stop(start + length);
-    noise.onended = () => { noise.disconnect(); filter.disconnect(); gain.disconnect(); };
-    if (heavy) {
-      const bass = ctx.createOscillator(), envelope = ctx.createGain(); bass.frequency.setValueAtTime(105,start); bass.frequency.exponentialRampToValueAtTime(35,start+.18);
-      envelope.gain.setValueAtTime(.16,start); envelope.gain.exponentialRampToValueAtTime(.0001,start+.2); bass.connect(envelope); envelope.connect(this.effectsBus); bass.start(start); bass.stop(start+.2);
-      bass.onended = () => { bass.disconnect(); envelope.disconnect(); };
-    }
+    this.soundEffects?.syncMovement(this.movement.sample(game, listener, dt));
+  }
+
+  shot(style, owner = 0, point = null) {
+    if (!this.active || !this.context || this.paused || this.settings.muted || !this.settings.master || !this.settings.effects) return false;
+    return this.soundEffects.play(style, { ...soundPosition(point, this.listener), owner, phase: point?.phase });
+  }
+
+  async previewEffects() {
+    if (!await this.unlock()) return '当前设备未能启动音频，请再次点击试听';
+    if (this.settings.muted || !this.settings.master || !this.settings.effects) return '请先取消静音，并调高总音量和战场音效';
+    this.soundEffects.play('tank', { preview: true });
+    return '正在试听坦克炮声；战场音效由独立滑条控制';
   }
 }
 

@@ -1,0 +1,288 @@
+{
+  "profiles": [
+    {
+      "style": "rifle",
+      "peak": 0.03883920982480049,
+      "rms": 0.003948597294773253,
+      "remainingVoices": 0
+    },
+    {
+      "style": "aa",
+      "peak": 0.040704384446144104,
+      "rms": 0.005096337343919327,
+      "remainingVoices": 0
+    },
+    {
+      "style": "tank",
+      "peak": 0.17938554286956787,
+      "rms": 0.029892388026394427,
+      "remainingVoices": 0
+    },
+    {
+      "style": "turret",
+      "peak": 0.1195821464061737,
+      "rms": 0.021807878473574478,
+      "remainingVoices": 0
+    },
+    {
+      "style": "elite",
+      "peak": 0.1206570491194725,
+      "rms": 0.02070612381704051,
+      "remainingVoices": 0
+    },
+    {
+      "style": "patrol",
+      "peak": 0.10522114485502243,
+      "rms": 0.01808394666274743,
+      "remainingVoices": 0
+    },
+    {
+      "style": "frigate",
+      "peak": 0.12869153916835785,
+      "rms": 0.021588038446350127,
+      "remainingVoices": 0
+    },
+    {
+      "style": "missile",
+      "peak": 0.08746516704559326,
+      "rms": 0.0166399147897441,
+      "remainingVoices": 0
+    },
+    {
+      "style": "rocket",
+      "peak": 0.09915060549974442,
+      "rms": 0.009867946343341068,
+      "remainingVoices": 0
+    },
+    {
+      "style": "ballistic",
+      "peak": 0.1783856898546219,
+      "rms": 0.027866232501040804,
+      "remainingVoices": 0
+    },
+    {
+      "style": "loiterer",
+      "peak": 0.056483592838048935,
+      "rms": 0.011286844175657701,
+      "remainingVoices": 0
+    },
+    {
+      "style": "antiSub",
+      "peak": 0.04384743422269821,
+      "rms": 0.005437706813325742,
+      "remainingVoices": 0
+    },
+    {
+      "style": "submarine",
+      "peak": 0.06054385378956795,
+      "rms": 0.0071930882915141985,
+      "remainingVoices": 0
+    },
+    {
+      "style": "bomber",
+      "peak": 0.026900842785835266,
+      "rms": 0.003465132733689572,
+      "remainingVoices": 0
+    },
+    {
+      "style": "carrier",
+      "peak": 0.06461045145988464,
+      "rms": 0.013373596214488291,
+      "remainingVoices": 0
+    },
+    {
+      "style": "drone",
+      "peak": 0.02585083618760109,
+      "rms": 0.003056546268674571,
+      "remainingVoices": 0
+    },
+    {
+      "style": "laser",
+      "peak": 0.03390689566731453,
+      "rms": 0.008332790710542142,
+      "remainingVoices": 0
+    },
+    {
+      "style": "railgun",
+      "peak": 0.14557941257953644,
+      "rms": 0.027304078566484785,
+      "remainingVoices": 0
+    },
+    {
+      "style": "robotPulse",
+      "peak": 0.03214467316865921,
+      "rms": 0.004074288047081674,
+      "remainingVoices": 0
+    },
+    {
+      "style": "lightImpact",
+      "peak": 0.0217866450548172,
+      "rms": 0.003514390810645032,
+      "remainingVoices": 0
+    },
+    {
+      "style": "metalImpact",
+      "peak": 0.04677468165755272,
+      "rms": 0.008284477507336149,
+      "remainingVoices": 0
+    },
+    {
+      "style": "explosiveImpact",
+      "peak": 0.16885045170783997,
+      "rms": 0.027144378791679448,
+      "remainingVoices": 0
+    },
+    {
+      "style": "largeImpact",
+      "peak": 0.23429907858371735,
+      "rms": 0.03864792681844552,
+      "remainingVoices": 0
+    },
+    {
+      "style": "waterImpact",
+      "peak": 0.11934395134449005,
+      "rms": 0.02109575810326512,
+      "remainingVoices": 0
+    },
+    {
+      "style": "intercept",
+      "peak": 0.07905633002519608,
+      "rms": 0.014366307704136697,
+      "remainingVoices": 0
+    },
+    {
+      "style": "vehicleDestroyed",
+      "peak": 0.1703709065914154,
+      "rms": 0.015281341351101192,
+      "remainingVoices": 0
+    },
+    {
+      "style": "aircraftDestroyed",
+      "peak": 0.15156880021095276,
+      "rms": 0.026899888074114742,
+      "remainingVoices": 0
+    },
+    {
+      "style": "shipDestroyed",
+      "peak": 0.11004658788442612,
+      "rms": 0.012223653789117328,
+      "remainingVoices": 0
+    },
+    {
+      "style": "buildingDestroyed",
+      "peak": 0.1703152358531952,
+      "rms": 0.01643782927590831,
+      "remainingVoices": 0
+    },
+    {
+      "style": "sabotageBlast",
+      "peak": 0.17948956787586212,
+      "rms": 0.03295374450178121,
+      "remainingVoices": 0
+    },
+    {
+      "style": "nuclearLaunch",
+      "peak": 0.18128468096256256,
+      "rms": 0.03423424539994433,
+      "remainingVoices": 0
+    },
+    {
+      "style": "nuclearImpact",
+      "peak": 0.2694770097732544,
+      "rms": 0.02268597173170227,
+      "remainingVoices": 0
+    }
+  ],
+  "lifecycle": [
+    {
+      "name": "运行中",
+      "voices": 1,
+      "loops": 2,
+      "paused": false
+    },
+    {
+      "name": "暂停清理",
+      "voices": 0,
+      "loops": 0,
+      "paused": true
+    },
+    {
+      "name": "静音清理",
+      "voices": 0,
+      "loops": 0,
+      "paused": false
+    },
+    {
+      "name": "音效零清理",
+      "voices": 0,
+      "loops": 0,
+      "paused": false
+    },
+    {
+      "name": "恢复播放",
+      "voices": 1,
+      "loops": 0,
+      "paused": false
+    },
+    {
+      "name": "离开清理",
+      "voices": 0,
+      "loops": 0,
+      "paused": false
+    }
+  ],
+  "movement": [
+    {
+      "kind": "tracks",
+      "peak": 0.028668243438005447,
+      "rms": 0.011987731717399974
+    },
+    {
+      "kind": "wheels",
+      "peak": 0.017831841483712196,
+      "rms": 0.00770178802990665
+    },
+    {
+      "kind": "jet",
+      "peak": 0.03762513026595116,
+      "rms": 0.00967671397913884
+    },
+    {
+      "kind": "rotor",
+      "peak": 0.024210959672927856,
+      "rms": 0.00884208732282005
+    },
+    {
+      "kind": "drone",
+      "peak": 0.010058972053229809,
+      "rms": 0.0030389334710751144
+    },
+    {
+      "kind": "ship",
+      "peak": 0.0301285982131958,
+      "rms": 0.011200561461854554
+    },
+    {
+      "kind": "submerged",
+      "peak": 0.025544539093971252,
+      "rms": 0.011657884317095664
+    },
+    {
+      "kind": "robot",
+      "peak": 0.012449127621948719,
+      "rms": 0.004031251007350077
+    }
+  ],
+  "denseMix": {
+    "peak": 0.9450423717498779,
+    "rms": 0.06679272285580429
+  },
+  "mutedShot": false,
+  "zeroShot": false,
+  "restoredShot": true,
+  "afterCleanup": {
+    "peak": 0,
+    "rms": 0
+  },
+  "pass": true
+}

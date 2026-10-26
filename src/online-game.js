@@ -59,9 +59,9 @@ export class OnlineGame extends Game {
     if(this.publicNuclearWarnings.some(w=>!oldWarnings.some(old=>old.owner===w.owner))){this.events.voice?.('nuclearWarning');this.events.notice?.('核威慑预警：落区已公开，请立即疏散并组织反导。');}
     for(const effect of v.effects)if(!this.seenEffects.has(effect.networkId)){
       this.seenEffects.add(effect.networkId);this.effects.push(effect);
-      if(effect.type==='nuclearBlast'){this.events.voice?.('nuclearImpact');this.events.shot?.('bomber',effect.owner);}
-      if(effect.style==='nuclearIntercept')this.events.voice?.('nuclearIntercepted');
-      if(effect.type==='shot'||effect.type==='muzzle')this.events.shot?.(effect.style||'rifle',effect.owner);
+      if(!initial&&effect.type==='nuclearBlast')this.events.voice?.('nuclearImpact');
+      if(!initial&&effect.style==='nuclearIntercept')this.events.voice?.('nuclearIntercepted');
+      if(!initial&&effect.type==='sound'&&!v.paused)this.events.shot?.(effect.style,effect.owner,effect);
     }
     if(this.seenEffects.size>2000)this.seenEffects=new Set(v.effects.map(e=>e.networkId));
     for(const e of before.values())if(e.owner===0&&e.kind==='unit'&&!this.units.some(u=>u.id===e.id)&&e.lastDamageAt>v.time-1)this.attackAlerts.push({id:e.id,type:e.type,building:false,x:e.x,y:e.y,at:v.time});

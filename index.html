@@ -26,6 +26,8 @@
         <label class="audio-level"><span>中文语音</span><input type="range" min="0" max="100" step="1" data-audio="voice" aria-label="中文语音音量"><output data-audio-value="voice"></output></label>
         <label class="audio-voice"><span>播报音色</span><select id="audio-voice" aria-label="播报音色"><option value="auto">系统默认中文</option><option value="portable">内置男声电台（合成）</option><option value="portable-female">内置女声电台（合成）</option></select></label>
         <label class="audio-level"><span>战场音效</span><input type="range" min="0" max="100" step="1" data-audio="effects" aria-label="战场音效音量"><output data-audio-value="effects"></output></label>
+        <button id="audio-effects-test" class="secondary-btn" title="试听坦克炮声">试听音效</button>
+        <p id="audio-effects-status" role="status" class="audio-effects-status">枪炮、爆炸与移动声均由战场音效控制</p>
         <button id="audio-test" class="secondary-btn" title="试听中文播报"><i data-lucide="audio-lines"></i>试听中文</button>
       </section>
 

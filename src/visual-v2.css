@@ -139,3 +139,7 @@
   #app:fullscreen .sidebar, #app:-webkit-full-screen .sidebar { flex: 0 0 280px; min-height: 0; }
   #app:fullscreen .sidebar-content, #app:-webkit-full-screen .sidebar-content { height: auto; min-height: 0; max-height: none; }
 }
+
+/* 窄屏横屏也能滚动访问战场音效及试听按钮。 */
+.audio-panel{max-height:calc(100dvh - 82px);overflow-y:auto;overscroll-behavior:contain;max-width:calc(100vw - 24px)}
+.audio-effects-status{font-size:12px;line-height:1.5;color:#a8bbc4;margin:8px 0}

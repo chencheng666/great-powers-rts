@@ -1,3 +1,4 @@
+import { emitBattleSound, weaponSound, impactSound } from './battle-sound.js';
 import { UNITS } from './data.js';
 import { unitLayer, unitRadius } from './unit-spacing.js';
 import { weatherState, hasSignalCover } from './tactical-rules.js';
@@ -192,7 +193,7 @@ export const modernCombat = {
     p.flightRole = airborne(source) ? airborne(target) ? 'air-to-air' : 'air-to-ground' : 'surface';
     if (kind === 'bomb') { p.toX = p.x; p.toY = p.y; p.fallDuration = 1.1; }
     if (style === 'submarine') source.exposedUntil = this.time + 4;
-    this.events.shot?.(style, source.owner);
+    emitBattleSound(this, weaponSound(style, target), source, 'launch', { sourceId: source.id });
     return true;
   },
 
@@ -211,7 +212,7 @@ export const modernCombat = {
       if (d.ammo) defender.ammo--;
       if (defender.type === 'laser') this.laserHeat(defender);
       this.effects.push({ type: 'shot', x: defender.x, y: defender.y, toX: target.x, toY: target.y, sourceType: defender.type, targetType: target.kind === 'wing' ? 'fighter' : 'drone', style: defender.type === 'laser' ? 'laser' : 'aa', owner: defender.owner, age: 0, duration: .2 });
-      this.events.shot?.(defender.type, defender.owner);
+      emitBattleSound(this, defender.type, defender, 'launch', { sourceId: defender.id });
     }
     for (const p of list) {
       if(p.kind==='nuclear'){this.updateNuclearProjectile(p,dt);continue;}
@@ -249,6 +250,7 @@ export const modernCombat = {
             }
           }
         } else if (target?.hp > 0 && !target.embarkedIn && distance(target, { x: p.toX, y: p.toY }) < 45 && (!UNITS[target.type]?.tags.includes('submerged') || this.canSeeEntity(p.owner, target))) hit(target);
+        emitBattleSound(this, impactSound({ type: p.targetType }, p.kind), { x: p.toX, y: p.toY, owner: p.owner }, 'impact');
         this.effects.push({ type: 'explosion', x: p.toX, y: p.toY, targetType: p.targetType, size: p.kind === 'ballistic' ? 85 : p.kind === 'rocket' ? 42 : 24, owner: p.owner, age: 0, duration: p.kind==='ballistic'?1.2:.7 });
         if (p.kind === 'wing' && source?.hp > 0) p.returning = true;
         else this.finishProjectile(p, false);
@@ -262,6 +264,7 @@ export const modernCombat = {
     if (p.finished) return;
     p.finished = true;
     if (intercepted) {
+      emitBattleSound(this, 'intercept', p, 'impact');
       this.effects.push({ type: 'hit', x: p.x, y: p.y, targetType: p.kind === 'wing' ? 'fighter' : 'drone', owner: p.owner, age: 0, duration: .4 });
       if (p.kind === 'wing') {
         const source = this.getEntity(p.sourceId);

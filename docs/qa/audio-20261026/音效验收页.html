@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>音效信号与生命周期验收</title><button id="run">运行音效验收</button><pre id="result"></pre><script type="module">
+import {SOUND_PROFILES,SoundEffects} from '/src/sound-effects.js';
+import {GameAudio} from '/src/audio.js';
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const peak=data=>{let max=0,energy=0;for(const value of data){max=Math.max(max,Math.abs(value));energy+=value*value;}return{peak:max,rms:Math.sqrt(energy/data.length)};};
+document.querySelector('#run').onclick=async()=>{
+ try{
+ const result={profiles:[],lifecycle:[]};
+ for(const style of Object.keys(SOUND_PROFILES)){
+   const offline=new OfflineAudioContext(2,Math.ceil(8000*(SOUND_PROFILES[style].duration+.2)),8000),fx=new SoundEffects(offline,offline.destination);
+   fx.play(style);const rendered=await offline.startRendering();result.profiles.push({style,...peak(rendered.getChannelData(0)),remainingVoices:fx.voices.size});
+ }
+ result.movement=[];
+ for(const kind of ['tracks','wheels','jet','rotor','drone','ship','submerged','robot']){
+ const context=new OfflineAudioContext(2,12000,8000),fx=new SoundEffects(context,context.destination);fx.syncMovement([{kind,level:1,pan:0}]);const rendered=await context.startRendering();result.movement.push({kind,...peak(rendered.getChannelData(0))});
+ }
+ const mix=new OfflineAudioContext(2,32000,8000),mixFX=new SoundEffects(mix,mix.destination);
+ ['rifle','tank','aa','missile','rocket','ballistic','submarine','bomber','carrier','drone','laser','railgun','metalImpact','explosiveImpact','shipDestroyed','buildingDestroyed'].forEach(style=>mixFX.play(style));
+ result.denseMix=peak((await mix.startRendering()).getChannelData(0));
+ const a=new GameAudio();await a.unlock();a.active=true;a.setSettings({music:0,voice:0,muted:false,master:.75,effects:.5});
+ const ctx=a.context,analyser=ctx.createAnalyser();a.effectsBus.connect(analyser);
+ const state=name=>result.lifecycle.push({name,voices:a.soundEffects.voices.size,loops:a.soundEffects.loops.size,paused:a.paused});
+ a.soundEffects.syncMovement([{kind:'rotor',level:.6,pan:0},{kind:'tracks',level:.6,pan:0}]);a.shot('tank');state('运行中');
+ a.setPaused(true);state('暂停清理');a.setPaused(false);
+ a.soundEffects.syncMovement([{kind:'ship',level:.6,pan:0}]);a.setSettings({muted:true});state('静音清理');result.mutedShot=a.shot('tank');
+ a.setSettings({muted:false});a.soundEffects.syncMovement([{kind:'jet',level:.6,pan:0}]);a.setSettings({effects:0});state('音效零清理');result.zeroShot=a.shot('tank');
+ a.setSettings({effects:.5});result.restoredShot=a.shot('tank');state('恢复播放');a.stopBattle();state('离开清理');
+ await wait(250);const data=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(data);result.afterCleanup=peak(data);await ctx.close();
+ result.pass=result.movement.every(p=>p.peak>0&&p.peak<1)&&result.profiles.every(p=>p.peak>0&&p.peak<1&&p.remainingVoices===0)&&result.denseMix.peak<1&&result.lifecycle.filter(s=>s.name.includes('清理')).every(s=>s.voices===0&&s.loops===0)&&result.mutedShot===false&&result.zeroShot===false&&result.restoredShot===true&&result.afterCleanup.peak===0;
+ window.result=result;document.querySelector('#result').textContent=JSON.stringify(result,null,2);
+ }catch(error){window.result={error:String(error)};document.querySelector('#result').textContent=error.stack;}
+};
+</script>

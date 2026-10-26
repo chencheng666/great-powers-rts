@@ -1115,6 +1115,7 @@ export class Renderer {
     });
     const current = new Set(this.game.effects);
     for (const effect of this.game.effects) {
+      if (effect.type === 'sound') continue;
       const source = effect.type === 'sonar' ? this.game.getEntity(effect.sourceId) : null;
       const visible = effect.type==='nuclearBlast'||this.game.isVisibleFor(0, effect.x, effect.y) && (effect.type !== 'sonar' || effect.owner === 0 || source && this.game.canSeeEntity(0, source));
       if (this.effects.has(effect)) this.effects.get(effect).visible = !!visible;

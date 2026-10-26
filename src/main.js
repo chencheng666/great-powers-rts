@@ -223,8 +223,8 @@ function toast(message, danger = false) {
   while (container.children.length > 3) container.firstElementChild.remove();
 }
 
-function beep(style, owner = 0) {
-  gameAudio.shot(style, owner);
+function beep(style, owner = 0, point = null) {
+  gameAudio.shot(style, owner, point);
 }
 
 async function startGame(save = null, onlinePayload = null) {
@@ -352,6 +352,7 @@ function advanceFrame(now, token) {
     const edge = 16, dx = x < edge ? -1 : x > width - edge ? 1 : 0, dy = y < edge ? -1 : y > height - edge ? 1 : 0;
     if (dx || dy) state.renderer.pan(dx * 450 * dt, dy * 450 * dt);
   }
+  gameAudio.listener = state.renderer;
   state.game.update(dt);
   if (!state.game.online && state.game.running && !state.game.paused && state.game.time >= state.nextAutoAt) {
     saveProgress('auto', false); state.nextAutoAt = state.game.time + 45;
@@ -360,6 +361,7 @@ function advanceFrame(now, token) {
   // 按当前威胁状态同步，而非依赖解说事件；读档、重连和重复快照都不会漏报或叠音。
   gameAudio.syncNuclearWarnings(state.game.running ? state.game.nuclearWarnings() : []);
   state.renderer.render(now);
+  gameAudio.syncBattle(state.game, state.renderer, dt);
   updateBuildingInspector(now);
   $('#zoom-level').textContent = `${Math.round(state.renderer.camera.zoom * 100)}%`;
   $('#battle-view-btn').setAttribute('aria-pressed', String(state.renderer.viewMode === 'immersive'));
@@ -1129,6 +1131,9 @@ function setupControls() {
   });
   $('#audio-close').addEventListener('click', () => { $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false'); });
   $('#audio-test').addEventListener('click', () => { gameAudio.unlock().then(ok => { if (ok) gameAudio.say('welcome', { preview: true }); }).catch(() => {}); });
+  $('#audio-effects-test').addEventListener('click', async () => {
+    $('#audio-effects-status').textContent = await gameAudio.previewEffects();
+  });
   $('#audio-voice').addEventListener('change', event => { gameAudio.setSettings({ voiceURI: event.target.value }); });
   window.speechSynthesis?.addEventListener('voiceschanged', updateVoiceOptions);
   $('#audio-muted').addEventListener('change', event => { gameAudio.setSettings({ muted: event.target.checked }); updateAudioControls(); });
@@ -1182,6 +1187,7 @@ function setupControls() {
     else if (action === 'discard-menu') returnToMenu();
   });
   document.addEventListener('visibilitychange', () => {
+    gameAudio.setPaused(document.hidden || !!state.game?.paused);
     if (document.hidden && state.game?.running && !state.game.online) {
       saveProgress('auto', false); state.game.paused = true; gameAudio.setPaused(true);
       $('#pause-btn').innerHTML = icon('play'); refreshIcons();

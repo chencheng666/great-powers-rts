@@ -1,3 +1,4 @@
+import { emitBattleSound } from './battle-sound.js';
 import { BUILDINGS, UNITS } from './data.js';
 import { lunarBuildingProfile } from './lunar-robots.js';
 import { RESOURCE_TYPES } from './battlefield-expansion.js';
@@ -23,8 +24,8 @@ export const intelligenceCombat={
   },
   updateIntelligence(dt) {
     for(const b of this.buildings)if(b.hp>0&&b.sabotage&&b.sabotage.detonateAt<=this.time){
-      const owner=b.sabotage.owner;delete b.sabotage;this.damage(b,b.maxHp,owner);
-      this.events.shot?.('sabotageBlast',owner);
+      const owner=b.sabotage.owner;delete b.sabotage;this.damage(b,b.maxHp,owner,'sabotageBlast');
+      if(b.hp>0)emitBattleSound(this, 'sabotageBlast', { ...b, owner }, 'impact');
       if(b.hp>0)this.effects.push({type:'explosion',style:'sabotageBlast',x:b.x,y:b.y,targetType:b.type,size:b.size,age:0,duration:1.2,owner});
       this.events.notice?.(`${lunarBuildingProfile(this.map.future,b.type,BUILDINGS[b.type]).name}定时破坏已引爆`);
     }

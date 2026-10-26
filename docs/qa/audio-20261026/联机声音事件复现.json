@@ -1,0 +1,82 @@
+[
+  {
+    "type": "rifle",
+    "projectiles": 0,
+    "effects": [
+      {
+        "type": "shot",
+        "style": "rifle"
+      },
+      {
+        "type": "hit",
+        "style": "rifle"
+      }
+    ],
+    "sounds": [
+      [
+        "rifle",
+        0
+      ]
+    ]
+  },
+  {
+    "type": "tank",
+    "projectiles": 0,
+    "effects": [
+      {
+        "type": "shot",
+        "style": "tank"
+      },
+      {
+        "type": "hit",
+        "style": "tank"
+      }
+    ],
+    "sounds": [
+      [
+        "tank",
+        0
+      ]
+    ]
+  },
+  {
+    "type": "fighter",
+    "projectiles": 1,
+    "effects": [],
+    "sounds": [],
+    "afterImpactSounds": [],
+    "impactEffects": [
+      "explosion"
+    ]
+  },
+  {
+    "type": "rocket",
+    "projectiles": 1,
+    "effects": [],
+    "sounds": [],
+    "afterImpactSounds": [],
+    "impactEffects": [
+      "explosion"
+    ]
+  },
+  {
+    "type": "submarine",
+    "projectiles": 1,
+    "effects": [],
+    "sounds": [],
+    "afterImpactSounds": [],
+    "impactEffects": [
+      "explosion"
+    ]
+  },
+  {
+    "type": "bomber",
+    "projectiles": 1,
+    "effects": [],
+    "sounds": [],
+    "afterImpactSounds": [],
+    "impactEffects": [
+      "explosion"
+    ]
+  }
+]

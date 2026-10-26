@@ -1,3 +1,4 @@
+import { emitBattleSound, weaponSound, impactSound, destructionSound } from './battle-sound.js';
 import {sixPoint} from './six-player-map.js';
 import PF from 'pathfinding';
 import { createBattleId, legacyBattleId } from './battle-identity.js';
@@ -990,7 +991,8 @@ export class Game {
         this.effects.push({ type: 'hit', x: nearby.x, y: nearby.y, targetType: nearby.type, age: 0, duration: .3, owner: source.owner, style: 'aa' });
       }
     }
-    this.events.shot?.(style, source.owner);
+    emitBattleSound(this, weaponSound(style, target), source, 'launch', { sourceId: source.id });
+    emitBattleSound(this, impactSound(target), { x: target.x, y: target.y, owner: source.owner }, 'impact');
   }
 
   applyHit(hit) {
@@ -999,7 +1001,7 @@ export class Game {
     if (hit.stun && hit.target.hp > 0) hit.target.stunUntil = Math.max(hit.target.stunUntil || 0, this.time + hit.stun);
   }
 
-  damage(target, amount, attackerSide) {
+  damage(target, amount, attackerSide, soundStyle = null) {
     if (target.hp <= 0 || !Number.isFinite(amount) || amount <= 0) return;
     if (this.players[target.owner].shieldUntil > this.time) amount *= 0.48;
     if (target.kind === 'building' && this.players[target.owner].faction === 'china' && target.type === 'turret') amount *= 0.85;
@@ -1029,6 +1031,7 @@ export class Game {
         recordBattleEvent(this,{kind:'intercepted',owner:target.owner,type:target.type,value:target.freight.value});
         if (target.owner === 0) this.events.notice?.(`后勤运输被截断，损失 ${target.freight.value} 待交付物资`);
       }
+      emitBattleSound(this, soundStyle || destructionSound(target), { x: target.x, y: target.y, owner: attackerSide }, 'destroy');
       this.effects.push({ type: 'explosion', x: target.x, y: target.y, targetType: target.type, age: 0, duration: 1.2, owner: attackerSide, size: target.kind === 'building' ? target.size : 40 });
       if (target.owner === 0) this.events.notice?.(`${target.kind === 'building' ? lunarBuildingProfile(this.map.future, target.type, BUILDINGS[target.type]).name : equipmentProfile(this.players[0].faction, target.type, this.map.future).name}已损毁`);
       if (target.owner === 0) this.events.voice?.(target.kind === 'building' ? 'buildingLost' : 'unitLost');

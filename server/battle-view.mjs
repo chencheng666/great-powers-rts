@@ -55,6 +55,6 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
     players, units: entities.map(entityView), buildings: [...game.ownedBuildings(side).map(entityView), ...[...memory].filter(([id]) => typeof id === 'number').map(([, b]) => copy(b))],
     ore: sites('ore'), oil: sites('oil'), beacons: sites('beacons'), resourceSites: sites('resourceSites'), fog: packFog(game.fogs[side]),
     projectiles: game.projectiles.filter(p => p.kind==='nuclear'||game.isVisibleFor(side, p.x, p.y) && game.isVisibleFor(side, p.toX, p.toY)).map(p => ({ ...copy(p), startX:game.isVisibleFor(side,p.startX,p.startY)?p.startX:p.x,startY:game.isVisibleFor(side,p.startX,p.startY)?p.startY:p.y,owner: owner(p.owner), targetId: null, sourceId: null })),
-    effects: game.effects.filter(e => e.type==='nuclearBlast'||game.isVisibleFor(side, e.x, e.y) && (!Number.isFinite(e.toX) || game.isVisibleFor(side, e.toX, e.toY))).map(e => ({ ...copy(e), owner: owner(e.owner) }))
+    effects: game.effects.filter(e => e.type==='nuclearBlast'||e.type==='sound'&&e.global||game.isVisibleFor(side, e.x, e.y) && (!Number.isFinite(e.toX) || game.isVisibleFor(side, e.toX, e.toY)) && (e.type!=='sound'||!e.sourceId||!game.getEntity(e.sourceId)||game.canSeeEntity(side,game.getEntity(e.sourceId)))).map(e => ({ ...copy(e), owner: owner(e.owner) }))
   };
 }

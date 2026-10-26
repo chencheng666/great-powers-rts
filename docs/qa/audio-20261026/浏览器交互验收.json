@@ -1,0 +1,43 @@
+{
+  "moving": {
+    "loops": [
+      "tracks"
+    ],
+    "time": 0.1665
+  },
+  "stopped": {
+    "loops": [],
+    "time": 0.5080999999999988
+  },
+  "effectsZero": {
+    "effects": 0,
+    "voices": 0,
+    "status": "请先取消静音，并调高总音量和战场音效"
+  },
+  "muted": {
+    "muted": true,
+    "voices": 0,
+    "status": "请先取消静音，并调高总音量和战场音效"
+  },
+  "pausedPreview": {
+    "paused": true,
+    "audioPaused": true,
+    "peak": 0.17270243167877197,
+    "context": "running",
+    "status": "正在试听坦克炮声；战场音效由独立滑条控制"
+  },
+  "landscape": {
+    "width": 844,
+    "height": 390,
+    "panel": {
+      "x": 535,
+      "y": 64,
+      "width": 294,
+      "height": 308,
+      "bottom": 372
+    },
+    "scrollHeight": 451,
+    "clientHeight": 306,
+    "scrollTop": 144.5
+  }
+}
