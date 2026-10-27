@@ -33,7 +33,7 @@ DESKTOP
 python3 - "$base/info" "$appid" "$version" "$arch" <<'PY'
 import json,sys
 path,appid,version,arch=sys.argv[1:]
-info={'appid':appid,'name':'大国崛起','version':version,'arch':[arch],'permissions':{'autostart':False,'notification':False,'trayicon':False,'clipboard':False,'account':False,'bluetooth':False,'camera':False,'audio_record':False,'installed_apps':False}}
+info={'appid':appid,'name':'大国崛起','version':version,'arch':[arch],'permissions':{'autostart':False,'notification':False,'trayicon':False,'clipboard':False,'account':False,'bluetooth':False,'camera':False,'audio_record':False,'installed_apps':False},'support-plugins':[],'plugins':[]}
 with open(path,'w',encoding='utf-8') as f: json.dump(info,f,ensure_ascii=False,indent=2);f.write('\n')
 PY
 depends=$(dpkg-deb -f "$source_deb" Depends)
