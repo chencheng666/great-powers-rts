@@ -1,0 +1,51 @@
+name: 统信商店候选包
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/uos-store-20261027']
+permissions:
+  contents: read
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      - name: 安装构建依赖
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev
+      - run: npm ci --registry=https://registry.npmjs.org
+      - name: 构建桌面安装包
+        run: npx tauri build --target '${{ matrix.target }}' --bundles deb -- --locked
+      - name: 转换为统信候选包并静态校验
+        shell: bash
+        run: |
+          mapfile -t packages < <(find 'src-tauri/target/${{ matrix.target }}/release/bundle/deb' -maxdepth 1 -name '*.deb' -type f)
+          test "${#packages[@]}" -eq 1
+          scripts/package-uos-store.sh "${packages[0]}" "$RUNNER_TEMP/uos-store"
+          for file in "$RUNNER_TEMP"/uos-store/*.deb; do
+            dpkg-deb -c "$file" | awk 'NR > 1 && $6 !~ /^\.\/opt\// {exit 1}'
+            test -z "$(dpkg-deb --ctrl-tarfile "$file" | tar -tf - | grep -E '(^|/)(postinst|preinst|prerm|postrm)$' || true)"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uos-store-${{ matrix.target }}
+          path: ${{ runner.temp }}/uos-store/
+          if-no-files-found: error
+          retention-days: 14
