@@ -11,6 +11,69 @@
       "status": "坦克碾压、飞机停放滑行、双旋翼运输机；联网时统计匿名游玩时长，断网仍可单机。完整解压后打开 PLAY.html。"
     },
     {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.1/Great.Powers_2.0.1_aarch64.app.tar.gz",
+      "label": "2.0.1 · macOS Apple Silicon · Great.Powers_2.0.1_aarch64.app.tar.gz",
+      "size": 94581067,
+      "sha256": "e3d4a18d2b3c6059c9e54119b048732311f2f2287870ed10a973425f9a331539",
+      "status": "CI构建通过，大小与 SHA256 来自 GitHub 发行 API；未在全部对应硬件实测，Mac 未公证、Windows 未签名。联网时统计匿名游玩时长。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.1/Great.Powers_2.0.1_aarch64.AppImage",
+      "label": "2.0.1 · Linux ARM64 · Great.Powers_2.0.1_aarch64.AppImage",
+      "size": 171129352,
+      "sha256": "34983dcd113a5fd91620d4336d623e701e2220c1124e397d4fbb9b65aa8450b7",
+      "status": "CI构建通过，大小与 SHA256 来自 GitHub 发行 API；未在全部对应硬件实测，Mac 未公证、Windows 未签名。联网时统计匿名游玩时长。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.1/Great.Powers_2.0.1_aarch64.dmg",
+      "label": "2.0.1 · macOS Apple Silicon · Great.Powers_2.0.1_aarch64.dmg",
+      "size": 94663375,
+      "sha256": "1b31f0e5091a65d4d32a35ac6d880b18ed0c7176026c8bf305ce866ee98c6bc6",
+      "status": "CI构建通过，大小与 SHA256 来自 GitHub 发行 API；未在全部对应硬件实测，Mac 未公证、Windows 未签名。联网时统计匿名游玩时长。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.1/Great.Powers_2.0.1_amd64.AppImage",
+      "label": "2.0.1 · Linux x64 · Great.Powers_2.0.1_amd64.AppImage",
+      "size": 172964344,
+      "sha256": "c495cc589e3cd137159aff7130b1735fa78301b0c8fb00dc690d23e83eb331c6",
+      "status": "CI构建通过，大小与 SHA256 来自 GitHub 发行 API；未在全部对应硬件实测，Mac 未公证、Windows 未签名。联网时统计匿名游玩时长。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.1/Great.Powers_2.0.1_amd64.deb",
+      "label": "2.0.1 · Linux x64 · Great.Powers_2.0.1_amd64.deb",
+      "size": 94594316,
+      "sha256": "e14d23d87ba4b9bbfb63015bdfc3f181647398387396fa4c781d92fe1c79a5b5",
+      "status": "CI构建通过，大小与 SHA256 来自 GitHub 发行 API；未在全部对应硬件实测，Mac 未公证、Windows 未签名。联网时统计匿名游玩时长。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.1/Great.Powers_2.0.1_arm64.deb",
+      "label": "2.0.1 · Linux ARM64 · Great.Powers_2.0.1_arm64.deb",
+      "size": 94637112,
+      "sha256": "0418b3befe3faae305f12626251929b77c4d0ae86b420ae6864ec5a753de6bb3",
+      "status": "CI构建通过，大小与 SHA256 来自 GitHub 发行 API；未在全部对应硬件实测，Mac 未公证、Windows 未签名。联网时统计匿名游玩时长。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.1/Great.Powers_2.0.1_x64-setup.exe",
+      "label": "2.0.1 · Windows x64 · Great.Powers_2.0.1_x64-setup.exe",
+      "size": 311723508,
+      "sha256": "d6bcedaa360a84d41414437c44cc54eff33ab05805f1ab871fea80ff8d4ee3ed",
+      "status": "CI构建通过，大小与 SHA256 来自 GitHub 发行 API；未在全部对应硬件实测，Mac 未公证、Windows 未签名。联网时统计匿名游玩时长。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.1/Great.Powers_2.0.1_x64.app.tar.gz",
+      "label": "2.0.1 · macOS Intel · Great.Powers_2.0.1_x64.app.tar.gz",
+      "size": 95320573,
+      "sha256": "42aac3fc00ec9d0476b49ff95aa7addb3cf698e43f9cecb8c78ad938a10a6154",
+      "status": "CI构建通过，大小与 SHA256 来自 GitHub 发行 API；未在全部对应硬件实测，Mac 未公证、Windows 未签名。联网时统计匿名游玩时长。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.1/Great.Powers_2.0.1_x64.dmg",
+      "label": "2.0.1 · macOS Intel · Great.Powers_2.0.1_x64.dmg",
+      "size": 95404177,
+      "sha256": "71879cbafe1128c5db8c137237bc31c8ec0c16a9ccec746841e19f8f54fedabb",
+      "status": "CI构建通过，大小与 SHA256 来自 GitHub 发行 API；未在全部对应硬件实测，Mac 未公证、Windows 未签名。联网时统计匿名游玩时长。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.0-20261027.zip",
       "label": "2.0.0 · 10月27日粉丝清单修复 · 历史免安装单机 ZIP",
       "size": 69753898,
@@ -166,7 +229,7 @@
     }
   ],
   "webReleaseTag": "v2.0.1",
-  "updatedAt": "2026-10-27T02:11:50.053708+00:00",
+  "updatedAt": "2026-10-27T02:38:30.938483+00:00",
   "archiveTags": [
     "v1.3.1",
     "v2.0.0"
