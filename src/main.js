@@ -1272,7 +1272,7 @@ function updateVoiceOptions() {
   if (select.selectedIndex < 0) select.value = 'auto';
 }
 
-const playerTelemetry=new PlayerTelemetry({version:`${GAME_VERSION}+${BUILD_ID}`,getGame:()=>state.game});
+const playerTelemetry=new PlayerTelemetry({version:`${GAME_VERSION}+${BUILD_ID}`,desktop:isDesktop(),getGame:()=>state.game});
 const onlineClient=new OnlineClient({
   onIdentity:name=>playerTelemetry.identify(name),
   refreshIcons, prepare:()=>Renderer.prepare(),onNotice:toast,
@@ -1307,3 +1307,4 @@ async function importDesktopOrWeb() {
  try { const text = await desktopInvoke('desktop_import'); if (!text) return; const save = parseSave(text); if (state.game?.running && !saveProgress('auto', true)) return; await startGame(save); } catch (e) { toast(String(e), true); }
 }
 desktopNotice();
+if (location.protocol === 'file:' || isDesktop()) $('#offline-telemetry-note').hidden = false;

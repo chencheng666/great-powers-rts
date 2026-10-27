@@ -67,7 +67,7 @@ export function formationOffsets(units, target) {
   return result;
 }
 
-export function separateUnits(units, dt, canMove, time = 0) {
+export function separateUnits(units, dt, canMove, time = 0, canOverlap = () => false) {
   const live = units.filter(unit => unit.hp > 0 && !unit.embarkedIn).sort((a, b) => a.id - b.id);
   const shift = (unit, dx, dy) => {
     const point = { x: unit.x + dx, y: unit.y + dy };
@@ -79,7 +79,7 @@ export function separateUnits(units, dt, canMove, time = 0) {
   for (let pass = 0; pass < 3; pass++) {
     const index = new UnitSpatialIndex(live);
     for (const a of live) for (const b of index.nearby(a)) {
-      if (a.id >= b.id) continue;
+      if (a.id >= b.id || canOverlap(a, b) || canOverlap(b, a)) continue;
       let dx = b.x - a.x, dy = b.y - a.y, distance = Math.hypot(dx, dy);
       const minimum = unitRadius(a) + unitRadius(b) + 2;
       if (distance >= minimum - .01) continue;

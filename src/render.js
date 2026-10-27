@@ -803,7 +803,7 @@ export class Renderer {
     this.wrecks = this.wrecks.filter(wreck => {
       const age = this.game.time - wreck.start;
       if (wreck.aircraft) {
-        const rotor = UNITS[wreck.type].tags.includes('rotorcraft'), pose = aircraftCrashPose(age, wreck.baseY, wreck.heading, wreck.seed, rotor);
+        const rotor = UNITS[wreck.type].tags.includes('rotorcraft') || !this.game.map.future && this.game.players[wreck.owner]?.faction === 'nato' && ['airlift','freightPlane'].includes(wreck.type), pose = aircraftCrashPose(age, wreck.baseY, wreck.heading, wreck.seed, rotor);
         const x = Math.max(18, Math.min(this.world.width - 18, wreck.x + pose.x)), y = Math.max(18, Math.min(this.world.height - 18, wreck.y + pose.y));
         const water = !!this.game.map.water && !this.game.isNavalBlocked(x, y, 0), floor = water ? 2 : this.elevation(x, y) + 2;
         wreck.model.visible = this.game.isVisibleFor(0, x, y);
@@ -932,7 +932,8 @@ export class Renderer {
             : shotAim ? weaponElevation(Math.hypot(shotAim.toX - entity.x, shotAim.toY - entity.y), targetTags.includes('jet') ? 95 : targetTags.includes('drone') ? 23 : 0) : 0;
           animation.aimPitch += (aimPitch - animation.aimPitch) * (1 - Math.exp(-dt * 9));
         }
-        if (tags.includes('jet')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x, entity.y) + 4 : 95 * (entity.deployment ? Math.min(1, (this.game.time - entity.deployment.start) / 2.6) : 1) + Math.sin(now * .001 + entity.id) * 2;
+        if (entry.model.userData.tandemRotors) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x,entity.y)+4 : 45+Math.sin(this.game.time*2+entity.id);
+        else if (tags.includes('jet')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x, entity.y) + 4 : 95 * (entity.deployment ? Math.min(1, (this.game.time - entity.deployment.start) / 2.6) : 1) + Math.sin(now * .001 + entity.id) * 2;
         if (entity.deckApproach) height = 15 + 80 * Math.max(0, (entity.deckApproach.until - this.game.time) / 2.4);
         if (entity.embarkedIn) height = 15;
         else if (tags.includes('drone')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x, entity.y) + 4 : 23 + Math.sin(this.game.time * 3 + entity.id) * 1.5;
@@ -1013,7 +1014,7 @@ export class Renderer {
       animateFacility(entry.model, entity, this.game);
       entry.model.position.set(entity.x, height, entity.y);
       if (entry.airShadow) {
-        const ground = this.elevation(entity.x, entity.y), rotor = UNITS[entity.type].tags.includes('rotorcraft');
+        const ground = this.elevation(entity.x, entity.y), rotor = UNITS[entity.type].tags.includes('rotorcraft') || entry.model.userData.tandemRotors;
         const opacity = aircraftShadowOpacity(height - ground, rotor);
         entry.airShadow.visible = visible && !entity.embarkedIn && opacity > .005;
         entry.airShadow.material.opacity = opacity; entry.airShadow.position.set(entity.x, Math.max(2.2, ground + .3), entity.y);
@@ -1031,7 +1032,7 @@ export class Renderer {
         parked.forEach((plane, i) => {
           let mesh = entry.deckModels.get(plane.id);
           if (!mesh) { mesh = createModel(equipmentModel(this.game.players[entity.owner].faction, plane.type), teamVisual(entity.owner).color); mesh.scale.setScalar(.3); entry.model.add(mesh); entry.deckModels.set(plane.id, mesh); }
-          mesh.position.set(-8 + i * 4.1, 1.3, -1.3);
+          mesh.position.set(-8 + i * 4.1, 1.3, -1.3); mesh.rotation.y = Math.PI / 4;
         });
       }
       if(entity.type==='landing'&&entity.owner===0){

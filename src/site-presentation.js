@@ -15,6 +15,10 @@ export function sceneryClearance(point, buildings, units = [], foliage = false, 
   const radius = sceneryFootprint(point, foliage);
   if (buildings.some(b => {
     if(b.hp<=0)return false;
+    if (b.type === 'airfield') {
+      const scale = b.size / 7.2, dx = point.x - b.x, dz = point.z - b.y;
+      if (Math.abs(dx) <= 7.2 * scale + radius && dz >= 1 * scale - radius && dz <= 13.6 * scale + radius) return true;
+    }
     if(b.type==='dock'){
       const scale=b.size/7.2,angle=b.harborAngle??(worldWidth?(b.x<worldWidth/2?0:Math.PI):(b.owner?Math.PI:0)),dx=point.x-b.x,dz=point.z-b.y;
       const x=dx*Math.cos(angle)+dz*Math.sin(angle),z=-dx*Math.sin(angle)+dz*Math.cos(angle);

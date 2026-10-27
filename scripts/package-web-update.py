@@ -3,7 +3,7 @@
 from pathlib import Path
 import hashlib,json,re,subprocess,tarfile
 root=Path(__file__).resolve().parent.parent
-out=root/'releases/fan-bugs-20261027';out.mkdir(parents=True,exist_ok=True)
+out=root/'releases/fan-followup-20261027';out.mkdir(parents=True,exist_ok=True)
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
 commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
 build=re.search("BUILD_ID = '([^']+)'",(root/'src/version.js').read_text())[1]
@@ -21,7 +21,7 @@ for p in (root/'dist').rglob('*'):
     if str(rel).startswith('official/assets/') and not p.name.startswith('battle-montage'):continue
     if str(rel).startswith('assets/') and p.suffix in ['.glb','.wav','.mp3','.m4a','.png','.jpeg','.jpg'] and 'battle-montage' not in p.name:continue
     paths.append(p)
-archive=out/'great-powers-web-20261027.tar.gz'
+archive=out/'great-powers-web-2.0.1-20261027.tar.gz'
 with tarfile.open(archive,'w:gz') as tar:
     for p in sorted(set(paths)):tar.add(p,arcname=str(p.relative_to(root)),recursive=False)
 report={'sourceCommit':commit,'build':build,'archive':str(archive),'bytes':archive.stat().st_size,'sha256':sha(archive),'entries':len(paths),'requiredAssets':len(assets)}

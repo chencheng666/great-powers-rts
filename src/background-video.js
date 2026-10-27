@@ -3,7 +3,7 @@ const poster = new URL('../assets/videos/battle-montage-poster-20261026.jpg', im
 export function setupMenuVideo() {
   const video = document.querySelector('#menu-background-video'), button = document.querySelector('#menu-video-toggle'), menu = document.querySelector('#start-screen');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  let stopped = reduced.matches || !!navigator.connection?.saveData;
+  let stopped = reduced.matches || !!navigator.connection?.saveData || /(^|-)2g$/.test(navigator.connection?.effectiveType || '');
   video.poster = poster; video.muted = true;
   function sync() {
     button.textContent = stopped ? '播放实机背景' : '暂停实机背景';

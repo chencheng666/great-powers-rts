@@ -103,12 +103,24 @@ function environment(protocol = 'https:') {
   const e = { location: { protocol, pathname: '/play/' }, document: { hidden: false, addEventListener: (key, fn) => handlers.set(key, fn), removeEventListener() {} }, crypto: { randomUUID: () => 'client-session-0001' }, setInterval: () => 1, clearInterval() {}, addEventListener: (key, fn) => handlers.set(key, fn), removeEventListener() {}, fetch: async (_, options) => { requests.push(JSON.parse(options.body)); return { ok: true }; }, navigator: { sendBeacon: () => false } };
   return { e, requests, handlers };
 }
-test('客户端只累计前台未暂停的实时时长，暂停、离开会冲刷最后一段，离线不请求', async () => {
+test('客户端只累计前台未暂停的实时时长，暂停和离开会冲刷最后一段，ZIP尝试联网统计', async () => {
   const { e, requests } = environment(); let now = 0;
   const game = { running: true, paused: false, battleId: 'client-battle-0001', mapId: 'valley', players: [{ faction: 'china' }] }, client = new PlayerTelemetry({ version: '2.0.0', environment: e, now: () => now });
   client.identify('小王'); client.tick(game); now += 500; client.tick(game); assert.equal(client.activeMs, 500);
   game.paused = true; now += 100; client.tick(game); now += 10000; client.tick(game); assert.equal(client.activeMs, 600);
   game.paused = false; client.tick(game); now += 200; client.tick(game); e.document.hidden = true; now += 100; client.tick(game); now += 20000; client.tick(game); assert.equal(client.activeMs, 900);
   client.tick(null); await client.flush(); assert.ok(requests.some(r => r.context?.battleId === game.battleId && r.activeMs === 900)); assert.equal(requests.at(-1).context, null); client.destroy();
-  const offline = environment('file:'); new PlayerTelemetry({ environment: offline.e, version: '2.0.0' }).identify('离线'); assert.equal(offline.requests.length, 0);
+  const offline = environment('file:'); const offlineClient = new PlayerTelemetry({ environment: offline.e, version: '2.0.1' }); offlineClient.identify('离线'); await offlineClient.flush(); assert.ok(offline.requests.some(r=>r.entry==='zip')); offlineClient.destroy();
+});
+test('离线页面与桌面包联网时独立记录有效游玩时长，匿名令牌不可接管，跨域只开放统计接口',async t=>{
+ const directory=mkdtempSync(join(tmpdir(),'gp-offline-')),app=createBattleServer({directory,root:resolve('public')});let now=Date.now();app.analytics.clock=()=>now;
+ await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(async()=>{await new Promise(r=>app.server.close(r));rmSync(directory,{recursive:true,force:true});});const root=`http://127.0.0.1:${app.server.address().port}`;
+ const post=(origin,data)=>fetch(root+'/api/external-telemetry',{method:'POST',headers:{Origin:origin,'Content-Type':'text/plain'},body:JSON.stringify(data)});
+ const first={sessionId:'zip-session-test1',seq:1,activeMs:0,entry:'zip',version:'2.0.1',context:context(),playing:true};
+ assert.equal((await post('https://other.example',first)).status,403);
+ const response=await post('null',first);assert.equal(response.status,200);assert.equal(response.headers.get('access-control-allow-origin'),'null');const token=(await response.json()).token;assert.match(token,/^[a-f0-9]{64}$/);
+ now+=15000;assert.equal((await post('null',{...first,seq:2,activeMs:15000,token})).status,200);assert.equal(app.analytics.report().packages.find(x=>x.label==='zip').ms,15000);
+ assert.equal((await post('null',{...first,seq:3,activeMs:16000,token:'f'.repeat(64)})).status,400);
+ const desktop=await post('tauri://localhost',{...first,sessionId:'desktop-session-1',entry:'desktop'});assert.equal(desktop.status,200);assert.ok(app.analytics.report().packages.some(x=>x.label==='desktop'));
+ assert.equal((await fetch(root+'/api/admin/status',{headers:{Origin:'null'}})).status,401);
 });

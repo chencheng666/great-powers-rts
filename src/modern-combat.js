@@ -1,4 +1,5 @@
 import { unlimitedAmmo } from './commander-sandbox.js';
+import { airfieldParking } from './airfield-rules.js';
 import { emitBattleSound, weaponSound, impactSound } from './battle-sound.js';
 import { UNITS } from './data.js';
 import { unitLayer, unitRadius } from './unit-spacing.js';
@@ -31,6 +32,9 @@ export const modernCombat = {
   },
 
   aircraftGrounded(u) {
+    if (!UNITS[u.type]?.tags.includes('air')) return false;
+    if (this.online && typeof u.airfieldGrounded === 'boolean') return u.airfieldGrounded;
+    if (u.airfieldOps && ['taxiIn','parked','taxiOut'].includes(u.airfieldOps.phase) && !u.embarkedIn) return true;
     return !!UNITS[u.type]?.tags.includes('air') && !u.embarkedIn && !u.deployment && !u.deckApproach &&
       !['move', 'attackMove', 'attack', 'patrol', 'board'].includes(u.order?.type) && this.time - (u.lastMovedAt ?? -10) >= .5 &&
       this.aircraftServiceSites(u).some(b => distance(b, u) <= b.size * .55 + 24);
@@ -80,7 +84,7 @@ export const modernCombat = {
   serviceAircraft(u, dt) {
     if(u.swarmParentId)return;
     if (u.hp >= u.maxHp || this.time - (u.lastDamageAt ?? -10) <= 3 || this.time - (u.lastMovedAt ?? -10) < .5 || !this.hasPower(u.owner)) return;
-    const home = this.aircraftServiceSites(u).find(b => distance(b, u) <= b.size * .55 + 30);
+    const home = this.aircraftServiceSites(u).find(b => distance(b, u) <= b.size * .55 + 30 || u.airfieldOps?.phase === 'parked' && u.airfieldOps.homeId === b.id && distance(u, airfieldParking(b,u.airfieldOps.slot)) <= 20);
     if (!home) return;
     const p = this.players[u.owner], repaired = Math.min(22 * dt, u.maxHp - u.hp, p.credits / .3);
     u.hp += repaired; p.credits = Math.max(0, p.credits - repaired * .3); battleMetric(this, u.owner, 'repairHP', repaired);

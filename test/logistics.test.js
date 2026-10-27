@@ -30,7 +30,7 @@ test('飞机返场逐枚付费补弹并修复生命，断电、缺钱和近期�
   const jet = g.addUnit(0, 'fighter', home.x + 75, home.y); jet.hp = 120; jet.ammo = 0; jet.order = { type: 'rearm' }; jet.resumeOrder = { type: 'move', x: 1200, y: 850 };
   const cash = g.players[0].credits;
   advance(g, 14); assert.equal(jet.hp, jet.maxHp); assert.equal(jet.ammo, UNITS.fighter.ammo); assert.ok(g.players[0].credits < cash);
-  assert.ok(jet.x > 1000); assert.equal(jet.resumeOrder, null);
+  advance(g, 11); assert.ok(jet.x > 1000); assert.equal(jet.resumeOrder, null);
   jet.x = home.x + 75; jet.y = home.y; jet.hp = 100; jet.lastMovedAt = -10;
   jet.lastDamageAt = g.time; g.serviceAircraft(jet, 1); assert.equal(jet.hp, 100);
   jet.lastDamageAt = -10; g.players[0].credits = 0; g.serviceAircraft(jet, 1); assert.equal(jet.hp, 100);

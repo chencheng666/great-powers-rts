@@ -40,7 +40,7 @@ export function movementKind(unit, game) {
   if (tags.includes('infantry')) return game.map.future ? 'robot' : 'footsteps';
   if (unit.type === 'submarine') return game.submarineSurfaced(unit) ? 'ship' : 'submerged';
   if (tags.includes('ship')) return 'ship';
-  if (unit.type === 'helicopter') return 'rotor';
+  if (unit.type === 'helicopter' || !game.map.future && game.players?.[unit.owner]?.faction === 'nato' && ['airlift','freightPlane'].includes(unit.type)) return 'rotor';
   if (tags.includes('drone')) return 'drone';
   if (tags.includes('jet')) return 'jet';
   return tags.includes('armor') || unit.type === 'elite' ? 'tracks' : 'wheels';

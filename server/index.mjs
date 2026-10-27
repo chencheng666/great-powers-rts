@@ -1,7 +1,7 @@
 import { PlayerAnalytics } from './player-analytics.mjs';
 import { AdminAccess, playerCSV } from './admin-access.mjs';
 import { createServer } from 'node:http';
-import { stat } from 'node:fs/promises';
+import { stat, readFile } from 'node:fs/promises';
 import { serveFile } from './static-files.mjs';
 import { resolve, sep } from 'node:path';
 import { randomInt } from 'node:crypto';
@@ -67,6 +67,27 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
       if (url.pathname === '/api/health') return json(200, { ok: true, version:GAME_VERSION, build:BUILD_ID, protocol, maxPlayers,rooms: rooms.size, battles: [...rooms.values()].filter(r => r.game?.running).length });
       const secure = origin.startsWith('https:') || extraOrigins.has(req.headers.origin) && req.headers.origin.startsWith('https:');
       const readBody = async () => { let text=''; for await (const chunk of req) { text+=chunk; if(Buffer.byteLength(text)>8192)throw Error('请求过大'); } return JSON.parse(text); };
+      if (url.pathname === '/api/download-counts' && req.method === 'GET') return json(200, { counts: analytics.downloadCounts(), scope: '本站下载跳转次数，自功能启用后累计' });
+      if (url.pathname === '/api/download' && req.method === 'GET') {
+        const key = url.searchParams.get('file'), manifest = JSON.parse(await readFile(resolve(root,'downloads/manifest.json'),'utf8'));
+        const item = manifest.files.find(f => f.name === key); if (!item) return json(404,{error:'下载文件不存在'});
+        const local = /^packages\/[A-Za-z0-9._-]+$/.test(item.name);
+        let destination = local ? `/downloads/${item.name}` : item.name;
+        if (!local) { const target = new URL(item.name); if (target.protocol !== 'https:' || target.hostname !== 'github.com' || !target.pathname.startsWith('/chencheng666/great-powers-rts/releases/download/')) return json(400,{error:'下载地址无效'}); destination = target.href; }
+        analytics.recordDownload(item.name);
+        res.writeHead(302, { Location: destination, 'Cache-Control': 'no-store' }); return res.end();
+      }
+      if (url.pathname === '/api/external-telemetry') {
+        const externalOrigin = req.headers.origin;
+        if (!['null','tauri://localhost','https://tauri.localhost','http://tauri.localhost'].includes(externalOrigin)) return json(403,{error:'请求来源不被允许'});
+        res.setHeader('Access-Control-Allow-Origin', externalOrigin);
+        if (req.method !== 'POST') return json(405,{error:'不支持的请求'});
+        const body = await readBody(), token = typeof body.token === 'string' && /^[a-f0-9]{64}$/.test(body.token) ? body.token : '';
+        const cookie = token ? `gp_analytics=${token}` : '', player = analytics.player(cookie);
+        if (!(player ? telemetryRequests : newVisitors).accept(player?.id || req.socket.remoteAddress)) return json(429,{error:'统计请求过于频繁'});
+        const result = analytics.ingest(body,{cookie,ua:req.headers['user-agent']});
+        return json(200,{ok:true,...(result.token ? {token:result.token} : {})});
+      }
       if (url.pathname === '/api/telemetry') {
         if(req.method!=='POST')return json(405,{error:'不支持的请求'});
         if(!allowed(req))return json(403,{error:'请求来源不被允许'});

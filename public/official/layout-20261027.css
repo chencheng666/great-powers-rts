@@ -1,0 +1,20 @@
+/* 留出更清晰的阅读节奏，窄屏优先保证入口与更新说明可读。 */
+.hero { height: auto; min-height: max(860px, 100svh); max-height: none; align-items: flex-start; }
+.hero-content { max-width: 690px; margin-top: 160px; margin-bottom: 170px; }
+.hero-note { max-width: 610px; padding: 14px 17px; border-left: 2px solid var(--teal); background: #071115a8; color: #d5e1d9; font-size: 12px; line-height: 1.9; }
+.section { padding-top: 130px; padding-bottom: 130px; }
+.section-title { column-gap: clamp(42px, 7vw, 110px); }
+.downloads { gap: 24px; }
+.downloads article { display: flex; flex-direction: column; align-items: flex-start; padding: 38px; }
+.downloads article .button { width: 100%; margin-top: auto; }
+.downloads article > a:not(.button) { margin-top: 15px; }
+@media(max-width: 1050px) { .section { padding-top: 95px; padding-bottom: 95px; } .downloads { gap: 16px; } .downloads article { padding: 24px; } }
+@media(max-width: 700px) {
+  .hero { min-height: 880px; }
+  .hero-content { margin: 132px 6% 150px; }
+  .hero-note { max-width: none; font-size: 11px; padding: 11px 13px; }
+  .hero-actions .button { width: 100%; }
+  .section { padding-top: 72px; padding-bottom: 72px; }
+  .downloads { gap: 18px; }
+  .downloads article .button { max-width: none; }
+}

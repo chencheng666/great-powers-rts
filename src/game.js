@@ -1,3 +1,4 @@
+import { canCrush, crushAlongMove } from './vehicle-crush.js';
 import { updateCarrierDefense } from './carrier-defense.js';
 import { destructionEvent } from './destruction-presentation.js';
 import { applySandbox, sandboxSpeed, unlimitedAmmo, refillSandboxAmmo } from './commander-sandbox.js';
@@ -28,7 +29,7 @@ import { deterrenceCombat } from './deterrence.js';
 import { CHALLENGES, challengeCombat } from './challenges.js';
 import { createLossBreakdown } from './loss-breakdown.js';
 import { aircraftStep, aircraftCanFire, aircraftAttackGoal } from './aircraft-flight.js';
-import { runwayAircraft, airfieldApron } from './airfield-rules.js';
+import { runwayAircraft, airfieldApron, airfieldParking, allocateAirfieldSlot, airfieldDeparture } from './airfield-rules.js';
 import { islandDistance } from './island-map.js';
 import { navalPath, nearestSeaPoint } from './island-navigation.js';
 import { updateIslandCapture } from './island-watch.js';
@@ -564,7 +565,7 @@ export class Game {
     this.collectingMoves = false;
     this.unitIndex = new UnitSpatialIndex(this.units);
     for (const move of this.pendingMoves) if (move.unit.hp > 0) this.moveUnitNow(move.unit, move.goal, move.dt, move.stopDistance);
-    separateUnits(this.units, dt, (unit, point) => this.canOccupyUnit(unit, point), this.time);
+    separateUnits(this.units, dt, (unit, point) => this.canOccupyUnit(unit, point), this.time, (unit, other) => unit.lastMovedAt === this.time && canCrush(unit, other, this));
     this.unitIndex = null;
     for (const hit of this.pendingHits) this.applyHit(hit);
     this.units = this.units.filter(u => u.hp > 0);
@@ -710,6 +711,30 @@ export class Game {
       if (distance(u, u.deployment) > 9 && this.time < u.deployment.until) { this.moveUnit(u, u.deployment, dt, 8); return; }
       u.deployment = null; u.path = []; u.pathTimer = 0;
     }
+    if (u.airfieldOps && runwayAircraft(u.type, this.map.future)) {
+      const ops = u.airfieldOps, home = this.getEntity(ops.homeId);
+      if (!home || home.type !== 'airfield' || home.hp <= 0 || home.owner !== u.owner) u.airfieldOps = null;
+      else {
+        if (ops.phase === 'approach' && u.order?.type !== 'rearm') u.airfieldOps = null;
+        if (ops.phase === 'taxiIn' && u.order?.type !== 'rearm') {
+          if (u.order) ops.phase = 'taxiOut';
+          else {
+            const parking = airfieldParking(home, ops.slot);
+            if (distance(u, parking) > 9) { this.moveUnit(u, parking, dt * .3, 6); return; }
+            ops.phase = 'parked'; u.angle = parking.angle;
+          }
+        }
+        if (ops.phase === 'parked' && u.order && u.order.type !== 'rearm') ops.phase = 'taxiOut';
+        if (ops.phase === 'taxiOut') {
+          const apron = airfieldApron(home);
+          if (distance(u, apron) > 9) { this.moveUnit(u, apron, dt * .3, 6); return; }
+          const exit = airfieldDeparture(home, u.type);
+          u.airfieldOps = null; u.angle = exit.angle;
+          u.deployment = { buildingId: home.id, start: this.time, until: this.time + 3, fromX: u.x, fromY: u.y, x: u.x + exit.forwardX * exit.distance, y: u.y + exit.forwardY * exit.distance };
+          return;
+        }
+      }
+    }
     if (u.temporaryUntil && this.time >= u.temporaryUntil) { u.hp = 0; return; }
     if (FREIGHT_TYPES.includes(u.type)) { this.updateFreight(u, dt); return; }
     this.advanceQueuedOrder(u);
@@ -842,7 +867,22 @@ export class Game {
       else this.cruiseAircraft(u, dt);
       return;
     }
-    const apron = runwayAircraft(u.type, this.map.future) ? airfieldApron(home) : home;
+    let apron = runwayAircraft(u.type, this.map.future) ? airfieldApron(home) : home;
+    if (apron !== home) {
+      if (!u.airfieldOps || u.airfieldOps.homeId !== home.id) {
+        const slot = allocateAirfieldSlot(this, u, home);
+        if (slot === null) { const heading = u.angle + .55; this.moveUnit(u, { x: u.x + Math.cos(heading) * 240, y: u.y + Math.sin(heading) * 240 }, dt, 0); return; }
+        u.airfieldOps = { homeId: home.id, slot, phase: 'approach' };
+      }
+      const ops = u.airfieldOps;
+      if (ops.phase === 'approach' && distance(u, apron) <= 12) ops.phase = 'taxiIn';
+      if (ops.phase === 'taxiIn') {
+        const parking = airfieldParking(home, ops.slot);
+        if (distance(u, parking) > 9) { this.moveUnit(u, parking, dt * .3, 6); return; }
+        ops.phase = 'parked'; u.angle = parking.angle; u.path = []; u.pathTimer = 0;
+      }
+      if (ops.phase === 'parked') { apron = airfieldParking(home, ops.slot); u.angle = apron.angle; }
+    }
     if (distance(u, apron) > (apron === home ? home.size * .55 + 24 : 12)) {
       u.rearmProgress = 0;
       this.moveUnit(u, apron, dt, apron === home ? home.size * .55 + 18 : 8);
@@ -1116,7 +1156,7 @@ export class Game {
       const landing = u.order?.type === 'rearm' && this.aircraftServiceSites(u).some(b => distance(u, airfieldApron(b)) < 260);
       const speedStep = UNITS[u.type].speed * dt * (u.jammedUntil > this.time ? .6 : 1);
       const amount = Math.min(speedStep, Math.max(0, distance(u, goal) - stopDistance));
-      const step = landing ? null : aircraftStep(u, goal, dt, amount, this.world, this.map.future);
+      const step = landing || u.airfieldOps?.phase === 'taxiOut' ? null : aircraftStep(u, goal, dt, amount, this.world, this.map.future);
       if (step) {
         u.x = step.x; u.y = step.y; u.angle = step.heading; u.movePulse += dt * 7; u.lastMovedAt = this.time; u.deployProgress = 0; return;
       }
@@ -1208,6 +1248,7 @@ export class Game {
     // 可见性、碰撞半径与当前间距每帧只计算一次，避免十一条候选方向反复查询。
     const reach = Math.max(amount, Math.min(dist, amount + UNITS[unit.type].speed * .4)), nearby = [];
     for (const other of neighbors) {
+      if (canCrush(unit, other, this)) continue;
       const otherRadius = unitRadius(other), minimum = radius + otherRadius + 4, separation = radius + otherRadius + 2;
       const squared = (unit.x - other.x) ** 2 + (unit.y - other.y) ** 2;
       if (squared > (minimum + reach) ** 2) continue;
@@ -1235,14 +1276,16 @@ export class Game {
     if (!best) return false;
     const chosenTurn=Math.atan2(Math.sin(best.heading-angle),Math.cos(best.heading-angle));
     if(unitLayer(unit)==='ground'&&Math.abs(chosenTurn)>.3&&!(unit.avoidUntil>this.time)){unit.avoidSide=Math.sign(chosenTurn);unit.avoidUntil=this.time+1.25;}
+    const from = { x: unit.x, y: unit.y };
     unit.x = best.x; unit.y = best.y; unit.angle = best.heading; unit.movePulse += dt * 7;
+    crushAlongMove(this, unit, from, best, neighbors);
     unit.lastMovedAt = this.time; unit.deployProgress = 0;
     return true;
   }
 
   findPath(u, goal, stopDistance, obstacles = []) {
     // 把整片已知驻军纳入路线，避免只绕眼前一辆车后又撞上下一排。
-    const parked = this.units.filter(v => v !== u && v.hp > 0 && !v.embarkedIn && unitLayer(v) === 'ground' && (!v.order || v.order.type === 'rearm') && distance(v, u) < 900 && (v.owner === u.owner || this.canSeeEntity(u.owner, v)));
+    const parked = this.units.filter(v => !canCrush(u, v, this) && v !== u && v.hp > 0 && !v.embarkedIn && unitLayer(v) === 'ground' && (!v.order || v.order.type === 'rearm') && distance(v, u) < 900 && (v.owner === u.owner || this.canSeeEntity(u.owner, v)));
     const parkedIds = new Set(parked.map(v => v.id));
     obstacles = [...new Set([...obstacles, ...parked])];
     // 驻军之间使用更细的导航格，避免可通行的编队空位被四十单位网格抹掉。
@@ -1264,7 +1307,7 @@ export class Game {
     }
     // 只绕开附近已知的同层单位，避免通过寻路提前泄露迷雾内的敌军。
     for (const other of obstacles) {
-      if (other === u || other.embarkedIn || other.hp <= 0 || unitLayer(other) !== unitLayer(u)) continue;
+      if (other === u || other.embarkedIn || other.hp <= 0 || unitLayer(other) !== unitLayer(u) || canCrush(u, other, this)) continue;
       if (other.owner !== u.owner && !this.canSeeEntity(u.owner, other)) continue;
       // 网格中心保留半格余量；实际车距由局部避让约束，避免窄桥被粗网格误封死。
       const radius = u.type === 'supply' || parkedIds.has(other.id) ? unitRadius(u) + unitRadius(other) + cell * .35 : Math.max(unitRadius(other),unitRadius(u) + unitRadius(other) - cell * .45);

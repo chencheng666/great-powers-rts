@@ -49,3 +49,18 @@ export function createModernAircraft(type) {
   }
   root.userData.aircraftVersion=1;root.userData.role=transport?'高翼运输机':'鸭翼双垂尾制空机';return mergeParts(root);
 }
+
+// 串列双旋翼运输机为原创简化模型，保留前后两个可独立旋转的旋翼。
+export function createTandemTransport() {
+  const root = new THREE.Group(); root.name = 'nato_tandem'; root.userData.tandemRotors = true;
+  const shell = new THREE.MeshStandardMaterial({ name: '航空涂层', color: '#6f7965', roughness: .8, metalness: .15 });
+  const dark = new THREE.MeshStandardMaterial({ name: '旋翼与轮胎', color: '#27322e', roughness: .8 });
+  const glass = new THREE.MeshStandardMaterial({ name: '座舱玻璃', color: '#355b6b', roughness: .3, metalness: .15 });
+  const team = new THREE.MeshStandardMaterial({ name: '阵营标识', color: '#59d7ec', emissive: '#59d7ec', emissiveIntensity: .1 });
+  const box = (size, position, material = shell, parent = root) => { const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material); mesh.position.set(...position); mesh.castShadow = true; parent.add(mesh); return mesh; };
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(1.15, 6.1, 6, 14), shell); body.rotation.z = Math.PI / 2; body.position.y = 1.45; body.scale.z = .8; body.castShadow = true; root.add(body);
+  box([1.45,.5,1.45],[3.55,1.95,0],glass); box([.95,2.5,1.45],[-3,2.35,0]); box([1.05,2.2,1.4],[2.65,2.2,0]);
+  for (const z of [-1,1]) { box([4,.12,.035],[0,1.2,z*.95],team); for (const x of [-2.7,2.7]) { const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.16,12),dark);wheel.rotation.x=Math.PI/2;wheel.position.set(x,.35,z*.9);root.add(wheel); } }
+  for (const [i,x] of [-3,2.65].entries()) { const rotor=new THREE.Group();rotor.name=`rotor_${i}_tandem`;rotor.position.set(x,3.75,0);root.add(rotor);box([6.8,.075,.22],[0,0,0],dark,rotor);box([.22,.075,6.8],[0,.035,0],dark,rotor); }
+  return root;
+}

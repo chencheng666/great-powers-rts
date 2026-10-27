@@ -27,7 +27,7 @@ export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight)
   let groundOffset = entry.model?.userData.groundClearance ? entry.model.userData.groundClearance * entry.scale + .2 : 4;
   if(entry.model?.userData.groundClearance){
     // 跑道的可视铺装高于地形，轮胎接触面不能仍按裸地高度计算。
-    const pavement=game.ownedBuildings?.(entity.owner,'airfield').find(b=>{const scale=b.size/7.2;return Math.abs(entity.x-b.x)<=6.9*scale&&Math.abs(entity.y-b.y-2.1*scale)<=1.1*scale;});
+    const pavement=game.ownedBuildings?.(entity.owner,'airfield').find(b=>{const scale=b.size/7.2;const z=(entity.y-b.y)/scale;return Math.abs(entity.x-b.x)<=7.2*scale&&(Math.abs(z-2.1)<=1.1||z>=4.3&&z<=13.6);});
     if(pavement)groundOffset+=pavement.size/7.2*.5;
   }
   if (entity.deployment) {
@@ -56,12 +56,15 @@ export function refineAirfieldRunway(model) {
   const pavement = new THREE.MeshStandardMaterial({ name: '跑道沥青', color: '#303b40', roughness: .96 });
   const white = new THREE.MeshStandardMaterial({ name: '跑道标线', color: '#e2e7df', roughness: .85 });
   const light = new THREE.MeshStandardMaterial({ name: '跑道边灯', color: '#9cd8eb', emissive: '#9cd8eb', emissiveIntensity: .5 });
-  const part = (material, size, position) => {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material); mesh.position.set(...position);
+  const part = (material, size, position, angle = 0) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material); mesh.position.set(...position); mesh.rotation.y = angle;
     mesh.receiveShadow = true; runway.add(mesh);
   };
   // 沿原停机坪展开，不增加建造占地或改变飞机补给判定范围。
   part(pavement, [13.8, .07, 2.2], [0, .43, 2.1]);
+  // 跑道外侧铺设六个斜列机位，位置与实际补给和滑行路径一致。
+  part(pavement, [14.4, .06, 9.4], [0, .42, 8.9]);
+  for (const x of [-5.625, 0, 5.625]) for (const z of [7.05, 12.4]) part(white, [2.7, .012, .055], [x, .46, z], Math.PI / 4);
   for (const z of [1.13, 3.07]) part(white, [13.2, .012, .04], [0, .475, z]);
   for (let x = -5.2; x <= 5.2; x += 1.3) part(white, [.62, .012, .06], [x, .479, 2.1]);
   for (const x of [-6.2, 6.2]) for (const z of [1.4, 1.68, 2.52, 2.8]) part(white, [.56, .012, .13], [x, .479, z]);

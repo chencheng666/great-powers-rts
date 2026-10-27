@@ -13,8 +13,10 @@ test('下载清单的本地免安装包位于白名单目录，原版与网页�
   }
   const hotfix=urls.filter(u=>/Great-Powers-RTS-v[12]\.[0-9]+\.[0-9]+-[0-9]{8}\.zip$/.test(u.pathname));
   for(const u of hotfix)assert.ok(u.pathname.startsWith('/downloads/packages/'));
-  assert.ok(!hotfix.length || /^web-[0-9]{8}-/.test(m.webReleaseTag), '热更新单独标记网页发行，不冒充桌面包已重建');
-  const current=urls.filter(u=>u.pathname.includes(m.releaseTag)&&!hotfix.includes(u));
-  assert.ok(current.length === 1 || current.length === 10, '当前版本包含离线包，桌面九件全部就绪后再列出');
-  assert.ok(current.some(u=>u.pathname===`/downloads/packages/Great-Powers-RTS-${m.releaseTag}.zip`));
+  assert.ok(/^web-[0-9]{8}-/.test(m.webReleaseTag) || m.webReleaseTag === m.releaseTag, '发行标记应对应实际网页或完整版本');
+  const current=urls.filter(u=>u.pathname.includes(m.releaseTag));
+  const archives=current.filter(u=>u.origin==='https://example.test'&&u.pathname.endsWith('.zip'));
+  const installers=current.filter(u=>u.origin!=='https://example.test');
+  assert.ok(archives.length>=1, '当前版本必须有实际离线包');
+  assert.ok(installers.length===0 || installers.length===9, '桌面九件全部就绪后再列出');
 });

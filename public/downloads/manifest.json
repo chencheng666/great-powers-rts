@@ -1,18 +1,25 @@
 {
-  "version": "2.0.0",
-  "releaseTag": "v2.0.0",
+  "version": "2.0.1",
+  "releaseTag": "v2.0.1",
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
     {
+      "name": "packages/Great-Powers-RTS-v2.0.1-20261027.zip",
+      "label": "2.0.1 · 最新免安装单机 ZIP",
+      "size": 69756167,
+      "sha256": "4460b7c685ab9d5e3388bc6b4c2960d5fb51bb660adf96d4e4892a35fac8e718",
+      "status": "坦克碾压、飞机停放滑行、双旋翼运输机；联网时统计匿名游玩时长，断网仍可单机。完整解压后打开 PLAY.html。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.0-20261027.zip",
-      "label": "2.0.0 · 10月27日粉丝清单修复 · 最新免安装单机 ZIP",
+      "label": "2.0.0 · 10月27日粉丝清单修复 · 历史免安装单机 ZIP",
       "size": 69753898,
       "sha256": "6207ba746acff91a247dac2ca430a9475ed198d7358c2e535a9491f787191659",
       "status": "分层爆炸、战机下坠、航母近防、同型选择与起落声；完整解压后打开PLAY.html；离线不联网统计。"
     },
     {
       "name": "packages/Great-Powers-RTS-v2.0.0-20261026.zip",
-      "label": "2.0.0 · 10月26日音效与沙盘更新 · 最新免安装单机 ZIP",
+      "label": "2.0.0 · 10月26日音效与沙盘更新 · 历史免安装单机 ZIP",
       "size": 69750209,
       "sha256": "82ece905f4f9cf7ef47995499db058263a03476bbadf93091b0178eb548beb06",
       "status": "武器与移动音效、忠实玩家指挥官沙盘、海陆空实机背景。完整解压后打开PLAY.html；离线不联网统计。"
@@ -158,6 +165,10 @@
       "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
     }
   ],
-  "webReleaseTag": "web-20261027-fanfix4-explosions",
-  "updatedAt": "2026-10-26T02:53:53.371632+00:00"
+  "webReleaseTag": "v2.0.1",
+  "updatedAt": "2026-10-27T02:11:50.053708+00:00",
+  "archiveTags": [
+    "v1.3.1",
+    "v2.0.0"
+  ]
 }

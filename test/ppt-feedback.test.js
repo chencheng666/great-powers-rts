@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Game } from '../src/game.js';
 import { UNITS } from '../src/data.js';
 import { aircraftTurnRate, aircraftCanFire, rotorMotion } from '../src/aircraft-flight.js';
-import { airfieldApron } from '../src/airfield-rules.js';
+import { airfieldApron, airfieldParking } from '../src/airfield-rules.js';
 
 function setup() {
   const g = new Game('china', 'china', {}, { mapId: 'frontier', victoryMode: 'annihilation' });
@@ -69,7 +69,7 @@ test('固定翼返场仍能停驻补弹，机场待命不会自动起飞，支�
   g.units=[];
   const u=g.addUnit(0,'fighter',1600,900);u.angle=0;u.ammo=0;u.order={type:'rearm'};
   for(let i=0;i<1800 && u.ammo<UNITS.fighter.ammo;i++)tick(g,u);
-  assert.equal(u.ammo,UNITS.fighter.ammo);assert.ok(Math.hypot(u.x-apron.x,u.y-apron.y)<16);
+  assert.equal(u.ammo,UNITS.fighter.ammo);const spot=airfieldParking(home,u.airfieldOps.slot);assert.ok(Math.hypot(u.x-spot.x,u.y-spot.y)<16);assert.equal(u.angle,Math.PI/4);
   const support=g.addUnit(0,'ewPlane',1300,1300);const before=support.x;tick(g,support,10);assert.notEqual(support.x,before);
 });
 

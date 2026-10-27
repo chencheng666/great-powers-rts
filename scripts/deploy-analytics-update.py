@@ -40,6 +40,17 @@ def counts(node, paths):
     code = """import{DatabaseSync}from'node:sqlite';const result=[];for(const path of process.argv.slice(1)){const db=new DatabaseSync(path,{readOnly:true});if(db.prepare('PRAGMA integrity_check').get().integrity_check!=='ok')throw Error('数据库完整性异常');const row={};for(const table of ['guests','matches','multi_matches','match_members'])row[table]=db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table)?db.prepare('SELECT count(*) n FROM '+table).get().n:0;row.scores=db.prepare('SELECT coalesce(sum(wins+losses+draws),0) n FROM guests').get().n;result.push(row);db.close();}console.log(JSON.stringify(result));"""
     return json.loads(run([str(node), '--input-type=module', '-e', code, *map(str, paths)]))
 
+def lock_dependencies_equal(left, right):
+    a = json.loads(left.read_text()); b = json.loads(right.read_text())
+    # 仅忽略项目自身版本号，其余依赖树必须逐项一致。
+    for lock in (a, b):
+        lock.pop('version', None); lock.get('packages', {}).get('', {}).pop('version', None)
+    return a == b
+
+def analytics_counts(node, paths):
+    code = """import{DatabaseSync}from'node:sqlite';const all=[];for(const path of process.argv.slice(1)){const db=new DatabaseSync(path,{readOnly:true});if(db.prepare('PRAGMA integrity_check').get().integrity_check!=='ok')throw Error('统计库完整性异常');const row={};for(const name of ['analytics_players','analytics_sessions','analytics_daily','analytics_plays','analytics_session_daily','analytics_play_daily'])row[name]=db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name)?db.prepare('SELECT count(*) n FROM '+name).get().n:0;all.push(row);db.close();}console.log(JSON.stringify(all));"""
+    return json.loads(run([str(node), '--input-type=module', '-e', code, *map(str, paths)]))
+
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument('archive'); parser.add_argument('sha256'); parser.add_argument('release'); parser.add_argument('offline_zip'); parser.add_argument('--admin-env', required=True); args = parser.parse_args()
     if os.geteuid() != 0 or not EXT.is_file() or not re.fullmatch(r'[0-9A-Za-z-]+', args.release): raise RuntimeError('目标或发布编号无效')
@@ -66,7 +77,7 @@ def main():
             target = stage.joinpath(*path.parts)
             if item.isdir(): target.mkdir(parents=True, exist_ok=True)
             else: atomic(target, tar.extractfile(item).read())
-    if digest(stage / 'package-lock.json') != digest(previous / 'package-lock.json'): raise RuntimeError('依赖锁发生变化，不能复用旧依赖')
+    if not lock_dependencies_equal(stage / 'package-lock.json', previous / 'package-lock.json'): raise RuntimeError('依赖锁发生变化，不能复用旧依赖')
     manifest = json.loads((stage / 'dist/release.json').read_text())
     for name, expected in manifest['assets'].items():
         file = stage / 'dist' / name
@@ -92,6 +103,7 @@ def main():
         stopped = True; run(['systemctl', 'stop', *SERVICES])
         for i, directory in enumerate(DATA): shutil.copytree(directory, backup / f'data-{i}', symlinks=True)
         before = counts(node, [backup / f'data-{i}/guests.sqlite' for i in [0, 1]])
+        analytics_before = analytics_counts(node, [backup / f'data-{i}/analytics.sqlite' for i in [0, 1]])
         atomic(env_path, admin_bytes, 0o600); atomic(dropin, b'[Service]\nEnvironmentFile=/etc/great-powers/player-admin.env\n', 0o600); configured = True
         original = EXT.read_text()
         if 'location ^~ /admin/' not in original:
@@ -107,11 +119,14 @@ def main():
         else: raise RuntimeError('新服务没有通过健康检查')
         run([NGINX, '-s', 'reload'])
         after = counts(node, [d / 'guests.sqlite' for d in DATA])
+        analytics_after = analytics_counts(node, [d / 'analytics.sqlite' for d in DATA])
+        for old, new in zip(analytics_before, analytics_after):
+            if any(new[k] < old[k] for k in old): raise RuntimeError('历史统计记录减少')
         for old, new in zip(before, after):
             if any(new[k] < old[k] for k in old): raise RuntimeError('历史账号或战绩计数减少')
         with urllib.request.urlopen('http://127.0.0.1:8088/admin/', timeout=5) as r:
             if b'admin.js' not in r.read(): raise RuntimeError('后台页面异常')
-        report = dict(release=str(stage), backup=str(backup), previous=str(previous), build=manifest['build'], sourceCommit=manifest['sourceCommit'], health=values, before=before, after=after, offlineSha256=offline['sha256'], archiveSha256=args.sha256, adminProtected=True)
+        report = dict(release=str(stage), backup=str(backup), previous=str(previous), build=manifest['build'], sourceCommit=manifest['sourceCommit'], health=values, before=before, after=after, analyticsBefore=analytics_before, analyticsAfter=analytics_after, offlineSha256=offline['sha256'], archiveSha256=args.sha256, adminProtected=True)
         atomic(backup / 'verification.json', json.dumps(report, ensure_ascii=False, indent=2).encode(), 0o600)
         print(json.dumps(report, ensure_ascii=False), flush=True)
     except Exception:

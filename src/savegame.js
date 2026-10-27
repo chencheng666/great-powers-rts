@@ -1,3 +1,4 @@
+import { runwayAircraft } from './airfield-rules.js';
 import { validSandbox } from './commander-sandbox.js';
 import { AI_DIFFICULTIES, BUILDINGS, FACTIONS, MAPS, UNITS, WORLD } from './data.js';
 import { isLunarRobot, ROBOT_ENERGY } from './lunar-robots.js';
@@ -106,6 +107,7 @@ export function validateSave(save) {
           if (!object(f) || !point(f.entry) || f.entry.x < 0 || f.entry.x > world.width || f.entry.y < 0 || f.entry.y > world.height || !['inbound', 'unloading', 'outbound'].includes(f.phase) || !finite(f.progress) || f.progress < 0 || !finite(f.value) || f.value < 0 || f.value > 900 || f.homeId !== null && !Number.isSafeInteger(f.homeId)) invalid();
           if (f.orbitAngle !== undefined && !finite(f.orbitAngle) || f.holding !== undefined && typeof f.holding !== 'boolean') invalid();
         }
+        if (entity.airfieldOps && (!runwayAircraft(entity.type, MAPS[config.mapId]?.future) || !Number.isSafeInteger(entity.airfieldOps.homeId) || !Number.isInteger(entity.airfieldOps.slot) || entity.airfieldOps.slot < 0 || entity.airfieldOps.slot >= 6 || !['approach','taxiIn','parked','taxiOut'].includes(entity.airfieldOps.phase))) invalid();
         if (entity.deployment && (!point(entity.deployment) || !finite(entity.deployment.start) || !finite(entity.deployment.until) || !finite(entity.deployment.fromX) || !finite(entity.deployment.fromY))) invalid();
         if (entity.homeCarrierId !== undefined && entity.homeCarrierId !== null && (!Number.isSafeInteger(entity.homeCarrierId) || !d.tags.includes('deck'))) invalid();
         if (entity.deckApproach && (!object(entity.deckApproach) || !Number.isSafeInteger(entity.deckApproach.carrierId) || !finite(entity.deckApproach.start) || !finite(entity.deckApproach.until))) invalid();
