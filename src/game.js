@@ -1,3 +1,5 @@
+import { updateCarrierDefense } from './carrier-defense.js';
+import { destructionEvent } from './destruction-presentation.js';
 import { applySandbox, sandboxSpeed, unlimitedAmmo, refillSandboxAmmo } from './commander-sandbox.js';
 import { emitBattleSound, weaponSound, impactSound, destructionSound } from './battle-sound.js';
 import {sixPoint} from './six-player-map.js';
@@ -423,6 +425,11 @@ export class Game {
     return true;
   }
 
+  selectSelectedType() {
+    const picked = this.selected.map(id => this.getEntity(id)).find(u => u?.kind === 'unit' && u.owner === 0 && u.hp > 0 && !u.embarkedIn && !FREIGHT_TYPES.includes(u.type));
+    return picked ? this.selectSameType(picked, this.activeUnits(0, picked.type).map(u => u.id)) : false;
+  }
+
   selectAllCombat() {
     this.selected = this.activeUnits(0).filter(u => UNITS[u.type].damage > 0).map(u => u.id);
     this.events.selection?.();
@@ -719,7 +726,7 @@ export class Game {
     this.updateDroneAutonomy(u);
     u.fireTimer -= dt * (u.jammedUntil > this.time ? .4 : 1);
     const d = UNITS[u.type];
-    if (u.type === 'carrier') this.updateCarrierAirGroup(u, dt);
+    if (u.type === 'carrier') { this.updateCarrierAirGroup(u, dt); updateCarrierDefense(this,u,dt); }
     if (d.tags.includes('air') && u.order?.type !== 'rearm') this.serviceAircraft(u, dt);
     if (d.tags.includes('ship') && u.order?.type !== 'rearm') this.serviceShip(u, dt);
     this.serviceIdleUnit(u, dt);
@@ -1037,7 +1044,7 @@ export class Game {
         if (target.owner === 0) this.events.notice?.(`后勤运输被截断，损失 ${target.freight.value} 待交付物资`);
       }
       emitBattleSound(this, soundStyle || destructionSound(target), { x: target.x, y: target.y, owner: attackerSide }, 'destroy');
-      this.effects.push({ type: 'explosion', x: target.x, y: target.y, targetType: target.type, age: 0, duration: 1.2, owner: attackerSide, size: target.kind === 'building' ? target.size : 40 });
+      this.effects.push(destructionEvent(this, target, attackerSide));
       if (target.owner === 0) this.events.notice?.(`${target.kind === 'building' ? lunarBuildingProfile(this.map.future, target.type, BUILDINGS[target.type]).name : equipmentProfile(this.players[0].faction, target.type, this.map.future).name}已损毁`);
       if (target.owner === 0) this.events.voice?.(target.kind === 'building' ? 'buildingLost' : 'unitLost');
       this.recalculatePower();

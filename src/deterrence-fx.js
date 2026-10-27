@@ -27,9 +27,9 @@ export function animateDeterrenceBlast(effect,group) {
   smoke.opacity=Math.min(.84,t*5)*Math.min(1,(1-t)*2);
   puffs.forEach((p,i)=>{
     const cap=i>=7,j=cap?i-7:i,a=j*2.399;
-    const rise=Math.min(1,t*1.8),spread=cap?r*(.09+rise*.22):r*(.025+rise*.04);
-    p.position.set(Math.cos(a)*spread,cap?r*(.24+rise*.65)+Math.sin(j*1.7)*r*.035:r*(.06+j*.065)*rise,Math.sin(a)*spread);
-    const size=cap?r*(.095+rise*.09):r*(.055+rise*.025);p.scale.set(size,cap?size*.65:size*1.3,size);
+    const rise=Math.min(1,t*1.8),spread=cap?r*(.11+rise*.28):r*(.025+rise*.04);
+    p.position.set(Math.cos(a)*spread,cap?r*(.28+rise*.82)+Math.sin(j*1.7)*r*.035:r*(.06+j*.065)*rise,Math.sin(a)*spread);
+    const size=cap?r*(.105+rise*.13):r*(.055+rise*.025);p.scale.set(size,cap?size*.65:size*1.3,size);
     p.rotation.y=a+t*.2;
   });
   ring.position.y=1;ring.scale.setScalar(r*Math.min(1,.12+t*3));ring.material.opacity=Math.max(0,1-t*3)*.38;

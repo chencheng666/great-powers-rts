@@ -37,7 +37,7 @@ export function soundPosition(point, listener) {
 
 export function movementKind(unit, game) {
   const tags = UNITS[unit.type]?.tags || [];
-  if (tags.includes('infantry')) return game.map.future ? 'robot' : null;
+  if (tags.includes('infantry')) return game.map.future ? 'robot' : 'footsteps';
   if (unit.type === 'submarine') return game.submarineSurfaced(unit) ? 'ship' : 'submerged';
   if (tags.includes('ship')) return 'ship';
   if (unit.type === 'helicopter') return 'rotor';
@@ -47,8 +47,9 @@ export function movementKind(unit, game) {
 }
 
 export class MovementSounds {
-  constructor() { this.positions = new Map(); this.elapsed = 0; }
-  reset() { this.positions.clear(); this.elapsed = 0; }
+  constructor() { this.positions = new Map(); this.elapsed = 0; this.transitions = []; }
+  reset() { this.positions.clear(); this.elapsed = 0; this.transitions = []; }
+  drainTransitions() { return this.transitions.splice(0); }
   sample(game, listener, dt) {
     this.elapsed += Math.max(0, dt);
     const seen = new Set(), groups = new Map();
@@ -59,16 +60,21 @@ export class MovementSounds {
       seen.add(unit.id);
       const old = this.positions.get(unit.id), moved = old && Math.hypot(unit.x - old.x, unit.y - old.y) > .15;
       const lastMove = moved ? this.elapsed : old?.lastMove ?? -Infinity;
-      this.positions.set(unit.id, { x: unit.x, y: unit.y, lastMove });
       const airborne = ['jet', 'rotor', 'drone'].includes(kind) && !game.aircraftGrounded(unit);
+      if (old && ['jet', 'rotor', 'drone'].includes(kind) && old.airborne !== airborne) {
+        const style = kind === 'jet' ? airborne ? 'airTakeoff' : 'airLanding' : airborne ? 'rotorStart' : 'rotorStop';
+        this.transitions.push({ style, point: { x: unit.x, y: unit.y, owner: unit.owner }, owner: unit.owner });
+      }
+      this.positions.set(unit.id, { x: unit.x, y: unit.y, lastMove, airborne });
       if (!airborne && this.elapsed - lastMove > .22) continue;
       const spatial = soundPosition(unit, listener);
       if (spatial.level < .04) continue;
-      const level = spatial.level * (airborne ? 1 : .85);
+      const level = spatial.level * (airborne ? 1 : kind === 'footsteps' ? .35 : .85);
       const group = groups.get(kind) || { kind, level: 0, pan: spatial.pan, weight: 0 };
       group.pan = (group.pan * group.weight + spatial.pan * level) / (group.weight + level);
       group.weight += level; group.level = Math.min(1, Math.hypot(group.level, level)); groups.set(kind, group);
     }
+    this.transitions = this.transitions.slice(-16);
     for (const id of this.positions.keys()) if (!seen.has(id)) this.positions.delete(id);
     return [...groups.values()].sort((a, b) => b.level - a.level).slice(0, 4);
   }

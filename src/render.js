@@ -1,3 +1,4 @@
+import { confirmedAircraftLoss, aircraftCrashPose, aircraftShadowOpacity } from './destruction-presentation.js';
 import { rotorMotion } from './aircraft-flight.js';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -100,7 +101,7 @@ export class Renderer {
     this.camera = { x: 0, y: 0, zoom: innerWidth < 700 ? .7 : .98 }; this.center = { x: 450, y: 720 }; this.viewport = { width: 1, height: 1 };
     this.viewMode = 'immersive';
     try { if (localStorage.getItem('great-powers-battle-view') === 'tactical') this.viewMode = 'tactical'; } catch { /* 不支持存储时仍可切换视角。 */ }
-    this.cameraElevation = battleElevation(this.viewMode); this.cameraAzimuth = battleAzimuth(this.viewMode); this.wrecks = []; this.damageMaterials = new Map(); this.damageTemplates = new Map();
+    this.cameraElevation = battleElevation(this.viewMode); this.cameraAzimuth = battleAzimuth(this.viewMode); this.wrecks = []; this.cosmeticEffects = []; this.damageMaterials = new Map(); this.damageTemplates = new Map();
     this.pointer = null; this.dragBox = null; this.lastMinimap = 0; this.lastFog = -1000;
     this.entities = new Map(); this.effects = new Map(); this.environment = []; this.bridges = []; this.trails = []; this.ownedResources = [];
     this.webgl = new THREE.WebGLRenderer({ canvas, antialias: !(game.map.maxPlayers===6&&this.quality==='standard'), alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
@@ -722,6 +723,14 @@ export class Renderer {
       };
       mesh.material = Array.isArray(mesh.material) ? mesh.material.map(finish) : finish(mesh.material);
     });
+    let airShadow = null;
+    if (entity.kind === 'unit' && UNITS[entity.type].tags.includes('air')) {
+      model.traverse(mesh => { if (mesh.isMesh) mesh.castShadow = false; });
+      this.airShadowGeometry ||= this.track(new THREE.PlaneGeometry(1, 1));
+      const shadowMaterial = new THREE.MeshBasicMaterial({ map: this.smokeTexture, color: '#0b171a', transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 });
+      airShadow = new THREE.Mesh(this.airShadowGeometry, shadowMaterial); airShadow.rotation.x = -Math.PI / 2;
+      airShadow.scale.set(unitRadius(entity) * 2.3, unitRadius(entity) * 1.25, 1); this.scene.add(airShadow);
+    }
     const identity = this.createIdentityMarker(entity); this.scene.add(identity);
     const ring = new THREE.Mesh(this.selectionGeometry, entity.owner === 0 ? this.selectionMaterial : this.enemySelectionMaterial); ring.visible = false; this.scene.add(model, ring);
     const exhausts = [];
@@ -760,7 +769,7 @@ export class Renderer {
     const damageMeshes = [];
     model.traverse(mesh => { if (mesh.isMesh) damageMeshes.push({ mesh, original: mesh.material }); });
     const tracks = []; model.traverse(object => { if (object.isInstancedMesh && object.name.startsWith('track_belt_')) tracks.push(object); });
-    const value = { model, ring, identity, entity, scale, wakeStern, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
+    const value = { model, ring, identity, entity, scale, airShadow, wakeStern, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
   }
 
   setDamageStage(entry, stage) {
@@ -778,24 +787,48 @@ export class Renderer {
     if (entry.damageDetail) entry.damageDetail.visible = stage === 2;
   }
 
-  addShipwreck(entry) {
-    if (!confirmedShipLoss(entry, this.game)) return;
+  addLossWreck(entry) {
+    const aircraft = confirmedAircraftLoss(entry, this.game);
+    if (!aircraft && !confirmedShipLoss(entry, this.game)) return;
     this.setDamageStage(entry, 2); entry.model.userData.entity = null;
     this.scene.add(entry.model);
-    this.wrecks.push({ model: entry.model, x: entry.entity.x, y: entry.entity.y, start: this.game.time,
+    const decks = [...entry.deckModels.values()].map(model => ({ model, x: model.position.x, y: model.position.y, z: model.position.z }));
+    this.wrecks.push({ model: entry.model, aircraft, type: entry.entity.type, owner: entry.entity.owner,
+      x: entry.entity.x, y: entry.entity.y, heading: entry.entity.angle, seed: entry.entity.id, decks, start: this.game.time,
       height: new THREE.Box3().setFromObject(entry.model).getSize(new THREE.Vector3()).y, baseY: entry.model.position.y, smokeAt: 0 });
-    while (this.wrecks.length > 8) this.scene.remove(this.wrecks.shift().model);
+    while (this.wrecks.length > 12) this.scene.remove(this.wrecks.shift().model);
   }
 
   updateShipwrecks() {
     this.wrecks = this.wrecks.filter(wreck => {
-      const age = this.game.time - wreck.start, pose = sinkingPose(age, wreck.height);
-      if (pose.complete) { this.scene.remove(wreck.model); return false; }
-      wreck.model.visible = this.game.isVisibleFor(0, wreck.x, wreck.y);
-      wreck.model.position.y = wreck.baseY - pose.depth; wreck.model.rotation.x = pose.roll; wreck.model.rotation.z = pose.pitch;
-      if (wreck.model.visible && age < 3 && this.game.time >= wreck.smokeAt && this.trails.length < 120) {
-        const sprite = this.effectSprite('#445055', true); sprite.position.set(wreck.x, Math.max(3, wreck.model.position.y + wreck.height * .5), wreck.y); this.scene.add(sprite);
-        this.trails.push({ sprite, baseY: sprite.position.y, start: this.game.time, damage: true, damageSize: 26 }); wreck.smokeAt = this.game.time + .35;
+      const age = this.game.time - wreck.start;
+      if (wreck.aircraft) {
+        const rotor = UNITS[wreck.type].tags.includes('rotorcraft'), pose = aircraftCrashPose(age, wreck.baseY, wreck.heading, wreck.seed, rotor);
+        const x = Math.max(18, Math.min(this.world.width - 18, wreck.x + pose.x)), y = Math.max(18, Math.min(this.world.height - 18, wreck.y + pose.y));
+        const water = !!this.game.map.water && !this.game.isNavalBlocked(x, y, 0), floor = water ? 2 : this.elevation(x, y) + 2;
+        wreck.model.visible = this.game.isVisibleFor(0, x, y);
+        wreck.model.position.set(x, floor + pose.height, y);
+        wreck.model.rotation.set(pose.pitch, -wreck.heading + pose.yaw, pose.roll);
+        if (pose.complete) {
+          if (wreck.model.visible) {
+            this.cosmeticEffects.push({ type: 'explosion', targetType: wreck.type, surface: water ? 'water' : 'ground', x, y, owner: wreck.owner, age: 0, start: this.game.time, duration: 2, size: 58 });
+            this.cosmeticEffects = this.cosmeticEffects.slice(-24);
+          }
+          this.scene.remove(wreck.model); return false;
+        }
+      } else {
+        const pose = sinkingPose(age, wreck.height);
+        if (pose.complete) { this.scene.remove(wreck.model); return false; }
+        const sign = wreck.seed % 2 ? 1 : -1;
+        wreck.model.visible = this.game.isVisibleFor(0, wreck.x, wreck.y);
+        wreck.model.position.y = wreck.baseY - pose.depth;
+        wreck.model.rotation.x = pose.roll * 2.6 * sign; wreck.model.rotation.z = pose.pitch * (wreck.seed % 3 ? 2.2 : -4.5);
+        for (const deck of wreck.decks) { deck.model.position.z = deck.z + sign * Math.min(3, age * age * .1); deck.model.rotation.z = sign * Math.min(.6, age * .12); }
+      }
+      if (wreck.model.visible && age < (wreck.aircraft ? 3.1 : 4) && this.game.time >= wreck.smokeAt && this.trails.length < 120) {
+        const sprite = this.effectSprite(wreck.aircraft ? '#363e43' : '#445055', true);
+        sprite.position.copy(wreck.model.position); sprite.position.y += wreck.height * .35; this.scene.add(sprite);
+        this.trails.push({ sprite, baseY: sprite.position.y, start: this.game.time, damage: true, damageSize: wreck.aircraft ? 20 : 30 }); wreck.smokeAt = this.game.time + .18;
       }
       return true;
     });
@@ -979,6 +1012,13 @@ export class Renderer {
       }
       animateFacility(entry.model, entity, this.game);
       entry.model.position.set(entity.x, height, entity.y);
+      if (entry.airShadow) {
+        const ground = this.elevation(entity.x, entity.y), rotor = UNITS[entity.type].tags.includes('rotorcraft');
+        const opacity = aircraftShadowOpacity(height - ground, rotor);
+        entry.airShadow.visible = visible && !entity.embarkedIn && opacity > .005;
+        entry.airShadow.material.opacity = opacity; entry.airShadow.position.set(entity.x, Math.max(2.2, ground + .3), entity.y);
+        entry.airShadow.rotation.z = entity.angle;
+      }
       const submerged = entity.type === 'submarine' && entry.submergedMaterials?.[0]?.mesh.material === entry.submergedMaterials?.[0]?.hidden;
       entry.identity.visible = identityVisible(entity, visible, submerged);
       entry.identity.position.set(entity.x, this.elevation(entity.x, entity.y) + (UNITS[entity.type]?.tags.includes('ship') ? 2 : 1.4), entity.y);
@@ -1052,7 +1092,8 @@ export class Renderer {
       const radius = entity.kind === 'building' ? entity.size * .65 : unitRadius(entity) + 4; entry.ring.scale.set(radius, 1, radius);
     }
     for (const [id, entry] of this.entities) if (!active.has(id)) {
-      entry.exhausts.forEach(sprite => sprite.material.dispose()); this.scene.remove(entry.model, entry.ring, entry.identity); this.removeFoundation(id); this.addShipwreck(entry); this.entities.delete(id);
+      if (entry.airShadow) { this.scene.remove(entry.airShadow); entry.airShadow.material.dispose(); }
+      entry.exhausts.forEach(sprite => sprite.material.dispose()); this.scene.remove(entry.model, entry.ring, entry.identity); this.removeFoundation(id); this.addLossWreck(entry); this.entities.delete(id);
     }
     this.updateShipwrecks();
     for (const site of this.sites) {
@@ -1113,8 +1154,10 @@ export class Renderer {
       if (!trail.ship) trail.sprite.position.y = trail.baseY + age * (trail.damage ? 13 : 3);
       trail.sprite.visible = this.game.isVisibleFor(0, trail.sprite.position.x, trail.sprite.position.z); return true;
     });
-    const current = new Set(this.game.effects);
-    for (const effect of this.game.effects) {
+    this.cosmeticEffects = this.cosmeticEffects.filter(e => { e.age = this.game.time - e.start; return e.age < e.duration; });
+    const allEffects = [...this.game.effects, ...this.cosmeticEffects];
+    const current = new Set(allEffects);
+    for (const effect of allEffects) {
       if (effect.type === 'sound') continue;
       const source = effect.type === 'sonar' ? this.game.getEntity(effect.sourceId) : null;
       const visible = effect.type==='nuclearBlast'||this.game.isVisibleFor(0, effect.x, effect.y) && (effect.type !== 'sonar' || effect.owner === 0 || source && this.game.canSeeEntity(0, source));
@@ -1123,7 +1166,13 @@ export class Renderer {
       const t = effect.age / effect.duration; let group = this.effects.get(effect);
       if (!group) {
         group = new THREE.Group();
-        if (effect.type==='nuclearBlast')createDeterrenceBlast(group);
+        if (effect.type==='nuclearBlast') {
+          createDeterrenceBlast(group);
+          if (!this.game.map.water || this.game.isNavalBlocked(effect.x,effect.y,0)) {
+            this.scorchMarks[this.scorchCursor] = { x: effect.x, y: effect.y, size: Math.min(380, effect.size * 1.1), angle: 0, start: this.game.time };
+            this.scorchCursor = (this.scorchCursor + 1) % 80;
+          }
+        }
         else if (effect.type === 'shot') this.createWeaponEffect(effect, group);
         else if (['hit', 'explosion'].includes(effect.type)) this.createImpactEffect(effect, group);
         else if (effect.type === 'supplyDrop') {
@@ -1132,7 +1181,7 @@ export class Renderer {
           for (const [x, z] of [[-10,-10],[-10,10],[10,-10],[10,10]]) group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, 27, z), new THREE.Vector3(x * .45, 6, z * .45)]), new THREE.LineBasicMaterial({ color: '#ccd7cf' })));
         }
         else if (['order', 'build', 'capture', 'ability', 'jam', 'sonar'].includes(effect.type)) group.add(new THREE.Mesh(this.selectionGeometry, new THREE.MeshBasicMaterial({ color: effect.type === 'jam' ? '#c2a4ff' : effect.type === 'sonar' ? '#83ccd9' : effect.owner === 1 ? '#fb7968' : '#8cdff0', transparent: true, depthWrite: false })));
-        group.position.set(effect.x, effect.height??(['hit', 'explosion'].includes(effect.type) ? this.effectHeight(effect.targetType, effect.x, effect.y) : this.elevation(effect.x, effect.y) + 2), effect.y); this.scene.add(group); this.effects.set(effect, group);
+        group.position.set(effect.x, effect.height ?? (effect.surface === 'ground' ? this.elevation(effect.x,effect.y) + 8 : effect.surface === 'water' ? 4 : ['hit','explosion'].includes(effect.type) ? this.effectHeight(effect.targetType,effect.x,effect.y) : this.elevation(effect.x,effect.y)+2), effect.y); this.scene.add(group); this.effects.set(effect, group);
         if (effect.type === 'sonar') group.position.y = 3;
       }
       if (effect.type==='nuclearBlast')animateDeterrenceBlast(effect,group);
@@ -1168,13 +1217,21 @@ export class Renderer {
             this.munitionTemplates.set(p.kind, template);
           }
           model = this.munitionTemplates.get(p.kind).clone();
-          if (p.kind === 'nuclear') model.scale.setScalar(2.2);
+          if (p.kind === 'nuclear') {
+            model.scale.setScalar(3.2);
+            const warhead = new THREE.Mesh(this.track(new THREE.CapsuleGeometry(1.7, 5, 4, 12)), this.track(new THREE.MeshStandardMaterial({ color: '#c9d0ce', roughness: .6, metalness: .35 })));
+            warhead.rotation.z = -Math.PI / 2; warhead.name = 'strategic-warhead'; warhead.visible = false; model.add(warhead); model.userData.warhead = warhead;
+          }
         }
         const plume = this.effectSprite(p.kind === 'torpedo' ? '#bbebee' : '#ffb578'); plume.position.set(p.kind === 'wing' ? -4.8 : -7, .4, 0); plume.scale.set(p.kind === 'wing' ? 2.5 : 12, p.kind === 'wing' ? .6 : 3, 1); model.add(plume);
         if (['bomb', 'torpedo'].includes(p.kind)) plume.visible = false;
         this.scene.add(model); this.projectileModels.set(p.id, model);
       }
       model.visible = p.kind==='nuclear'||p.owner === 0 || this.game.isVisibleFor(0, p.x, p.y);
+      if (p.kind === 'nuclear' && model.userData.warhead) {
+        const terminal = p.age / DETERRENCE.flight >= .6;
+        for (const child of model.children) child.visible = child === model.userData.warhead ? terminal : !terminal;
+      }
       const pose = projectileFlightPose(p), height = pose.height + (p.kind === 'wing' ? Math.sin(now * .004 + p.id) * 2 : 0);
       model.position.set(p.x, height, p.y); model.rotation.y = -p.angle; model.rotation.z = pose.pitch;
       if (model.visible && p.kind === 'torpedo' && this.game.time >= (p.trailAt || 0) && this.trails.length < 100) {

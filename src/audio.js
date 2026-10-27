@@ -225,6 +225,7 @@ export class GameAudio {
       this.soundEffects?.syncMovement([]); this.movement.reset(); return;
     }
     this.soundEffects?.syncMovement(this.movement.sample(game, listener, dt));
+    for (const transition of this.movement.drainTransitions()) this.soundEffects?.play(transition.style, { ...soundPosition(transition.point, listener), owner: transition.owner, phase: 'movement' });
   }
 
   shot(style, owner = 0, point = null) {

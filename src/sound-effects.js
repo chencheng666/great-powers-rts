@@ -1,6 +1,11 @@
 // 原创程序合成，不使用第三方录音。短声按武器分类缓存，移动声按类别合并。
 const profile = (duration, low, high, tone, end, level, pulse = 0) => ({ duration, low, high, tone, end, level, pulse });
 export const SOUND_PROFILES = {
+  airTakeoff: profile(1.5, .35, .65, 90, 400, .12),
+  airLanding: profile(1.2, .3, .5, 340, 65, .11, 2),
+  rotorStart: profile(1.4, .4, .15, 45, 210, .1, 18),
+  rotorStop: profile(1.6, .3, .12, 200, 30, .1, 15),
+  sonarPing: profile(.85, .01, .015, 1100, 600, .13),
   rifle: profile(.22, .03, .75, 170, 80, .14, 3),
   aa: profile(.3, .12, .65, 240, 85, .17, 4),
   tank: profile(.65, .75, .18, 118, 36, .34),
@@ -57,6 +62,7 @@ export function synthesizeSound(style, sampleRate = 44100) {
 }
 
 const LOOP_PROFILES = {
+  footsteps: [58, .18, .45, 3],
   tracks: [48, .55, .12, 13], wheels: [76, .35, .08, 5], jet: [120, .4, .65, 2],
   rotor: [64, .4, .25, 18], drone: [260, .13, .15, 36], ship: [40, .5, .18, 3], submerged: [32, .55, .015, 2], robot: [180, .18, .15, 8],
 };
@@ -106,7 +112,7 @@ export class SoundEffects {
     for (let i = 0; i < rate; i++) {
       seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
       const noise = (seed >>> 0) / 2147483648 - 1; low += (noise - low) * .03;
-      const t = i / rate, modulation = .65 + .35 * Math.sin(2 * Math.PI * pulse * t);
+      const t = i / rate, modulation = kind === 'footsteps' ? Math.exp(-((t * pulse) % 1) * 13) : .65 + .35 * Math.sin(2 * Math.PI * pulse * t);
       data[i] = (Math.sin(2 * Math.PI * frequency * t) * bass + low * 3 * hiss + noise * hiss * .2) * modulation * .065;
     }
     // 接缝交叉过渡，消除循环边界的点击。

@@ -144,6 +144,7 @@ export const modernCombat = {
       }
       if (alive(u) && UNITS[u.type].sonar && this.time >= (u.sonarFXAt || 0)) {
         u.sonarFXAt = this.time + 4;
+        emitBattleSound(this, 'sonarPing', u, 'sonar', { sourceId: u.id });
         this.effects.push({ type: 'sonar', sourceId: u.id, x: u.x, y: u.y, size: UNITS[u.type].sonar, owner: u.owner, age: 0, duration: 1.5 });
       }
     }
@@ -300,7 +301,7 @@ export const modernCombat = {
       u.wingRearm = (u.wingRearm || 0) + dt;
       if (u.wingRearm >= 8) { u.wing++; u.wingRearm = 0; this.players[u.owner].credits -= 150; }
     }
-    if ((!d.ammo || u.ammo === d.ammo) && u.hp >= u.maxHp - .01 && (u.type !== 'carrier' || this.carrierAircraft(u).length || u.wing === d.wing)) {
+    if ((!d.ammo || u.ammo === d.ammo) && u.hp >= u.maxHp - .01 && (u.type !== 'carrier' || (this.carrierAircraft(u).length || u.wing === d.wing) && (u.defenseAmmo ?? 12) === 12)) {
       this.restoreCombatOrder(u);
       if (naval && !u.order) {
         // 空闲舰艇离开整备泊位，给后续伤舰留下进港空间。

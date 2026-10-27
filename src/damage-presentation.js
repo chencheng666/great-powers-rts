@@ -37,7 +37,7 @@ export function structuralDamage(model, track = x => x) {
 export function confirmedShipLoss(entry, game) {
   if (!entry.model.visible || !UNITS[entry.entity.type]?.tags.includes('ship') || UNITS[entry.entity.type]?.tags.includes('submerged')) return false;
   if (!game.isVisibleFor(0, entry.entity.x, entry.entity.y)) return false;
-  return entry.entity.hp <= 0 || game.effects.some(e => e.type === 'explosion' && e.targetType === entry.entity.type &&
+  return entry.entity.hp <= 0 || game.effects.some(e => e.type === 'explosion' && e.destroyed && Number.isInteger(e.entityId) && e.entityId === entry.entity.id && e.targetType === entry.entity.type &&
     e.age <= .8 && Math.hypot(e.x - entry.entity.x, e.y - entry.entity.y) < 45);
 }
 

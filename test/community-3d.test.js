@@ -65,14 +65,14 @@ test('建筑破损为合批三维碎片，不改动原模型几何或公共材�
   assert.ok(meshes[0].geometry.attributes.position.count > 0);
 });
 test('舰船仅在确认损毁时下沉，迷雾消失、潜航、运载和胜负清场不触发', () => {
-  const entry = { model: { visible: true }, entity: { type: 'destroyer', hp: 100, x: 100, y: 100 } };
+  const entry = { model: { visible: true }, entity: { id: 42, type: 'destroyer', hp: 100, x: 100, y: 100 } };
   const game = { isVisibleFor: () => true, effects: [] };
   assert.equal(confirmedShipLoss(entry, game), false);
   entry.entity.hp = 0; assert.equal(confirmedShipLoss(entry, game), true);
   assert.equal(confirmedShipLoss(entry, { ...game, isVisibleFor: () => false }), false);
   assert.equal(confirmedShipLoss({ ...entry, entity: { ...entry.entity, type: 'submarine' } }, game), false);
   entry.entity.hp = 100; game.effects = [{ type: 'explosion', targetType: 'destroyer', x: 101, y: 100, age: .2 }];
-  assert.equal(confirmedShipLoss(entry, game), true); game.effects[0].targetType = 'fighter'; assert.equal(confirmedShipLoss(entry, game), false);
+  assert.equal(confirmedShipLoss(entry, game), false); game.effects[0].destroyed = true; game.effects[0].entityId = 41; assert.equal(confirmedShipLoss(entry, game), false); game.effects[0].entityId = 42; assert.equal(confirmedShipLoss(entry, game), true); game.effects[0].targetType = 'fighter'; assert.equal(confirmedShipLoss(entry, game), false);
 });
 test('沉船逐渐侧倾、低头并下降，动画有明确结束时间且暂停不推进', () => {
   const initial = sinkingPose(0, 40), middle = sinkingPose(3.75, 40), end = sinkingPose(7.5, 40);

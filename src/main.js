@@ -68,7 +68,7 @@ const selectionStatus = entity => {
   if (entity.type === 'counterIntel' && entity.owner === 0) return `生命 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)} · ${COUNTER_INTEL_LABELS[state.game.counterIntelState(entity)] || '状态同步中'}`;
   if(entity.type==='nuclearSilo'){const p=state.game.players[entity.owner];return `生命 ${Math.ceil(entity.hp)} / ${entity.maxHp} · ${p.nuclearSpent?'本局已发射':p.nuclearPending?'发射准备中':`准备 ${Math.floor(p.nuclearCharge||0)} / 240 秒`}`;}
   if (entity.kind === 'unit' && isLunarRobot(state.game.map, entity.type)) return `机体 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)} · 电池 ${Math.ceil(entity.battery)}%${entity.order?.type === 'rearm' ? entity.battery <= 0 ? ' · 电池耗尽，等待供电救援' : ' · 返场充电／维修' : ''}${entity.stunUntil > state.game.time ? ' · 瘫痪' : ''}`;
-  return `生命 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)}${entity.type === 'harvester' ? ` · 矿石 ${Math.floor(entity.cargo)} / 210` : ''}${d?.ammo ? ` · 弹药 ${entity.ammo} / ${d.ammo}` : ''}${d?.capacity ? ` · 载重 ${state.game.transportLoad(entity)} / ${d.capacity} 格 · ${entity.passengers.length} 单位` : ''}${entity.type === 'supply' ? ` · 库存 ${Math.floor(entity.stock)} / ${d.stock} · ${entity.autoSupply !== false ? '自动保障' : '驻点保障'}` : ''}${supportsDroneAutonomy(entity) ? ` · ${entity.autoDrone ? DRONE_ROLES[entity.droneRole] || '自主值守' : '手动控制'}` : ''}${entity.type === 'carrier' ? ` · 舰载机 ${entity.wing} / ${d.wing}` : ''}${entity.type === 'laser' ? ` · 热量 ${Math.ceil(entity.heat)}%${entity.overheated ? ' 冷却中' : ''}` : ''}${entity.type === 'rocket' ? ` · 展开 ${entity.deployProgress.toFixed(1)} / 2 秒` : ''}${entity.type === 'submarine' ? state.game.submarineSurfaced(entity) ? ' · 港口浮航' : entity.exposedUntil > state.game.time ? ' · 暴露' : ' · 潜航' : ''}${entity.jammedUntil > state.game.time ? ' · 受干扰' : ''}${entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? ' · 返场补给' : ''}`;
+  return `生命 ${Math.ceil(entity.hp)} / ${Math.ceil(entity.maxHp)}${entity.type === 'harvester' ? ` · 矿石 ${Math.floor(entity.cargo)} / 210` : ''}${d?.ammo ? ` · 弹药 ${entity.ammo} / ${d.ammo}` : ''}${d?.capacity ? ` · 载重 ${state.game.transportLoad(entity)} / ${d.capacity} 格 · ${entity.passengers.length} 单位` : ''}${entity.type === 'supply' ? ` · 库存 ${Math.floor(entity.stock)} / ${d.stock} · ${entity.autoSupply !== false ? '自动保障' : '驻点保障'}` : ''}${supportsDroneAutonomy(entity) ? ` · ${entity.autoDrone ? DRONE_ROLES[entity.droneRole] || '自主值守' : '手动控制'}` : ''}${entity.type === 'carrier' ? ` · 舰载编组 ${entity.wing} / ${d.wing} · 自卫弹 ${entity.defenseAmmo ?? 12} / 12` : ''}${entity.type === 'laser' ? ` · 热量 ${Math.ceil(entity.heat)}%${entity.overheated ? ' 冷却中' : ''}` : ''}${entity.type === 'rocket' ? ` · 展开 ${entity.deployProgress.toFixed(1)} / 2 秒` : ''}${entity.type === 'submarine' ? state.game.submarineSurfaced(entity) ? ' · 港口浮航' : entity.exposedUntil > state.game.time ? ' · 暴露' : ' · 潜航' : ''}${entity.jammedUntil > state.game.time ? ' · 受干扰' : ''}${entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? ' · 返场补给' : ''}`;
 };
 const icon = name => `<i data-lucide="${name}"></i>`;
 const refreshIcons = () => createIcons({ icons });
@@ -784,7 +784,7 @@ function showHelp() {
   gameAudio.setPaused(true);
   const mission = state.game?.challenge && CHALLENGES[state.game.challenge.id];
   const missionRules = mission?.operation ? ' 固定任务编队，不开放自由生产；增援、运输、工业与采矿收入依本关规则。' : mission && isLifeline(state.game) ? ' 固定护航编队，海运抵港才结算，应急空运不计任务交付。' : ' 固定编队与整备资金，不开放生产和外部收入。';
-  showModal('操作说明', `<p>${mission ? mission.briefing+missionRules : VICTORY_MODES[state.game?.victoryMode || 'quick'].description+'即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。'}补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
+  showModal('操作说明', `<p>${mission ? mission.briefing+missionRules : VICTORY_MODES[state.game?.victoryMode || 'quick'].description+'即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。'}补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。先选中一名单位，按 T 或点「同型」可选中全图同型号我方单位。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
     <div class="keyline"><span>选择 / 框选部队</span><kbd>左键 / 拖动</kbd></div>
     <div class="keyline"><span>移动 / 攻击目标</span><kbd>右键</kbd></div>
     <div class="keyline"><span>攻击移动 / 停止</span><kbd>A / S</kbd></div>
@@ -812,6 +812,15 @@ function configureSandbox(current) {
   loyalty.configure(settings);
   toast(loyalty.storageError ? '设置已生效，本机存储不可用，刷新后需重新设置' : current ? '当前局已开启指挥官沙盘' : '下次新开普通单机将启用指挥官沙盘');
   closeModal(); updateUI(true);
+}
+
+function selectSameModel() {
+  const g = state.game;
+  if (!g?.running || g.spectator) return;
+  if (!g.selectSelectedType()) { toast('先选中一名单位，再点「同型」或按 T'); return; }
+  const unit = g.getEntity(g.selected[0]);
+  toast(`已选中全部同型：${equipmentProfile(g.players[0].faction, unit.type, g.map.future).name} × ${g.selected.length}`);
+  updateSelection();
 }
 
 function showPause() {
@@ -1085,6 +1094,7 @@ function setupControls() {
       if (event.ctrlKey || event.metaKey) { event.preventDefault(); state.groups[key] = [...g.selected]; toast(`编队 ${key} 已保存`); }
       else if (state.groups[key]) { g.selected = state.groups[key].filter(id => g.getEntity(id)?.owner === 0); updateSelection(); const target = g.getEntity(g.selected[0]); if (target && event.shiftKey) state.renderer.centerOn(target.x, target.y); }
     } else if (key === ' ') { g.selectAllCombat(); }
+    else if (key === 't' && !event.repeat) { event.preventDefault(); selectSameModel(); }
     else if (key === 'a') { g.placingBuilding = false; g.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('左键指定攻击移动目标'); }
     else if (key === 'p') { g.placingBuilding = false; g.orderMode = 'patrol'; clearOrderButtons(); $('#patrol-btn').classList.add('active'); }
     else if (key === 's') { g.stopSelected(); clearOrderButtons(); }
@@ -1130,6 +1140,7 @@ function setupControls() {
     $('#toolbar-toggle').title = collapsed ? '展开部队指令' : '收起部队指令';
     $('#toolbar-toggle').innerHTML = icon(collapsed ? 'chevron-left' : 'chevron-right'); refreshIcons();
   });
+  $('#same-type-btn').addEventListener('click', selectSameModel);
   $('#all-btn').addEventListener('click', () => state.game?.selectAllCombat());
   $('#stop-btn').addEventListener('click', () => { state.game?.stopSelected(); clearOrderButtons(); });
   $('#home-btn').addEventListener('click', () => state.renderer?.centerOn(state.game.homeX||state.game.map.spawns?.[0]?.x||280,state.game.online?state.game.homeY:state.game.map.spawns?.[0]?.y||state.game.homeY));

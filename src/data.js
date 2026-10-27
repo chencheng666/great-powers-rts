@@ -34,7 +34,7 @@ export const BUILDINGS = {
   armory: { name: '兵工厂', cost: 780, time: 25, hp: 760, power: -25, size: 82, icon: 'warehouse', desc: '生产防空、无人机、电子战、远程火力与阵营装备，独立生产队列。', requires: 'factory' },
   dock: { name: '海军港口', cost: 850, time: 27, hp: 800, power: -25, size: 92, icon: 'anchor', desc: '生产舰艇、接收集装箱物资；有电且脱战后维修舰艇和潜艇、补弹及补充舰载机。', requires: 'factory', naval: true },
   radar: { name: '雷达站', cost: 550, time: 22, hp: 580, power: -30, size: 68, icon: 'radar', desc: '扩大视野并解锁防空、特色单位。', requires: 'factory' },
-  airfield: { name: '空军基地', cost: 980, time: 31, hp: 760, power: -45, size: 92, icon: 'plane', desc: '生产制空与对地战机；有电时可补充弹药。', requires: 'radar' },
+  airfield: { name: '空军基地', cost: 980, time: 31, hp: 760, power: -45, size: 128, icon: 'plane', desc: '生产制空与对地战机；有电时可补充弹药。', requires: 'radar' },
   turret: { name: '防御炮塔', cost: 440, time: 16, hp: 600, power: -20, size: 56, icon: 'crosshair', desc: '自动攻击地面目标；高空战机需要防空车拦截。', requires: 'barracks' },
   lab: { name: '作战实验室', cost: 950, time: 33, hp: 680, power: -45, size: 70, icon: 'flask-conical', desc: '解锁阵营特色单位和终极技能。', requires: 'radar' },
   super: { name: '战略武器站', cost: 1200, time: 38, hp: 700, power: -70, size: 74, icon: 'orbit', desc: '蓄能后释放阵营终极技能；另有网络战：120 秒充能、500 资金，预警 12 秒后干扰敌方新指令 4 秒。摧毁源站或断电可解除。', requires: 'lab' }
@@ -61,7 +61,7 @@ export const UNITS = {
   apc: { name: '装甲运输车', cost: 420, time: 19, hp: 430, speed: 90, range: 0, damage: 0, cooldown: 1, sight: 280, capacity: 4, icon: 'bus-front', producer: 'factory', tags: ['vehicle', 'armor', 'transport'], desc: '运载 4 名步兵或工程师；车毁乘员受伤撤出，无法无敌穿越封锁线。' },
   supply: { name: '维修补给车', cost: 300, time: 17, hp: 230, speed: 72, range: 240, damage: 0, cooldown: 1, sight: 300, stock: 360, icon: 'wrench', producer: 'factory', tags: ['vehicle', 'support'], desc: '240 范围光环自动为多支陆军补弹，脱战后分配维修；优先圈内保障，不与缺弹部队相向挤靠。360 库存，缺货回厂，消耗资金。' },
   destroyer: { name: '导弹驱逐舰', cost: 1150, time: 40, hp: 800, speed: 67, range: 470, damage: 72, cooldown: 2.6, sight: 440, sonar: 290, ammo: 8, rearmTime: 10, icon: 'ship', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'anti-air', 'anti-sub', 'artillery'], desc: '远程对舰、防空与反潜；导弹有飞行时间，须返回有电船坞付费补弹。' },
-  carrier: { name: '舰队航空母舰', cost: 1900, time: 58, hp: 1400, speed: 43, range: 720, damage: 95, cooldown: 4, sight: 420, ammo: 6, rearmTime: 14, wing: 3, icon: 'plane-takeoff', producer: 'dock', requires: 'lab', map: 'ocean', tags: ['ship', 'naval', 'artillery'], desc: '3 架可被击落的舰载机执行远程打击；飞机返舰，损失后在船坞付费补充，惧怕潜艇。' },
+  carrier: { name: '舰队航空母舰', cost: 2900, time: 68, hp: 1400, speed: 43, range: 720, damage: 95, cooldown: 4, sight: 420, ammo: 6, rearmTime: 14, wing: 3, icon: 'plane-takeoff', producer: 'dock', requires: 'lab', map: 'ocean', tags: ['ship', 'naval', 'artillery'], desc: '价格包含3个抽象舰载打击编组及12发近程自卫弹；实体舰载机另造。自动拦截飞机和常规来袭弹药，密集攻击可突破，返港付费整备。' },
   submarine: { name: '攻击潜艇', cost: 920, time: 35, hp: 420, speed: 64, range: 340, damage: 110, cooldown: 3.5, sight: 360, sonar: 190, ammo: 5, rearmTime: 10, icon: 'waves', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'submerged', 'stealth'], desc: '潜航伏击舰艇；声呐或发射后短暂暴露，可被反潜舰反制，不能攻击陆地。' }
 };
 

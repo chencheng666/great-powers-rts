@@ -20,7 +20,7 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
       e.order = null; e.orderQueue = []; e.path = []; e.resumeOrder = null; e.targetId = null;
       e.passengers = []; e.embarkedIn = null; e.homeCarrierId = null;
       e.queue = []; e.active = null; e.rallyPoint = null; delete e.freight;
-      delete e.serviceTargetId; delete e.stock; delete e.ammo;
+      delete e.serviceTargetId; delete e.stock; delete e.ammo; delete e.defenseAmmo; delete e.defenseReadyAt; delete e.defenseReload;
       delete e.autoDrone; delete e.droneRole;
       delete e.swarmParentId;
       delete e.nuclearEvadeUntil;

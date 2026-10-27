@@ -41,7 +41,8 @@ test('单机资金、生产提速保持花费与进度比例，敌军不变，�
 test('无限弹药不恢复机体、载机数量或机器人电量，普通局仍消耗弹药',()=>{
   const g=game();const u=g.addUnit(0,'tank',600,600),enemy=g.addUnit(1,'tank',650,600);u.ammo=0;u.hp-=30;const health=u.hp;applySandbox(g,settings);g.update(.01);
   assert.equal(u.ammo,UNITS.tank.ammo);assert.equal(u.hp,health);assert.equal(unlimitedAmmo(g,enemy),false);
-  const carrier=g.addUnit(0,'carrier',600,600);carrier.wing=0;carrier.hp=10;g.update(0);assert.equal(carrier.wing,0);assert.equal(carrier.hp,10);
+  // 弹药验收不混入随机敌军目标选择，避免脆弱航母被攻击干扰断言。
+  g.units=[u];const carrier=g.addUnit(0,'carrier',600,600);carrier.wing=0;carrier.hp=10;g.update(0);assert.equal(carrier.wing,0);assert.equal(carrier.hp,10);
   const normal=game();assert.equal(unlimitedAmmo(normal,normal.addUnit(0,'tank',600,600)),false);
   const moon=game({mapId:'meridian'});const robot=moon.addUnit(0,'tank',600,600);robot.battery=33;applySandbox(moon,settings);moon.update(0);assert.equal(robot.battery,33);
 });

@@ -90,17 +90,27 @@ export const realisticEffects = {
     const profile = impactProfile(effect); group.userData.impact = profile;
     group.add(this.effectSprite(profile.fire), this.effectSprite(profile.energy ? '#d7faff' : '#fff3c8'));
     for (let i = 0; i < profile.smoke; i++) {
-      const puff = this.effectSprite(profile.water ? '#cbdedc' : i % 2 ? '#7a746b' : '#404747', true);
+      const puff = this.effectSprite(profile.water ? '#d9e9e8' : i % 2 ? '#847d70' : '#3a3f3f', true);
       puff.material.rotation = noise(i, effect.x) * Math.PI * 2; group.add(puff);
     }
     const positions = new Float32Array(profile.particles * 3);
     const sparks = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(positions, 3)), new THREE.PointsMaterial({ color: profile.water ? '#e1eeeb' : profile.energy ? '#a5eeff' : '#f0c792', size: profile.explosion ? 2 : 1.2, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     sparks.frustumCulled = false; group.add(sparks);
-    const geometry = new THREE.RingGeometry(.73, 1, 64); geometry.rotateX(-Math.PI / 2);
-    group.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: profile.water ? '#b5d5d5' : '#918c7b', opacity: 0, transparent: true, depthWrite: false, side: THREE.DoubleSide })));
+    const geometry = new THREE.RingGeometry(.86, 1, 48); geometry.rotateX(-Math.PI / 2);
+    const wave = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: profile.water ? '#d8eceb' : '#918c7b', opacity: 0, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+    group.add(wave); group.userData.wave = wave;
+    group.userData.bursts = [];
+    if (profile.explosion && !profile.energy) for (let i = 0; i < 3; i++) {
+      const burst = this.effectSprite(i === 1 ? '#ffe7b0' : '#eb7d32');
+      group.add(burst); group.userData.bursts.push(burst);
+    }
+    if (profile.fragments) {
+      const fragments = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: profile.structure ? '#77766d' : '#414b4b', roughness: .9, transparent: true, opacity: 1 }), profile.fragments);
+      fragments.frustumCulled = false; group.add(fragments); group.userData.fragments = fragments;
+      group.userData.fragmentDummy = new THREE.Object3D();
+    }
     this.combatFlash(effect.x, effect.y, this.effectHeight(effect.targetType, effect.x, effect.y), profile.fire, profile.explosion ? 16000 : 1400, profile.explosion ? .22 : .08);
-    const tags = ['fighter', 'strike', 'drone', 'ghost', 'aegis', 'bomber', 'airlift', 'navalFighter', 'navalStrike', 'freightPlane'];
-    if (profile.explosion && !profile.water && !tags.includes(effect.targetType)) {
+    if (profile.explosion && !profile.water && !profile.air) {
       this.scorchMarks[this.scorchCursor] = { x: effect.x, y: effect.y, size: Math.min(190, profile.radius * 1.65), angle: noise(effect.x, effect.y) * Math.PI * 2, start: this.game.time };
       this.scorchCursor = (this.scorchCursor + 1) % 80;
     }
@@ -119,16 +129,36 @@ export const realisticEffects = {
     group.children[1].scale.setScalar(r * .5 * hot); group.children[1].material.opacity = hot ** 2;
     for (let i = 0; i < p.smoke; i++) {
       const puff = group.children[i + 2], a = i * 2.399, spread = r * t * .6;
-      puff.position.set(Math.cos(a) * spread, r * t * (.3 + noise(i, effect.x) * .65), Math.sin(a) * spread);
-      puff.scale.setScalar(r * (.35 + t * (p.water ? 1.1 : 1.5))); puff.material.opacity = Math.sin(t * Math.PI) * (p.explosion ? .68 : .36);
+      puff.position.set(Math.cos(a) * spread, r * t * (p.water ? 1.1 + noise(i, effect.x) : .55 + noise(i, effect.x) * 1.1), Math.sin(a) * spread);
+      puff.scale.set(r * (.35 + t * (p.water ? .6 : 1.15)), r * (.35 + t * (p.water ? 1.1 : 1.5)), 1); puff.material.opacity = Math.sin(t * Math.PI) * (p.explosion ? .68 : .36);
     }
     const sparks = group.children[2 + p.smoke], positions = sparks.geometry.attributes.position;
     for (let i = 0; i < positions.count; i++) {
       const a = i * 2.399, velocity = r * (1 + noise(i, effect.x) * .9);
-      positions.setXYZ(i, Math.cos(a) * velocity * t, velocity * t * (.5 + noise(i, effect.y)) - r * t * t * 2.1, Math.sin(a) * velocity * t);
+      positions.setXYZ(i, Math.cos(a) * velocity * t, velocity * t * (p.water ? 1.6 : .5 + noise(i, effect.y)) - r * t * t * 2.1, Math.sin(a) * velocity * t);
     }
     positions.needsUpdate = true; sparks.material.opacity = (1 - t) ** 2;
-    const wave = group.children.at(-1); wave.position.y = -group.position.y + this.elevation(effect.x, effect.y) + 1.2;
-    wave.scale.setScalar(r * (.35 + t * 2.4)); wave.material.opacity = (1 - t) ** 3 * (p.explosion ? .35 : .12);
+    const wave = group.userData.wave; wave.position.y = -group.position.y + this.elevation(effect.x, effect.y) + 1.2;
+    wave.scale.setScalar(r * (.35 + t * 2.4)); wave.material.opacity = (1 - t) ** (p.water ? 1.6 : 3) * (p.explosion ? .4 : .12);
+    if (p.air) wave.visible = false;
+    for (const [i, burst] of (group.userData.bursts || []).entries()) {
+      const phase = Math.max(0, t - i * .085), heat = Math.max(0, 1 - phase * 4.4);
+      const angle = i * 2.399 + noise(effect.x, effect.y) * 6;
+      burst.position.set(Math.cos(angle) * r * .28, r * (.07 + phase * .8), Math.sin(angle) * r * .28);
+      burst.scale.set(r * (.3 + phase * 1.8), r * (.4 + phase * 2.4), 1);
+      burst.material.opacity = t < i * .085 ? 0 : heat * .7;
+    }
+    if (group.userData.fragments) {
+      const fragments = group.userData.fragments, dummy = group.userData.fragmentDummy;
+      const ground = -group.position.y + this.elevation(effect.x, effect.y) + 1;
+      for (let i = 0; i < p.fragments; i++) {
+        const angle = i * 2.399, speed = r * (.65 + noise(i, effect.y));
+        dummy.position.set(Math.cos(angle) * speed * t, Math.max(ground, speed * t * (1.1 + noise(i, effect.x)) - r * 2.1 * t * t), Math.sin(angle) * speed * t);
+        dummy.rotation.set(t * (i + 2), angle + t * 4, t * (i % 3 + 1));
+        const size = Math.min(8, r * (p.structure ? .095 : .055)) * (.7 + noise(i, effect.x));
+        dummy.scale.set(size * 1.5, size, size * .65); dummy.updateMatrix(); fragments.setMatrixAt(i, dummy.matrix);
+      }
+      fragments.instanceMatrix.needsUpdate = true; fragments.material.opacity = Math.min(1, (1 - t) * 3);
+    }
   }
 };

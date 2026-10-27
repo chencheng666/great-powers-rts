@@ -72,7 +72,7 @@ def main():
         file = stage / 'dist' / name
         if not file.is_file() or digest(file) != expected: raise RuntimeError('资源缺失或哈希不一致：' + name)
     download_manifest = json.loads((stage / 'dist/downloads/manifest.json').read_text())
-    offline = next(f for f in download_manifest['files'] if f['name'].endswith('Great-Powers-RTS-v2.0.0-20261026.zip'))
+    offline = next(f for f in download_manifest['files'] if pathlib.PurePosixPath(f['name']).name == pathlib.Path(args.offline_zip).name)
     source_zip = pathlib.Path(args.offline_zip)
     if digest(source_zip) != offline['sha256'] or source_zip.stat().st_size != offline['size']: raise RuntimeError('离线包校验失败')
     target_zip = BASE / 'downloads' / offline['name']
@@ -80,8 +80,8 @@ def main():
     if target_zip.exists():
         if digest(target_zip) != offline['sha256']: raise RuntimeError('拒绝覆盖同名不同内容的历史下载')
     else: shutil.copy2(source_zip, target_zip); target_zip.chmod(0o644)
-    smoke = """import{createBattleServer}from'./server/index.mjs';import{mkdtemp,rm}from'node:fs/promises';import{tmpdir}from'node:os';import{join,resolve}from'node:path';for(const n of[2,6]){const directory=await mkdtemp(join(tmpdir(),'gp-stat-preflight-'));const app=createBattleServer({directory,root:resolve('dist'),maxPlayers:n});try{await new Promise(r=>app.server.listen(0,'127.0.0.1',r));const root='http://127.0.0.1:'+app.server.address().port,h=await(await fetch(root+'/api/health')).json();if(h.build!=='20261026-analytics-sandbox-video'||h.maxPlayers!==n)throw Error('预检失败');if((await fetch(root+'/admin/')).status!==200)throw Error('后台页面缺失');if((await fetch(root+'/api/admin/status')).status!==401)throw Error('后台鉴权异常');}finally{await new Promise(r=>app.server.close(r));await rm(directory,{recursive:true,force:true});}}console.log('两个服务、后台页面与鉴权预检通过');"""
-    print(run([str(node), '--input-type=module', '-e', smoke], cwd=stage), flush=True)
+    smoke = """import{createBattleServer}from'./server/index.mjs';import{mkdtemp,rm}from'node:fs/promises';import{tmpdir}from'node:os';import{join,resolve}from'node:path';for(const n of[2,6]){const directory=await mkdtemp(join(tmpdir(),'gp-stat-preflight-'));const app=createBattleServer({directory,root:resolve('dist'),maxPlayers:n});try{await new Promise(r=>app.server.listen(0,'127.0.0.1',r));const root='http://127.0.0.1:'+app.server.address().port,h=await(await fetch(root+'/api/health')).json();if(h.build!==process.argv[1]||h.maxPlayers!==n)throw Error('预检失败');if((await fetch(root+'/admin/')).status!==200)throw Error('后台页面缺失');if((await fetch(root+'/api/admin/status')).status!==401)throw Error('后台鉴权异常');}finally{await new Promise(r=>app.server.close(r));await rm(directory,{recursive:true,force:true});}}console.log('两个服务、后台页面与鉴权预检通过');"""
+    print(run([str(node), '--input-type=module', '-e', smoke, manifest['build']], cwd=stage), flush=True)
     idle(); backup.mkdir(mode=0o700)
     (backup / 'previous.txt').write_text(str(previous)); shutil.copy2(EXT, backup / 'nginx-before.conf')
     env_path = pathlib.Path('/etc/great-powers/player-admin.env'); dropin = pathlib.Path('/etc/systemd/system/great-powers-domestic.service.d/30-player-admin.conf')

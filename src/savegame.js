@@ -81,6 +81,8 @@ export function validateSave(save) {
       ids.add(entity.id);
       if (key === 'units') {
         if (!Array.isArray(entity.path) || entity.path.some(p => !point(p)) || !Array.isArray(entity.passengers) || entity.passengers.some(id => !Number.isSafeInteger(id)) || !['pathTimer', 'stunUntil', 'turretAngle', 'cargo', 'cargoValue', 'rearmProgress', 'temporaryUntil', 'movePulse', 'heat', 'deployProgress'].every(key => finite(entity[key]))) invalid();
+        if (entity.defenseAmmo !== undefined && (entity.type !== 'carrier' || !Number.isInteger(entity.defenseAmmo) || entity.defenseAmmo < 0 || entity.defenseAmmo > 12)) invalid();
+        for (const key of ['defenseReadyAt','defenseReload']) if (entity[key] !== undefined && (!finite(entity[key]) || entity[key] < 0 || key === 'defenseReload' && entity[key] > 2.4)) invalid();
         checkOrder(entity.order); checkOrder(entity.resumeOrder);
         if (entity.orderQueue !== undefined) {
           if (!Array.isArray(entity.orderQueue) || entity.orderQueue.length > ORDER_QUEUE_LIMIT) invalid();

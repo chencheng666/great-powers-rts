@@ -1,3 +1,4 @@
+import { BUILDINGS, UNITS } from './data.js';
 import { lunarRelief } from './lunar-terrain.js';
 import { islandHeight } from './island-map.js';
 import { ridgeHeight } from './theater-scenery.js';
@@ -30,9 +31,17 @@ export function tracerEndpoints(effect) {
 
 export function impactProfile(effect) {
   const explosion = effect.type === 'explosion', energy = ['laser', 'robotPulse', 'railgun'].includes(effect.style);
-  const water = ['patrol', 'frigate', 'destroyer', 'carrier', 'submarine', 'landing', 'containerShip'].includes(effect.targetType);
-  const infantry = ['rifle', 'engineer', 'scout'].includes(effect.targetType);
-  return { explosion, energy, water, radius: explosion ? Math.min(170, (effect.size || 40) * .9) : infantry ? 7 : 14, particles: explosion ? 32 : infantry ? 5 : 12, smoke: explosion ? 6 : 3, fire: water ? '#c4e3e2' : energy ? '#99f0ff' : '#ffbe6b' };
+  const tags = UNITS[effect.targetType]?.tags || [];
+  const water = effect.surface === 'water' || tags.includes('ship');
+  const infantry = tags.includes('infantry'), air = tags.includes('air') && effect.surface !== 'ground' && effect.surface !== 'water';
+  const structure = !!BUILDINGS[effect.targetType];
+  const kind = energy ? 'energy' : water ? 'water' : infantry ? 'infantry' : air ? 'air' : structure ? 'structure' : 'armor';
+  const radius = explosion ? Math.min(170, (effect.size || 40) * (air ? .58 : structure ? 1.15 : .9)) : infantry ? 7 : 14;
+  return { explosion, energy, water, air, structure, kind, radius,
+    particles: explosion ? water ? 44 : structure ? 48 : 32 : infantry ? 5 : 12,
+    smoke: explosion ? structure ? 9 : water ? 5 : 7 : 3,
+    fragments: explosion && !infantry && !energy ? structure ? 14 : water ? 8 : 6 : 0,
+    fire: water && !explosion ? '#c4e3e2' : energy ? '#99f0ff' : '#ffb24f' };
 }
 
 export const REALISM_BUILDINGS = ['hq', 'power', 'barracks', 'factory', 'armory'];
