@@ -1032,7 +1032,10 @@ export class Renderer {
         parked.forEach((plane, i) => {
           let mesh = entry.deckModels.get(plane.id);
           if (!mesh) { mesh = createModel(equipmentModel(this.game.players[entity.owner].faction, plane.type), teamVisual(entity.owner).color); mesh.scale.setScalar(.3); entry.model.add(mesh); entry.deckModels.set(plane.id, mesh); }
-          mesh.position.set(-8 + i * 4.1, 1.3, -1.3); mesh.rotation.y = Math.PI / 4;
+          const parkingX = -8 + i * 4.1, taxi = plane.deckTaxi;
+          const progress = taxi?.phase === 'out' ? taxi.progress : taxi?.phase === 'in' ? 1 - taxi.progress : 0;
+          mesh.position.set(parkingX + (4 - parkingX) * progress, 1.3, -1.3 * (1 - progress));
+          mesh.rotation.y = Math.PI / 4 * (1 - progress);
         });
       }
       if(entity.type==='landing'&&entity.owner===0){

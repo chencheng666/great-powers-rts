@@ -34,6 +34,8 @@ test('真实飞机弹射起飞，不复制机体；舰载机耗弹受伤后返�
   const g = setup(), carrier = g.addUnit(0, 'carrier', 1400, 1000), plane = g.addUnit(0, 'navalStrike', 1400, 1000);
   board(g, plane, carrier);
   assert.equal(g.launchDeckAircraft(carrier), 1);
+  assert.equal(plane.embarkedIn, carrier.id);
+  for (let n = 0; n < 100 && plane.embarkedIn; n++) { g.time += .05; g.updateCarrierAirGroup(carrier, .05); }
   assert.equal(plane.embarkedIn, null); assert.equal(carrier.passengers.length, 0);
   assert.ok(plane.deployment); assert.equal(g.ownedUnits(0, 'navalStrike').length, 1);
   plane.deployment = null; plane.x = carrier.x; plane.y = carrier.y;
@@ -43,10 +45,30 @@ test('真实飞机弹射起飞，不复制机体；舰载机耗弹受伤后返�
   for (let n = 0; n < 60 && !plane.embarkedIn; n++) { g.time += .05; g.updateRearm(plane, .05); }
   assert.equal(plane.embarkedIn, carrier.id);
   const initial = g.players[0].credits;
-  for (let n = 0; n < 230; n++) { g.time += .05; g.updateCarrierAirGroup(carrier, .05); }
+  for (let n = 0; n < 350; n++) { g.time += .05; g.updateCarrierAirGroup(carrier, .05); }
   assert.equal(plane.hp, plane.maxHp); assert.equal(plane.ammo, UNITS.navalStrike.ammo);
   assert.equal(plane.embarkedIn, null); assert.equal(plane.order.type, 'attackMove');
   assert.ok(Math.abs(initial - g.players[0].credits - (54 * .35 + 40)) < .001);
+});
+
+test('甲板滑行逐机排队，航母移动时暂停，存档恢复后继续并且不会复制飞机', () => {
+  const g = setup(), carrier = g.addUnit(0, 'carrier', 1400, 1000);
+  const planes = [g.addUnit(0, 'navalStrike', 1400, 1000), g.addUnit(0, 'navalFighter', 1400, 1000)];
+  planes.forEach(plane => board(g, plane, carrier));
+  assert.equal(g.launchDeckAircraft(carrier), 2);
+  for (let n = 0; n < 20; n++) { g.time += .05; g.updateCarrierAirGroup(carrier, .05); }
+  const progress = planes[0].deckTaxi.progress;
+  assert.ok(progress > 0 && progress < 1);
+  assert.equal(planes[1].deckTaxi.progress, 0);
+  carrier.lastMovedAt = g.time;
+  g.updateCarrierAirGroup(carrier, .05);
+  assert.equal(planes[0].deckTaxi.progress, progress);
+  const save = g.toSave(); validateSave(save);
+  const restored = Game.fromSave(save), restoredCarrier = restored.getEntity(carrier.id);
+  for (let n = 0; n < 240; n++) { restored.time += .05; restored.updateCarrierAirGroup(restoredCarrier, .05); }
+  assert.equal(restoredCarrier.passengers.length, 0);
+  assert.equal(restored.units.filter(u => planes.some(p => p.id === u.id)).length, 2);
+  assert.ok(planes.every(p => restored.getEntity(p.id).deployment));
 });
 
 test('编入真实舰载机后航母自带攻击组停用；移动、断电和受击不允许免费着舰整备', () => {

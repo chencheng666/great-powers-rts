@@ -31,6 +31,8 @@
 | 无人机重制 | `assets/models/drone-library.glb` 与 `.blend`；本地 Blender 程序化建模 | `scripts/build_drone_assets.py` 重制攻击无人机、隐形侦察机和蜂群母机三个已有模板；四／六旋翼保留独立轴心关节，不新增兵种或改变属性 |
 | 阵营原型与科幻模型 | `assets/models/equipment-library.glb` 与 `.blend`；本地 Blender 程序化建模 | `scripts/build_equipment_assets.py`，五种坦克、五种火箭炮、十三种科幻设施、三种原创未来单位，共 26 个模板；不是厂商精确模型 |
 | 子午环阵地表 | `assets/meridian-regolith-v2.png`；内置 AI 图像生成工具制作的细颗粒俯视月壤纹理，旧 `v1` 保留 | 2026-10-04 更新；完整提示词见 `assets/asset-prompts.json`；道路、掩体、反应堆和基地由程序及三维模型叠加 |
+
+地表、建筑、植被、兵工厂、月壤和徽章的 WebP 文件由同名 PNG 以 `cwebp -q 82` 转换，保留原图和透明通道，用于减少网页首战加载的数据量。
 | 配乐 | `assets/audio/frontline-sequence.m4a`；程序编曲、合成的循环配乐《前线序列》 | `scripts/generate-audio.mjs`，约 74 秒，不使用官方游戏音乐 |
 | 战场音效 | `src/sound-effects.js` 原创 Web Audio 程序合成，`src/battle-sound.js` 统一单机与联机事件 | 32 类枪炮、导弹、鱼雷、电子武器、命中及损毁短声；8 类合并移动循环；不含第三方武器录音，服从音效音量、静音、暂停和视野过滤 |
 | 核威慑防空警报 | `src/nuclear-alarm.js` 原创程序合成的六秒循环机械升降调 | 不使用《红色警戒2》录音或采样；从公开核预警持续至威胁解除，走独立音效通道，服从音效音量、静音与暂停；单机、读档与联网按当前警报状态同步 |

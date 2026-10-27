@@ -27,7 +27,7 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
       delete e.swarmParentId;
       delete e.nuclearEvadeUntil;
       delete e.counterIntelEnabled; delete e.counterIntelState;
-      delete e.combatStance; delete e.airfieldOps;
+      delete e.combatStance; delete e.airfieldOps; delete e.deckTaxi;
     } else if (e.order?.targetId && !ids.has(e.order.targetId) && !game.buildings.some(b => b.id === e.order.targetId && visible(b))) {
       // 指令目标是公开资源点时保留；敌军消失后不发送其最新位置。
       if (typeof e.order.targetId === 'number') { e.order = null; e.targetId = null; }

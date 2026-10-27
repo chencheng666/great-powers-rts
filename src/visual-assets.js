@@ -25,11 +25,11 @@ const logisticsURL = new URL('../assets/models/logistics-library.glb', import.me
 const convoyURL = new URL('../assets/models/convoy-library.glb', import.meta.url).href;
 const robotURL = new URL('../assets/models/robot-library.glb', import.meta.url).href;
 const realismURL = new URL('../assets/models/realism-library.glb', import.meta.url).href;
-const meridianURL = new URL('../assets/meridian-regolith-v2.png', import.meta.url).href;
-const groundURL = new URL('../assets/terrain-material-v3.png', import.meta.url).href;
-const buildingsURL = new URL('../assets/buildings-realistic-v2.png', import.meta.url).href;
-const foliageURL = new URL('../assets/foliage-realistic-v2.png', import.meta.url).href;
-const armoryURL = new URL('../assets/armory-v1.png', import.meta.url).href;
+const meridianURL = new URL('../assets/meridian-regolith-v2.webp', import.meta.url).href;
+const groundURL = new URL('../assets/terrain-material-v3.webp', import.meta.url).href;
+const buildingsURL = new URL('../assets/buildings-realistic-v2.webp', import.meta.url).href;
+const foliageURL = new URL('../assets/foliage-realistic-v2.webp', import.meta.url).href;
+const armoryURL = new URL('../assets/armory-v1.webp', import.meta.url).href;
 const buildingNames = ['hq', 'power', 'refinery', 'barracks', 'factory', 'dock', 'radar', 'airfield', 'turret', 'lab', 'super', 'oil', 'armory'];
 const names = ['hq', 'power', 'refinery', 'barracks', 'factory', 'dock', 'radar', 'airfield', 'turret', 'lab', 'super', 'tank', 'harvester', 'aa', 'fighter', 'strike', 'drone', 'ghost', 'rifle', 'engineer', 'scout', 'patrol', 'frigate', 'elite_china', 'elite_russia', 'elite_nato', 'elite_asia', 'elite_middleeast', 'oil', 'beacon', 'ore_gold', 'ore_gem', 'tree', 'rock'];
 names.push('loiterer', 'jammer', 'laser', 'rocket', 'apc', 'supply', 'destroyer', 'carrier', 'submarine');

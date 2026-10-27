@@ -452,6 +452,7 @@ export const modernCombat = {
       this.moveUnit(u, transport, dt, 16);
       if (this.time < u.deckApproach.until) return;
       u.homeCarrierId = transport.id; u.deckApproach = null; transport.landingId = null;
+      u.deckTaxi = { phase: 'in', progress: 0, launch: false };
     }
     transport.passengers.push(u.id); u.embarkedIn = transport.id; u.order = null; u.path = [];
     u.x = transport.x; u.y = transport.y;
@@ -525,9 +526,16 @@ export const modernCombat = {
       const plane = this.getEntity(id);
       if (!plane || plane.hp <= 0) { carrier.passengers = carrier.passengers.filter(v => v !== id); continue; }
       if (!emergency && (plane.ammo < UNITS[plane.type].ammo || plane.hp < plane.maxHp - .01)) continue;
+      if (!emergency) {
+        if (plane.deckTaxi?.phase === 'in') plane.deckTaxi.launch = true;
+        else if (!plane.deckTaxi) plane.deckTaxi = { phase: 'queued', progress: 0, launch: true };
+        count++;
+        continue;
+      }
       const angle = carrier.angle + count * .32;
       const goal = this.resolveMoveGoal(plane, carrier.x + Math.cos(angle) * 230, carrier.y + Math.sin(angle) * 230);
       plane.embarkedIn = null; plane.x = carrier.x; plane.y = carrier.y;
+      plane.deckTaxi = null;
       plane.angle = plane.turretAngle = angle;
       plane.deployment = { buildingId: carrier.id, start: this.time, until: this.time + 2.6, fromX: plane.x, fromY: plane.y, ...goal };
       if (emergency) { plane.hp *= .5; plane.homeCarrierId = null; plane.lastDamageAt = this.time; }
@@ -540,6 +548,26 @@ export const modernCombat = {
 
   updateCarrierAirGroup(carrier, dt) {
     if (!this.hasPower(carrier.owner) || !this.transportGrounded(carrier) || this.time - (carrier.lastDamageAt ?? -10) <= 3) return;
+    // 每次只允许一架飞机占用甲板滑行通道，舰体移动时自然暂停。
+    const deckPlanes = carrier.passengers.map(id => this.getEntity(id)).filter(plane => plane?.hp > 0 && plane.deckTaxi);
+    const taxi = deckPlanes.find(plane => plane.deckTaxi.phase !== 'queued') || deckPlanes[0];
+    if (taxi && (taxi.deckTaxi.phase === 'in' || taxi.hp >= taxi.maxHp - .01 && taxi.ammo >= UNITS[taxi.type].ammo)) {
+      if (taxi.deckTaxi.phase === 'queued') taxi.deckTaxi.phase = 'out';
+      taxi.deckTaxi.progress = Math.min(1, taxi.deckTaxi.progress + dt / 2);
+      if (taxi.deckTaxi.progress >= 1) {
+        if (taxi.deckTaxi.phase === 'in') taxi.deckTaxi = taxi.deckTaxi.launch ? { phase: 'queued', progress: 0, launch: true } : null;
+        else {
+          const angle = carrier.angle;
+          const goal = this.resolveMoveGoal(taxi, carrier.x + Math.cos(angle) * 230, carrier.y + Math.sin(angle) * 230);
+          taxi.embarkedIn = null; taxi.x = carrier.x; taxi.y = carrier.y;
+          taxi.angle = taxi.turretAngle = angle; taxi.deckTaxi = null;
+          taxi.deployment = { buildingId: carrier.id, start: this.time, until: this.time + 2.6, fromX: taxi.x, fromY: taxi.y, ...goal };
+          this.restoreCombatOrder(taxi);
+          carrier.passengers = carrier.passengers.filter(id => id !== taxi.id);
+          this.fogTimer = 0; this.events.selection?.();
+        }
+      }
+    }
     for (const id of [...carrier.passengers]) {
       const plane = this.getEntity(id); if (!plane || plane.hp <= 0) continue;
       const p = this.players[carrier.owner], d = UNITS[plane.type];
@@ -549,7 +577,7 @@ export const modernCombat = {
       if (plane.ammo < d.ammo && plane.rearmProgress >= d.rearmTime / d.ammo && p.credits >= 10) {
         p.credits -= 10; plane.ammo++; plane.rearmProgress = 0;
       }
-      if (carrier.order?.type === 'rearm' || plane.hp < plane.maxHp - .01 || plane.ammo < d.ammo) continue;
+      if (plane.deckTaxi || carrier.order?.type === 'rearm' || plane.hp < plane.maxHp - .01 || plane.ammo < d.ammo) continue;
       if (!plane.resumeOrder) {
         const target = this.closestEnemy(plane, UNITS.carrier.range, carrier.owner);
         if (target) plane.resumeOrder = { type: 'attack', targetId: target.id, x: target.x, y: target.y };

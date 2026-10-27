@@ -119,5 +119,5 @@ test('荣誉结算不修改战力或游戏状态，授勋文案与对应徽章�
 test('八枚真实位图徽章采用四列两行透明图集，可离线打包',()=>{
   const png=readFileSync(new URL('../assets/player-ranks-v1.png',import.meta.url));
   assert.equal(png.subarray(1,4).toString(),'PNG');assert.equal(png.readUInt32BE(16)/png.readUInt32BE(20),2);assert.equal(png[25],6);
-  const css=readFileSync(new URL('../src/honors.css',import.meta.url),'utf8');assert.ok(css.includes("url('../assets/player-ranks-v1.png')"));assert.ok(css.includes('prefers-reduced-motion'));
+  const css=readFileSync(new URL('../src/honors.css',import.meta.url),'utf8');assert.ok(css.includes("url('../assets/player-ranks-v1.webp')"));assert.ok(css.includes('prefers-reduced-motion'));
 });

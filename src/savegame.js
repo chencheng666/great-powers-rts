@@ -111,6 +111,7 @@ export function validateSave(save) {
         if (entity.deployment && (!point(entity.deployment) || !finite(entity.deployment.start) || !finite(entity.deployment.until) || !finite(entity.deployment.fromX) || !finite(entity.deployment.fromY))) invalid();
         if (entity.homeCarrierId !== undefined && entity.homeCarrierId !== null && (!Number.isSafeInteger(entity.homeCarrierId) || !d.tags.includes('deck'))) invalid();
         if (entity.deckApproach && (!object(entity.deckApproach) || !Number.isSafeInteger(entity.deckApproach.carrierId) || !finite(entity.deckApproach.start) || !finite(entity.deckApproach.until))) invalid();
+        if (entity.deckTaxi && (!object(entity.deckTaxi) || !d.tags.includes('deck') || !entity.embarkedIn || !['in','queued','out'].includes(entity.deckTaxi.phase) || !finite(entity.deckTaxi.progress) || entity.deckTaxi.progress < 0 || entity.deckTaxi.progress > 1 || typeof entity.deckTaxi.launch !== 'boolean')) invalid();
       } else {
         if(entity.sabotage&&(!object(entity.sabotage)||(!owners.includes(entity.sabotage.owner)||entity.sabotage.owner===entity.owner)||!finite(entity.sabotage.plantedAt)||!finite(entity.sabotage.detonateAt)||entity.sabotage.plantedAt<0||entity.sabotage.detonateAt!==entity.sabotage.plantedAt+INTELLIGENCE_RULES.bombDelay||entity.sabotage.plantedAt>s.time+.01))invalid();
         if (!Array.isArray(entity.queue) || entity.queue.length > 1000 || entity.queue.some(type => !known(UNITS, type)) || !finite(entity.size) || entity.rallyPoint && !point(entity.rallyPoint)) invalid();
