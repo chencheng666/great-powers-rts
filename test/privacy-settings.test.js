@@ -16,5 +16,7 @@ test('本地存储不可用时仍可拒绝统计并进入游戏', () => {
   let stopped = false, reloaded = false;
   setupPrivacySettings({ storage: { getItem() { throw Error('禁用'); }, setItem() { throw Error('禁用'); } }, document, location: { reload() { reloaded = true; } }, onChoice: () => { stopped = true; } });
   handlers.click({ target: { closest: () => ({ dataset: { privacy: 'deny' } }) } });
+  assert.equal(dialog.open, true); assert.equal(stopped, true);
+  handlers.click({ target: { closest: () => ({ dataset: { privacy: 'continue' } }) } });
   assert.equal(dialog.open, false); assert.equal(stopped, true); assert.equal(reloaded, false);
 });

@@ -15,15 +15,18 @@ export function setupPrivacySettings({ storage, document, location, onChoice = (
     <p>联机时为创建房间和同步战局需处理昵称、会话、对局操作及战绩；单机存档、荣誉和设置保存在本机。访问服务器可能产生必要的网络日志。你可通过邮箱申请查询、更正、删除或撤回同意；停止统计不会自动删除此前记录。</p>
     <p>源码：github.com/chencheng666/great-powers-rts；公众号：数字机器莱西奥。打开外部网站时请参阅其隐私规则。未成年人请与监护人共同阅读。</p>
     </div></details><p id="privacy-error" role="alert"></p>
-    <div class="privacy-actions"><button type="button" class="secondary-btn" data-privacy="deny">不允许统计</button><button type="button" class="primary-btn" data-privacy="allow">同意统计</button></div>`;
+    <div class="privacy-actions"><button type="button" class="secondary-btn" data-privacy="deny">不允许统计</button><button type="button" class="primary-btn" data-privacy="allow">同意统计</button><button type="button" class="secondary-btn" data-privacy="continue" hidden>本次不统计并继续</button></div>`;
   document.body.append(dialog);
   dialog.addEventListener('click', event => {
     const choice = event.target.closest('[data-privacy]')?.dataset.privacy;
+    if (choice === 'continue') { dialog.close(); return; }
     if (choice !== 'allow' && choice !== 'deny') return;
     try { storage.setItem(PRIVACY_KEY, choice); }
     catch {
-      if (choice === 'deny') { onChoice(choice); dialog.close(); return; }
-      dialog.querySelector('#privacy-error').textContent = '无法保存选择；统计仍保持关闭，请检查本地存储设置。'; return;
+      onChoice('deny');
+      dialog.querySelector('#privacy-error').textContent = '本次已停止统计，但无法保存选择；下次启动可能恢复旧设置，请检查本地存储。';
+      dialog.querySelector('[data-privacy="continue"]').hidden = false;
+      return;
     }
     onChoice(choice); dialog.close(); location.reload();
   });

@@ -4,3 +4,4 @@
 .privacy-copy { max-height: 40vh; overflow: auto; line-height: 1.7; }
 .privacy-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .privacy-actions button { min-height: 44px; }
+.privacy-actions [hidden] { display: none !important; }
