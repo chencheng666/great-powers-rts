@@ -1,0 +1,6 @@
+.privacy-dialog { max-height: min(90vh, 760px); overflow: auto; }
+.privacy-dialog details { margin: 14px 0; }
+.privacy-dialog summary { cursor: pointer; color: #8cddd0; }
+.privacy-copy { max-height: 40vh; overflow: auto; line-height: 1.7; }
+.privacy-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.privacy-actions button { min-height: 44px; }

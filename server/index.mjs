@@ -240,8 +240,13 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
       if(tick%2===0) r.members.forEach((m,side)=>snapshot(r,peers.get(m.user.id),side));
     }
   },50);
+  // 启动及每日执行一次；错误不阻断对战服务，保留日志供排查。
+  const pruneAnalytics = () => { try { analytics.pruneExpired(); } catch (error) { console.error('统计数据清理失败', error.message); } };
+  pruneAnalytics();
+  const analyticsRetentionTimer = setInterval(pruneAnalytics, 24 * 60 * 60 * 1000);
+  analyticsRetentionTimer.unref();
   const heartbeat=setInterval(()=>wss.clients.forEach(ws=>{if(!ws.alive||ws.bufferedAmount>2*1024*1024)ws.terminate();else{ws.alive=false;ws.ping();}}),15000);
-  server.on('close',()=>{clearInterval(timer);clearInterval(heartbeat);wss.clients.forEach(ws=>ws.terminate());wss.close();analytics.close();accounts.db.close();});
+  server.on('close',()=>{clearInterval(timer);clearInterval(heartbeat);clearInterval(analyticsRetentionTimer);wss.clients.forEach(ws=>ws.terminate());wss.close();analytics.close();accounts.db.close();});
   return { server, rooms, accounts, wss, analytics };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

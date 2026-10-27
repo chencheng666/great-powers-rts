@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { PlayerAnalytics, analyticsRange, chinaDay, parseUserAgent } from '../server/player-analytics.mjs';
+import { PlayerAnalytics, analyticsRange, analyticsRetentionCutoff, chinaDay, parseUserAgent } from '../server/player-analytics.mjs';
 import { AdminAccess, passwordHash, playerCSV } from '../server/admin-access.mjs';
 import { PlayerTelemetry } from '../src/player-telemetry.js';
 import { createBattleServer } from '../server/index.mjs';
@@ -123,4 +123,32 @@ test('离线页面与桌面包联网时独立记录有效游玩时长，匿名�
  assert.equal((await post('null',{...first,seq:3,activeMs:16000,token:'f'.repeat(64)})).status,400);
  const desktop=await post('tauri://localhost',{...first,sessionId:'desktop-session-1',entry:'desktop'});assert.equal(desktop.status,200);assert.ok(app.analytics.report().packages.some(x=>x.label==='desktop'));
  assert.equal((await fetch(root+'/api/admin/status',{headers:{Origin:'null'}})).status,401);
+});
+
+test('未经允许或撤回后不发送统计请求，也不保留排队请求', async () => {
+  const { e, requests } = environment();
+  const off = new PlayerTelemetry({ version: '2.0.1', environment: e, allowed: false });
+  off.identify('测试'); await off.flush(); assert.equal(requests.length, 0); off.destroy();
+  const on = new PlayerTelemetry({ version: '2.0.1', environment: e });
+  on.identify('测试'); on.destroy(); await on.queue;
+  assert.equal(requests.length, 0);
+});
+
+test('统计与错误原始记录按十二个月清理，保留新记录和下载次数', t => {
+  const { db, set } = fixture(t, '2025-10-20T12:00:00+08:00');
+  session(db, { id: 'old-session-0001', name: '旧记录' }).send(1000);
+  db.db.prepare('INSERT INTO analytics_errors(player_id,session_id,at,kind) VALUES(?,?,?,?)').run('old-player','old-session-0001', Date.parse('2025-10-20T12:00:00+08:00'), 'script');
+  db.recordDownload('file.zip');
+  set('2026-10-21T12:00:00+08:00');
+  session(db, { id: 'new-session-0001', name: '新记录' }).send(1000);
+  db.pruneExpired();
+  assert.equal(db.db.prepare('SELECT COUNT(*) n FROM analytics_sessions').get().n, 1);
+  assert.equal(db.db.prepare('SELECT COUNT(*) n FROM analytics_players').get().n, 1);
+  assert.equal(db.db.prepare('SELECT COUNT(*) n FROM analytics_plays').get().n, 1);
+  assert.equal(db.db.prepare('SELECT COUNT(*) n FROM analytics_errors').get().n, 0);
+  assert.equal(db.downloadCounts()['file.zip'], 1);
+});
+
+test('十二个月清理边界按北京时间并正确处理闰日', () => {
+  assert.equal(new Date(analyticsRetentionCutoff(Date.parse('2024-02-29T12:30:00+08:00'))).toISOString(), '2023-02-28T04:30:00.000Z');
 });

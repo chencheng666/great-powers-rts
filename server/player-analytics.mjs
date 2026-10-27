@@ -7,6 +7,12 @@ const DAY = 86400000, OFFSET = 8 * 3600000;
 const hash = value => createHash('sha256').update(value).digest('hex');
 export const chinaDay = time => new Date(time + OFFSET).toISOString().slice(0, 10);
 const midnight = day => Date.parse(`${day}T00:00:00+08:00`);
+// 按北京时间倒推自然年，闰年日期在目标月份内收敛。
+export function analyticsRetentionCutoff(now) {
+  const d = new Date(now + OFFSET), y = d.getUTCFullYear() - 1, m = d.getUTCMonth();
+  const day = Math.min(d.getUTCDate(), new Date(Date.UTC(y, m + 1, 0)).getUTCDate());
+  return Date.UTC(y, m, day, d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds()) - OFFSET;
+}
 const identifier = value => typeof value === 'string' && /^[\w-]{8,100}$/.test(value);
 const safeText = (value, max) => typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, max) : '';
 export function parseUserAgent(value) {
@@ -43,6 +49,20 @@ export class PlayerAnalytics {
       CREATE TABLE IF NOT EXISTS analytics_errors(id INTEGER PRIMARY KEY,player_id TEXT NOT NULL,session_id TEXT NOT NULL,at INTEGER NOT NULL,kind TEXT NOT NULL);
     `);
     this.db.prepare('INSERT OR IGNORE INTO analytics_meta VALUES(?,?)').run('started', String(clock()));
+  }
+  pruneExpired(now = this.clock()) {
+    const cutoff = analyticsRetentionCutoff(now), day = chinaDay(cutoff);
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      // 日汇总按日删除，包含边界日，避免超过十二个月。
+      for (const table of ['analytics_daily', 'analytics_session_daily', 'analytics_play_daily']) this.db.prepare(`DELETE FROM ${table} WHERE day <= ?`).run(day);
+      this.db.prepare('DELETE FROM analytics_errors WHERE at < ?').run(cutoff);
+      this.db.prepare('DELETE FROM analytics_plays WHERE last_seen < ?').run(cutoff);
+      this.db.prepare('DELETE FROM analytics_sessions WHERE last_seen < ?').run(cutoff);
+      this.db.prepare('DELETE FROM analytics_players WHERE last_seen < ?').run(cutoff);
+      this.db.prepare('UPDATE analytics_players SET first_seen = ? WHERE first_seen < ?').run(cutoff, cutoff);
+      this.db.exec('COMMIT');
+    } catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }
   recordDownload(file) { this.db.prepare('INSERT INTO download_counts(file,count) VALUES(?,1) ON CONFLICT(file) DO UPDATE SET count=count+1').run(file); }
   downloadCounts() { return Object.fromEntries(this.db.prepare('SELECT file,count FROM download_counts').all().map(row => [row.file,row.count])); }

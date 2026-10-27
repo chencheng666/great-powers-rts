@@ -1,6 +1,8 @@
 import { setupMenuVideo } from './background-video.js';
 import { CommanderLoyalty, SANDBOX_FUNDS, applySandbox, canUseSandbox, sandboxSpeed } from './commander-sandbox.js';
 import { PlayerTelemetry } from './player-telemetry.js';
+import { telemetryConsent, setupPrivacySettings } from './privacy-settings.js';
+import './privacy-settings.css';
 import { GAME_VERSION, BUILD_ID } from './version.js';
 import { isDesktop, desktopInvoke, desktopNotice } from './desktop.js';
 import { createIcons, icons } from 'lucide';
@@ -1272,7 +1274,7 @@ function updateVoiceOptions() {
   if (select.selectedIndex < 0) select.value = 'auto';
 }
 
-const playerTelemetry=new PlayerTelemetry({version:`${GAME_VERSION}+${BUILD_ID}`,desktop:isDesktop(),getGame:()=>state.game});
+const playerTelemetry=new PlayerTelemetry({version:`${GAME_VERSION}+${BUILD_ID}`,desktop:isDesktop(),getGame:()=>state.game,allowed:telemetryConsent(localStorage) === 'allow'});
 const onlineClient=new OnlineClient({
   onIdentity:name=>playerTelemetry.identify(name),
   refreshIcons, prepare:()=>Renderer.prepare(),onNotice:toast,
@@ -1308,3 +1310,4 @@ async function importDesktopOrWeb() {
 }
 desktopNotice();
 if (location.protocol === 'file:' || isDesktop()) $('#offline-telemetry-note').hidden = false;
+setupPrivacySettings({ storage: localStorage, document, location, onChoice: () => playerTelemetry.destroy() });
