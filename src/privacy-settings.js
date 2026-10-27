@@ -21,7 +21,10 @@ export function setupPrivacySettings({ storage, document, location, onChoice = (
     const choice = event.target.closest('[data-privacy]')?.dataset.privacy;
     if (choice !== 'allow' && choice !== 'deny') return;
     try { storage.setItem(PRIVACY_KEY, choice); }
-    catch { dialog.querySelector('#privacy-error').textContent = '无法保存选择；统计仍保持关闭，请检查本地存储设置。'; return; }
+    catch {
+      if (choice === 'deny') { onChoice(choice); dialog.close(); return; }
+      dialog.querySelector('#privacy-error').textContent = '无法保存选择；统计仍保持关闭，请检查本地存储设置。'; return;
+    }
     onChoice(choice); dialog.close(); location.reload();
   });
   document.querySelector('#privacy-settings-btn').addEventListener('click', () => { if (!dialog.open) dialog.showModal(); });
