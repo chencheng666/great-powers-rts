@@ -1,3 +1,4 @@
+import { entrySource } from './growth-rewards.js';
 const sessionId = environment => environment.crypto?.randomUUID?.() || `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,14)}`;
 export function telemetryContext(game) {
   if (!game) return null;
@@ -5,7 +6,7 @@ export function telemetryContext(game) {
 }
 export class PlayerTelemetry {
   constructor({ version, desktop = false, getGame = () => null, environment = globalThis, now = () => performance.now() } = {}) {
-    this.env = environment; this.version = version; this.getGame = getGame; this.now = now;
+    this.source = entrySource(environment.location); this.env = environment; this.version = version; this.getGame = getGame; this.now = now;
     this.external = desktop || environment.location?.protocol === 'file:'; this.entry = desktop ? 'desktop' : this.external ? 'zip' : /^\/candidate(?:\/|$)/.test(environment.location?.pathname || '') ? 'candidate' : 'game'; this.endpoint = this.external ? 'https://www.daguojueqi.site/api/external-telemetry' : '/api/telemetry'; this.token = '';
     try { if (this.external) this.token = environment.localStorage?.getItem('great-powers-analytics-token-v1') || ''; } catch { /* 不支持本地存储时仅记录当前会话。 */ }
     this.enabled = this.external || ['http:', 'https:'].includes(environment.location?.protocol); this.activeMs = 0; this.seq = 0; this.name = ''; this.context = null; this.playing = false; this.lastFrame = now(); this.queue = Promise.resolve(); this.pending = 0;
@@ -45,7 +46,7 @@ export class PlayerTelemetry {
   error(kind, detail = '') { if(!this.enabled)return;const now=this.now();if(now-(this.lastErrors.get(kind)??-Infinity)<60000)return;this.lastErrors.set(kind,now);this.flush({ error: kind, errorDetail: detail }); }
   flush({ closed = false, beacon = false, error, errorDetail } = {}) {
     if (!this.enabled || !beacon && this.pending >= 64) return Promise.resolve(false);
-    const body = JSON.stringify({ sessionId: this.sessionId, seq: ++this.seq, activeMs: Math.floor(this.activeMs), name: this.name, context: this.context, playing: this.playing, visible: !this.env.document.hidden, entry: this.entry, version: this.version, closed, error, errorDetail });
+    const body = JSON.stringify({ sessionId: this.sessionId, seq: ++this.seq, activeMs: Math.floor(this.activeMs), name: this.name, context: this.context, playing: this.playing, visible: !this.env.document.hidden, entry: this.entry, version: this.version, source: this.source, closed, error, errorDetail });
     if (beacon && !this.external) {
       try { if (this.env.navigator.sendBeacon('/api/telemetry', new Blob([body], { type: 'application/json' }))) return Promise.resolve(true); } catch { /* 无法发送退出心跳时仍允许正常关闭。 */ }
     }

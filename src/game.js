@@ -66,6 +66,7 @@ export class Game {
     this.difficulty = AI_DIFFICULTIES[options.difficulty] || AI_DIFFICULTIES.standard;
     this.mapId = MAPS[options.mapId] && (!MAPS[options.mapId].missionOnly || !this.multiplayer && CHALLENGES[options.challengeId]?.mapId === options.mapId) ? options.mapId : 'valley';
     this.battlefieldScale = !MAPS[this.mapId].fixedScale && options.battlefieldScale === 1.5 ? 1.5 : 1;
+    if (MAPS[this.mapId].singleplayerOnly && this.multiplayer) throw new Error('该战区仅供单机演练');
     this.map = battlefieldMap(this.mapId,this.battlefieldScale);
     this.world = this.map.world || WORLD;
     this.playerCount = this.map.maxPlayers===6 ? 6 : 2;

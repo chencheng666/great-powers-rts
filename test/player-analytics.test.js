@@ -124,3 +124,12 @@ test('离线页面与桌面包联网时独立记录有效游玩时长，匿名�
  const desktop=await post('tauri://localhost',{...first,sessionId:'desktop-session-1',entry:'desktop'});assert.equal(desktop.status,200);assert.ok(app.analytics.report().packages.some(x=>x.label==='desktop'));
  assert.equal((await fetch(root+'/api/admin/status',{headers:{Origin:'null'}})).status,401);
 });
+
+test('来源仅首次白名单归因，跨日结算按对局去重且排除未结算',t=>{
+ const f=fixture(t,'2026-10-20T23:59:50+08:00'),a=session(f.db,{source:'warreport'});
+ f.next(20000);a.send(20000,{source:'github',context:{...context(),outcome:'win'}});
+ const r=f.db.report({from:'2026-10-20',to:'2026-10-21'});
+ assert.equal(r.sources[0].label,'warreport');assert.equal(r.outcomes[0].wins,1);
+ session(f.db,{id:'session-source-0002',source:'private-secret',context:context('battle-other-0002')});
+ const next=f.db.report({from:'2026-10-20',to:'2026-10-21'});assert.ok(next.sources.some(s=>s.label==='direct'));assert.equal(next.outcomes[0].wins,1);assert.equal(next.outcomes[0].losses,0);
+});

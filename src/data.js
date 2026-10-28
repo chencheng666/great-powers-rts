@@ -205,3 +205,5 @@ MAPS.valleyTraining = { ...MAPS.valley, name:'灰谷地带 · 入门', sector:'�
   oil:[{id:'oil-a',x:1440,y:480},{id:'oil-b',x:2400,y:1920}],
   beacons:[{id:'beacon-center',x:1920,y:1200}],
   cover:[{x1:1320,y1:650,x2:1560,y2:820},{x1:2280,y1:1580,x2:2520,y2:1750}], resourceMultiplier:2 };
+
+MAPS.commanderTrial={...MAPS.valleyTraining,name:'先锋试炼',sector:'成长奖励战区',training:false,singleplayerOnly:true,progression:true,resourceMultiplier:1,beacons:[{id:'beacon-north',x:1920,y:650},{id:'beacon-south',x:1920,y:1750}]};

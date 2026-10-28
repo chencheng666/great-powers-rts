@@ -1,3 +1,4 @@
+import { growthAppearance } from './growth-rewards.js';
 import { valleyRockPositions } from './kenney-rock-geometry.js';
 import { confirmedAircraftLoss, aircraftCrashPose, aircraftShadowOpacity } from './destruction-presentation.js';
 import { rotorMotion } from './aircraft-flight.js';
@@ -97,6 +98,7 @@ export class Renderer {
     try { const saved=localStorage.getItem(this.qualityKey);if(['standard','high'].includes(saved))this.quality=saved; } catch { /* 无存储时按模式选默认画质。 */ }
     if (['standard', 'high'].includes(options.quality)) this.quality = options.quality;
     this.world = game.world;
+    this.growthAppearance=null; try { if(!game.online&&!game.multiplayer&&!game.challenge&&!game.mission)this.growthAppearance=growthAppearance(localStorage); } catch { /* 存储不可用时使用原外观。 */ }
     this.projectileModels = new Map();
     this.munitionTemplates = new Map();
     this.camera = { x: 0, y: 0, zoom: innerWidth < 700 ? .7 : .98 }; this.center = { x: 450, y: 720 }; this.viewport = { width: 1, height: 1 };
@@ -715,9 +717,11 @@ export class Renderer {
     model.traverse(mesh => {
       if (!mesh.isMesh) return;
       const finish = material => {
-        const key = `${material.uuid}:${infantry}`;
+        const cosmetic = entity.owner===0 && this.growthAppearance?.theme.id!=='standard' && this.growthAppearance?.theme && ['装甲钢','航空涂层'].includes(material.name);
+        const key = `${material.uuid}:${infantry}:${cosmetic?this.growthAppearance.theme.id:'standard'}`;
         if (!this.readableMaterials.has(key)) {
-          const adjusted = readableMaterial(material, infantry);
+          let adjusted = readableMaterial(material, infantry);
+          if(cosmetic){if(adjusted===material)adjusted=material.clone();adjusted.color.lerp(new THREE.Color(this.growthAppearance.theme.color),.35);}
           this.readableMaterials.set(key, adjusted === material ? material : this.track(adjusted));
         }
         return this.readableMaterials.get(key);
@@ -767,6 +771,7 @@ export class Renderer {
       lodJoints = ['upper_body', 'weapon_pose', 'leg_left', 'leg_right', 'knee_left', 'knee_right'].map(joint => [model.getObjectByName(joint), distantPersonnel.getObjectByName(joint)]).filter(pair => pair.every(Boolean));
       model.add(distantPersonnel);
     }
+    if(entity.owner===0&&entity.type==='hq'&&this.growthAppearance?.baseDecor){const geometry=this.track(new THREE.RingGeometry(4,4.22,48));geometry.rotateX(-Math.PI/2);const material=this.track(new THREE.MeshStandardMaterial({name:'阵营标识',color:'#d7b36a',roughness:.5,side:THREE.DoubleSide}));const trim=new THREE.Mesh(geometry,material);trim.position.y=.16;model.add(trim);}
     const damageMeshes = [];
     model.traverse(mesh => { if (mesh.isMesh) damageMeshes.push({ mesh, original: mesh.material }); });
     const tracks = []; model.traverse(object => { if (object.isInstancedMesh && object.name.startsWith('track_belt_')) tracks.push(object); });

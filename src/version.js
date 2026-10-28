@@ -1,2 +1,2 @@
 export const GAME_VERSION = '2.0.1';
-export const BUILD_ID = '20261028-valley-onboarding';
+export const BUILD_ID = '20261028-growth-rewards';

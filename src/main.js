@@ -1,3 +1,4 @@
+import './growth-ui.js';
 import './feedback-ui.js';
 import { setupMenuVideo } from './background-video.js';
 import { CommanderLoyalty, SANDBOX_FUNDS, applySandbox, canUseSandbox, sandboxSpeed } from './commander-sandbox.js';
@@ -126,6 +127,7 @@ function updateHonorOverview() {
   $('#honor-btn').title=`玩家荣誉 · ${rank.name}`;
   $('#commander-title').textContent=`${rank.name} · 等级 ${rank.level}`;
   $('#honor-profile-btn').innerHTML=`${honorBadge(rank)}<span><strong>${rank.name}</strong><small>${error?'荣誉暂不可读':`${fmt(profile.points)} 荣誉 · ${profile.wins} 场胜利`}</small><small>${error?'打开档案查看详情':next?`下一阶 ${next.name} · 还需 ${pointsNeeded} 分、${winsNeeded} 胜`:'最高称号已点亮 · 传奇仍在继续'}</small></span>${icon('chevron-right')}`;
+  window.dispatchEvent(new Event('gp-honors-updated'));
   refreshIcons();
 }
 
@@ -939,7 +941,7 @@ function showResult(winner) {
   }
   $('#battle-status').textContent = draw ? '双方平局' : win ? '任务完成' : '任务失败';
   const award=win&&settlement?honorResultHTML(settlement,game.victoryMode):`<p>${draw?'双方战力同时耗尽，战局以平局结束。':win?`${game.map.name}由你控制。这场胜利值得庆祝。`:'一场失利不会抹去你的战绩。整备部队，再次出发。'}</p>${!win?'<p>荣誉积分不会减少，已获得的称号始终保留。</p>':''}`;
-  showModal(draw?'战役平局':win?'战役胜利':'重整旗鼓',`${award}<p class="result-battle-summary">${game.map.name} · ${VICTORY_MODES[game.victoryMode].name} · ${game.difficulty.name}难度 · ${seconds(game.time)} · 剩余部队 ${game.ownedUnits(0).length} · 油井 ${game.oil.filter(o=>o.owner===0).length} · 信标 ${game.beacons.filter(site=>site.owner===0).length}</p>${error?'<p class="honor-warning" id="honor-save-warning" role="alert"></p>':''}`,`${error?`<button class="secondary-btn" data-modal="retry-honor">${icon('refresh-cw')} 重试保存荣誉</button>`:''}<button class="primary-btn" data-modal="restart">${icon('play')} 再战一局</button><button class="secondary-btn" data-modal="honors">${icon('award')} 荣誉档案</button><button class="secondary-btn" data-modal="menu">${icon('house')} 返回主界面</button>`,draw?'战局结束':win?'凯旋归来':'征途仍在继续');
+  showModal(draw?'战役平局':win?'战役胜利':'重整旗鼓',`${award}<p class="result-battle-summary">${game.map.name} · ${VICTORY_MODES[game.victoryMode].name} · ${game.difficulty.name}难度 · ${seconds(game.time)} · 剩余部队 ${game.ownedUnits(0).length} · 油井 ${game.oil.filter(o=>o.owner===0).length} · 信标 ${game.beacons.filter(site=>site.owner===0).length}</p>${error?'<p class="honor-warning" id="honor-save-warning" role="alert"></p>':''}`,`${error?`<button class="secondary-btn" data-modal="retry-honor">${icon('refresh-cw')} 重试保存荣誉</button>`:''}<button class="primary-btn" data-modal="restart">${icon('play')} 再战一局</button><button class="secondary-btn" data-growth-open>成长奖励 / 分享战报</button><button class="secondary-btn" data-modal="honors">${icon('award')} 荣誉档案</button><button class="secondary-btn" data-modal="menu">${icon('house')} 返回主界面</button>`,draw?'战局结束':win?'凯旋归来':'征途仍在继续');
   if(error)$('#honor-save-warning').textContent=error;
   $('#modal .modal-actions').insertAdjacentHTML('beforebegin', battleReportHTML(game));
   if(win)$('#modal').classList.add('victory-result');

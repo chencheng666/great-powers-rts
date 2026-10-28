@@ -78,7 +78,7 @@
         <div class="start-content">
           <div class="start-kicker"><span class="live-dot"></span> 现代即时战略</div>
           <h1>大国<em>崛起</em></h1>
-          <p class="start-lede">指挥你的部队，掌握战场主动权。</p><button id="mode-guide-jump" type="button" class="secondary-btn mode-guide-jump">切换战场 / 玩法 ↓ · 不止灰谷</button><blockquote class="peace-motto">故国虽大，好战必亡；<br>天下虽安，忘战必危。<cite>——《司马法·仁本》</cite></blockquote>
+          <p class="start-lede">指挥你的部队，掌握战场主动权。</p><button id="growth-open" type="button" class="secondary-btn growth-home">指挥官征途 · 奖励 / 外观 / 分享</button><button id="mode-guide-jump" type="button" class="secondary-btn mode-guide-jump">切换战场 / 玩法 ↓ · 不止灰谷</button><blockquote class="peace-motto">故国虽大，好战必亡；<br>天下虽安，忘战必危。<cite>——《司马法·仁本》</cite></blockquote>
           <button id="honor-profile-btn" class="commander-profile" title="打开荣誉档案" aria-label="打开荣誉档案"></button>
           <section class="menu-saves" aria-label="保存的战局"><div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="secondary-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i> 导入存档</button><button id="menu-catalog-btn" class="secondary-btn"><i data-lucide="book-open"></i> 装备图鉴</button></div><small id="save-summary">暂无保存的战局</small></section>
         </div>
@@ -100,6 +100,7 @@
 
       <input id="save-file" type="file" accept=".json,application/json" hidden>
       <input id="challenge-profile-file" type="file" accept=".json,application/json" hidden>
+      <dialog id="growth-dialog" class="online-dialog growth-dialog" aria-labelledby="growth-title"><header><h2 id="growth-title">指挥官征途</h2><button id="growth-close" type="button" class="secondary-btn">关闭</button></header><div id="growth-content"></div><p id="growth-status" role="status"></p></dialog>
       <dialog id="feedback-dialog" class="online-dialog" aria-labelledby="feedback-title"><form id="feedback-form"><header><h2 id="feedback-title">意见反馈</h2><button id="feedback-close" type="button" class="secondary-btn">关闭</button></header><p>欢迎告诉我们遇到的问题或建议。反馈会发送至游戏服务器，供管理员排查，保留期限为 12 个月，系统会定期清理。请勿填写密码、身份证等敏感信息；图片可能包含个人信息，请检查后再提交。</p><label class="online-field">反馈内容（必填，最多 2000 字）<textarea id="feedback-content" required maxlength="2000" rows="5"></textarea></label><label class="online-field">截图（可选，PNG、JPG 或 WebP，最大 512 KB）<input id="feedback-image" type="file" accept="image/png,image/jpeg,image/webp"></label><p id="feedback-status" role="status"></p><button class="primary-btn" type="submit">提交反馈</button></form></dialog>
       <dialog id="nickname-dialog" class="online-dialog" aria-labelledby="nickname-title"><form><div class="online-kicker">指挥官档案</div><h2 id="nickname-title">你的作战呼号</h2><label class="online-field">昵称<input autocomplete="nickname" maxlength="32" required placeholder="输入昵称" aria-label="昵称"></label><p class="telemetry-note">在线试玩会统计昵称、设备类型和前台游玩时长，用于改进游戏；离线游戏不联网统计。</p><p role="alert" class="online-error"></p><button type="submit" class="primary-btn"><i data-lucide="arrow-right"></i> 进入指挥中心</button></form></dialog>
       <dialog id="online-dialog" class="online-dialog" aria-labelledby="online-title">
