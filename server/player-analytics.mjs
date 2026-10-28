@@ -41,9 +41,38 @@ export class PlayerAnalytics {
       CREATE TABLE IF NOT EXISTS analytics_session_daily(day TEXT NOT NULL,session_id TEXT NOT NULL,ms INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(day,session_id));
       CREATE TABLE IF NOT EXISTS analytics_play_daily(day TEXT NOT NULL,play_id TEXT NOT NULL,ms INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(day,play_id));
       CREATE TABLE IF NOT EXISTS analytics_errors(id INTEGER PRIMARY KEY,player_id TEXT NOT NULL,session_id TEXT NOT NULL,at INTEGER NOT NULL,kind TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS feedback_entries(id INTEGER PRIMARY KEY,at INTEGER NOT NULL,content TEXT NOT NULL,version TEXT NOT NULL DEFAULT '',image_type TEXT,image BLOB);
+      CREATE INDEX IF NOT EXISTS feedback_entries_at ON feedback_entries(at);
+      CREATE INDEX IF NOT EXISTS analytics_errors_at ON analytics_errors(at);
     `);
+    const columns = this.db.prepare('PRAGMA table_info(analytics_errors)').all().map(x => x.name);
+    if (!columns.includes('detail')) this.db.exec("ALTER TABLE analytics_errors ADD COLUMN detail TEXT NOT NULL DEFAULT ''");
+    this.pruneDiagnostics();
     this.db.prepare('INSERT OR IGNORE INTO analytics_meta VALUES(?,?)').run('started', String(clock()));
   }
+  pruneDiagnostics() {
+    const date = new Date(this.clock()), day = date.getUTCDate(); date.setUTCDate(1); date.setUTCFullYear(date.getUTCFullYear() - 1); date.setUTCDate(Math.min(day, new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth()+1,0)).getUTCDate()));
+    this.db.prepare('DELETE FROM feedback_entries WHERE at < ?').run(date.getTime());
+    this.db.prepare('DELETE FROM analytics_errors WHERE at < ?').run(date.getTime());
+  }
+  submitFeedback({ content, version, image } = {}) {
+    if (typeof content !== 'string' || !content.trim() || content.length > 2000) throw new Error('请填写不超过2000字的反馈');
+    let data = null, type = null;
+    if (image) {
+      if (typeof image !== 'string' || image.length > 700000 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(image)) throw new Error('图片格式或大小不符合要求');
+      const match = image.match(/^data:image\/(png|jpeg|webp);base64,(.+)$/); type = `image/${match[1]}`; data = Buffer.from(match[2], 'base64');
+      const valid = type === 'image/png' ? data.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')) : type === 'image/jpeg' ? data.subarray(0,3).equals(Buffer.from('ffd8ff','hex')) : data.subarray(0,4).toString() === 'RIFF' && data.subarray(8,12).toString() === 'WEBP';
+      if (!valid || data.length > 524288) throw new Error('图片格式或大小不符合要求');
+    }
+    this.db.prepare('INSERT INTO feedback_entries(at,content,version,image_type,image) VALUES(?,?,?,?,?)').run(this.clock(),content.trim(),safeText(version,80),type,data);
+  }
+  diagnostics(filters = {}) {
+    const {start,end} = analyticsRange(filters.from,filters.to,this.clock());
+    const feedback = this.db.prepare('SELECT id,at,content,version,image_type AS imageType FROM feedback_entries WHERE at>=? AND at<? ORDER BY at DESC,id DESC LIMIT 100').all(start,end);
+    const errors = this.db.prepare("SELECT e.at,e.kind,e.detail,COALESCE(s.version,'') version,COALESCE(s.entry,'') entry,COALESCE(s.browser,'') browser,COALESCE(s.os,'') os FROM analytics_errors e LEFT JOIN analytics_sessions s ON s.id=e.session_id WHERE e.at>=? AND e.at<? ORDER BY e.at DESC,e.id DESC LIMIT 100").all(start,end);
+    return {feedback,errors};
+  }
+  feedbackImage(id) { return this.db.prepare('SELECT image_type type,image FROM feedback_entries WHERE id=? AND image IS NOT NULL').get(id); }
   recordDownload(file) { this.db.prepare('INSERT INTO download_counts(file,count) VALUES(?,1) ON CONFLICT(file) DO UPDATE SET count=count+1').run(file); }
   downloadCounts() { return Object.fromEntries(this.db.prepare('SELECT file,count FROM download_counts').all().map(row => [row.file,row.count])); }
   player(cookie = '') {
@@ -87,7 +116,7 @@ export class PlayerAnalytics {
         this.db.prepare(`INSERT INTO analytics_plays(id,player_id,session_id,battle_id,mode,map,faction,version,started,last_seen,ms,outcome) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
           ON CONFLICT(id) DO UPDATE SET last_seen=excluded.last_seen,ms=ms+excluded.ms,mode=CASE WHEN excluded.mode='sandbox' THEN 'sandbox' ELSE mode END,outcome=COALESCE(excluded.outcome,outcome)`).run(`${body.sessionId}:${context.battleId}`, player.id, body.sessionId, context.battleId, context.mode, safeText(context.mapId, 40), safeText(context.faction, 30), safeText(body.version, 40), now, now, credited, ['win', 'loss', 'draw', 'left'].includes(context.outcome) ? context.outcome : null);
       }
-      if (['render', 'resource', 'script', 'network'].includes(body.error)) this.db.prepare('INSERT INTO analytics_errors(player_id,session_id,at,kind) VALUES(?,?,?,?)').run(player.id, body.sessionId, now, body.error);
+      if (['render', 'resource', 'script', 'network'].includes(body.error)) this.db.prepare('INSERT INTO analytics_errors(player_id,session_id,at,kind,detail) VALUES(?,?,?,?,?)').run(player.id, body.sessionId, now, body.error, safeText(body.errorDetail, 160).replace(/[^A-Za-z0-9_./: -]/g, ''));
       this.db.exec('COMMIT'); return { token, duplicate: false, credited };
     } catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }

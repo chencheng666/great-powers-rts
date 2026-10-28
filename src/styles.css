@@ -3,3 +3,5 @@
 .desktop-notice { color: #b9d5d3; font-size: 13px; max-width: 680px; margin: 16px auto; text-align: center; }
 
 .desktop-download-link{color:#acd7c6;font-size:12px;margin-top:8px;text-align:center}.desktop-download-link[hidden]{display:none}
+
+#feedback-dialog textarea{width:100%;min-height:110px;resize:vertical;padding:10px;color:#edf4ea;background:#18241d;border:1px solid #718975;font:inherit}#feedback-dialog p{font-size:12px;line-height:1.6}#feedback-dialog form{display:grid;gap:12px}#feedback-dialog header{display:flex;justify-content:space-between;gap:12px}

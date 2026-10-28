@@ -18,7 +18,15 @@ export class PlayerTelemetry {
     environment.addEventListener('pagehide', this.onPageHide);
     this.onPageShow = event => { if(event.persisted){this.sessionId=sessionId(environment);this.seq=0;this.activeMs=0;this.lastFrame=now();this.flush();} };
     environment.addEventListener('pageshow',this.onPageShow);
-    this.onError = event => this.error(event.target && event.target !== environment ? 'resource' : 'script');
+    this.onError = event => {
+      const resource = event.target && event.target !== environment;
+      const source = resource ? event.target?.src || event.target?.href : event.filename;
+      let file = ''; try { const url = new URL(source, environment.location?.href); if (url.origin === environment.location?.origin) file = url.pathname.split('/').pop().replace(/[^A-Za-z0-9._-]/g, '').slice(0, 80); } catch { /* 不上报未知来源。 */ }
+      const name = ['Error','TypeError','ReferenceError','RangeError','SyntaxError'].includes(event.error?.name) ? event.error.name : '';
+      this.error(resource ? 'resource' : 'script', [name, file, Number.isInteger(event.lineno) ? `line:${event.lineno}` : ''].filter(Boolean).join(' '));
+    };
+    this.onRejection = () => this.error('script', 'UnhandledPromiseRejection');
+    environment.addEventListener('unhandledrejection', this.onRejection);
     environment.addEventListener('error',this.onError,true);
     this.lastErrors = new Map();
     this.flush();
@@ -34,10 +42,10 @@ export class PlayerTelemetry {
     this.context = context; this.playing = playing;
     if (changed) this.flush();
   }
-  error(kind) { if(!this.enabled)return;const now=this.now();if(now-(this.lastErrors.get(kind)??-Infinity)<60000)return;this.lastErrors.set(kind,now);this.flush({ error: kind }); }
-  flush({ closed = false, beacon = false, error } = {}) {
+  error(kind, detail = '') { if(!this.enabled)return;const now=this.now();if(now-(this.lastErrors.get(kind)??-Infinity)<60000)return;this.lastErrors.set(kind,now);this.flush({ error: kind, errorDetail: detail }); }
+  flush({ closed = false, beacon = false, error, errorDetail } = {}) {
     if (!this.enabled || !beacon && this.pending >= 64) return Promise.resolve(false);
-    const body = JSON.stringify({ sessionId: this.sessionId, seq: ++this.seq, activeMs: Math.floor(this.activeMs), name: this.name, context: this.context, playing: this.playing, visible: !this.env.document.hidden, entry: this.entry, version: this.version, closed, error });
+    const body = JSON.stringify({ sessionId: this.sessionId, seq: ++this.seq, activeMs: Math.floor(this.activeMs), name: this.name, context: this.context, playing: this.playing, visible: !this.env.document.hidden, entry: this.entry, version: this.version, closed, error, errorDetail });
     if (beacon && !this.external) {
       try { if (this.env.navigator.sendBeacon('/api/telemetry', new Blob([body], { type: 'application/json' }))) return Promise.resolve(true); } catch { /* 无法发送退出心跳时仍允许正常关闭。 */ }
     }
@@ -45,5 +53,5 @@ export class PlayerTelemetry {
     const request = async () => { try { const payload = this.external ? JSON.stringify({ ...JSON.parse(body), token: this.token }) : body; const response = await this.env.fetch(this.endpoint, { method: 'POST', headers: { 'Content-Type': this.external ? 'text/plain' : 'application/json' }, body: payload, credentials: this.external ? 'omit' : 'same-origin', keepalive: true, signal: AbortSignal.timeout(8000) }); if (this.external && response.ok) { const result = await response.json(); if (result.token) { this.token = result.token; try { this.env.localStorage?.setItem('great-powers-analytics-token-v1', this.token); } catch { /* 继续本次会话。 */ } } } return response.ok; } catch { return false; } finally { this.pending--; } };
     this.queue = this.queue.then(request, request); return this.queue;
   }
-  destroy() { if (!this.enabled) return; this.env.clearInterval(this.timer); this.env.document.removeEventListener('visibilitychange', this.onVisibility); this.env.removeEventListener('pagehide', this.onPageHide); this.env.removeEventListener('pageshow', this.onPageShow); this.env.removeEventListener('error',this.onError,true); }
+  destroy() { if (!this.enabled) return; this.env.clearInterval(this.timer); this.env.document.removeEventListener('visibilitychange', this.onVisibility); this.env.removeEventListener('pagehide', this.onPageHide); this.env.removeEventListener('pageshow', this.onPageShow); this.env.removeEventListener('error',this.onError,true); this.env.removeEventListener('unhandledrejection',this.onRejection); }
 }

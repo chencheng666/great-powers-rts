@@ -1,3 +1,4 @@
+import './feedback-ui.js';
 import { setupMenuVideo } from './background-video.js';
 import { CommanderLoyalty, SANDBOX_FUNDS, applySandbox, canUseSandbox, sandboxSpeed } from './commander-sandbox.js';
 import { PlayerTelemetry } from './player-telemetry.js';

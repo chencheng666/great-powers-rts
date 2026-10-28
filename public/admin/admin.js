@@ -68,15 +68,29 @@ async function loadPlayers() {
   for (const p of data.rows) { const row = node('tr'), name = node('td'); name.append(node('strong', p.name || '未填写昵称'), node('small', p.members > 1 ? `${p.members} 个同名档案已归并` : p.id.slice(0, 8))); row.append(name); [duration(p.ms), duration(p.lifetimeMs), `${p.days} / ${p.playDays}`, number(p.plays), date(p.lastSeen)].forEach(value => row.append(node('td', value))); const device = node('td'), details = node('details'); details.append(node('summary', p.device || '未识别设备'), node('p', p.ua || '暂无原始UA')); device.append(details); row.append(device); body.append(row); }
   $('#player-count').textContent = `${number(data.total)} ${$('#group').value === 'name' ? '组昵称' : '个独立档案'}`; $('#page-number').textContent = `${data.page} / ${Math.max(1, Math.ceil(data.total / data.limit))}`; $('#prev').disabled = data.page <= 1; $('#next').disabled = data.page * data.limit >= data.total;
 }
+async function loadDiagnostics() {
+  const data = await (await api('query', {...filters(), view:'diagnostics'})).json();
+  const feedback = clear('#feedback-list');
+  if (!data.feedback.length) feedback.append(node('p','所选日期暂无反馈','empty'));
+  for (const item of data.feedback) {
+    const article = node('article', undefined, 'diagnostic-entry');
+    article.append(node('strong', date(item.at)), node('small', `版本：${item.version || '未知'}`), node('p', item.content));
+    if (item.imageType) { const link = node('a', '查看截图'); link.href = `/api/admin/feedback-image?id=${encodeURIComponent(item.id)}`; link.target = '_blank'; link.rel = 'noopener noreferrer'; article.append(link); }
+    feedback.append(article);
+  }
+  const root = clear('#diagnostic-list'); if (!data.errors.length) { root.append(node('p','所选日期暂无错误记录','empty')); return; }
+  const table = node('table'), head = node('tr'); ['时间','类型','定位信息','版本 / 入口','环境'].forEach(x=>head.append(node('th',x))); table.append(head);
+  for (const item of data.errors) { const row = node('tr'); [date(item.at),errorNames[item.kind] || item.kind,item.detail || '无详情',`${item.version || '未知'} / ${item.entry || '未知'}`,`${item.browser || '未知'} / ${item.os || '未知'}`].forEach(x=>row.append(node('td',x))); table.append(row); } root.append(table);
+}
 async function refresh() {
   const generation = ++state.generation; $('#refresh').disabled = true; $('#status').className = 'status'; $('#status').textContent = '正在读取服务器统计…';
-  try { const report = await (await api('query', filters())).json(); if (generation !== state.generation) return; state.report = report; renderOverview(); if (state.tab === 'players') await loadPlayers(); $('#status').textContent = `${report.environment} · 数据来自本站采集记录；昵称和UA仅管理员可见`; }
+  try { const report = await (await api('query', filters())).json(); if (generation !== state.generation) return; state.report = report; renderOverview(); if (state.tab === 'players') await loadPlayers(); if (state.tab === 'diagnostics') await loadDiagnostics(); $('#status').textContent = `${report.environment} · 数据来自本站采集记录；昵称和UA仅管理员可见`; }
   catch (error) { $('#status').textContent = error.message; $('#status').className = 'status error'; } finally { $('#refresh').disabled = false; }
 }
 function preset(days) { const end = Date.now(); $('#to').value = day(end); $('#from').value = day(end - (days - 1) * 86400000); document.querySelectorAll('[data-days]').forEach(b => b.classList.toggle('active', Number(b.dataset.days) === days)); }
 $('#login-form').addEventListener('submit', async event => { event.preventDefault(); const button = event.submitter; button.disabled = true; $('#login-error').textContent = ''; try { await api('login', { password: $('#password').value }); $('#password').value = ''; $('#login').hidden = true; $('#app').hidden = false; await refresh(); } catch (error) { $('#login-error').textContent = error.message; } finally { button.disabled = false; } });
 $('#logout').addEventListener('click', async () => { try { await api('logout', {}); } finally { state.report = null; clear('#player-rows'); showLogin(); } });
-document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', async () => { state.tab = button.dataset.tab; document.querySelectorAll('.tab-view').forEach(e => e.hidden = e.id !== state.tab); document.querySelectorAll('[data-tab]').forEach(b => { if (b === button) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }); $('#page-title').textContent = button.textContent; if (state.tab === 'players') { try { await loadPlayers(); } catch (error) { $('#status').textContent = error.message; } } }));
+document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', async () => { state.tab = button.dataset.tab; document.querySelectorAll('.tab-view').forEach(e => e.hidden = e.id !== state.tab); document.querySelectorAll('[data-tab]').forEach(b => { if (b === button) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }); $('#page-title').textContent = button.textContent; if (state.tab === 'players' || state.tab === 'diagnostics') { try { if (state.tab === 'players') await loadPlayers(); else await loadDiagnostics(); } catch (error) { $('#status').textContent = error.message; } } }));
 $('#filters').addEventListener('submit', event => { event.preventDefault(); state.page = 1; document.querySelectorAll('[data-days]').forEach(b => b.classList.remove('active')); refresh(); });
 document.querySelectorAll('[data-days]').forEach(button => button.addEventListener('click', () => { preset(Number(button.dataset.days)); state.page = 1; refresh(); }));
 $('#refresh').addEventListener('click', refresh); $('#trend-metric').addEventListener('change', trend);

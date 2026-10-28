@@ -23,6 +23,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
   const cookieName=maxPlayers===6?'gp_six_guest':'gp_guest',cookiePath=maxPlayers===6?'/candidate':'/';
   const accounts = new Accounts(directory,{cookieName}), rooms = new Map(), peers = new Map(), requests = new SessionRateLimit();
   const analytics = new PlayerAnalytics(directory), admin = new AdminAccess(adminPasswordHash);
+  const feedbackRequests = new SessionRateLimit({limit:5,windowMs:3600000,capacity:2048});
   const telemetryRequests = new SessionRateLimit({limit:240,capacity:2048}), newVisitors = new SessionRateLimit({limit:40,capacity:2048});
   const send = (ws, value) => { if (ws?.readyState === WebSocket.OPEN && ws.bufferedAmount < 512*1024) ws.send(JSON.stringify(value)); };
   const extraOrigins = new Set(additionalOrigins.split(',').map(value=>value.trim()).filter(value=>{try{const u=new URL(value);return ['http:','https:'].includes(u.protocol)&&u.origin===value;}catch{return false;}}));
@@ -66,7 +67,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
       const url = new URL(req.url, 'http://local');
       if (url.pathname === '/api/health') return json(200, { ok: true, version:GAME_VERSION, build:BUILD_ID, protocol, maxPlayers,rooms: rooms.size, battles: [...rooms.values()].filter(r => r.game?.running).length });
       const secure = origin.startsWith('https:') || extraOrigins.has(req.headers.origin) && req.headers.origin.startsWith('https:');
-      const readBody = async () => { let text=''; for await (const chunk of req) { text+=chunk; if(Buffer.byteLength(text)>8192)throw Error('请求过大'); } return JSON.parse(text); };
+      const readBody = async (limit = 8192) => { let text=''; for await (const chunk of req) { text+=chunk; if(Buffer.byteLength(text)>limit)throw Error('请求过大'); } return JSON.parse(text); };
       if (url.pathname === '/api/download-counts' && req.method === 'GET') return json(200, { counts: analytics.downloadCounts(), scope: '本站下载跳转次数，自功能启用后累计' });
       if (url.pathname === '/api/download' && req.method === 'GET') {
         const key = url.searchParams.get('file'), manifest = JSON.parse(await readFile(resolve(root,'downloads/manifest.json'),'utf8'));
@@ -97,6 +98,16 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
         if(result.token)res.setHeader('Set-Cookie',`gp_analytics=${result.token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000${secure?'; Secure':''}`);
         return json(200,{ok:true});
       }
+      if (url.pathname === '/api/feedback') {
+        if (req.method !== 'POST') return json(405,{error:'不支持的请求'});
+        const external = ['null','tauri://localhost','https://tauri.localhost','http://tauri.localhost'].includes(req.headers.origin);
+        if (!external && !allowed(req)) return json(403,{error:'请求来源不被允许'});
+        if (external) res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+        const feedbackPlayer = analytics.player(req.headers.cookie);
+        if (!feedbackRequests.accept(feedbackPlayer?.id || req.socket.remoteAddress)) return json(429,{error:'提交过于频繁，请稍后再试'});
+        try { analytics.pruneDiagnostics(); analytics.submitFeedback(await readBody(720000)); return json(200,{ok:true}); }
+        catch { return json(400,{error:'反馈文字或图片不符合要求'}); }
+      }
       if(url.pathname.startsWith('/api/admin/')) {
         if(req.method==='POST'&&!allowed(req))return json(403,{error:'请求来源不被允许'});
         if(url.pathname==='/api/admin/login'&&req.method==='POST'){
@@ -106,10 +117,16 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
         }
         if(!admin.authorized(req.headers.cookie))return json(401,{error:'请先登录管理员'});
         if(url.pathname==='/api/admin/logout'&&req.method==='POST'){admin.logout(req.headers.cookie);res.setHeader('Set-Cookie','gp_admin=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return json(200,{ok:true});}
+        if(url.pathname==='/api/admin/feedback-image'&&req.method==='GET') {
+          const id = Number(url.searchParams.get('id')); if (!Number.isSafeInteger(id) || id < 1) return json(400,{error:'编号无效'});
+          const image=analytics.feedbackImage(id); if (!image) return json(404,{error:'图片不存在'});
+          res.writeHead(200,{'Content-Type':image.type,'Cache-Control':'no-store','Content-Disposition':'inline','X-Content-Type-Options':'nosniff'});return res.end(image.image);
+        }
         if(url.pathname==='/api/admin/status'&&req.method==='GET')return json(200,{ok:true});
         if(url.pathname==='/api/admin/query'&&req.method==='POST'){
           const filters=await readBody();
           if(filters.view==='players')return json(200,analytics.players(filters));
+          if(filters.view==='diagnostics')return json(200,analytics.diagnostics(filters));
           if(filters.view==='export'){
             const data=analytics.players({...filters,export:true});res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Cache-Control':'no-store','Content-Disposition':'attachment; filename="players.csv"','X-Export-Truncated':String(data.truncated)});return res.end(playerCSV(data));
           }
@@ -241,7 +258,8 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
     }
   },50);
   const heartbeat=setInterval(()=>wss.clients.forEach(ws=>{if(!ws.alive||ws.bufferedAmount>2*1024*1024)ws.terminate();else{ws.alive=false;ws.ping();}}),15000);
-  server.on('close',()=>{clearInterval(timer);clearInterval(heartbeat);wss.clients.forEach(ws=>ws.terminate());wss.close();analytics.close();accounts.db.close();});
+  const diagnosticsCleanup = setInterval(() => { try { analytics.pruneDiagnostics(); } catch (error) { console.error('诊断记录清理失败', error); } }, 86400000); diagnosticsCleanup.unref();
+  server.on('close',()=>{clearInterval(diagnosticsCleanup);clearInterval(timer);clearInterval(heartbeat);wss.clients.forEach(ws=>ws.terminate());wss.close();analytics.close();accounts.db.close();});
   return { server, rooms, accounts, wss, analytics };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

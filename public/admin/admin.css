@@ -5,3 +5,7 @@
 @media(max-width:760px){.aside-foot{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.aside-foot>span{display:none}.aside-foot button{padding:6px 9px}#logout{display:block}}
 
 .filters label{white-space:nowrap}
+
+.diagnostic-entry{padding:16px 0;border-bottom:1px solid #edf1f3}.diagnostic-entry strong,.diagnostic-entry small{display:block}.diagnostic-entry small{color:#718092;margin-top:5px}.diagnostic-entry p{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0}.diagnostic-entry a{display:inline-block}
+
+@media(max-width:760px){nav{flex-wrap:wrap;overflow:visible}nav button{padding:9px 10px}}
