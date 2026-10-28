@@ -78,7 +78,7 @@
         <div class="start-content">
           <div class="start-kicker"><span class="live-dot"></span> 现代即时战略</div>
           <h1>大国<em>崛起</em></h1>
-          <p class="start-lede">指挥你的部队，掌握战场主动权。</p><blockquote class="peace-motto">故国虽大，好战必亡；<br>天下虽安，忘战必危。<cite>——《司马法·仁本》</cite></blockquote>
+          <p class="start-lede">指挥你的部队，掌握战场主动权。</p><button id="mode-guide-jump" type="button" class="secondary-btn mode-guide-jump">切换战场 / 玩法 ↓ · 不止灰谷</button><blockquote class="peace-motto">故国虽大，好战必亡；<br>天下虽安，忘战必危。<cite>——《司马法·仁本》</cite></blockquote>
           <button id="honor-profile-btn" class="commander-profile" title="打开荣誉档案" aria-label="打开荣誉档案"></button>
           <section class="menu-saves" aria-label="保存的战局"><div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="secondary-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i> 导入存档</button><button id="menu-catalog-btn" class="secondary-btn"><i data-lucide="book-open"></i> 装备图鉴</button></div><small id="save-summary">暂无保存的战局</small></section>
         </div>
@@ -87,10 +87,10 @@
           <div class="faction-list" id="faction-list"></div>
           <label id="nuclear-option" class="nuclear-option" hidden><input type="checkbox" id="nuclear-enabled"> 核威慑规则 <small>默认关闭 · 双方确认 · 可预警与反制</small></label>
           <div class="deployment-controls">
-            <div class="map-deployment"><label class="map-select">战场 <span class="select-shell"><select id="map-select"></select><i data-lucide="chevron-down"></i></span></label><input id="expanded-map" type="checkbox" checked hidden></div>
+            <details class="mode-guide" open><summary>新手指引 · 点击“战场”切换玩法</summary><p>初次推荐：灰谷入门 + 新兵。5000 初始资金、装甲与补给支援，首波进攻约 3 分钟后开始。先选坦克，右键移动；修理建筑、让战车靠近补给车。</p><p>想体验更多：战场下拉可选海峡海战、月表和纵深战区；“战术挑战”提供独立任务。准备好后也可提高难度。</p></details><div class="map-deployment"><label class="map-select">战场 <span class="select-shell"><select id="map-select"></select><i data-lucide="chevron-down"></i></span></label><input id="expanded-map" type="checkbox" checked hidden></div>
             <div class="victory-picker"><span>胜利规则</span><div class="victory-options" role="group" aria-label="胜利规则"><button type="button" class="victory-option active" data-victory="quick">快速对战<small>摧毁生产核心</small></button><button type="button" class="victory-option" data-victory="annihilation">全域歼灭<small>清除全部敌军</small></button><button type="button" class="victory-option" data-victory="control">据点控制<small>累计 240 分</small></button></div></div>
             <label class="enemy-select">对手 <span class="select-shell"><select id="enemy-select"><option value="random">随机阵营</option></select><i data-lucide="chevron-down"></i></span></label>
-            <label class="enemy-select">难度 <span class="select-shell"><select id="difficulty-select"><option value="recruit">新兵</option><option value="standard" selected>标准</option><option value="veteran">专家</option></select><i data-lucide="chevron-down"></i></span></label>
+            <label class="enemy-select">难度 <span class="select-shell"><select id="difficulty-select"><option value="recruit" selected>新兵 · 推荐入门</option><option value="standard">标准</option><option value="veteran">专家</option></select><i data-lucide="chevron-down"></i></span></label>
             <a id="desktop-download-link" class="desktop-download-link" href="/downloads/index.html" target="_blank" rel="noopener noreferrer"><i data-lucide="download"></i> 下载游戏 · 免安装 / Windows / Mac / Linux</a>
             <p id="offline-telemetry-note" hidden>单机支持离线游玩；联网时会统计匿名游玩时长和版本。</p><div class="menu-secondary-actions"><button id="feedback-open" class="secondary-btn" type="button">意见反馈</button><button id="menu-video-toggle" class="secondary-btn" aria-pressed="true">暂停实机背景</button><button id="sandbox-btn" class="secondary-btn">指挥官沙盘 · 忠实玩家奖励</button><button id="challenge-btn" class="secondary-btn"><i data-lucide="flag"></i> 战术挑战</button></div>
             <div class="battle-entry"><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 单机作战</button><button id="online-btn" class="secondary-btn"><i data-lucide="network"></i> 联网对战</button></div>

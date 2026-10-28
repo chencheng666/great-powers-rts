@@ -1,3 +1,4 @@
+import { valleyRockPositions } from './kenney-rock-geometry.js';
 import { confirmedAircraftLoss, aircraftCrashPose, aircraftShadowOpacity } from './destruction-presentation.js';
 import { rotorMotion } from './aircraft-flight.js';
 import * as THREE from 'three';
@@ -453,8 +454,8 @@ export class Renderer {
       if (!child.isMesh) continue;
       const base = new THREE.MeshStandardMaterial({ color: this.game.map.future ? '#555b63' : '#64665c', roughness: .96 }); base.name = '岩石';
       const material = this.track(weatherMaterial(base)); base.dispose();
-      const geometry = this.track(new THREE.IcosahedronGeometry(.7, 3)), vertices = geometry.attributes.position;
-      for (let n = 0; n < vertices.count; n++) {
+      const geometry = this.track(this.game.map.training ? new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(valleyRockPositions,3)) : new THREE.IcosahedronGeometry(.7, 3)), vertices = geometry.attributes.position;
+      for (let n = 0; !this.game.map.training && n < vertices.count; n++) {
         const x = vertices.getX(n), y = vertices.getY(n), z = vertices.getZ(n), shape = .82 + hash(Math.round(x * 25), Math.round(z * 25), Math.round(y * 25)) * .3;
         vertices.setXYZ(n, x * shape * 1.2, y * shape * .65 + .38, z * shape);
       }
@@ -1082,10 +1083,10 @@ export class Renderer {
       }
       if (visible && damage.smoke && this.game.time >= entry.smokeAt && this.trails.length < 120) {
         const smoke = this.effectSprite('#4d555a', true); smoke.position.set(entity.x, height + entry.topHeight + 4, entity.y); smoke.scale.setScalar(damage.smokeSize); smoke.material.opacity = .4;
-        this.scene.add(smoke); this.trails.push({ sprite: smoke, baseY: smoke.position.y, start: this.game.time, damage: true, damageSize: damage.smokeSize });
+        this.scene.add(smoke); this.trails.push({ sprite: smoke, baseY: smoke.position.y, start: this.game.time, damage: true, sourceEntity: entity, damageSize: damage.smokeSize });
         if (damage.fire) {
           const fire = this.effectSprite('#ffae61'); fire.position.copy(smoke.position); this.scene.add(fire);
-          this.trails.push({ sprite: fire, baseY: fire.position.y, start: this.game.time, damageFire: true, damageSize: damage.smokeSize * .5 });
+          this.trails.push({ sprite: fire, baseY: fire.position.y, start: this.game.time, damageFire: true, sourceEntity: entity, damageSize: damage.smokeSize * .5 });
         }
         entry.smokeAt = this.game.time + damage.interval;
       }
@@ -1151,7 +1152,7 @@ export class Renderer {
     this.trails = this.trails.filter(trail => {
       const age = this.game.time - trail.start;
       const lifetime = trail.damageFire ? .5 : 1.6;
-      if (age > lifetime) { this.scene.remove(trail.sprite); trail.sprite.material.dispose(); return false; }
+      if (age > lifetime || trail.sourceEntity && !damagePresentation(trail.sourceEntity).smoke) { this.scene.remove(trail.sprite); trail.sprite.material.dispose(); return false; }
       const size = trail.damageSize ? trail.damageSize * (1 + age * .65) : trail.explosionSize ? trail.explosionSize * (.6 + Math.max(0, age) * 1.2) : trail.muzzle ? 7 + age * 9 : trail.ship ? 25 + age * 13 : 13 + age * 12;
       trail.sprite.scale.set(size, trail.ship ? 8 + age * 4 : size, 1); trail.sprite.material.opacity = Math.max(0, 1 - Math.max(0, age) / 1.6) * (trail.torpedo ? .42 : trail.damage ? .65 : trail.muzzle ? .2 : trail.ship ? .34 : .15);
       if (trail.damageFire) trail.sprite.material.opacity = Math.max(0, 1 - age / lifetime) * .8;

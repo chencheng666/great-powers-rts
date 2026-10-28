@@ -74,6 +74,7 @@ export class Game {
     const configs=options.players;
     if(configs&&(!Array.isArray(configs)||configs.length!==this.playerCount||configs.some(p=>!Object.hasOwn(FACTIONS,p.faction)||!['human','ai'].includes(p.controlType))))throw new Error('席位配置无效');
     this.playerConfigs= configs || Array.from({length:this.playerCount},(_,i)=>({faction:i===0?playerFaction:i===1?enemyFaction:Object.keys(FACTIONS)[i%5],controlType:this.multiplayer?'human':i===0?'human':'ai'}));
+    this.beginnerSupport = !this.multiplayer && this.map.training && options.difficulty === 'recruit' && !options.challengeId;
     this.homeY = this.world.height / 2;
     this.economyMode = this.map.economyMode || (this.mapId === 'meridian' ? 'mining' : 'convoy');
     this.projectiles = [];
@@ -108,7 +109,7 @@ export class Game {
     this.fog = this.fogs[0];
     this.fogTimer = 0;
     this.aiTimer = 0;
-    this.aiWaveTimer = this.difficulty.waveStart;
+    this.aiWaveTimer = this.beginnerSupport ? 180 : this.difficulty.waveStart;
     this.initLogistics();
     this.initBases();
     if (!this.multiplayer) this.initChallenge(options.challengeId);
@@ -201,6 +202,10 @@ export class Game {
         this.addUnit(side, 'patrol', x, y);
         this.players[side].credits += 800;
       }
+    }
+    if (this.beginnerSupport) {
+      this.players[0].credits = 5000;
+      for (const [type,x,dy] of [['tank',680,-80],['aa',660,30],['supply',560,160],['engineer',500,-150],['rocket',530,230]]) this.addUnit(0,type,x,this.homeY+dy);
     }
     this.recalculatePower();
     this.events.notice?.(this.economyMode === 'mining' ? '月表基地已部署，采矿车开始就地取材。' : '战场已部署，外部后勤运输航线已建立。');

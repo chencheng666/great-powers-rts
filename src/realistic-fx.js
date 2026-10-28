@@ -139,7 +139,7 @@ export const realisticEffects = {
     }
     positions.needsUpdate = true; sparks.material.opacity = (1 - t) ** 2;
     const wave = group.userData.wave; wave.position.y = -group.position.y + this.elevation(effect.x, effect.y) + 1.2;
-    wave.scale.setScalar(r * (.35 + t * 2.4)); wave.material.opacity = (1 - t) ** (p.water ? 1.6 : 3) * (p.explosion ? .4 : .12);
+    wave.scale.setScalar(r * (.35 + t * 2.4)); wave.material.opacity = (1 - t) ** (p.water ? 1.6 : 3) * (p.explosion ? .5 : p.kind === 'infantry' ? .12 : .28);
     if (p.air) wave.visible = false;
     for (const [i, burst] of (group.userData.bursts || []).entries()) {
       const phase = Math.max(0, t - i * .085), heat = Math.max(0, 1 - phase * 4.4);

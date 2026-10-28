@@ -9,7 +9,7 @@ const day = time => new Date(time + 8 * 3600000).toISOString().slice(0, 10);
 const node = (tag, text, className) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (className) e.className = className; return e; };
 const clear = selector => { const e = $(selector); e.replaceChildren(); return e; };
 const modeNames = { sandbox: '指挥官沙盘', single: '单机遭遇战', online: '双人联网', candidate: '六方实验', challenge: '战术任务', spectator: '观战' };
-const mapNames = { valley: '灰谷地带', strait: '跨海通道', frontier: '边境前沿', ocean: '深蓝海域', archipelago: '独立群岛', islandwatch: '列岛守望', lifeline: '海上生命线', strategic: '战略纵深', meridian: '子午环阵', moonsea: '月海基地', sixfront: '六方前线' };
+const mapNames = { valleyTraining:'灰谷地带 · 入门', valley: '灰谷地带', strait: '跨海通道', frontier: '边境前沿', ocean: '深蓝海域', archipelago: '独立群岛', islandwatch: '列岛守望', lifeline: '海上生命线', strategic: '战略纵深', meridian: '子午环阵', moonsea: '月海基地', sixfront: '六方前线' };
 const errorNames = { render: '画面中断', resource: '资源加载', script: '脚本错误', network: '网络错误' };
 const filters = () => ({ from: $('#from').value, to: $('#to').value });
 const playerFilters = () => ({ ...filters(), view: 'players', search: $('#search').value.trim(), groupBy: $('#group').value, sort: $('#sort').value, page: state.page });

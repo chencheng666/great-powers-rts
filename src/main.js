@@ -79,9 +79,9 @@ const state = {
   game: null,
   renderer: null,
   faction: 'china',
-  mapId: candidateMode?'sixfront':'valley',
+  mapId: candidateMode?'sixfront':'valleyTraining',
   victoryMode: 'quick',
-  difficulty: 'standard',
+  difficulty: 'recruit',
   tab: 'build',
   keys: new Set(),
   drag: null,
@@ -1289,7 +1289,7 @@ const onlineClient=new OnlineClient({
   onInterrupted:()=>{if(state.game?.online){state.game.running=false;showModal('战局已取消','<p>服务器维护或房间已过期，本局未记录胜负。</p>','<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button>');}}
 });
 drawFactionPicker();
-$('#map-select').innerHTML = Object.entries(MAPS).filter(([,map])=>!map.missionOnly&&(!candidateMode||map.maxPlayers===6)).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
+$('#map-select').innerHTML = Object.entries(MAPS).sort(([a],[b])=>Number(b==='valleyTraining')-Number(a==='valleyTraining')).filter(([,map])=>!map.missionOnly&&(!candidateMode||map.maxPlayers===6)).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
 $('#map-select').value = state.mapId;
 const updateNuclearOption=()=>{const enabled=$('#map-select').value==='strategic';$('#nuclear-option').hidden=!enabled;if(!enabled)$('#nuclear-enabled').checked=false;};
 $('#map-select').addEventListener('change',updateNuclearOption);updateNuclearOption();
@@ -1309,3 +1309,5 @@ async function importDesktopOrWeb() {
 }
 desktopNotice();
 if (location.protocol === 'file:' || isDesktop()) $('#offline-telemetry-note').hidden = false;
+
+$('#mode-guide-jump').addEventListener('click',()=>{const select=$('#map-select');select.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});select.focus({preventScroll:true});});

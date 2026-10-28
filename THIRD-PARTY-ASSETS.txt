@@ -51,3 +51,10 @@ Concrete Floor Worn 001
 所有资产在游戏运行时从本地加载，不连接上述素材网站。未采用 NC、
 授权不一致的转载或已知其他商业游戏提取模型。来源声明不能替代权利人保证；
 发现权利争议请提供原作品与证据，以便及时核查、停用或替换。
+
+Kenney Nature Kit 2.1 - rock_largeA.stl
+作者：Kenney（https://kenney.nl/）
+来源：https://kenney.nl/assets/nature-kit
+下载镜像（作者上传）：https://opengameart.org/content/nature-kit
+许可：CC0 1.0 Universal https://creativecommons.org/publicdomain/zero/1.0/
+本项目修改：坐标轴转换、归一化、替换岩石着色；仅用于灰谷入门的装饰，不改变碰撞。

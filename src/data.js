@@ -198,3 +198,10 @@ export const MAPS = {
     dockZones: [{ x1: 800, y1: 590, x2: 900, y2: 850 }, { x1: 1340, y1: 590, x2: 1440, y2: 850 }]
   }
 };
+
+// 独立入门战区保留经典灰谷的存档坐标和规则。
+MAPS.valleyTraining = { ...MAPS.valley, name:'灰谷地带 · 入门', sector:'战区 01 · 推荐新手', fixedScale:true, training:true,
+  world:{width:3840,height:2400,cell:40,fog:80},
+  oil:[{id:'oil-a',x:1440,y:480},{id:'oil-b',x:2400,y:1920}],
+  beacons:[{id:'beacon-center',x:1920,y:1200}],
+  cover:[{x1:1320,y1:650,x2:1560,y2:820},{x1:2280,y1:1580,x2:2520,y2:1750}], resourceMultiplier:2 };
