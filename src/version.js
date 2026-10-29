@@ -1,2 +1,2 @@
-export const GAME_VERSION = '2.0.1';
-export const BUILD_ID = '20261028-growth-rewards';
+export const GAME_VERSION = '2.0.2';
+export const BUILD_ID = '20261029-desktop-growth';

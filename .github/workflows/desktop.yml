@@ -15,7 +15,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --registry=https://registry.npmjs.org
-      - run: npm test
+      - run: node --test --test-concurrency=1
       - run: npm run build
   desktop:
     needs: verify
@@ -61,7 +61,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: '大国崛起 v__VERSION__ 山海防线'
-          releaseBody: '2.0 山海防线：九大战区独立单机任务，登陆、占领、修复、海运、撤离、工业产出与月海能源网络；精修国产坦克、驱逐舰与人员，接入授权模型及地面材质，优化大军团合批渲染。保留双人对战和六方实验；新战区不开放合作或六方。官网 https://www.daguojueqi.site/ ，试玩 /play/ ，下载 /downloads/ 。感谢CAI和持续提供建议的玩家。Mac未公证、Windows未签名；麒麟/UOS及各硬件仍需实测。具体测试条件与发布结果见仓库 docs/releases/v2.0.0.md。'
+          releaseBody: '2.0.2 指挥官征途：灰谷入门与玩法指引、受损冒烟和命中特效、反馈与错误上报、荣誉目标、三款奖励涂装、基地标识、先锋试炼和战报分享卡。官网 https://www.daguojueqi.site/ ，试玩 /play/ ，下载 /downloads/ 。公众号：数字机器莱西奥。成长保存于本机，外观仅普通单机；升级前导出存档与荣誉。CI构建不等同于全部硬件实测；Mac未公证、Windows未签名，麒麟/UOS兼容性仍需实测。'
           # 复用同标签公开发行，避免已有网页包时额外生成同标签草稿。
           releaseDraft: false
           prerelease: false
