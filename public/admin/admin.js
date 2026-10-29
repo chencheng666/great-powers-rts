@@ -8,10 +8,10 @@ const date = value => new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/
 const day = time => new Date(time + 8 * 3600000).toISOString().slice(0, 10);
 const node = (tag, text, className) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (className) e.className = className; return e; };
 const clear = selector => { const e = $(selector); e.replaceChildren(); return e; };
-const modeNames = { sandbox: '指挥官沙盘', single: '单机遭遇战', online: '双人联网', candidate: '六方实验', challenge: '战术任务', spectator: '观战' };
-const mapNames = { commanderTrial:'先锋试炼', valleyTraining:'灰谷地带 · 入门', valley: '灰谷地带', strait: '跨海通道', frontier: '边境前沿', ocean: '深蓝海域', archipelago: '独立群岛', islandwatch: '列岛守望', lifeline: '海上生命线', strategic: '战略纵深', meridian: '子午环阵', moonsea: '月海基地', sixfront: '六方前线' };
+const modeNames = { survival:'荒野生存', sandbox: '指挥官沙盘', single: '单机遭遇战', online: '双人联网', candidate: '六方实验', challenge: '战术任务', spectator: '观战' };
+const mapNames = { home:'苔湾原岛',verdant:'苔痕林海',cinder:'烬岩荒原',frost:'霜月冻土',commanderTrial:'先锋试炼', valleyTraining:'灰谷地带 · 入门', valley: '灰谷地带', strait: '跨海通道', frontier: '边境前沿', ocean: '深蓝海域', archipelago: '独立群岛', islandwatch: '列岛守望', lifeline: '海上生命线', strategic: '战略纵深', meridian: '子午环阵', moonsea: '月海基地', sixfront: '六方前线' };
 const errorNames = { render: '画面中断', resource: '资源加载', script: '脚本错误', network: '网络错误' };
-const filters = () => ({ from: $('#from').value, to: $('#to').value });
+const filters = () => ({ game:$('#game-filter').value, from: $('#from').value, to: $('#to').value });
 const playerFilters = () => ({ ...filters(), view: 'players', search: $('#search').value.trim(), groupBy: $('#group').value, sort: $('#sort').value, page: state.page });
 function showLogin() { $('#login').hidden = false; $('#app').hidden = true; }
 async function api(path, body) {
@@ -49,7 +49,8 @@ function trend() {
 }
 function renderOverview() {
   const r = state.report, s = r.summary, cards = clear('#cards');
-  for (const [label, value, detail] of [['游戏访客', number(s.visitors), '所选日期 · 独立访客'], ['昵称进入人数', number(s.logins), '昵称进入，不等同于实名登录'], ['游玩人数', number(s.players), '所选日期 · 至少进入一次对局'], ['有效游玩时长', duration(s.ms), `人均 ${duration(s.averageMs)} · 以游玩人数为分母`]]) { const e = node('div', undefined, 'metric'); e.append(node('span', label, 'label'), node('strong', value), node('small', detail)); cards.append(e); }
+  $('#jiuji-levels').hidden=r.game!=='jiuji';if(r.game==='jiuji')bars('#level-bars',(r.levels||[]).map(x=>({...x,label:x.label.replace('level-','第 ')+' 级'})),'players',{showDuration:true});
+  for (const [label, value, detail] of [['游戏访客', number(s.visitors), '所选日期 · 独立访客'], [r.game==='jiuji'?'新访客':'昵称进入人数', number(r.game==='jiuji'?s.newcomers:s.logins), r.game==='jiuji'?'首次同意统计并访问':'昵称进入，不等同于实名登录'], ['游玩人数', number(s.players), r.game==='jiuji'?'所选日期 · 至少开始一次旅程':'所选日期 · 至少进入一次对局'], ['有效游玩时长', duration(s.ms), `人均 ${duration(s.averageMs)} · 以游玩人数为分母`]]) { const e = node('div', undefined, 'metric'); e.append(node('span', label, 'label'), node('strong', value), node('small', detail)); cards.append(e); }
   trend(); bars('#duration-bars', r.buckets.map(b => ({ ...b, label: b.label, count: b.count })), 'count');
   $('#duration-summary').textContent = `30分钟内 ${number(r.buckets[1].count)} 人 · 60分钟内 ${number(r.buckets[1].count+r.buckets[2].count)} 人（累计，均含上限）`;
   const retention = clear('#retention');
@@ -64,19 +65,19 @@ function renderOverview() {
   const legacy = clear('#legacy-list'); if (!r.legacy.rows.length) legacy.append(node('p', '暂无历史联网档案', 'empty')); else { const table = node('table'), head = node('tr'); ['昵称', '胜', '负', '平'].forEach(text => head.append(node('th', text))); table.append(head); r.legacy.rows.forEach(player => { const row = node('tr'); [player.name, player.wins, player.losses, player.draws].forEach(value => row.append(node('td', String(value)))); table.append(row); }); legacy.append(table); }
 }
 async function loadPlayers() {
-  const data = await (await api('query', playerFilters())).json(); state.players = data; const body = clear('#player-rows');
+  const generation=state.generation;const data = await (await api('query', playerFilters())).json();if(generation!==state.generation)return; state.players = data; const body = clear('#player-rows');
   if (!data.rows.length) { const row = node('tr'), cell = node('td', '没有匹配的玩家记录', 'empty'); cell.colSpan = 7; row.append(cell); body.append(row); }
-  for (const p of data.rows) { const row = node('tr'), name = node('td'); name.append(node('strong', p.name || '未填写昵称'), node('small', p.members > 1 ? `${p.members} 个同名档案已归并` : p.id.slice(0, 8))); row.append(name); [duration(p.ms), duration(p.lifetimeMs), `${p.days} / ${p.playDays}`, number(p.plays), date(p.lastSeen)].forEach(value => row.append(node('td', value))); const device = node('td'), details = node('details'); details.append(node('summary', p.device || '未识别设备'), node('p', p.ua || '暂无原始UA')); device.append(details); row.append(device); body.append(row); }
+  for (const p of data.rows) { const row = node('tr'), name = node('td'); name.append(node('strong', p.name || ($('#game-filter').value==='jiuji'?'匿名旅人':'未填写昵称')), node('small', p.members > 1 ? `${p.members} 个同名档案已归并` : p.id.slice(0, 8))); row.append(name); [duration(p.ms), duration(p.lifetimeMs), `${p.days} / ${p.playDays}`, number(p.plays), date(p.lastSeen)].forEach(value => row.append(node('td', value))); const device = node('td'), details = node('details'); details.append(node('summary', p.device || '未识别设备'), node('p', p.ua || '暂无原始UA')); device.append(details); row.append(device); body.append(row); }
   $('#player-count').textContent = `${number(data.total)} ${$('#group').value === 'name' ? '组昵称' : '个独立档案'}`; $('#page-number').textContent = `${data.page} / ${Math.max(1, Math.ceil(data.total / data.limit))}`; $('#prev').disabled = data.page <= 1; $('#next').disabled = data.page * data.limit >= data.total;
 }
 async function loadDiagnostics() {
-  const data = await (await api('query', {...filters(), view:'diagnostics'})).json();
+  const generation=state.generation;const data = await (await api('query', {...filters(), view:'diagnostics'})).json();if(generation!==state.generation)return;
   const feedback = clear('#feedback-list');
   if (!data.feedback.length) feedback.append(node('p','所选日期暂无反馈','empty'));
   for (const item of data.feedback) {
     const article = node('article', undefined, 'diagnostic-entry');
     article.append(node('strong', date(item.at)), node('small', `版本：${item.version || '未知'}`), node('p', item.content));
-    if (item.imageType) { const link = node('a', '查看截图'); link.href = `/api/admin/feedback-image?id=${encodeURIComponent(item.id)}`; link.target = '_blank'; link.rel = 'noopener noreferrer'; article.append(link); }
+    if (item.imageType) { const link = node('a', '查看截图'); link.href = `/api/admin/feedback-image?id=${encodeURIComponent(item.id)}&game=${encodeURIComponent($('#game-filter').value)}`; link.target = '_blank'; link.rel = 'noopener noreferrer'; article.append(link); }
     feedback.append(article);
   }
   const root = clear('#diagnostic-list'); if (!data.errors.length) { root.append(node('p','所选日期暂无错误记录','empty')); return; }
@@ -85,7 +86,7 @@ async function loadDiagnostics() {
 }
 async function refresh() {
   const generation = ++state.generation; $('#refresh').disabled = true; $('#status').className = 'status'; $('#status').textContent = '正在读取服务器统计…';
-  try { const report = await (await api('query', filters())).json(); if (generation !== state.generation) return; state.report = report; renderOverview(); if (state.tab === 'players') await loadPlayers(); if (state.tab === 'diagnostics') await loadDiagnostics(); $('#status').textContent = `${report.environment} · 数据来自本站采集记录；昵称和UA仅管理员可见`; }
+  try { const report = await (await api('query', filters())).json(); if (generation !== state.generation) return; state.report = report; renderOverview(); if (state.tab === 'players') await loadPlayers(); if (state.tab === 'diagnostics') await loadDiagnostics(); $('#status').textContent = `${report.environment} · ${report.game==='jiuji'?'仅含明确同意的匿名旅人；设备资料仅管理员可见':'数据来自本站采集记录；昵称和UA仅管理员可见'}`; }
   catch (error) { $('#status').textContent = error.message; $('#status').className = 'status error'; } finally { $('#refresh').disabled = false; }
 }
 function preset(days) { const end = Date.now(); $('#to').value = day(end); $('#from').value = day(end - (days - 1) * 86400000); document.querySelectorAll('[data-days]').forEach(b => b.classList.toggle('active', Number(b.dataset.days) === days)); }
@@ -101,3 +102,5 @@ $('#export').addEventListener('click', async () => { try { const response = awai
 $('#definitions-btn').addEventListener('click', () => $('#definitions').showModal()); $('#definitions-close').addEventListener('click', () => $('#definitions').close());
 preset(7); api('status').then(() => { $('#login').hidden = true; $('#app').hidden = false; return refresh(); }).catch(() => {});
 setInterval(() => { if (!document.hidden && !$('#app').hidden) refresh(); }, 60000);
+
+$('#game-filter').addEventListener('change',()=>{state.page=1;state.generation++;clear('#player-rows');clear('#feedback-list');clear('#diagnostic-list');refresh();});
