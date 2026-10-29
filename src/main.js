@@ -43,6 +43,7 @@ import { OnlineClient } from './online-client.js';
 import { OnlineGame } from './online-game.js';
 import './online.css';
 import './commander-sandbox.css';
+import './menu-layout.css';
 import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
 import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';

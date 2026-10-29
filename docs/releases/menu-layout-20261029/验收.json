@@ -1,0 +1,41 @@
+{
+  "build": "20261029-menu-layout",
+  "version": "2.0.2",
+  "status": "本地验收通过，服务器等待MFA，未上线",
+  "tests": {
+    "pass": 581,
+    "fail": 0
+  },
+  "buildResult": "通过；存在原有大文件体积提示",
+  "viewports": [
+    {
+      "width": 390,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflow": []
+    },
+    {
+      "width": 768,
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "overflow": []
+    },
+    {
+      "width": 1366,
+      "scrollWidth": 1366,
+      "clientWidth": 1366,
+      "overflow": []
+    }
+  ],
+  "interaction": [
+    "成长弹窗打开与关闭",
+    "战场跳转并聚焦",
+    "新手指引展开收起",
+    "灰谷新兵开局",
+    "保存返回主界面",
+    "手动存档恢复",
+    "装备图鉴打开关闭"
+  ],
+  "package": "20261029-menu-layout.tar.gz",
+  "sha256": "8b3c5e84ebec2894bb4be9f5b03519a4ba7f8b61db68a05045036aebd4e8fa67"
+}

@@ -76,18 +76,29 @@
         <div class="start-shade"></div>
         <header class="menu-topline"><span>大国崛起 2.0 / 山海防线</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
         <div class="start-content">
-          <div class="start-kicker"><span class="live-dot"></span> 现代即时战略</div>
-          <h1>大国<em>崛起</em></h1>
-          <p class="start-lede">指挥你的部队，掌握战场主动权。</p><button id="growth-open" type="button" class="secondary-btn growth-home">指挥官征途 · 奖励 / 外观 / 分享</button><button id="mode-guide-jump" type="button" class="secondary-btn mode-guide-jump">切换战场 / 玩法 ↓ · 不止灰谷</button><blockquote class="peace-motto">故国虽大，好战必亡；<br>天下虽安，忘战必危。<cite>——《司马法·仁本》</cite></blockquote>
-          <button id="honor-profile-btn" class="commander-profile" title="打开荣誉档案" aria-label="打开荣誉档案"></button>
-          <section class="menu-saves" aria-label="保存的战局"><div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="secondary-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i> 导入存档</button><button id="menu-catalog-btn" class="secondary-btn"><i data-lucide="book-open"></i> 装备图鉴</button></div><small id="save-summary">暂无保存的战局</small></section>
+          <section class="menu-intro" aria-label="游戏介绍">
+            <div class="start-kicker"><span class="live-dot"></span> 现代即时战略</div>
+            <h1>大国<em>崛起</em></h1>
+            <p class="start-lede">建设基地，调配海陆空力量，开启你的征途。</p>
+            <button id="mode-guide-jump" type="button" class="secondary-btn mode-guide-jump">选择战场与玩法 <span aria-hidden="true">↓</span></button>
+            <blockquote class="peace-motto">故国虽大，好战必亡；<br>天下虽安，忘战必危。<cite>——《司马法·仁本》</cite></blockquote>
+          </section>
+          <section class="commander-hub" aria-label="指挥官中心">
+            <div class="hub-heading"><strong>指挥官中心</strong><span>成长 · 存档 · 装备</span></div>
+            <button id="honor-profile-btn" class="commander-profile" title="打开荣誉档案" aria-label="打开荣誉档案"></button>
+            <button id="growth-open" type="button" class="secondary-btn growth-home">指挥官征途 <span>奖励 / 外观 / 分享 →</span></button>
+            <section class="menu-saves" aria-label="保存的战局">
+              <div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="secondary-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i> 导入存档</button><button id="menu-catalog-btn" class="secondary-btn"><i data-lucide="book-open"></i> 装备图鉴</button></div>
+              <small id="save-summary">暂无保存的战局</small>
+            </section>
+          </section>
         </div>
         <div class="faction-picker">
           <div class="picker-heading"><strong>作战部署</strong><span>选择你的阵营</span></div>
           <div class="faction-list" id="faction-list"></div>
           <label id="nuclear-option" class="nuclear-option" hidden><input type="checkbox" id="nuclear-enabled"> 核威慑规则 <small>默认关闭 · 双方确认 · 可预警与反制</small></label>
           <div class="deployment-controls">
-            <details class="mode-guide" open><summary>新手指引 · 点击“战场”切换玩法</summary><p>初次推荐：灰谷入门 + 新兵。5000 初始资金、装甲与补给支援，首波进攻约 3 分钟后开始。先选坦克，右键移动；修理建筑、让战车靠近补给车。</p><p>想体验更多：战场下拉可选海峡海战、月表和纵深战区；“战术挑战”提供独立任务。准备好后也可提高难度。</p></details><div class="map-deployment"><label class="map-select">战场 <span class="select-shell"><select id="map-select"></select><i data-lucide="chevron-down"></i></span></label><input id="expanded-map" type="checkbox" checked hidden></div>
+            <details class="mode-guide"><summary>新手指引 · 点击“战场”切换玩法</summary><p>初次推荐：灰谷入门 + 新兵。5000 初始资金、装甲与补给支援，首波进攻约 3 分钟后开始。先选坦克，右键移动；修理建筑、让战车靠近补给车。</p><p>想体验更多：战场下拉可选海峡海战、月表和纵深战区；“战术挑战”提供独立任务。准备好后也可提高难度。</p></details><div class="map-deployment"><label class="map-select">战场 <span class="select-shell"><select id="map-select"></select><i data-lucide="chevron-down"></i></span></label><input id="expanded-map" type="checkbox" checked hidden></div>
             <div class="victory-picker"><span>胜利规则</span><div class="victory-options" role="group" aria-label="胜利规则"><button type="button" class="victory-option active" data-victory="quick">快速对战<small>摧毁生产核心</small></button><button type="button" class="victory-option" data-victory="annihilation">全域歼灭<small>清除全部敌军</small></button><button type="button" class="victory-option" data-victory="control">据点控制<small>累计 240 分</small></button></div></div>
             <label class="enemy-select">对手 <span class="select-shell"><select id="enemy-select"><option value="random">随机阵营</option></select><i data-lucide="chevron-down"></i></span></label>
             <label class="enemy-select">难度 <span class="select-shell"><select id="difficulty-select"><option value="recruit" selected>新兵 · 推荐入门</option><option value="standard">标准</option><option value="veteran">专家</option></select><i data-lucide="chevron-down"></i></span></label>

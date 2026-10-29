@@ -1,0 +1,54 @@
+/* 主界面采用统一栅格，成长与存档独立成组，避免继续向左侧堆叠入口。 */
+.start-screen { --menu-gutter: clamp(20px, 3.2vw, 56px); grid-template-rows: auto 1fr; align-content: start; }
+.start-screen .start-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 420px); gap: 48px; align-items: center; padding: 86px var(--menu-gutter) 28px; }
+.start-screen .menu-intro { min-width: 0; }
+.start-screen .start-content h1 { font-size: clamp(44px, 4.8vw, 68px); margin: 12px 0; }
+.start-screen .start-lede { font-size: 14px; line-height: 1.7; }
+.start-screen .mode-guide-jump { margin: 18px 0 0; min-height: 44px; padding: 10px 18px; display: inline-flex; gap: 28px; align-items: center; animation: none; }
+.start-screen .peace-motto { font-size: clamp(16px, 1.4vw, 21px); margin: 22px 0 0; padding-left: 14px; line-height: 1.6; }
+.start-screen .peace-motto br { display: none; }
+.start-screen .peace-motto cite { margin-top: 5px; font-size: 11px; }
+.start-screen .commander-hub { min-width: 0; padding: 22px; border: 1px solid #8faea14d; background: #102023e8; border-radius: 12px; box-shadow: 0 12px 36px #0003; }
+.hub-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hub-heading strong { font-size: 15px; }.hub-heading span { color: #a8bdb8; font-size: 11px; }
+.start-screen .commander-profile { width: 100%; max-width: none; margin: 16px 0; }
+.start-screen .growth-home { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin: 0; padding: 12px; min-height: 46px; border-radius: 6px; font-size: 13px; }
+.growth-home span { font-size: 11px; color: #a9c8bd; }
+.start-screen .menu-saves { max-width: none; margin: 16px 0 0; padding: 16px 0 0; border-top: 1px solid #86a39740; }
+.start-screen .menu-save-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.start-screen .menu-save-actions > button { width: 100%; min-width: 0; padding: 8px 4px; min-height: 42px; font-size: 12px; justify-content: center; margin: 0; border-radius: 5px; }
+.start-screen .menu-saves small { display: block; margin-top: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+.start-screen .faction-picker { padding: 24px var(--menu-gutter) 28px; align-self: start; }
+.start-screen .faction-list { margin-bottom: 20px; }
+.start-screen .faction-option { min-height: 86px; border-radius: 6px; }
+.start-screen .deployment-controls { grid-template-columns: minmax(180px, 1.2fr) minmax(280px, 1.7fr) minmax(140px, 1fr) minmax(140px, 1fr); gap: 18px 16px; }
+.start-screen .mode-guide { grid-column: 1 / -1; grid-row: 1; padding: 12px 16px; border-radius: 6px; border-color: #a9945d80; background: #263329; }
+.start-screen .mode-guide summary { min-height: 20px; line-height: 20px; }
+.start-screen .mode-guide p { max-width: 950px; margin-bottom: 0; }
+.start-screen .victory-picker { grid-column: auto; grid-row: auto; }
+.start-screen .menu-secondary-actions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding-top: 16px; border-top: 1px solid #829a9140; }
+.start-screen .menu-secondary-actions button { min-width: 0; width: 100%; margin: 0; border-radius: 5px; white-space: normal; }
+.start-screen .battle-entry { grid-column: 1 / -1; width: min(100%, 480px); justify-self: end; height: auto; }
+.start-screen .battle-entry > button { min-height: 48px; border-radius: 6px; }
+.start-screen .desktop-download-link { grid-column: 1 / -1; margin: 0; font-size: 12px; width: fit-content; max-width: 100%; overflow-wrap: anywhere; }
+.start-screen #offline-telemetry-note { grid-column: 1 / -1; }
+@media (max-width: 1000px) {
+  .start-screen .start-content { grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); gap: 24px; }
+  .start-screen .peace-motto br { display: initial; }
+  .start-screen .deployment-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .start-screen .faction-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .start-screen .start-content { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-top: 76px; }
+  .start-screen .commander-hub { padding: 18px; }
+  .start-screen .peace-motto br { display: initial; }
+  .start-screen .faction-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .start-screen .victory-picker { grid-column: 1 / -1; grid-row: auto; }
+  .start-screen .map-deployment { grid-column: 1 / -1; }
+  .start-screen .menu-secondary-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .start-screen #sandbox-btn { grid-column: auto; grid-row: auto; }
+  .start-screen .battle-entry { width: 100%; }
+  .start-screen .menu-topline { gap: 12px; }
+  .start-screen #player-name-btn { max-width: 50%; }
+  .start-screen #player-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
