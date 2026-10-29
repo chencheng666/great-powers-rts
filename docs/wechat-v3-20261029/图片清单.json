@@ -1,0 +1,38 @@
+[
+  {
+    "type": "image",
+    "file": "01-home.png",
+    "caption": "新版主界面｜本轮网页版本实机截图",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/main/docs/wechat-v3-20261029/images/01-home.png"
+  },
+  {
+    "type": "image",
+    "file": "02-maps.png",
+    "caption": "战场导航｜卡片中的缩略图是地图定义生成的地形示意，不是战斗截图",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/main/docs/wechat-v3-20261029/images/02-maps.png"
+  },
+  {
+    "type": "image",
+    "file": "03-sea.png",
+    "caption": "海上与登陆分类｜地图选择更容易比较",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/main/docs/wechat-v3-20261029/images/03-sea.png"
+  },
+  {
+    "type": "image",
+    "file": "04-mobile.png",
+    "caption": "手机宽度下的地图浏览｜支持分类与搜索",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/main/docs/wechat-v3-20261029/images/04-mobile.png"
+  },
+  {
+    "type": "image",
+    "file": "05-tutorial.png",
+    "caption": "灰谷入门教学｜当前步骤展开说明，其他步骤保留简洁清单",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/main/docs/wechat-v3-20261029/images/05-tutorial.png"
+  },
+  {
+    "type": "image",
+    "file": "06-growth.png",
+    "caption": "指挥官征途｜已有成长目标与外观奖励",
+    "url": "https://raw.githubusercontent.com/chencheng666/great-powers-rts/main/docs/wechat-v3-20261029/images/06-growth.png"
+  }
+]

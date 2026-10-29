@@ -1,3 +1,5 @@
+import { setupMapDiscovery } from './map-discovery-ui.js';
+import { setupTutorial } from './tutorial-ui.js';
 import './growth-ui.js';
 import './feedback-ui.js';
 import { setupMenuVideo } from './background-video.js';
@@ -44,6 +46,7 @@ import { OnlineGame } from './online-game.js';
 import './online.css';
 import './commander-sandbox.css';
 import './menu-layout.css';
+import './discovery.css';
 import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
 import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
@@ -56,6 +59,7 @@ import { lifelinePanelHTML } from './lifeline-ui.js';
 import { loadChallengeThumbnails } from './challenge-thumbnails.js';
 
 setupMenuVideo();
+const updateBattleTutorial = setupTutorial();
 const loyalty = new CommanderLoyalty(localStorage);
 let sandboxNoticePending = false;
 const candidateMode=/^\/candidate(?:\/|$)/.test(location.pathname);
@@ -290,7 +294,7 @@ async function deployGame(save = null, onlinePayload = null) {
   if (save) {
     state.faction = state.game.players[0].faction; state.mapId = save.config.mapId;
     state.victoryMode = save.config.victoryMode; state.difficulty = save.config.difficulty;
-    $('#map-select').value = state.mapId; $('#difficulty-select').value = state.difficulty;
+    $('#map-select').value = state.mapId; $('#map-select').dispatchEvent(new Event('change')); $('#difficulty-select').value = state.difficulty;
     $('#expanded-map').checked=state.game.battlefieldScale===1.5;
     drawFactionPicker(); $('#enemy-select').value = state.game.players[1].faction;
     document.querySelectorAll('[data-victory]').forEach(option => option.classList.toggle('active', option.dataset.victory === state.victoryMode));
@@ -428,6 +432,7 @@ function updateUI(force = false) {
   const g = state.game;
   if (!g) return;
   const p = g.players[0];
+  updateBattleTutorial(g);
   updateAttackAlert();
   const nuclearWarnings=g.nuclearWarnings();$('#nuclear-alert').hidden=!nuclearWarnings.length;
   if(nuclearWarnings.length)$('#nuclear-alert-detail').textContent=`${Math.ceil(Math.min(...nuclearWarnings.map(w=>w.remaining)))} 秒 · ${nuclearWarnings.length} 处落区 · 点击定位`;
@@ -1296,6 +1301,7 @@ $('#map-select').innerHTML = Object.entries(MAPS).sort(([a],[b])=>Number(b==='va
 $('#map-select').value = state.mapId;
 const updateNuclearOption=()=>{const enabled=$('#map-select').value==='strategic';$('#nuclear-option').hidden=!enabled;if(!enabled)$('#nuclear-enabled').checked=false;};
 $('#map-select').addEventListener('change',updateNuclearOption);updateNuclearOption();
+setupMapDiscovery();
 if (location.protocol === 'file:') $('#desktop-download-link').href = 'https://www.daguojueqi.site/downloads/';
 setupControls();
 try { setSidebarCollapsed(localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(false); }
@@ -1312,5 +1318,3 @@ async function importDesktopOrWeb() {
 }
 desktopNotice();
 if (location.protocol === 'file:' || isDesktop()) $('#offline-telemetry-note').hidden = false;
-
-$('#mode-guide-jump').addEventListener('click',()=>{const select=$('#map-select');select.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});select.focus({preventScroll:true});});
