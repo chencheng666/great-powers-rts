@@ -1,0 +1,39 @@
+{
+  "version": "2.0.2",
+  "build": "20261029-desktop-growth",
+  "sourceCommit": "df9d2c3bf1a60637ab4e7b7984955ab7ef122005",
+  "desktopSourceCommit": "ca099a5350e9575923b8d5d878fe95abf00b4cb9",
+  "ciRun": "https://github.com/chencheng666/great-powers-rts/actions/runs/40796508688",
+  "ciResult": "success",
+  "localTests": {
+    "passed": 581,
+    "failed": 0
+  },
+  "offline": {
+    "sha256": "db4967abbe0ac3db47147568e7ac0fef58ea198aa1abb6df3f21eb017a263479",
+    "bytes": 56573006,
+    "integrity": "通过",
+    "startup": "Ego Lite file协议断网启动、灰谷入门开局并运行与保存通过"
+  },
+  "platformLimits": "未在Windows、Linux、统信和麒麟真机完成本轮安装验收；Mac未公证、Windows未签名",
+  "wechatDraft": {
+    "title": "《大国崛起》又更新了：首胜有奖励，海陆空征途也能晒战报",
+    "images": 6,
+    "status": "草稿箱可见；重开确认正文、6张可加载配图、封面与摘要；未发表"
+  },
+  "deployment": {
+    "release": "20261029-desktop-growth-r2",
+    "backup": "/opt/great-powers/backups/20261029-desktop-growth-r2",
+    "twoNodes": "2.0.2 / 20261029-desktop-growth；发布时无房间或对战",
+    "data": "发布脚本确认账号、战绩与统计记录数量未减少",
+    "permissionFix": "修复严格umask下发布目录不可进入的问题，程序目录显式0755，备份与口令文件权限保持私有",
+    "downloads": "官网下载页10项当前文件；ZIP为服务器文件，9个桌面文件指向GitHub正式发行",
+    "webSourceCommit": "df9d2c3bf1a60637ab4e7b7984955ab7ef122005"
+  },
+  "macAppleSilicon": {
+    "officialSHA256": "1df4d1378f47ecbe7617aac599785b2f97313086e6ea50f7919997469c215202",
+    "codesign": "--verify --deep --strict通过",
+    "startup": "tauri://localhost实际启动，指挥官征途目标、外观门槛、分享卡预览均显示正常",
+    "limits": "未覆盖全部玩法；未覆盖Intel Mac、Windows和Linux真机"
+  }
+}

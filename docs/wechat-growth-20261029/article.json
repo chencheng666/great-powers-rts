@@ -115,5 +115,11 @@
       "text": "故国虽大，好战必亡；天下虽安，忘战必危。——《司马法·仁本》"
     }
   ],
-  "localImages": true
+  "localImages": true,
+  "draftVerification": {
+    "images": 6,
+    "cover": "主界面实机截图",
+    "savedAndReloaded": true,
+    "published": false
+  }
 }

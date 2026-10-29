@@ -66,6 +66,8 @@ def main():
     if not re.fullmatch(rb'ADMIN_PASSWORD_HASH=[a-f0-9]{32}:[a-f0-9]{64}\n?', admin_bytes): raise RuntimeError('管理员配置无效')
     # 原包体及依赖直接复制，新文件原子覆盖，绝不修改旧发布目录。
     stage.mkdir()
+    # 调用方可能使用严格 umask；公开程序目录必须允许服务账号进入，私有备份仍为 0700。
+    stage.chmod(0o755)
     for name in ['dist', 'src', 'server', 'node_modules']:
         shutil.copytree(previous / name, stage / name, symlinks=True)
     for name in ['package.json', 'package-lock.json']: shutil.copy2(previous / name, stage / name)
