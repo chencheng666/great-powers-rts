@@ -1,7 +1,7 @@
 {
   "build": "20261029-menu-layout",
   "version": "2.0.2",
-  "status": "本地验收通过，服务器等待MFA，未上线",
+  "status": "已同步Git主分支、官网与上海服务器，公网核验通过",
   "tests": {
     "pass": 581,
     "fail": 0
@@ -37,5 +37,38 @@
     "装备图鉴打开关闭"
   ],
   "package": "20261029-menu-layout.tar.gz",
-  "sha256": "8b3c5e84ebec2894bb4be9f5b03519a4ba7f8b61db68a05045036aebd4e8fa67"
+  "sha256": "8b3c5e84ebec2894bb4be9f5b03519a4ba7f8b61db68a05045036aebd4e8fa67",
+  "sourceCommit": "a487003",
+  "deployment": {
+    "release": "20261029-menu-layout",
+    "backup": "/opt/great-powers/frontend-backups/20261029-menu-layout",
+    "scope": "仅静态页面与哈希资源；对战进程未重启、玩家数据库未写入",
+    "health": "8088及8089健康，发布前后均无房间和战斗",
+    "onlineInteraction": [
+      "成长弹窗打开关闭",
+      "战场跳转聚焦",
+      "官网更新说明显示"
+    ],
+    "publicChecks": [
+      {
+        "url": "/play/",
+        "status": 200,
+        "sha": "a7336d31e275891a759efabd9e6a8a2a2f3c5abc7aee041213a98ad8cd4ffb0c",
+        "matches": true
+      },
+      {
+        "url": "/candidate/",
+        "status": 200,
+        "sha": "a7336d31e275891a759efabd9e6a8a2a2f3c5abc7aee041213a98ad8cd4ffb0c",
+        "matches": true
+      },
+      {
+        "url": "/",
+        "status": 200,
+        "sha": "daf14b8a1c43e0e936b4f9eae15f550d758d8a95a6537b1552f14e2992ed0345",
+        "matches": true
+      }
+    ]
+  },
+  "limits": "本轮为网页界面迭代，版本仍为2.0.2；桌面安装包与ZIP未重新打包，3.0功能为规划"
 }
