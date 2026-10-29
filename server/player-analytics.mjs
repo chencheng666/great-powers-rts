@@ -84,7 +84,7 @@ export class PlayerAnalytics {
     if (!body || !identifier(body.sessionId) || !Number.isSafeInteger(body.seq) || body.seq < 1 || !Number.isSafeInteger(body.activeMs) || body.activeMs < 0 || body.activeMs > 366 * DAY) throw new Error('统计请求无效');
     const now = this.clock(), meta = parseUserAgent(ua), entry = ['candidate','zip','desktop'].includes(body.entry) ? body.entry : 'game';
     const name = body.name ? nickname(body.name) : '', context = body.context || null;
-    if (context && (!identifier(context.battleId) || !['single', 'online', 'candidate', 'challenge', 'sandbox', 'spectator'].includes(context.mode))) throw new Error('战局标识无效');
+    if (context && (!identifier(context.battleId) || !['single', 'online', 'candidate', 'challenge', 'sandbox', 'spectator', 'survival'].includes(context.mode))) throw new Error('战局标识无效');
     let player = this.player(cookie), token = null;
     this.db.exec('BEGIN IMMEDIATE');
     try {

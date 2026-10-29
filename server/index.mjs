@@ -1,3 +1,4 @@
+import { JiujiAnalytics } from './jiuji-analytics.mjs';
 import { PlayerAnalytics } from './player-analytics.mjs';
 import { AdminAccess, playerCSV } from './admin-access.mjs';
 import { createServer } from 'node:http';
@@ -22,7 +23,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
   const protocol=maxPlayers===6?SIX_PROTOCOL_VERSION:PROTOCOL_VERSION;
   const cookieName=maxPlayers===6?'gp_six_guest':'gp_guest',cookiePath=maxPlayers===6?'/candidate':'/';
   const accounts = new Accounts(directory,{cookieName}), rooms = new Map(), peers = new Map(), requests = new SessionRateLimit();
-  const analytics = new PlayerAnalytics(directory), admin = new AdminAccess(adminPasswordHash);
+  const analytics = new PlayerAnalytics(directory), jiujiAnalytics = new JiujiAnalytics(resolve(directory,'jiuji')), admin = new AdminAccess(adminPasswordHash);
   const feedbackRequests = new SessionRateLimit({limit:5,windowMs:3600000,capacity:2048});
   const telemetryRequests = new SessionRateLimit({limit:240,capacity:2048}), newVisitors = new SessionRateLimit({limit:40,capacity:2048});
   const send = (ws, value) => { if (ws?.readyState === WebSocket.OPEN && ws.bufferedAmount < 512*1024) ws.send(JSON.stringify(value)); };
@@ -89,6 +90,17 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
         const result = analytics.ingest(body,{cookie,ua:req.headers['user-agent']});
         return json(200,{ok:true,...(result.token ? {token:result.token} : {})});
       }
+      if (url.pathname === '/api/jiuji/telemetry') {
+        const external = ['https://chencheng666.github.io','tauri://localhost','https://tauri.localhost','http://tauri.localhost'].includes(req.headers.origin);
+        if (!external && !allowed(req)) return json(403,{error:'请求来源不被允许'});
+        if (external) res.setHeader('Access-Control-Allow-Origin',req.headers.origin);
+        if (req.method !== 'POST') return json(405,{error:'不支持的请求'});
+        const body=await readBody(), token=typeof body.token==='string'&&/^[a-f0-9]{64}$/.test(body.token)?body.token:'';
+        const cookie=token?`gp_analytics=${token}`:'', player=jiujiAnalytics.player(cookie);
+        if(!(player?telemetryRequests:newVisitors).accept('jiuji:'+ (player?.id||req.socket.remoteAddress)))return json(429,{error:'统计请求过于频繁'});
+        const result=jiujiAnalytics.ingest(body,{cookie,ua:req.headers['user-agent']});
+        return json(200,{ok:true,...(result.token?{token:result.token}:{})});
+      }
       if (url.pathname === '/api/telemetry') {
         if(req.method!=='POST')return json(405,{error:'不支持的请求'});
         if(!allowed(req))return json(403,{error:'请求来源不被允许'});
@@ -119,20 +131,20 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
         if(url.pathname==='/api/admin/logout'&&req.method==='POST'){admin.logout(req.headers.cookie);res.setHeader('Set-Cookie','gp_admin=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return json(200,{ok:true});}
         if(url.pathname==='/api/admin/feedback-image'&&req.method==='GET') {
           const id = Number(url.searchParams.get('id')); if (!Number.isSafeInteger(id) || id < 1) return json(400,{error:'编号无效'});
-          const image=analytics.feedbackImage(id); if (!image) return json(404,{error:'图片不存在'});
+          const selected=url.searchParams.get('game')==='jiuji'?jiujiAnalytics:analytics;const image=selected.feedbackImage(id); if (!image) return json(404,{error:'图片不存在'});
           res.writeHead(200,{'Content-Type':image.type,'Cache-Control':'no-store','Content-Disposition':'inline','X-Content-Type-Options':'nosniff'});return res.end(image.image);
         }
         if(url.pathname==='/api/admin/status'&&req.method==='GET')return json(200,{ok:true});
         if(url.pathname==='/api/admin/query'&&req.method==='POST'){
-          const filters=await readBody();
-          if(filters.view==='players')return json(200,analytics.players(filters));
-          if(filters.view==='diagnostics')return json(200,analytics.diagnostics(filters));
+          const filters=await readBody();if(filters.game&&!['greatpowers','jiuji'].includes(filters.game))return json(400,{error:'游戏参数无效'});const selected=filters.game==='jiuji'?jiujiAnalytics:analytics;
+          if(filters.view==='players')return json(200,selected.players(filters));
+          if(filters.view==='diagnostics')return json(200,selected.diagnostics(filters));
           if(filters.view==='export'){
-            const data=analytics.players({...filters,export:true});res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Cache-Control':'no-store','Content-Disposition':'attachment; filename="players.csv"','X-Export-Truncated':String(data.truncated)});return res.end(playerCSV(data));
+            const data=selected.players({...filters,export:true});res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Cache-Control':'no-store','Content-Disposition':'attachment; filename="players.csv"','X-Export-Truncated':String(data.truncated)});return res.end(playerCSV(data));
           }
-          const report=analytics.report(filters);report.environment=dev?'本地开发环境':'生产采集';
+          const report=selected.report(filters);report.environment=dev?'本地开发环境':'生产采集';
           report.legacy={count:accounts.db.prepare('SELECT COUNT(*) n FROM guests').get().n,rows:accounts.db.prepare('SELECT id,name,wins,losses,draws FROM guests ORDER BY wins DESC LIMIT 100').all(),scope:'历史双人联网档案；没有采集到的UA与时长不能回补，名单最多展示100条'};
-          return json(200,report);
+          if(filters.game==='jiuji')report.legacy={count:0,rows:[],scope:'九级暂无联网账号，匿名访客不与其他游戏合并'};return json(200,report);
         }
         return json(404,{error:'接口不存在'});
       }
@@ -258,9 +270,9 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
     }
   },50);
   const heartbeat=setInterval(()=>wss.clients.forEach(ws=>{if(!ws.alive||ws.bufferedAmount>2*1024*1024)ws.terminate();else{ws.alive=false;ws.ping();}}),15000);
-  const diagnosticsCleanup = setInterval(() => { try { analytics.pruneDiagnostics(); } catch (error) { console.error('诊断记录清理失败', error); } }, 86400000); diagnosticsCleanup.unref();
-  server.on('close',()=>{clearInterval(diagnosticsCleanup);clearInterval(timer);clearInterval(heartbeat);wss.clients.forEach(ws=>ws.terminate());wss.close();analytics.close();accounts.db.close();});
-  return { server, rooms, accounts, wss, analytics };
+  const diagnosticsCleanup = setInterval(() => { try { analytics.pruneDiagnostics();jiujiAnalytics.pruneDiagnostics(); } catch (error) { console.error('诊断记录清理失败', error); } }, 86400000); diagnosticsCleanup.unref();
+  server.on('close',()=>{clearInterval(diagnosticsCleanup);clearInterval(timer);clearInterval(heartbeat);wss.clients.forEach(ws=>ws.terminate());wss.close();analytics.close();jiujiAnalytics.close();accounts.db.close();});
+  return { server, rooms, accounts, wss, analytics, jiujiAnalytics };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const { server }=createBattleServer({maxPlayers:Number(process.env.MAX_PLAYERS||2)}); server.listen(Number(process.env.PORT||4180),process.env.HOST||'127.0.0.1',()=>console.log(`对战服务已启动，端口 ${process.env.PORT||4180}`));
