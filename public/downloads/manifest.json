@@ -1,8 +1,15 @@
 {
-  "version": "2.0.1",
-  "releaseTag": "v2.0.1",
+  "version": "2.0.2",
+  "releaseTag": "v2.0.2",
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
+    {
+      "name": "packages/Great-Powers-RTS-v2.0.2.zip",
+      "label": "2.0.2 · 指挥官征途 · 最新免安装离线 ZIP",
+      "size": 56573006,
+      "sha256": "db4967abbe0ac3db47147568e7ac0fef58ea198aa1abb6df3f21eb017a263479",
+      "status": "成长目标、三款奖励涂装、先锋试炼、战报分享；灰谷入门、冒烟与命中特效、附图反馈。完整解压后打开PLAY.html，断网单机；联网时匿名统计，进度本机保存。"
+    },
     {
       "name": "packages/Great-Powers-RTS-v2.0.1-20261027.zip",
       "label": "2.0.1 · 最新免安装单机 ZIP",
@@ -228,9 +235,10 @@
       "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
     }
   ],
-  "webReleaseTag": "v2.0.1",
-  "updatedAt": "2026-10-27T02:38:30.938483+00:00",
+  "webReleaseTag": "v2.0.2",
+  "updatedAt": "2026-10-29T09:00:00+08:00",
   "archiveTags": [
+    "v2.0.1",
     "v1.3.1",
     "v2.0.0"
   ]
