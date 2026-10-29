@@ -11,6 +11,69 @@
       "status": "成长目标、三款奖励涂装、先锋试炼、战报分享；灰谷入门、冒烟与命中特效、附图反馈。完整解压后打开PLAY.html，断网单机；联网时匿名统计，进度本机保存。"
     },
     {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.2/Great.Powers_2.0.2_aarch64.app.tar.gz",
+      "label": "2.0.2 · macOS Apple Silicon · Great.Powers_2.0.2_aarch64.app.tar.gz",
+      "size": 81532267,
+      "sha256": "1df4d1378f47ecbe7617aac599785b2f97313086e6ea50f7919997469c215202",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.2/Great.Powers_2.0.2_aarch64.AppImage",
+      "label": "2.0.2 · Linux ARM64 · Great.Powers_2.0.2_aarch64.AppImage",
+      "size": 158112264,
+      "sha256": "226e6b32c9e275562d9f98ef0a1dc0408761403f66502f96e5a2fbc177cce1a6",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.2/Great.Powers_2.0.2_aarch64.dmg",
+      "label": "2.0.2 · macOS Apple Silicon · Great.Powers_2.0.2_aarch64.dmg",
+      "size": 81622649,
+      "sha256": "b1a52886180ba12d2c4a274838776bb69aa1deaafe2240835562be24bae0676c",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.2/Great.Powers_2.0.2_amd64.AppImage",
+      "label": "2.0.2 · Linux x64 · Great.Powers_2.0.2_amd64.AppImage",
+      "size": 159947256,
+      "sha256": "05e05a28f42e937988fe274fdb753376802c38fc982f289cd2188cffcdefba12",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.2/Great.Powers_2.0.2_amd64.deb",
+      "label": "2.0.2 · Linux x64 · Great.Powers_2.0.2_amd64.deb",
+      "size": 81570414,
+      "sha256": "75e7107702cc1c9a8c76798b16f09e25b09606d30883e46df90be66501eb3cff",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.2/Great.Powers_2.0.2_arm64.deb",
+      "label": "2.0.2 · Linux ARM64 · Great.Powers_2.0.2_arm64.deb",
+      "size": 81612276,
+      "sha256": "a31dbbdcdd569b8bf9ad04fea3a1d6696c088ff6e069302c62f73ceeeb2af953",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.2/Great.Powers_2.0.2_x64-setup.exe",
+      "label": "2.0.2 · Windows x64 · Great.Powers_2.0.2_x64-setup.exe",
+      "size": 298659167,
+      "sha256": "aca102d0458ac3b467375d2b365a203c72e1b3870118d81c5908d14f87f41c1c",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.2/Great.Powers_2.0.2_x64.app.tar.gz",
+      "label": "2.0.2 · macOS Intel · Great.Powers_2.0.2_x64.app.tar.gz",
+      "size": 82196243,
+      "sha256": "7b69e8a54b07d59ba9525381be8c143f4ededb71ffc32f924e7bc4d35a8ffa7b",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.2/Great.Powers_2.0.2_x64.dmg",
+      "label": "2.0.2 · macOS Intel · Great.Powers_2.0.2_x64.dmg",
+      "size": 82283346,
+      "sha256": "7ffe3afd8bf4465378f76ab5c49d497ccbd7c5257549fbe215753e89c386c0c4",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.1-20261027.zip",
       "label": "2.0.1 · 最新免安装单机 ZIP",
       "size": 69756167,

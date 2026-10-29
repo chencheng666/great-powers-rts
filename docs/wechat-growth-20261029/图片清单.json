@@ -1,0 +1,38 @@
+[
+  {
+    "type": "image",
+    "file": "01-home.png",
+    "caption": "主界面实机截图｜玩法选择指引和“指挥官征途”入口",
+    "url": "images/01-home.png"
+  },
+  {
+    "type": "image",
+    "file": "02-valley.png",
+    "caption": "灰谷入门实机截图｜先建立防线，再熟悉生产与补给",
+    "url": "images/02-valley.png"
+  },
+  {
+    "type": "image",
+    "file": "03-growth.png",
+    "caption": "成长界面实机截图｜目标、解锁条件与今日推荐战区",
+    "url": "images/03-growth.png"
+  },
+  {
+    "type": "image",
+    "file": "04-battle.png",
+    "caption": "装备图鉴实机截图｜三维模型、生产条件、克制与维修补给说明",
+    "url": "images/04-battle.png"
+  },
+  {
+    "type": "image",
+    "file": "05-feedback.png",
+    "caption": "意见反馈界面实机截图｜文字必填，截图可以选择上传",
+    "url": "images/05-feedback.png"
+  },
+  {
+    "type": "image",
+    "file": "06-share.png",
+    "caption": "战报分享卡示例｜演示档案，仅用于展示版式，不是联网排名",
+    "url": "images/06-share.png"
+  }
+]
