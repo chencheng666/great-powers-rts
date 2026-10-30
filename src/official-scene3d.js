@@ -2,7 +2,7 @@ import * as T from 'three';
 import {createChineseTank} from './domestic-models.js';
 import {createModernAircraft} from './aircraft-models.js';
 const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,n));
-export function createOfficialScene(canvas){
+export async function createOfficialScene(canvas){
  const renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:innerWidth>700,powerPreference:'low-power'});renderer.setClearColor(0,0);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.45;
  const scene=new T.Scene(),camera=new T.PerspectiveCamera(45,1,.1,180);camera.position.set(0,4.2,23);camera.lookAt(0,3,0);
  scene.add(new T.HemisphereLight('#e2efff','#34322a',3));const sun=new T.DirectionalLight('#fff0cb',5);sun.position.set(-8,12,15);scene.add(sun);const rim=new T.DirectionalLight('#77d5ed',4);rim.position.set(10,4,-5);scene.add(rim);
@@ -41,5 +41,7 @@ export function createOfficialScene(canvas){
   renderer.render(scene,camera);
   if(t>(nuke?5.5:5)){callbacks.done?.();return;}raf=requestAnimationFrame(frame);
  }
+ // 首次材质编译在演出计时前完成，多个播放请求共用同一实例。
+ await renderer.compileAsync(scene,camera);
  return {stop,play(next,cb){stop();mode=next;callbacks=cb;blasted=false;started=performance.now();last=0;raf=requestAnimationFrame(frame);}};
 }
