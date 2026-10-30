@@ -10,7 +10,7 @@
     "server": "node server/index.mjs",
     "server:lan": "node scripts/start-lan.mjs",
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build --configLoader native",
+    "build": "vite build --configLoader native && node scripts/build-official-cinematic.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "package:offline": "node scripts/package-offline.mjs",
     "test": "node --test",
