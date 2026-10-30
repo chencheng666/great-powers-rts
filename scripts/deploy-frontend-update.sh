@@ -41,7 +41,7 @@ done
 for file in "$stage"/assets/*; do
   [[ -f "$file" ]]
   name=$(basename "$file")
-  [[ "$name" =~ ^[0-9A-Za-z_.-]+\.(js|css|svg|png|webp)$ ]]
+  [[ "$name" =~ ^[0-9A-Za-z_.-]+\.(js|css|svg|png|webp|glb)$ ]]
   if [[ -e "$root/assets/$name" ]]; then cmp "$file" "$root/assets/$name"; else install -m 644 "$file" "$root/assets/$name"; fi
 done
 for page in "${pages[@]}"; do

@@ -1,0 +1,53 @@
+#mobile-more-btn,.touch-battle-hint{display:none}
+.deployment-status{display:block;flex-basis:100%;font-size:13px;color:#b9dacd;padding:10px;line-height:1.6}
+.deployment-status[hidden]{display:none}
+#game-canvas{touch-action:none}
+@media(max-width:700px){
+ html,body,#app{height:100%;height:100dvh;overflow:hidden;min-height:0}
+ #app{display:flex;flex-direction:column}
+ .topbar{flex:none;display:flex!important;flex-wrap:nowrap;min-height:56px;height:calc(56px + env(safe-area-inset-top));padding:calc(6px + env(safe-area-inset-top)) 8px 6px;gap:4px;position:relative;z-index:8}
+ .topbar>.brand,.topbar>.mission{display:none!important}
+ .topbar .resources{margin:0 auto 0 0;gap:5px}
+ .topbar .resource{min-width:64px;height:36px;font-size:12px;border-radius:9px}
+ .top-actions{gap:3px}.top-actions>.icon-btn{display:none;width:44px;height:44px;min-width:44px;border-radius:12px}
+ .top-actions>#mobile-more-btn,.top-actions>#sidebar-btn,.top-actions>#pause-btn{display:flex}
+ .top-actions.mobile-expanded{position:absolute;top:calc(6px + env(safe-area-inset-top));right:8px;padding:6px;max-width:268px;flex-wrap:wrap;background:#16272e;border:1px solid #7aa69d;border-radius:14px;box-shadow:0 12px 24px #0008}
+ .top-actions.mobile-expanded>.icon-btn{display:flex}
+ .game-layout{flex:1;display:flex!important;min-height:0;height:auto!important;position:relative;padding-bottom:calc(76px + env(safe-area-inset-bottom));overflow:hidden}
+ #battlefield{height:100%!important;min-height:0!important;flex:1;width:100%;overflow:hidden}
+ #command-sidebar{position:fixed;z-index:7;bottom:calc(76px + env(safe-area-inset-bottom));left:6px;right:6px;width:auto!important;min-width:0!important;height:45dvh;max-height:400px;border:1px solid #779b92;border-radius:18px 18px 0 0;box-shadow:0 -12px 30px #0007;padding:0;overflow:hidden}
+ #command-sidebar .side-heading{height:48px;padding:6px 12px;flex:none}
+ #command-sidebar .minimap-shell,#compact-radar{display:none!important}
+ #command-sidebar .sidebar-content{min-height:0;height:auto;max-height:none;flex:1;overflow-y:auto;padding:10px}
+ #command-sidebar .sidebar-tabs{height:46px;flex:none;margin:0}
+ #command-sidebar .tab{font-size:13px;min-height:44px}
+ #command-sidebar .sidebar-footer{padding:6px 12px}
+ #command-sidebar .action-card{border-radius:12px;min-height:72px}.action-text strong{font-size:12px!important}
+ #command-sidebar .side-heading .icon-btn{width:44px;height:40px}
+ #command-toolbar{position:fixed;z-index:9;left:0;right:0;bottom:0;display:flex;align-items:flex-start;justify-content:flex-start;height:calc(76px + env(safe-area-inset-bottom));padding:8px 8px calc(8px + env(safe-area-inset-bottom));gap:7px;overflow-x:auto;background:#12232bf5;border-top:1px solid #50716b;max-width:100vw;touch-action:pan-x;scrollbar-width:thin}
+ #command-toolbar .command-btn{display:flex!important;flex:none;width:56px;min-width:56px;height:56px;border-radius:14px;font-size:12px;padding:4px}
+ #command-toolbar .command-btn[hidden]{display:none!important}
+ #command-toolbar .command-btn span{font-size:11px}
+ #command-toolbar #toolbar-toggle{display:none!important}
+ #selection-panel{left:8px;right:8px;bottom:28px;min-width:0;max-width:calc(100% - 16px);padding:7px 10px;border-radius:12px;pointer-events:none;background:#10242be8}
+ #selection-panel>*{pointer-events:auto}#selection-panel strong{font-size:12px}
+ #selection-panel .equipment-detail,#selection-panel .hud-label{display:none}
+ #selection-panel .selection-actions{position:absolute;right:8px;top:5px;display:flex;gap:5px}
+ #selection-panel .selection-actions button{min-width:44px;min-height:40px}
+ #selection-panel:has(.selection-actions)>.selection-health{max-width:65%}
+ .touch-battle-hint{display:block;position:absolute;bottom:4px;left:10px;right:10px;margin:0;font-size:10px;color:#c3d7d0;pointer-events:none;text-align:center}
+ .camera-tools{left:8px!important;top:8px!important;border-radius:12px;padding:3px}
+ .camera-tools .icon-btn{width:40px!important;height:40px!important;min-width:40px!important}
+ .camera-tools output{width:36px!important}
+ .battle-hud.top-left,.battle-hud.top-right{display:none!important}
+ #battle-tutorial{top:60px;left:8px;max-width:260px;border-radius:12px;font-size:11px}
+ #battle-tutorial header button{min-height:40px;min-width:44px}
+ .building-info{max-width:calc(100vw - 24px);max-height:50dvh;overflow:auto}
+ .toast-container{top:64px!important;max-width:calc(100% - 16px)}
+ .audio-panel{top:64px;right:8px;max-height:70dvh;overflow:auto}
+ .modal-card{border-radius:18px}.modal-actions button{min-height:48px}
+ .start-screen{height:100dvh;overflow-y:auto;overscroll-behavior:contain}
+ .faction-option{border-radius:12px!important;min-height:70px}.enemy-select select{min-height:48px;border-radius:10px}
+ #start-btn,.menu-save-actions button,.growth-home{min-height:48px;border-radius:12px}
+}
+@media(max-width:700px) and (orientation:landscape){#command-sidebar{left:auto;width:min(380px,60vw)!important;height:calc(100dvh - 130px)}#battle-tutorial{max-width:220px}#selection-panel{max-width:65%}}

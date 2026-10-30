@@ -15,8 +15,14 @@ import { Game } from './game.js';
 import { CHALLENGES, challengeStatus, RECON_ACTIVITY_LABELS, BEACHHEAD_ACTIVITY_LABELS } from './challenges.js';
 import { CHALLENGE_PROFILE_KEY, CHALLENGE_FILE_LIMIT, emptyChallengeProfile, readChallengeProfile, writeChallengeProfile, challengeRecords, settleChallengeResult, exportChallengeProfile, parseChallengeExport, mergeChallengeProfiles } from './challenge-profile.js';
 import './challenges.css';
-import { Renderer } from './render.js';
-import { modelThumbnail } from './visual-assets.js';
+let Renderer, modelThumbnail, rendererModule;
+async function prepareRenderer() {
+  rendererModule ||= Promise.all([import('./render.js'), import('./visual-assets.js')]).then(([render, assets]) => {
+    Renderer = render.Renderer; modelThumbnail = assets.modelThumbnail;
+  }).catch(error => { rendererModule = null; throw error; });
+  await rendererModule;
+  return Renderer.prepare();
+}
 import { gameAudio } from './audio.js';
 import { buildingInformation, placeBuildingPanel, productionDuration } from './battlefield-details.js';
 import { teamVisual } from './team-visuals.js';
@@ -49,6 +55,8 @@ import './menu-layout.css';
 import './discovery.css';
 import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
+import './mobile-battle.css';
+import { shouldPanMap, touchTransform } from './map-gestures.js';
 import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
 import { COMBAT_STANCES, supportsCombatStance, combatStance } from './combat-stance.js';
 import { isLifeline, LIFELINE, lifelineSummary, harborPlan, freightRules } from './maritime-logistics.js';
@@ -250,6 +258,8 @@ async function startGame(save = null, onlinePayload = null) {
   catch (error) { handleBattleFailure(error, { save, onlinePayload, startup: true }); }
   finally {
     state.loading = false;
+    document.dispatchEvent(new CustomEvent('gp-deploying',{detail:false}));
+    $('#deployment-status').hidden = true;
     $('#start-btn').disabled = false;
     $('#start-btn').innerHTML = `${icon('play')} 单机作战`;
     refreshIcons();
@@ -260,13 +270,17 @@ async function deployGame(save = null, onlinePayload = null) {
   const button = $('#start-btn');
   if (state.loading) return;
   state.loading = true;
+  document.dispatchEvent(new CustomEvent('gp-deploying',{detail:true}));
+  performance.mark('gp-deploy-start');
+  $('#deployment-status').hidden = false;
+  $('#deployment-status').textContent = '正在载入战场模型，首次进入需要下载，完成后本页复用';
   gameAudio.unlock().catch(() => {});
   button.disabled = true;
   button.innerHTML = `${icon('loader-circle')} 战场部署中`;
   refreshIcons();
   await new Promise(resolve => setTimeout(resolve, 0));
   try {
-    await Renderer.prepare();
+    await prepareRenderer();
   } catch (error) {
     toast(`战场素材载入失败：${error.message}`, true);
     button.disabled = false;
@@ -275,6 +289,8 @@ async function deployGame(save = null, onlinePayload = null) {
     refreshIcons();
     return;
   }
+  $('#deployment-status').textContent = '模型已就绪，正在构建战场';
+  await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
   ++state.loopToken;
   gameAudio.stopBattle();
   state.renderer?.dispose();
@@ -301,6 +317,8 @@ async function deployGame(save = null, onlinePayload = null) {
   }
   state.renderer = new Renderer($('#game-canvas'), $('#minimap'), state.game);
   state.renderer.render(performance.now());
+  performance.mark('gp-battle-ready');
+  performance.measure('gp-deploy', 'gp-deploy-start', 'gp-battle-ready');
   button.disabled = false;
   state.loading = false;
   button.innerHTML = `${icon('play')} 单机作战`;
@@ -430,6 +448,7 @@ async function recoverBattleView() {
 
 function updateUI(force = false) {
   const g = state.game;
+  if(g)$('#cancel-order-btn').hidden=!(g.orderMode||g.pendingAbility||g.placingBuilding);
   if (!g) return;
   const p = g.players[0];
   updateBattleTutorial(g);
@@ -600,7 +619,7 @@ function updateSelection() {
   if (selectionKey !== state.lastSelection) { state.dismissedInspectorId = null; gameAudio.selection(selected); state.lastSelection = selectionKey; }
   const panel = $('#selection-panel');
   const touch = window.matchMedia('(pointer: coarse)').matches;
-  if (!selected.length) panel.innerHTML = `<span class="hud-label">当前选择</span><strong>未选择单位</strong><span>${touch ? '轻点选择 · 拖动地图' : '左键选择 · 框选部队 · 右键下达命令'}</span>`;
+  if (!selected.length) panel.innerHTML = `<span class="hud-label">当前选择</span><strong>未选择单位</strong><span>${touch ? '轻点选择 · 拖动地图' : '空白拖图 · Shift框选 · 右键指令'}</span>`;
   else if (selected.length === 1) {
     const e = selected[0], profile = e.kind === 'unit' ? equipmentProfile(g.players[e.owner].faction, e.type, g.map.future) : null, name = profile ? profile.name : lunarBuildingProfile(g.map.future, e.type, BUILDINGS[e.type]).name;
     const actions = e.kind === 'building' ? `<div class="selection-actions"><button type="button" data-action="repair" class="${e.repairing ? 'active' : ''}" title="${e.hp >= e.maxHp && !e.repairing ? '建筑完好' : e.repairing ? '停止维修' : '维修建筑'}" ${e.hp >= e.maxHp && !e.repairing ? 'disabled' : ''}>${icon('wrench')}</button>${e.type === 'hq' ? '' : `<button type="button" data-action="sell" title="出售建筑，返还一半造价" aria-label="出售建筑">${icon('coins')}<span>出售</span></button>`}</div>` : e.type === 'apc' ? `<div class="selection-actions"><button type="button" data-action="unload" title="乘员下车" aria-label="乘员下车">${icon('log-out')}</button></div>` : '';
@@ -869,7 +888,7 @@ function showChallenges(notice='',danger=false) {
   const list = $('#modal .challenge-list');
   const images = [...list.querySelectorAll('[data-challenge-model]')];
   loadChallengeThumbnails({
-    prepare: () => Renderer.prepare(), images,
+    prepare: () => prepareRenderer(), images,
     thumbnail: model => modelThumbnail(model, teamVisual(0).color),
     isCurrent: () => state.modalMode === '战术挑战' && $('#modal .challenge-list') === list && !$('#modal').classList.contains('hidden'),
     onFailure: () => {
@@ -985,16 +1004,17 @@ function setupControls() {
     if (event.button !== 0 || g.placingBuilding || g.pendingAbility || g.orderMode || event.altKey || state.cameraPanMode) state.lastSelectionClick = null;
     const p = canvasPoint(event); canvas.setPointerCapture(event.pointerId);
     if (event.pointerType === 'touch') {
+      if (!state.touchPoints.size) { state.touchPan = state.touchPinching = false; state.pinchDistance = 0; }
       state.touchPoints.set(event.pointerId, p);
       state.touchLast = p;
       state.touchStart = p;
       if (state.touchPoints.size > 1) {
         state.touchPinching = true; state.drag = null; r.dragBox = null;
-        const [a, b] = [...state.touchPoints.values()]; state.pinchDistance = Math.hypot(a.x - b.x, a.y - b.y);
+        const [a, b] = [...state.touchPoints.values()]; state.pinchDistance = Math.hypot(a.x - b.x, a.y - b.y); state.touchLast = {x:(a.x+b.x)/2,y:(a.y+b.y)/2};
         return;
       }
     }
-    if (event.pointerType !== 'touch' && (event.button === 2 || event.button === 1 || event.button === 0 && (event.altKey || state.cameraPanMode && !g.placingBuilding && !g.pendingAbility && !g.orderMode))) { state.panning = { ...p, start: p, button: event.button, moved: false }; updatePanControl(); return; }
+    if (event.pointerType !== 'touch' && shouldPanMap({button:event.button,shift:event.shiftKey,alt:event.altKey,panMode:state.cameraPanMode,targeting:!!(g.placingBuilding||g.pendingAbility||g.orderMode),hit:!!r.pickEntity(p.x,p.y)})) { state.panning = { ...p, start: p, button: event.button, moved: false }; updatePanControl(); return; }
     if (g.paused) return;
     if (event.button === 0) { state.drag = { start: r.screenToWorld(p.x, p.y), end: r.screenToWorld(p.x, p.y), moved: false, additive: event.shiftKey }; }
   });
@@ -1009,12 +1029,14 @@ function setupControls() {
     }
     r.hoveredId = hoveredId;
     if (event.pointerType === 'touch') {
+      if (!state.touchPoints.has(event.pointerId)) return;
       state.touchPoints.set(event.pointerId, p);
       if (state.touchPoints.size > 1) {
         const [a, b] = [...state.touchPoints.values()];
         const next = Math.hypot(a.x - b.x, a.y - b.y);
-        if (state.pinchDistance > 0) r.zoomAt(next / state.pinchDistance, (a.x + b.x) / 2, (a.y + b.y) / 2);
-        state.pinchDistance = next; state.touchPinching = true; return;
+        const center = {x:(a.x+b.x)/2,y:(a.y+b.y)/2}, delta=touchTransform(state.touchLast,center,state.pinchDistance,next);
+        r.pan(delta.dx,delta.dy); r.zoomAt(delta.scale,center.x,center.y);
+        state.touchLast = center; state.pinchDistance = next; state.touchPinching = true; return;
       }
       if (state.touchLast && (state.touchPan || Math.hypot(p.x - state.touchStart.x, p.y - state.touchStart.y) > 8)) {
         state.touchPan = true; r.pan(state.touchLast.x - p.x, state.touchLast.y - p.y);
@@ -1074,7 +1096,11 @@ function setupControls() {
     state.lastSelectionClick = null;
     event.preventDefault();
   });
-  canvas.addEventListener('pointercancel', event => { state.drag = null; state.panning = null; updatePanControl(); state.touchPoints.delete(event.pointerId); if (!state.touchPoints.size) { state.touchPan = false; state.touchPinching = false; } if (state.renderer) state.renderer.dragBox = null; });
+  const cancelGesture = () => { state.drag = state.panning = state.pointerPosition = state.touchStart = state.touchLast = null; state.touchPoints.clear(); state.touchPan = state.touchPinching = false; state.pinchDistance = 0; if(state.renderer)state.renderer.dragBox = null; updatePanControl(); };
+  canvas.addEventListener('pointercancel', cancelGesture);
+  canvas.addEventListener('lostpointercapture', event => { if(state.touchPoints.has(event.pointerId)||state.panning)cancelGesture(); });
+  window.addEventListener('blur', cancelGesture);
+  document.addEventListener('visibilitychange', () => { if(document.hidden)cancelGesture(); });
   canvas.addEventListener('pointerleave', event => { state.pointerPosition = null; if(event.relatedTarget?.closest?.('#building-info'))return; if (state.renderer) state.renderer.hoveredId = null; });
   $('#building-info').addEventListener('pointerleave',event=>{if(event.relatedTarget!==canvas&&state.renderer)state.renderer.hoveredId=null;});
   canvas.addEventListener('wheel', event => { if (!state.renderer) return; event.preventDefault(); const p = canvasPoint(event); state.renderer.zoomAt(event.deltaY < 0 ? 1.09 : 1 / 1.09, p.x, p.y); }, { passive: false });
@@ -1123,6 +1149,8 @@ function setupControls() {
   $('#honor-btn').addEventListener('click', openHonors);
   $('#honor-profile-btn').addEventListener('click', openHonors);
   $('#sidebar-btn').addEventListener('click', () => setSidebarCollapsed(!state.sidebarCollapsed));
+  $('#mobile-more-btn').addEventListener('click', () => { const open=$('.top-actions').classList.toggle('mobile-expanded');$('#mobile-more-btn').setAttribute('aria-expanded',String(open)); });
+  $('#cancel-order-btn').addEventListener('click', () => { const g=state.game;if(!g)return;g.orderMode=null;g.pendingAbility=false;g.pendingNuclear=false;g.placingBuilding=false;clearOrderButtons();updateUI(true); });
   $('#sidebar-close').addEventListener('click', () => setSidebarCollapsed(true));
   $('#pan-map-btn').addEventListener('click', () => { state.cameraPanMode = !state.cameraPanMode; updatePanControl(); });
   for (const [id, factor] of [['zoom-out-btn', 1 / 1.15], ['zoom-in-btn', 1.15]]) $( `#${id}`).addEventListener('click', () => { const r = state.renderer; if (r) r.zoomAt(factor, r.viewport.width / 2, r.viewport.height / 2); });
@@ -1284,7 +1312,7 @@ function updateVoiceOptions() {
 const playerTelemetry=new PlayerTelemetry({version:`${GAME_VERSION}+${BUILD_ID}`,desktop:isDesktop(),getGame:()=>state.game});
 const onlineClient=new OnlineClient({
   onIdentity:name=>playerTelemetry.identify(name),
-  refreshIcons, prepare:()=>Renderer.prepare(),onNotice:toast,
+  refreshIcons, prepare:()=>prepareRenderer(),onNotice:toast,
   onAck:action=>{const voice={build:'construction',train:'queued',place:'deployed',stop:'stopOrder',move:'moveOrder',cyber:'cyberLaunch',satellite:'ability'}[action];if(state.game?.online&&voice)gameAudio.say(voice);},
   config:()=>({mapId:$('#map-select').value,victoryMode:state.victoryMode,faction:state.faction,nuclearEnabled:$('#map-select').value==='strategic'&&$('#nuclear-enabled').checked}),
   onBattle:async payload=>{
@@ -1304,12 +1332,14 @@ $('#map-select').addEventListener('change',updateNuclearOption);updateNuclearOpt
 setupMapDiscovery();
 if (location.protocol === 'file:') $('#desktop-download-link').href = 'https://www.daguojueqi.site/downloads/';
 setupControls();
-try { setSidebarCollapsed(localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(false); }
+try { setSidebarCollapsed(matchMedia('(max-width: 700px)').matches || localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(matchMedia('(max-width: 700px)').matches); }
 updateAudioControls();
 updateHonorOverview();
 updateContinueControl();
 refreshIcons();
-Renderer.prepare().catch(() => {});
+// 只在玩家明确准备开局时预取，首屏不与视频、模型抢占网络。
+$('#start-btn').addEventListener('pointerenter', () => { if (matchMedia('(hover: hover)').matches) prepareRenderer().catch(() => {}); }, { once: true });
+performance.mark('gp-menu-ready');
 
 async function importDesktopOrWeb() {
  if (!isDesktop()) { $('#save-file').click(); return; }

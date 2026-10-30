@@ -17,27 +17,14 @@ import { createNuclearSilo } from './deterrence-models.js';
 import { finishAirframe } from './airframe-finish.js';
 import { loadOpenAssets, installOpenModels } from './open-assets.js';
 
-const modelURL = new URL('../assets/models/military-library.glb', import.meta.url).href;
-const modernURL = new URL('../assets/models/modern-library.glb', import.meta.url).href;
-const droneURL = new URL('../assets/models/drone-library.glb', import.meta.url).href;
-const equipmentURL = new URL('../assets/models/equipment-library.glb', import.meta.url).href;
-const logisticsURL = new URL('../assets/models/logistics-library.glb', import.meta.url).href;
-const convoyURL = new URL('../assets/models/convoy-library.glb', import.meta.url).href;
-const robotURL = new URL('../assets/models/robot-library.glb', import.meta.url).href;
-const realismURL = new URL('../assets/models/realism-library.glb', import.meta.url).href;
+const modelURL = new URL('../assets/models/battle-library.glb', import.meta.url).href;
 const meridianURL = new URL('../assets/meridian-regolith-v2.webp', import.meta.url).href;
 const groundURL = new URL('../assets/terrain-material-v3.webp', import.meta.url).href;
 const buildingsURL = new URL('../assets/buildings-realistic-v2.webp', import.meta.url).href;
 const foliageURL = new URL('../assets/foliage-realistic-v2.webp', import.meta.url).href;
 const armoryURL = new URL('../assets/armory-v1.webp', import.meta.url).href;
+import { BATTLE_MODEL_NAMES as names } from './battle-model-manifest.js';
 const buildingNames = ['hq', 'power', 'refinery', 'barracks', 'factory', 'dock', 'radar', 'airfield', 'turret', 'lab', 'super', 'oil', 'armory'];
-const names = ['hq', 'power', 'refinery', 'barracks', 'factory', 'dock', 'radar', 'airfield', 'turret', 'lab', 'super', 'tank', 'harvester', 'aa', 'fighter', 'strike', 'drone', 'ghost', 'rifle', 'engineer', 'scout', 'patrol', 'frigate', 'elite_china', 'elite_russia', 'elite_nato', 'elite_asia', 'elite_middleeast', 'oil', 'beacon', 'ore_gold', 'ore_gem', 'tree', 'rock'];
-names.push('loiterer', 'jammer', 'laser', 'rocket', 'apc', 'supply', 'destroyer', 'carrier', 'submarine');
-names.push('railgun', 'aegis', 'relay', ...['china','russia','nato','asia','middleeast'].flatMap(faction => [`tank_${faction}`, `rocket_${faction}`]), ...buildingNames.filter(name => name !== 'dock').map(name => `future_${name}`), 'future_beacon');
-names.push('landing', 'bomber', 'airlift');
-names.push('logistics_depot', 'containerShip', 'freightPlane', 'destroyer_china');
-names.push('robot_rifle', 'robot_engineer', 'robot_scout');
-names.push('armory');
 let pending;
 let library;
 const variants = new Map();
@@ -84,19 +71,12 @@ ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothste
 }
 
 export function prepareVisualAssets() {
-  pending ||= Promise.all([loadAsset(modelURL, () => new GLTFLoader().loadAsync(modelURL)), loadAsset(groundURL, () => new THREE.TextureLoader().loadAsync(groundURL)), loadAsset(buildingsURL, () => new THREE.TextureLoader().loadAsync(buildingsURL)), loadAsset(foliageURL, () => new THREE.TextureLoader().loadAsync(foliageURL)), loadAsset(armoryURL, () => new THREE.TextureLoader().loadAsync(armoryURL)), loadAsset(modernURL, () => new GLTFLoader().loadAsync(modernURL)), loadAsset(droneURL, () => new GLTFLoader().loadAsync(droneURL)), loadAsset(equipmentURL, () => new GLTFLoader().loadAsync(equipmentURL)), loadAsset(meridianURL, () => new THREE.TextureLoader().loadAsync(meridianURL)), loadAsset(logisticsURL, () => new GLTFLoader().loadAsync(logisticsURL)), loadAsset(convoyURL, () => new GLTFLoader().loadAsync(convoyURL)), loadAsset(robotURL, () => new GLTFLoader().loadAsync(robotURL)), loadAsset(realismURL, () => new GLTFLoader().loadAsync(realismURL))]).then(([gltf, ground, buildings, foliage, armory, modern, drones, equipment, meridian, logistics, convoy, robots, realism]) => {
+  pending ||= Promise.all([loadAsset(modelURL, () => new GLTFLoader().loadAsync(modelURL)), loadAsset(groundURL, () => new THREE.TextureLoader().loadAsync(groundURL)), loadAsset(buildingsURL, () => new THREE.TextureLoader().loadAsync(buildingsURL)), loadAsset(foliageURL, () => new THREE.TextureLoader().loadAsync(foliageURL)), loadAsset(armoryURL, () => new THREE.TextureLoader().loadAsync(armoryURL)), loadAsset(meridianURL, () => new THREE.TextureLoader().loadAsync(meridianURL))]).then(([gltf, ground, buildings, foliage, armory, meridian]) => {
     const openAssets = {};
     const models = new Map();
     gltf.scene.updateMatrixWorld(true);
-    modern.scene.updateMatrixWorld(true);
-    drones.scene.updateMatrixWorld(true);
-    equipment.scene.updateMatrixWorld(true);
-    logistics.scene.updateMatrixWorld(true);
-    convoy.scene.updateMatrixWorld(true);
-    robots.scene.updateMatrixWorld(true);
-    realism.scene.updateMatrixWorld(true);
     for (const name of names) {
-      const source = realism.scene.getObjectByName(name) || robots.scene.getObjectByName(name) || convoy.scene.getObjectByName(name) || logistics.scene.getObjectByName(name) || equipment.scene.getObjectByName(name) || drones.scene.getObjectByName(name) || gltf.scene.getObjectByName(name) || modern.scene.getObjectByName(name);
+      const source = gltf.scene.getObjectByName(name);
       if (!source) throw new Error(`缺少战场模型：${name}`);
       const batches = new Map();
       source.traverse(mesh => {

@@ -93,7 +93,8 @@ export class Renderer {
 
   constructor(canvas, minimap, game, options = {}) {
     this.canvas = canvas; this.minimap = minimap; this.mctx = minimap.getContext('2d'); this.game = game;
-    this.quality=game.map.maxPlayers===6?'standard':'high';
+    this.mobileBudget = matchMedia('(pointer: coarse)').matches || innerWidth <= 700;
+    this.quality=game.map.maxPlayers===6||this.mobileBudget?'standard':'high';
     this.qualityKey = game.map.maxPlayers === 6 ? 'great-powers-quality-six' : 'great-powers-quality';
     try { const saved=localStorage.getItem(this.qualityKey);if(['standard','high'].includes(saved))this.quality=saved; } catch { /* 无存储时按模式选默认画质。 */ }
     if (['standard', 'high'].includes(options.quality)) this.quality = options.quality;
@@ -107,10 +108,10 @@ export class Renderer {
     this.cameraElevation = battleElevation(this.viewMode); this.cameraAzimuth = battleAzimuth(this.viewMode); this.wrecks = []; this.cosmeticEffects = []; this.damageMaterials = new Map(); this.damageTemplates = new Map();
     this.pointer = null; this.dragBox = null; this.lastMinimap = 0; this.lastFog = -1000;
     this.entities = new Map(); this.effects = new Map(); this.environment = []; this.bridges = []; this.trails = []; this.ownedResources = [];
-    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: !(game.map.maxPlayers===6&&this.quality==='standard'), alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: this.quality!=='standard', alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
     // 返回菜单或读档时复用同一画布，先清理上一渲染器遗留的 WebGL 绑定。
     this.webgl.resetState();
-    this.webgl.setPixelRatio(game.map.maxPlayers===6&&this.quality==='standard'?1:Math.min(devicePixelRatio,innerWidth<700?1.5:2));
+    this.webgl.setPixelRatio(armyRenderBudget(this.quality,0,devicePixelRatio).pixelRatio);
     this.webgl.shadowMap.enabled = true; this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
     this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = .96;
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color('#10181d');
@@ -121,7 +122,7 @@ export class Renderer {
     const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .32; room.dispose(); pmrem.dispose();
     this.scene.add(new THREE.HemisphereLight('#c4d9ee', game.map.future ? '#282d37' : '#26382a', .42));
     const sun = new THREE.DirectionalLight(game.map.future ? '#e8f2ff' : '#fff0d7', 2.8); sun.position.set(this.world.width / 2 - 1750, 1850, this.world.height / 2 - 1050); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true; this.sun = sun;
-    const shadowSize=game.map.maxPlayers===6&&this.quality==='standard'?1024:innerWidth<700?2048:4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
+    const shadowSize=this.quality==='standard'?2048:4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
     Object.assign(sun.shadow.camera, { left: -this.world.width * .7, right: this.world.width * .7, top: this.world.height * .85, bottom: -this.world.height * .85, near: 10, far: 6000 });
     sun.shadow.bias = -.0001; sun.shadow.normalBias = .16; sun.shadow.radius = 1.5; this.scene.add(sun, sun.target);
     this.fireTexture = particleTexture(); this.smokeTexture = particleTexture(true);

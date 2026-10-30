@@ -6,7 +6,7 @@ export function setupTutorial() {
   return game=>{
     const enabled=game?.mapId==='valleyTraining'&&!game.online&&!game.challenge&&!game.sandbox&&document.querySelector('#tutorial-enabled').checked;
     panel.hidden=!enabled;if(!enabled)return;
-    if(current!==game){current=game;progress=createTutorial(game);last='';collapsed=false;steps.hidden=false;document.querySelector('#tutorial-toggle').textContent='收起';document.querySelector('#tutorial-toggle').setAttribute('aria-expanded','true');}
+    if(current!==game){current=game;progress=createTutorial(game);last='';collapsed=matchMedia('(max-width:700px)').matches;steps.hidden=collapsed;document.querySelector('#tutorial-toggle').textContent=collapsed?'展开':'收起';document.querySelector('#tutorial-toggle').setAttribute('aria-expanded',String(!collapsed));}
     updateTutorial(progress,game);const signature=progress.done.join(',');if(signature===last)return;last=signature;
     count.textContent=`入门教学 ${progress.done.filter(Boolean).length}/4`;steps.replaceChildren();
     for(let i=0;i<TUTORIAL_STEPS.length;i++){const item=document.createElement('li');item.classList.toggle('complete',progress.done[i]);const strong=document.createElement('strong');strong.textContent=`${progress.done[i]?'✓':i+1} ${TUTORIAL_STEPS[i][0]}`;item.append(strong);if(i===progress.done.indexOf(false)){item.setAttribute('aria-current','step');const p=document.createElement('p');p.textContent=TUTORIAL_STEPS[i][1];item.append(p);}steps.append(item);}

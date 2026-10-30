@@ -1,7 +1,11 @@
 import { FACTIONS, MAPS } from './data.js';
 import { catalogEntries, CATALOG_CATEGORIES } from './catalog-data.js';
-import { CatalogPreview } from './catalog-preview.js';
-import { prepareVisualAssets, modelThumbnail } from './visual-assets.js';
+let CatalogPreview, modelThumbnail;
+async function prepareVisualAssets() {
+ const [preview,assets]=await Promise.all([import('./catalog-preview.js'),import('./visual-assets.js')]);
+ CatalogPreview=preview.CatalogPreview;modelThumbnail=assets.modelThumbnail;
+ return assets.prepareVisualAssets();
+}
 
 const escape = text => String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const icon = name => `<i data-lucide="${name}"></i>`;
