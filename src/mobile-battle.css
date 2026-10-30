@@ -40,7 +40,8 @@
  .camera-tools .icon-btn{width:40px!important;height:40px!important;min-width:40px!important}
  .camera-tools output{width:36px!important}
  .battle-hud.top-left,.battle-hud.top-right{display:none!important}
- #battle-tutorial{top:60px;left:8px;max-width:260px;border-radius:12px;font-size:11px}
+ #battlefield #battle-tutorial{top:60px;left:8px;max-width:260px;min-height:64px;max-height:min(38dvh,240px);border-radius:12px;font-size:11px}
+ #battlefield :is(#attack-alert,#nuclear-alert):not([hidden])~#battle-tutorial{display:none}
  #battle-tutorial header button{min-height:40px;min-width:44px}
  .building-info{max-width:calc(100vw - 24px);max-height:50dvh;overflow:auto}
  .toast-container{top:64px!important;max-width:calc(100% - 16px)}
