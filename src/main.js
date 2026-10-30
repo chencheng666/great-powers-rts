@@ -1332,7 +1332,7 @@ $('#map-select').addEventListener('change',updateNuclearOption);updateNuclearOpt
 setupMapDiscovery();
 if (location.protocol === 'file:') $('#desktop-download-link').href = 'https://www.daguojueqi.site/downloads/';
 setupControls();
-try { setSidebarCollapsed(matchMedia('(max-width: 700px)').matches || localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(matchMedia('(max-width: 700px)').matches); }
+try { setSidebarCollapsed(matchMedia('(max-width:700px), (pointer:coarse) and (max-width:1000px)').matches || localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(matchMedia('(max-width:700px), (pointer:coarse) and (max-width:1000px)').matches); }
 updateAudioControls();
 updateHonorOverview();
 updateContinueControl();
