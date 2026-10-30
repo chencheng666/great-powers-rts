@@ -1,5 +1,8 @@
 import * as T from 'three';
-import {createChineseTank} from './domestic-models.js';
+import {createBlackHole} from './official-blackhole.js';
+import {showDefinition} from './official-show-config.js';
+import {createStrategicModel} from './strategic-models.js';
+import {createChineseTank,createChineseDestroyer} from './domestic-models.js';
 import {createModernAircraft} from './aircraft-models.js';
 const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,n));
 export async function createOfficialScene(canvas){
@@ -8,6 +11,11 @@ export async function createOfficialScene(canvas){
  scene.add(new T.HemisphereLight('#e2efff','#34322a',3));const sun=new T.DirectionalLight('#fff0cb',5);sun.position.set(-8,12,15);scene.add(sun);const rim=new T.DirectionalLight('#77d5ed',4);rim.position.set(10,4,-5);scene.add(rim);
  const tank=createChineseTank();tank.rotation.y=-1.18;scene.add(tank);
  const jets=[createModernAircraft('fighter_china'),createModernAircraft('fighter_china')];for(const j of jets){j.rotation.y=-Math.PI/2;scene.add(j);}
+ const ship=createChineseDestroyer();ship.rotation.y=-.9;ship.scale.setScalar(.85);scene.add(ship);
+ const helicopter=createStrategicModel('helicopter');helicopter.rotation.y=-1.35;scene.add(helicopter);const rotors=[];helicopter.traverse(o=>{if(o.name.startsWith('rotor_'))rotors.push(o);});
+ const missiles=[];for(let i=0;i<8;i++){const rocket=new T.Mesh(new T.CylinderGeometry(.055,.12,1.8,8),new T.MeshStandardMaterial({color:'#d6d6be',emissive:'#e46a24',emissiveIntensity:.6}));rocket.rotation.x=Math.PI/2;scene.add(rocket);missiles.push(rocket);}
+ const beam=new T.Mesh(new T.CylinderGeometry(.09,.13,85,12),new T.MeshBasicMaterial({color:'#80f6ff',transparent:true,blending:T.AdditiveBlending,depthWrite:false}));beam.rotation.x=Math.PI/2;scene.add(beam);
+ const singularity=createBlackHole(T);scene.add(singularity.mesh);
  const bomb=new T.Group();const shell=new T.MeshStandardMaterial({color:'#adb3a3',metalness:.7,roughness:.3});const tube=new T.Mesh(new T.CylinderGeometry(.24,.26,2.4,16),shell);tube.rotation.x=Math.PI/2;bomb.add(tube);const tip=new T.Mesh(new T.ConeGeometry(.24,.7,16),shell);tip.rotation.x=Math.PI/2;tip.position.z=1.55;bomb.add(tip);for(let i=0;i<4;i++){const fin=new T.Mesh(new T.BoxGeometry(.9,.05,.65),shell);fin.rotation.z=i*Math.PI/2;fin.position.z=-.9;bomb.add(fin);}scene.add(bomb);
  const cloud=new T.Group();scene.add(cloud);const cloudParts=[];
  // 程序化烟尘贴图：柔边、斑驳与多层叠加，避免硬质球体的塑料感。
@@ -25,10 +33,15 @@ export async function createOfficialScene(canvas){
  function stop(){cancelAnimationFrame(raf);raf=0;renderer.clear();}
  function frame(now){
   const t=(now-started)/1000;if(now-last<1000/40){raf=requestAnimationFrame(frame);return;}last=now;
-  canvas.parentElement.dataset.time=t.toFixed(1);
-  const nuke=mode==='nuclear',impact=nuke?1.65:2.8,d=t-impact,life=clamp(d/(nuke?3.6:1.8)),expand=1-Math.pow(1-clamp(d/2.8),3);
-  tank.visible=!nuke&&t<impact+.2;tank.position.set(innerWidth<700?1.4:4.6,-1,-42+clamp(t/2.8)*57);tank.scale.setScalar((innerWidth<700?.68:1.05)*(1+clamp(t/2.8)*.35));
-  jets.forEach((j,i)=>{j.visible=!nuke&&t<2.6;const k=clamp((t-i*.22)/2.25);j.position.set((i?-.7:1)*(3+Math.pow(k,3)*16),5+i*2,-65+k*100);j.rotation.x=(i?1:-1)*.12;j.rotation.z=-.08;});
+  canvas.parentElement.dataset.time=t.toFixed(1);callbacks.tick?.(t);
+  const definition=showDefinition(mode),nuke=mode==='nuclear',portal=mode==='blackhole',impact=definition.impact??99,d=t-impact,life=clamp(d/(nuke?3.6:1.8)),expand=1-Math.pow(1-clamp(d/2.8),3);
+  tank.visible=['assault','railgun'].includes(mode)&&t<impact+.2;tank.position.set(innerWidth<700?1.4:4.6,-1,-42+clamp(t/2.8)*57);tank.scale.setScalar((innerWidth<700?.68:1.05)*(1+clamp(t/2.8)*.35));
+  jets.forEach((j,i)=>{j.visible=mode==='assault'&&t<2.6;const k=clamp((t-i*.22)/2.25);j.position.set((i?-.7:1)*(3+Math.pow(k,3)*16),5+i*2,-65+k*100);j.rotation.x=(i?1:-1)*.12;j.rotation.z=-.08;});
+  ship.visible=mode==='naval'&&t<impact+.3;ship.position.set(2.5,-4,-19+Math.min(t,3)*5);ship.rotation.y=-.9+t*.07;
+  helicopter.visible=mode==='helicopter'&&t<impact+.2;helicopter.position.set(3+Math.sin(t)*1.2,3.5,-28+t*10);helicopter.rotation.z=Math.sin(t)*.08;rotors.forEach(r=>{if(r.userData.rotationAxis==='z')r.rotation.z=t*35;else r.rotation.y=t*35;});
+  for(let i=0;i<missiles.length;i++){const r=missiles[i],launch=mode==='naval'?.6+i*.22:1.2+i*.16,age=t-launch;r.visible=['naval','helicopter'].includes(mode)&&age>0&&age<1.8;r.position.set(2.5+(i%4-1.5)*1.1,mode==='naval'?-1+age*2.2:2.5,-20+age*36);}
+  beam.visible=mode==='railgun'&&t>2.2&&t<2.75;beam.position.set(2,2,0);beam.material.opacity=Math.min(1,(t-2.2)*5)*Math.max(0,(2.75-t)*4);
+  singularity.mesh.visible=portal;singularity.update(t,camera.aspect);
   bomb.visible=nuke&&t<impact;bomb.position.set(0,11-t*5,-48+t*40);bomb.rotation.z=t*.8;
   cloud.visible=d>=0;ring.visible=d>=0;sparks.visible=d>=0;
   if(d>=0){
@@ -39,7 +52,7 @@ export async function createOfficialScene(canvas){
    for(let i=0;i<count;i++){const v=velocities[i];positions[i*3]=v[0]*d;positions[i*3+1]=2+v[1]*d-d*d*.8;positions[i*3+2]=v[2]*d;}geometry.attributes.position.needsUpdate=true;sparks.material.opacity=1-life;light.intensity=Math.max(0,350-d*160);
   }else light.intensity=0;
   renderer.render(scene,camera);
-  if(t>(nuke?5.5:5)){callbacks.done?.();return;}raf=requestAnimationFrame(frame);
+  if(t>definition.duration){callbacks.done?.();return;}raf=requestAnimationFrame(frame);
  }
  // 首次材质编译在演出计时前完成，多个播放请求共用同一实例。
  await renderer.compileAsync(scene,camera);

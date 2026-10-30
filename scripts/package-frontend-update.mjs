@@ -18,7 +18,7 @@ try {
     const content = await readFile(join(dist, 'assets', name));
     checksums.push(`${createHash('sha256').update(content).digest('hex')}  assets/${name}`);
     // 本轮仅改前端代码，媒体文件由哈希校验确认服务器已有，避免重复上传。
-    if (/\.(js|css)$/.test(name)) await copyFile(join(dist, 'assets', name), join(stage, 'assets', name));
+    if (/\.(js|css)$/.test(name)||/^official-.*\.(svg|png|webp)$/.test(name)) await copyFile(join(dist, 'assets', name), join(stage, 'assets', name));
   }
   const pages = ['index.html', ...(sitePages ? ['official/index.html', 'downloads/index.html'] : [])];
   for (const page of pages) {
