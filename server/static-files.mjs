@@ -2,7 +2,7 @@ import {createReadStream} from 'node:fs';
 import {extname} from 'node:path';
 
 export const OFFICIAL_CSP="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'";
-const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.glb':'model/gltf-binary','.wav':'audio/wav','.mp3':'audio/mpeg','.mp4':'video/mp4','.json':'application/json','.zip':'application/zip'};
+const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.glb':'model/gltf-binary','.wav':'audio/wav','.mp3':'audio/mpeg','.mp4':'video/mp4','.json':'application/json','.zip':'application/zip'};
 
 // 仅接受单区间，拒绝多区间/越界，避免视频拖动变成整个文件的反复传输。
 export function byteRange(header,size){

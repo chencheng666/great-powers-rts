@@ -8,7 +8,7 @@ const css=outputs.filter(o=>o.type==='asset'&&o.fileName.endsWith('.css'));
 const page='dist/official/index.html';
 let html=await readFile(page,'utf8');
 html=html.replace('<script type="module" src="/src/official-cinematic.js"></script>',css.map(o=>`<link rel="stylesheet" href="/${o.fileName}">`).join('')+`<script type="module" src="/${entry.fileName}"></script>`);
-for(const [source,extension] of [['/assets/official/official-emblem.svg','.svg'],['/assets/official/official-emblem-180.png','official-emblem-180'],['/assets/official/official-emblem-32.png','official-emblem-32']]){
+for(const [source,extension] of [['/assets/official/official-emblem-180.png','official-emblem-180'],['/assets/official/official-emblem-32.png','official-emblem-32']]){
  const icon=outputs.find(o=>o.type==='asset'&&o.fileName.includes('official-emblem')&&(extension==='.svg'?o.fileName.endsWith(extension):o.fileName.includes(extension)));if(!icon)throw new Error('官网图标未生成');html=html.replaceAll(source,'/'+icon.fileName);
 }
 await writeFile(page,html);

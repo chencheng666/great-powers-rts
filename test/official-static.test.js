@@ -14,3 +14,12 @@ test('旧双人与六方候选Cookie和数据库隔离，不覆盖旧游客身�
  for(let i=0;i<2;i++){const r=await fetch(origins[i]+'/api/session',{method:'POST',headers:{Origin:origins[i],'Content-Type':'application/json'},body:JSON.stringify({name:'隔离游客'})});cookies.push(r.headers.get('set-cookie'));users.push((await r.json()).user);assert(cookies[i].startsWith(i?'gp_six_guest=':'gp_guest='));assert(cookies[i].includes(i?'Path=/candidate;':'Path=/;'));}
  const cookie=cookies.map(s=>s.split(';')[0]).join('; ');for(let i=0;i<2;i++){const session=await(await fetch(origins[i]+'/api/session',{headers:{Cookie:cookie}})).json();assert.equal(session.user.id,users[i].id);}assert.notEqual(users[0].id,users[1].id);
 });
+
+test('构建根目录和官网目录的SVG均按图片类型返回，避免200响应但浏览器裂图',async t=>{
+ const dir=await mkdtemp(join(tmpdir(),'gp-official-svg-')),root=join(dir,'dist'),svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40"/></svg>';
+ for(const path of ['assets','official/assets']){await mkdir(join(root,path),{recursive:true});await writeFile(join(root,path,'emblem.svg'),svg);}
+ const app=createBattleServer({directory:join(dir,'db'),root,dev:false});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(async()=>{await new Promise(r=>app.server.close(r));await rm(dir,{recursive:true,force:true});});
+ for(const path of ['/assets/emblem.svg','/official/assets/emblem.svg'])for(const method of ['GET','HEAD']){
+  const response=await fetch(`http://127.0.0.1:${app.server.address().port}${path}`,{method});assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'image/svg+xml');assert.equal(await response.text(),method==='HEAD'?'':svg);
+ }
+});

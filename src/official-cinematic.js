@@ -1,12 +1,12 @@
 import './official-cinematic.css';
 import {OfficialShowAudio} from './official-show-audio.js';
 import {OFFICIAL_SHOWS} from './official-show-config.js';
-import emblem from '../assets/official/official-emblem.svg?no-inline';
 import smallIcon from '../assets/official/official-emblem-32.png?no-inline';
 import touchIcon from '../assets/official/official-emblem-180.png?no-inline';
 import mapImage from '../docs/wechat-v3-20261029/images/02-maps.png?no-inline';
 import growthImage from '../docs/wechat-v3-20261029/images/06-growth.png?no-inline';
-document.querySelector('link[rel="icon"][type="image/svg+xml"]').href=emblem;document.querySelector('#brand-emblem').src=emblem;document.querySelector('link[rel="icon"][type="image/png"]').href=smallIcon;document.querySelector('link[rel="apple-touch-icon"]').href=touchIcon;
+// PNG在已有静态服务中有明确的图片类型，避免旧进程将SVG作为二进制返回造成裂图。
+document.querySelector('#brand-emblem').src=touchIcon;document.querySelector('link[rel="icon"][type="image/png"]').href=smallIcon;document.querySelector('link[rel="apple-touch-icon"]').href=touchIcon;
 for(const img of document.querySelectorAll('[data-update-image]'))img.src=img.dataset.updateImage==='maps'?mapImage:growthImage;
 const audio=new OfficialShowAudio(),soundButton=document.querySelector('#cinematic-sound'),volume=document.querySelector('#cinematic-volume');
 const soundStatus=()=>{soundButton.textContent=audio.enabled?'音效：开':'点击开启音效';soundButton.setAttribute('aria-pressed',String(audio.enabled));document.documentElement.dataset.showSound=audio.enabled?'on':'off';};
