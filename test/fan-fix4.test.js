@@ -46,7 +46,7 @@ test('坠机只认确切可见损毁，不把出迷雾、同型邻机或停机�
   g.effects=[e];assert.equal(confirmedAircraftLoss(entry,g),true);g.isVisibleFor=()=>false;assert.equal(confirmedAircraftLoss(entry,g),false);
   g.aircraftGrounded=()=>true;assert.equal(destructionEvent(g,u,0).surface,'ground');
   for(const rotor of [false,true])for(let age=0;age<=4;age+=.1){const pose=aircraftCrashPose(age,100,.8,3,rotor);assert.ok(pose.height>=0);assert.ok(Math.hypot(pose.x,pose.y)<160);}
-  assert.equal(aircraftCrashPose(4,100,0).complete,true);assert.equal(aircraftShadowOpacity(100),0);assert.ok(aircraftShadowOpacity(100,true)>0);
+  assert.equal(aircraftCrashPose(4,100,0).complete,true);assert.ok(aircraftShadowOpacity(100)>0);assert.ok(aircraftShadowOpacity(100,true)>0);
 });
 test('航母有限近防逐发耗弹和冷却，不能清空饱和来袭，不拦战略弹道',()=>{
   const g=setup(),c=g.addUnit(0,'carrier',1500,1000);g.ownedBuildings=()=>[];g.time=10;

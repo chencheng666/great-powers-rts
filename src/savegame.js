@@ -1,6 +1,6 @@
 import { runwayAircraft } from './airfield-rules.js';
 import { validSandbox } from './commander-sandbox.js';
-import { AI_DIFFICULTIES, BUILDINGS, FACTIONS, MAPS, UNITS, WORLD } from './data.js';
+import { AI_DIFFICULTIES, BUILDINGS, FACTIONS, MAPS, UNITS, WORLD, supportsNuclearMap } from './data.js';
 import { isLunarRobot, ROBOT_ENERGY } from './lunar-robots.js';
 import { validBattleId } from './battle-identity.js';
 import { battlefieldMap, resourceLayout, RESOURCE_TYPES } from './battlefield-expansion.js';
@@ -41,7 +41,7 @@ export function validateSave(save) {
   if(save.version===2&&(config?.playerCount!==6||MAPS[config?.mapId]?.maxPlayers!==6))invalid();
   if (!object(s) || !object(config) || !known(MAPS, config.mapId) || !known(AI_DIFFICULTIES, config.difficulty) || !['quick', 'annihilation', 'control'].includes(config.victoryMode) || !finite(save.savedAt) || !finite(s.time) || s.time < 0) invalid();
   if (config.economyMode !== undefined && !['mining', 'convoy'].includes(config.economyMode)) invalid();
-  if(config.nuclearEnabled!==undefined&&(typeof config.nuclearEnabled!=='boolean'||config.nuclearEnabled&&config.mapId!=='strategic'))invalid();
+  if(config.nuclearEnabled!==undefined&&(typeof config.nuclearEnabled!=='boolean'||config.nuclearEnabled&&!supportsNuclearMap(config.mapId)))invalid();
   if(s.pendingNuclear!==undefined&&(typeof s.pendingNuclear!=='boolean'||s.pendingNuclear&&(!config.nuclearEnabled||!s.pendingAbility)))invalid();
   if (config.battleId !== undefined && !validBattleId(config.battleId)) invalid();
   if(config.battlefieldScale!==undefined&&![1,1.5].includes(config.battlefieldScale))invalid();

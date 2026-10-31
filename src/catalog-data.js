@@ -1,4 +1,4 @@
-import { BUILDINGS, FACTIONS, MAPS, UNITS, supportsMap } from './data.js';
+import { BUILDINGS, FACTIONS, MAPS, UNITS, supportsMap, supportsNuclearMap } from './data.js';
 import { equipmentModel, equipmentProfile } from './equipment.js';
 import { isLunarRobot, lunarBuildingProfile, ROBOT_ENERGY } from './lunar-robots.js';
 import { productionDuration } from './battlefield-details.js';
@@ -77,6 +77,7 @@ const BUILDING_GUIDES = {
 const buildingName = (type, future) => lunarBuildingProfile(future, type, BUILDINGS[type]).name;
 export function catalogAvailability(kind, type, faction, mapId) {
   const map = MAPS[mapId], d = kind === 'unit' ? UNITS[type] : BUILDINGS[type];
+  if (d.nuclear && !supportsNuclearMap(mapId)) return { available: false, reason: '仅常规双人战区可选择开启核威慑规则' };
   if (d.faction && d.faction !== faction) return { available: false, reason: `仅 ${FACTIONS[d.faction].name} 可生产` };
   if(d.tags?.includes('swarm'))return {available:false,reason:'异构母机释放的临时子机，不可独立生产'};
   if(type==='evacuee')return {available:false,reason:'归航行动保护目标，不可生产'};

@@ -1,3 +1,4 @@
+import { UNITS } from './data.js';
 import { unitRadius } from './unit-spacing.js';
 
 export function facilityRotation(building, future = false) {
@@ -8,7 +9,7 @@ export function facilityRotation(building, future = false) {
 }
 
 export function sceneryFootprint(point, foliage = false) {
-  return foliage ? Math.max(12, (point.width || point.scale * 4) * .28) : (point.scale || 16) * .8;
+  return foliage ? Math.max(12, (point.width || point.scale * 4) * .55) : (point.scale || 16) * .8;
 }
 
 export function sceneryClearance(point, buildings, units = [], foliage = false, worldWidth = null) {
@@ -27,7 +28,7 @@ export function sceneryClearance(point, buildings, units = [], foliage = false, 
     return Math.hypot(b.x-point.x,b.y-point.z)<b.size*.95+radius;
   })) return true;
   return units.some(u => u.hp > 0 && !u.embarkedIn && !u.airborne &&
-    Math.hypot(u.x - point.x, u.y - point.z) < unitRadius(u) + radius + 8);
+    Math.hypot(u.x - point.x, u.y - point.z) < unitRadius(u) + radius + 20 + Math.min(40, (UNITS[u.type]?.speed || 0) * .25));
 }
 
 export function shorelineWidth(z) {

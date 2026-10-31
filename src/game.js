@@ -8,7 +8,7 @@ import PF from 'pathfinding';
 import { createBattleId, legacyBattleId } from './battle-identity.js';
 import { unitCostFor, unitHealthFor } from './unit-specs.js';
 import { bridgeBlocksDirectShot } from './bridge-fire.js';
-import { AI_DIFFICULTIES, BUILDINGS, CORE_BUILDINGS, FACTIONS, MAPS, ORE_VALUES, PRODUCERS, UNITS, WORLD, supportsMap } from './data.js';
+import { AI_DIFFICULTIES, BUILDINGS, CORE_BUILDINGS, FACTIONS, MAPS, ORE_VALUES, PRODUCERS, UNITS, WORLD, supportsMap, supportsNuclearMap } from './data.js';
 import { formationOffsets, separateUnits, UnitSpatialIndex, unitLayer, unitRadius } from './unit-spacing.js';
 import { commandQueue } from './command-queue.js';
 import { combatStanceCommands, supportsCombatStance, combatStance, weaponsHeld } from './combat-stance.js';
@@ -29,7 +29,7 @@ import { deterrenceCombat } from './deterrence.js';
 import { CHALLENGES, challengeCombat } from './challenges.js';
 import { createLossBreakdown } from './loss-breakdown.js';
 import { aircraftStep, aircraftCanFire, aircraftAttackGoal } from './aircraft-flight.js';
-import { runwayAircraft, airfieldApron, airfieldParking, allocateAirfieldSlot, airfieldDeparture } from './airfield-rules.js';
+import { runwayAircraft, airfieldApron, airfieldParking, allocateAirfieldSlot, airfieldDeparture, airfieldRunwayAvailable, airfieldHoldingPoint } from './airfield-rules.js';
 import { islandDistance } from './island-map.js';
 import { navalPath, nearestSeaPoint } from './island-navigation.js';
 import { updateIslandCapture } from './island-watch.js';
@@ -70,7 +70,7 @@ export class Game {
     this.map = battlefieldMap(this.mapId,this.battlefieldScale);
     this.world = this.map.world || WORLD;
     this.playerCount = this.map.maxPlayers===6 ? 6 : 2;
-    this.nuclearEnabled=this.mapId==='strategic'&&options.nuclearEnabled===true;
+    this.nuclearEnabled=supportsNuclearMap(this.mapId)&&options.nuclearEnabled===true;
     this.pendingNuclear=false;
     const configs=options.players;
     if(configs&&(!Array.isArray(configs)||configs.length!==this.playerCount||configs.some(p=>!Object.hasOwn(FACTIONS,p.faction)||!['human','ai'].includes(p.controlType))))throw new Error('席位配置无效');
@@ -257,7 +257,7 @@ export class Game {
   canBuild(side, type) {
     if (this.challenge) return false;
     const d = BUILDINGS[type];
-    return !!d && (!d.nuclear||this.nuclearEnabled) && (!d.naval || !!this.map.water) && (!d.map || d.map === this.mapId) && this.hasBuilding(side, 'hq') && (!d.requires || this.hasBuilding(side, d.requires));
+    return !!d && (!d.nuclear||this.nuclearEnabled) && (!d.naval || !!this.map.water) && supportsMap(d.map, this.mapId) && this.hasBuilding(side, 'hq') && (!d.requires || this.hasBuilding(side, d.requires));
   }
 
   startBuild(side, type) {
@@ -456,6 +456,7 @@ export class Game {
     const cache=(this.resourceSites||[]).find(s=>s.type!=='depot'&&s.amount>0&&distance(s,{x,y})<45&&this.hasExploredFor(side,s.x,s.y));
     const bomb=this.ownedBuildings(side).find(b=>b.sabotage&&distance(b,{x,y})<b.size*.55);
     const transport = !attackMove && this.activeUnits(side).find(v => UNITS[v.type].capacity && !this.selected.includes(v.id) && distance(v, { x, y }) < (v.type === 'carrier' ? 95 : v.type === 'landing' ? 75 : 45));
+    const airbase = !attackMove && !patrol && this.ownedBuildings(side, 'airfield').find(b => distance(b, { x, y }) <= b.size * .65);
     const port = !attackMove && !patrol && this.ownedBuildings(side, 'dock').find(b => distance(b, { x, y }) <= b.size * .65);
     const offsets = formationOffsets(selectedUnits, { x, y });
     selectedUnits.forEach(u => {
@@ -465,6 +466,7 @@ export class Game {
         const goal = this.resolveMoveGoal(u, clamp(x + offset.x, 20, this.world.width - 20), clamp(y + offset.y, 20, this.world.height - 20));
         u.order = { type: 'patrol', ...goal, originX: u.x, originY: u.y, destinationX: goal.x, destinationY: goal.y };
       }
+      else if (airbase && UNITS[u.type].tags.includes('air') && !u.homeCarrierId) { this.requestResupply(u, airbase); u.resumeOrder = null; }
       else if (port && UNITS[u.type].tags.includes('ship')) this.requestResupply(u, port);
       else if (transport && this.canBoardTransport(u, transport)) u.order = { type: 'board', targetId: transport.id };
       else if(!attackMove&&bomb&&u.type==='engineer')u.order={type:'defuse',targetId:bomb.id,x:bomb.x,y:bomb.y,progress:0};
@@ -732,6 +734,7 @@ export class Game {
         }
         if (ops.phase === 'parked' && u.order && u.order.type !== 'rearm') ops.phase = 'taxiOut';
         if (ops.phase === 'taxiOut') {
+          if (!airfieldRunwayAvailable(this, u, home)) return;
           const apron = airfieldApron(home);
           if (distance(u, apron) > 9) { this.moveUnit(u, apron, dt * .3, 6); return; }
           const exit = airfieldDeparture(home, u.type);
@@ -867,7 +870,8 @@ export class Game {
     if (isLunarRobot(this.map, u.type)) { this.updateRobotRearm(u, dt); return; }
     if (!UNITS[u.type].tags.includes('air')) { this.updateGroundRearm(u, dt); return; }
     if (u.homeCarrierId && this.returnToCarrier(u, dt)) return;
-    const home = this.aircraftServiceSites(u).sort((a, b) => distance(a, u) - distance(b, u))[0];
+    const homes = this.aircraftServiceSites(u);
+    const home = homes.find(b => b.id === u.order?.homeId) || homes.sort((a, b) => distance(a, u) - distance(b, u))[0];
     if (!home) {
       if (u.resumeOrder?.x !== undefined && distance(u, u.resumeOrder) > 10) this.moveUnit(u, u.resumeOrder, dt, 8);
       else this.cruiseAircraft(u, dt);
@@ -881,6 +885,10 @@ export class Game {
         u.airfieldOps = { homeId: home.id, slot, phase: 'approach' };
       }
       const ops = u.airfieldOps;
+      if (ops.phase !== 'parked' && !airfieldRunwayAvailable(this, u, home)) {
+        if (ops.phase === 'approach') this.moveUnit(u, airfieldHoldingPoint(this, u, home), dt, 0);
+        return;
+      }
       if (ops.phase === 'approach' && distance(u, apron) <= 12) ops.phase = 'taxiIn';
       if (ops.phase === 'taxiIn') {
         const parking = airfieldParking(home, ops.slot);
@@ -1032,6 +1040,21 @@ export class Game {
       style = 'robotPulse';
     }
     source.lastFireAt = this.time;
+    if (UNITS[source.type]?.tags.includes('anti-sub') && UNITS[target.type]?.tags.includes('submerged')) {
+      this.launchProjectile(source, target, amount, 'antiSub'); return;
+    }
+    if (style === 'rocket') {
+      // 一格弹药表示一轮四发齐射，总伤害预算不叠加，保持原有补给成本。
+      for (let index = 0; index < 4; index++) {
+        this.launchProjectile(source, target, amount / 4, style);
+        const p = this.projectiles.at(-1), lateral = (index - 1.5) * 5;
+        const angle = Math.atan2(target.y - source.y, target.x - source.x);
+        p.x = p.startX = source.x - Math.sin(angle) * lateral;
+        p.y = p.startY = source.y + Math.cos(angle) * lateral;
+        p.speed *= 1 - index * .035;
+      }
+      return;
+    }
     if (['loiterer', 'rocket', 'ballistic', 'helicopter', 'destroyer', 'carrier', 'submarine', 'bomber', 'fighter', 'strike', 'aegis', 'navalFighter', 'navalStrike'].includes(style)) { this.launchProjectile(source, target, amount, style); return; }
     this.effects.push({ type: 'shot', sourceId: source.id, x: source.x, y: source.y, toX: target.x, toY: target.y, sourceType: source.type, targetType: target.type, age: 0, duration: style === 'railgun' ? .32 : .18, owner: source.owner, style });
     this.effects.push({ type: 'hit', x: target.x, y: target.y, targetType: target.type, age: 0, duration: 0.42, owner: source.owner, style });

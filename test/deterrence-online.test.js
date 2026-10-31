@@ -18,8 +18,8 @@ test('双客户端必须各自确认核规则，权威服务端验证发射、�
     ws.on('message',b=>c.messages.push(JSON.parse(b)));clients.push(c);await wait(c,m=>m.type==='hello');
   }
   const [a,b]=clients;
-  send(a,{type:'create',mapId:'valley',faction:'nato',victoryMode:'annihilation',nuclearEnabled:true});assert.match((await wait(a,m=>m.type==='error')).message,/战略纵深/);
-  send(a,{type:'create',mapId:'strategic',faction:'nato',victoryMode:'annihilation',nuclearEnabled:true});const room=(await wait(a,m=>m.type==='room')).room;assert.equal(room.config.nuclearEnabled,true);
+  send(a,{type:'create',mapId:'meridian',faction:'nato',victoryMode:'annihilation',nuclearEnabled:true});assert.match((await wait(a,m=>m.type==='error')).message,/常规双人/);
+  send(a,{type:'create',mapId:'archipelago',faction:'nato',victoryMode:'annihilation',nuclearEnabled:true});const room=(await wait(a,m=>m.type==='room')).room;assert.equal(room.config.nuclearEnabled,true);
   send(b,{type:'join',code:room.code,faction:'china'});await wait(b,m=>m.type==='room');
   send(a,{type:'ready',ready:true});assert.match((await wait(a,m=>m.type==='error')).message,/确认核威慑/);assert.equal(app.rooms.get(room.code).members[0].ready,false);
   send(a,{type:'ready',ready:true,nuclearConsent:true});send(b,{type:'ready',ready:true,nuclearConsent:true});await wait(a,m=>m.type==='room'&&m.room.members.every(v=>v?.ready));send(a,{type:'start'});

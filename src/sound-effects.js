@@ -1,8 +1,8 @@
 // 原创程序合成，不使用第三方录音。短声按武器分类缓存，移动声按类别合并。
 const profile = (duration, low, high, tone, end, level, pulse = 0) => ({ duration, low, high, tone, end, level, pulse });
 export const SOUND_PROFILES = {
-  airTakeoff: profile(1.5, .35, .65, 90, 400, .12),
-  airLanding: profile(1.2, .3, .5, 340, 65, .11, 2),
+  airTakeoff: profile(2.2, .7, .8, 75, 160, .23),
+  airLanding: profile(1.7, .65, .65, 150, 65, .18),
   rotorStart: profile(1.4, .4, .15, 45, 210, .1, 18),
   rotorStop: profile(1.6, .3, .12, 200, 30, .1, 15),
   sonarPing: profile(.85, .01, .015, 1100, 600, .13),
@@ -55,7 +55,8 @@ export function synthesizeSound(style, sampleRate = 44100) {
     phase += 2 * Math.PI * (p.tone * (p.end / p.tone) ** progress) / sampleRate;
     const pulseTime = p.pulse ? (t * p.pulse / (p.duration * .65)) % 1 : 0;
     const pulse = p.pulse && progress < .65 ? Math.exp(-pulseTime * 8) : Math.exp(-progress * 5);
-    const envelope = Math.min(1, t / .004) * Math.min(1, (p.duration - t) / .04) * Math.exp(-progress * 2.5);
+    const engine = ['airTakeoff', 'airLanding'].includes(style);
+    const envelope = engine ? Math.min(1, t / .25) * Math.min(1, (p.duration - t) / .35) * (.65 + .35 * Math.sin(progress * Math.PI)) : Math.min(1, t / .004) * Math.min(1, (p.duration - t) / .04) * Math.exp(-progress * 2.5);
     samples[i] = (low * p.low * 3 + (noise - low) * p.high * .5 + Math.sin(phase) * .38) * envelope * (p.pulse ? .25 + pulse * .75 : 1) * p.level;
   }
   return samples;

@@ -27,5 +27,5 @@ export function aircraftCrashPose(age, height, heading, seed = 0, rotor = false)
 
 export function aircraftShadowOpacity(height, rotor = false) {
   const h = Math.max(0, height);
-  return rotor ? .22 * Math.max(.25, 1 - h / 150) : .28 * Math.max(0, 1 - h / 85) ** 2;
+  return rotor ? .22 * Math.max(.25, 1 - h / 150) : .25 * Math.max(.18, 1 - h / 160);
 }

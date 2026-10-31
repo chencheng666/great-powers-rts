@@ -9,7 +9,7 @@ import { createHarbor, refineFacility, COMMUNITY_3D_BUILDINGS } from './communit
 import { surfaceMaps } from './model-craft.js';
 import { refineEquipment, hasRefinedTracks } from './equipment-finishing.js';
 import { refineAirfieldRunway, refineAircraftCanopy } from './airfield-presentation.js';
-import { replacedNavalPart, refineNavalHull, refineTransportBody } from './naval-presentation.js';
+import { replacedNavalPart, refineNavalHull, refineTransportBody, refineNavalWeapons } from './naval-presentation.js';
 import { refinePowerFans } from './facility-motion.js';
 import { createModernAircraft, createTandemTransport } from './aircraft-models.js';
 import { createStrategicModel, STRATEGIC_MODELS } from './strategic-models.js';
@@ -81,6 +81,7 @@ export function prepareVisualAssets() {
       const batches = new Map();
       source.traverse(mesh => {
         if (!mesh.isMesh) return;
+        if (['patrol', 'frigate', 'destroyer', 'carrier', 'submarine', 'landing', 'containerShip'].includes(name) && /栏杆|护栏/.test(mesh.name)) return;
         if (replacedNavalPart(name, mesh.name) || ['airlift', 'freightPlane'].includes(name) && mesh.name.startsWith('气动机身') || name === 'power' && mesh.name.startsWith('散热顶盖')) return;
         if (hasRefinedTracks(name) && /^(履带|履带板|履带接地板)/.test(mesh.name)) return;
         if (name === 'carrier' && /甲板停放机翼|甲板飞机/.test(mesh.name)) return;
@@ -89,8 +90,9 @@ export function prepareVisualAssets() {
         for (const attr of Object.keys(geometry.attributes)) if (!['position', 'normal', 'uv'].includes(attr)) geometry.deleteAttribute(attr);
         if (!geometry.attributes.uv) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(geometry.attributes.position.count * 2), 2));
         const material = mesh.material;
-        const articulated = (['tank', 'elite_nato'].includes(name) || name.startsWith('tank_')) && /炮塔|滑膛炮|炮管|车长|舱盖|瞄准|反应装甲/.test(mesh.name) || name === 'railgun' && /炮塔|加速器|线圈|电容/.test(mesh.name);
-        let limb = null;
+        const navalGun = ['patrol', 'frigate', 'destroyer'].includes(name) && /舰炮|舰艏自动炮塔/.test(mesh.name) && !/基座/.test(mesh.name);
+        const articulated = navalGun || (['tank', 'elite_nato'].includes(name) || name.startsWith('tank_')) && /炮塔|滑膛炮|炮管|车长|舱盖|瞄准|反应装甲/.test(mesh.name) || name === 'railgun' && /炮塔|加速器|线圈|电容/.test(mesh.name);
+        let limb = navalGun && /舰炮/.test(mesh.name) ? 'barrel' : null;
         let pivot = null;
         if (hasRefinedTracks(name) && /^(滑膛炮|炮管)/.test(mesh.name)) limb = 'barrel';
         if (name === 'radar' && /^(相控阵雷达|雷达阵列|雷达波导)/.test(mesh.name)) { limb = 'facility_radar'; pivot = new THREE.Vector3(0, 4.1, -.5); }
@@ -126,6 +128,7 @@ export function prepareVisualAssets() {
       }
       refineEquipment(template, name);
       refineNavalHull(template, name); refineTransportBody(template);
+      if (['patrol','frigate','destroyer'].includes(name)) refineNavalWeapons(template, name);
       if (name === 'power') refinePowerFans(template);
       models.set(name, template);
     }

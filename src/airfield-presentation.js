@@ -8,6 +8,14 @@ export function fixedWingPresentation(type, future = false) {
   return runwayAircraft(type, future);
 }
 
+export function airfieldSurfaceHeight(game, entity, groundHeight) {
+  const pavement = game.ownedBuildings?.(entity.owner, 'airfield').find(b => {
+    const scale = b.size / 7.2, z = (entity.y - b.y) / scale;
+    return Math.abs(entity.x - b.x) <= 7.2 * scale && (Math.abs(z - 2.1) <= 1.1 || z >= 4.3 && z <= 13.6);
+  });
+  return groundHeight + (pavement ? pavement.size / 7.2 * .5 : 0);
+}
+
 export function glideProfile(distance, groundRadius) {
   const fraction = clamp((distance - groundRadius) / 260);
   // 最后约 78 世界单位逐渐拉平，接地时回到水平；仅改变表现姿态。
@@ -24,11 +32,10 @@ export function glideProfile(distance, groundRadius) {
 export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight) {
   if (!fixedWingPresentation(entity.type, game.map.future) || entity.deckApproach || entity.embarkedIn) return null;
   const grounded = game.aircraftGrounded(entity);
-  let groundOffset = entry.model?.userData.groundClearance ? entry.model.userData.groundClearance * entry.scale + .2 : 4;
+  let groundOffset = entry.model?.userData.groundClearance ? entry.model.userData.groundClearance * entry.scale / 3 + .2 : 4;
   if(entry.model?.userData.groundClearance){
     // 跑道的可视铺装高于地形，轮胎接触面不能仍按裸地高度计算。
-    const pavement=game.ownedBuildings?.(entity.owner,'airfield').find(b=>{const scale=b.size/7.2;const z=(entity.y-b.y)/scale;return Math.abs(entity.x-b.x)<=7.2*scale&&(Math.abs(z-2.1)<=1.1||z>=4.3&&z<=13.6);});
-    if(pavement)groundOffset+=pavement.size/7.2*.5;
+    groundOffset += airfieldSurfaceHeight(game, entity, groundHeight) - groundHeight;
   }
   if (entity.deployment) {
     const travel = Math.hypot(entity.x - entity.deployment.fromX, entity.y - entity.deployment.fromY);
@@ -44,7 +51,8 @@ export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight)
     return { height: groundHeight + groundOffset + (cruiseHeight - groundHeight - groundOffset) * fraction, pitch: fraction > 0 && fraction < 1 ? .08 : 0 };
   }
   if (entity.order?.type !== 'rearm' || entity.homeCarrierId) return null;
-  const home = game.ownedBuildings(entity.owner, 'airfield').sort((a, b) => Math.hypot(a.x - entity.x, a.y - entity.y) - Math.hypot(b.x - entity.x, b.y - entity.y))[0];
+  const homes = game.ownedBuildings(entity.owner, 'airfield');
+  const home = homes.find(b => b.id === (entity.airfieldOps?.homeId ?? entity.order.homeId)) || homes.sort((a, b) => Math.hypot(a.x - entity.x, a.y - entity.y) - Math.hypot(b.x - entity.x, b.y - entity.y))[0];
   if (!home) return null;
   const profile = glideProfile(Math.hypot(home.x - entity.x, home.y - entity.y), home.size * .55 + 24);
   return { height: groundHeight + groundOffset + (cruiseHeight - groundHeight - groundOffset) * profile.fraction, pitch: profile.pitch };

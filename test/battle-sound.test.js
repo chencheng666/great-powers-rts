@@ -26,8 +26,8 @@ for (const style of ['rifle', 'tank', 'fighter', 'navalStrike', 'rocket', 'balli
     if (style === 'carrier') source.wing = 3;
     game.fire(source, target, 10, style);
     const data = payload(game); client.apply(data); client.apply(data);
-    assert.equal(local.filter(args => args[2].phase === 'launch').length, 1);
-    assert.equal(remote.filter(args => args[2].phase === 'launch').length, 1);
+    assert.equal(local.filter(args => args[2].phase === 'launch').length, style === 'rocket' ? 4 : 1);
+    assert.equal(remote.filter(args => args[2].phase === 'launch').length, style === 'rocket' ? 4 : 1);
     assert.ok(game.effects.some(e => e.type === 'sound' && e.duration >= .6));
     assert.deepEqual(local.map(a => a[0]), remote.map(a => a[0]));
     const reconnect = [];

@@ -60,15 +60,27 @@ def main():
             if pathlib.PurePosixPath(item.name).is_absolute() or '..' in pathlib.PurePosixPath(item.name).parts or not(item.isfile() or item.isdir()):raise RuntimeError('压缩包包含不安全路径或链接')
         tar.extractall(stage)
     version=json.loads((stage/'package.json').read_text())['version']
+    build=re.search(r"BUILD_ID = '([^']+)'",(stage/'src/version.js').read_text())[1]
     if not re.fullmatch(r'[12]\.\d+\.\d+',version) or not(stage/'dist/official/index.html').is_file():raise RuntimeError('发布版本或官网文件缺失')
     node=BASE/'runtime/bin/node';env=dict(os.environ,PATH=str(node.parent)+':'+os.environ['PATH'])
     print(run(['npm','ci','--omit=dev','--ignore-scripts','--registry=https://registry.npmjs.org'],cwd=stage,env=env),flush=True)
     for previous in set(links.values()):
-        assets=previous/'dist/assets'
-        if assets.is_dir():
-            for file in assets.iterdir():
-                target=stage/'dist/assets'/file.name
-                if file.is_file() and not target.exists():shutil.copy2(file,target)
+        for relative in ['assets','official/assets']:
+            assets=previous/'dist'/relative
+            if assets.is_dir():
+                for file in assets.rglob('*'):
+                    target=stage/'dist'/relative/file.relative_to(assets)
+                    if file.is_file() and not target.exists():
+                        target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(file,target)
+    manifest=stage/'dist/release.json'
+    if manifest.is_file():
+        expected=json.loads(manifest.read_text())
+        if expected.get('build')!=build:raise RuntimeError('资源清单构建编号不一致')
+        for relative,digest in expected['files'].items():
+            file=stage/'dist'/relative
+            if '..' in pathlib.PurePosixPath(relative).parts or pathlib.PurePosixPath(relative).is_absolute():raise RuntimeError('资源清单路径无效')
+            if not file.is_file() or hashlib.sha256(file.read_bytes()).hexdigest()!=digest:raise RuntimeError('发布资源缺失或不一致：'+relative)
+        print('完整资源摘要校验通过：'+str(len(expected['files'])),flush=True)
     shared=BASE/'downloads/packages';shared.mkdir(parents=True,exist_ok=True)
     incoming=stage/'dist/downloads/packages'
     if incoming.is_dir():
@@ -96,7 +108,7 @@ for(const count of [2,6]){const d=await mkdtemp(join(tmpdir(),'gp-preflight-')),
         for attempt in range(25):
             try:
                 values=[health(p) for p in [8088,8089]]
-                if all(h.get('version')==version and h.get('protocol')==protocol for h,protocol in zip(values,[4,5])):break
+                if all(h.get('version')==version and h.get('build')==build and h.get('protocol')==protocol for h,protocol in zip(values,[4,5])):break
             except Exception:pass
             time.sleep(1)
         else:raise RuntimeError('新版本健康检查失败')
@@ -106,7 +118,7 @@ for(const count of [2,6]){const d=await mkdtemp(join(tmpdir(),'gp-preflight-')),
         for index,path in enumerate(data):
             compare="""import{DatabaseSync}from'node:sqlite';const dbs=process.argv.slice(1).map(p=>new DatabaseSync(p,{readOnly:true}));const count=(db,table)=>db.prepare(\"SELECT 1 FROM sqlite_master WHERE type='table' AND name=?\").get(table)?db.prepare('SELECT count(*) n FROM '+table).get().n:0;for(const table of ['guests','matches','multi_matches','match_members'])if(count(dbs[1],table)<count(dbs[0],table))throw Error('历史记录减少：'+table);const sql='SELECT coalesce(sum(wins+losses+draws),0) n FROM guests';if(dbs[1].prepare(sql).get().n<dbs[0].prepare(sql).get().n)throw Error('历史战绩减少');dbs.forEach(d=>d.close());"""
             run([str(node),'--input-type=module','-e',compare,str(backup/f'data-{index}/guests.sqlite'),str(path/'guests.sqlite')])
-        report={'version':version,'services':values,'release':str(stage),'backup':str(backup),'sha256':args.sha256}
+        report={'version':version,'build':build,'services':values,'release':str(stage),'backup':str(backup),'sha256':args.sha256}
         (backup/'release.json').write_text(json.dumps(report,ensure_ascii=False,indent=2));print(json.dumps(report,ensure_ascii=False),flush=True)
     except Exception:
         if switched:

@@ -9,7 +9,9 @@ export function unitRadius(unit) {
   const tags = UNITS[unit.type].tags;
   if (tags.includes('infantry')) return 9;
   if (tags.includes('rotorcraft')) return 48;
-  if (tags.includes('jet')) return { airlift: 80, bomber: 76, freightPlane: 68 }[unit.type] || 40;
+  // 进场与地面机体按停机展示比例收拢，避免停机位被巡航避碰半径堵死。
+  const apronScale = ['approach', 'taxiIn', 'parked', 'taxiOut'].includes(unit.airfieldOps?.phase) ? .32 : 1;
+  if (tags.includes('jet')) return apronScale * ({ airlift: 80, bomber: 76, freightPlane: 68 }[unit.type] || 40);
   if (tags.includes('drone')) return 20;
   if (tags.includes('ship')) return { carrier: 92, destroyer: 65, submarine: 46, frigate: 48, patrol: 36, landing: 74, containerShip: 88 }[unit.type] || 48;
   return unit.type === 'harvester' ? 29 : 30;

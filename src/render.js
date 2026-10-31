@@ -1,3 +1,4 @@
+import { airframeScale, flightScaleFactor } from './feedback6-presentation.js';
 import { growthAppearance } from './growth-rewards.js';
 import { valleyRockPositions } from './kenney-rock-geometry.js';
 import { confirmedAircraftLoss, aircraftCrashPose, aircraftShadowOpacity } from './destruction-presentation.js';
@@ -27,7 +28,7 @@ import { orderRoutes } from './order-routes.js';
 import { RESOURCE_TYPES } from './battlefield-expansion.js';
 import { COMMUNITY_3D_BUILDINGS } from './community-visuals.js';
 import { BATTLE_READABILITY, readableMaterial, identityRadius, identityVisible } from './battle-readability.js';
-import { fixedWingHeight } from './airfield-presentation.js';
+import { fixedWingHeight, fixedWingPresentation, airfieldSurfaceHeight } from './airfield-presentation.js';
 import { animateIdleGun } from './idle-gun.js';
 import { lunarCraters } from './lunar-terrain.js';
 import { battleElevation, battleAzimuth, groundPan, groundExtents } from './battle-camera.js';
@@ -263,7 +264,7 @@ export class Renderer {
       const detailMap = this.track(surface[key].clone()); detailMap.repeat.set(this.world.width / 420, this.world.height / 420);
       detailMap.offset.y = 1 - this.world.height / 420; maps[key] = detailMap;
     }
-    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, ...maps, normalScale: new THREE.Vector2(.28, .28), bumpMap: surface ? null : bump, bumpScale: .4, roughness: .96, metalness: 0, envMapIntensity: .3 }))); terrain.receiveShadow = true; this.scene.add(terrain);
+    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, ...maps, normalScale: new THREE.Vector2(.075, .075), bumpMap: surface ? null : bump, bumpScale: .075, roughness: .96, metalness: 0, envMapIntensity: .3 }))); terrain.receiveShadow = true; this.scene.add(terrain);
     if (this.game.map.water) { this.createWater(); this.createShoreline(); }
   }
 
@@ -579,6 +580,7 @@ export class Renderer {
         if (!sceneryVisible.has(point)) {
           point.cleared ||= sceneryClearance(point, knownBuildings, [], !!foliage, this.world.width);
           const occupied = sceneryClearance(point, [], knownGroundUnits, !!foliage);
+          point.cleared ||= occupied;
           point.known = !point.cleared && !occupied && this.game.hasExploredFor(0, point.x, point.z);
           sceneryVisible.set(point, point.known);
         }
@@ -697,7 +699,9 @@ export class Renderer {
 
   createEntity(entity) {
     const color = teamVisual(entity.owner).color, name = equipmentModel(this.game.players[entity.owner].faction, entity.type, this.game.map.future);
-    const model = createModel(name, color), scale = entity.kind === 'building' ? entity.size / 7.2 : UNIT_SCALE[entity.type];
+    const model = createModel(name, color);
+    const length = entity.kind === 'unit' && !this.game.map.future ? new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3()).x : 0;
+    const scale = entity.kind === 'building' ? entity.size / 7.2 : airframeScale(entity.type, length, UNIT_SCALE[entity.type]);
     let damageDetail = null;
     model.scale.setScalar(scale);
     if (!this.game.map.future && ['barracks', 'factory', 'armory'].includes(entity.type)) {
@@ -1019,12 +1023,17 @@ export class Renderer {
         if(entry.cargoLoad)entry.cargoLoad.visible=(entity.freight?.value??900)>0;
       }
       animateFacility(entry.model, entity, this.game);
+      if (!this.game.map.future && fixedWingPresentation(entity.type)) {
+        const factor = flightScaleFactor(height - this.elevation(entity.x, entity.y));
+        entry.model.scale.setScalar(entry.scale * factor); entry.displayTopHeight = entry.topHeight * factor;
+        entry.flightScaleFactor = factor;
+      }
       entry.model.position.set(entity.x, height, entity.y);
       if (entry.airShadow) {
         const ground = this.elevation(entity.x, entity.y), rotor = UNITS[entity.type].tags.includes('rotorcraft') || entry.model.userData.tandemRotors;
         const opacity = aircraftShadowOpacity(height - ground, rotor);
         entry.airShadow.visible = visible && !entity.embarkedIn && opacity > .005;
-        entry.airShadow.material.opacity = opacity; entry.airShadow.position.set(entity.x, Math.max(2.2, ground + .3), entity.y);
+        entry.airShadow.material.opacity = opacity; entry.airShadow.position.set(entity.x, Math.max(2.2, airfieldSurfaceHeight(this.game, entity, ground) + .3), entity.y);
         entry.airShadow.rotation.z = entity.angle;
       }
       const submerged = entity.type === 'submarine' && entry.submergedMaterials?.[0]?.mesh.material === entry.submergedMaterials?.[0]?.hidden;
@@ -1038,11 +1047,11 @@ export class Renderer {
         for (const [id, plane] of entry.deckModels) if (!ids.has(id)) { entry.model.remove(plane); entry.deckModels.delete(id); }
         parked.forEach((plane, i) => {
           let mesh = entry.deckModels.get(plane.id);
-          if (!mesh) { mesh = createModel(equipmentModel(this.game.players[entity.owner].faction, plane.type), teamVisual(entity.owner).color); mesh.scale.setScalar(.3); entry.model.add(mesh); entry.deckModels.set(plane.id, mesh); }
+          if (!mesh) { mesh = createModel(equipmentModel(this.game.players[entity.owner].faction, plane.type), teamVisual(entity.owner).color); const length = new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3()).x; mesh.scale.setScalar(airframeScale(plane.type, length, 11) / 3 / entry.scale); entry.model.add(mesh); entry.deckModels.set(plane.id, mesh); }
           const parkingX = -8 + i * 4.1, taxi = plane.deckTaxi;
           const progress = taxi?.phase === 'out' ? taxi.progress : taxi?.phase === 'in' ? 1 - taxi.progress : 0;
           mesh.position.set(parkingX + (4 - parkingX) * progress, 1.3, -1.3 * (1 - progress));
-          mesh.rotation.y = Math.PI / 4 * (1 - progress);
+          mesh.rotation.y = -Math.PI / 4 * (1 - progress);
         });
       }
       if(entity.type==='landing'&&entity.owner===0){
@@ -1302,8 +1311,9 @@ export class Renderer {
       const stance = entity.owner === 0 && isSelected && supportsCombatStance(entity) ? combatStance(entity) : 'free';
       const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : stance !== 'free' ? COMBAT_STANCES[stance].name : '';
       ctx.font = '500 10px "Noto Sans SC",sans-serif';
-      const width = Math.max(entity.kind === 'building' ? 76 : infantry ? 28 : 50, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0, status ? Math.ceil(ctx.measureText(status).width) + 8 : 0);
-      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: 10 + (numeric ? 12 : 0) + (ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner !== 0 ? 2 : 1 });
+      const vertical = entity.kind === 'unit';
+      const width = Math.max(entity.kind === 'building' ? 76 : 22, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0, status ? Math.ceil(ctx.measureText(status).width) + 8 : 0);
+      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, vertical, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: (vertical ? 36 : 10) + (numeric ? 12 : 0) + (!vertical && ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner !== 0 ? 2 : 1 });
     }
     const repairs = this.game.ownedBuildings(0).filter(b => b.repairing && b.hp < b.maxHp).map(building => {
       const point = this.entityAnchor(building);
@@ -1317,6 +1327,17 @@ export class Renderer {
         ctx.strokeStyle = style.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + width / 2, y + bar.height); ctx.lineTo(bar.anchorX, bar.anchorY + 4); ctx.stroke();
       }
       if (numeric) { ctx.font = '500 10px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.label, x + width / 2, y + 9); ctx.fillStyle = style.frame; ctx.fillText(bar.label, x + width / 2, y + 9); }
+      if (bar.vertical) {
+        const left = x + width / 2 - (ammo ? 8 : 4), track = 30;
+        ctx.fillStyle = '#081116ed'; ctx.fillRect(left - 1, top, 10, track + 2);
+        ctx.strokeStyle = style.warning ? '#f3c66e' : style.frame; ctx.strokeRect(left - .5, top + .5, 9, track + 1);
+        ctx.fillStyle = style.echo; ctx.fillRect(left + 1, top + 1 + track * (1 - bar.echo), 6, track * bar.echo);
+        ctx.fillStyle = style.fill; ctx.fillRect(left + 1, top + 1 + track * (1 - bar.ratio), 6, track * bar.ratio);
+        ctx.fillStyle = '#0c191b99'; for (let i = 1; i < 5; i++) ctx.fillRect(left + 1, top + 1 + track * i / 5, 6, 1);
+        if (ammo) for (let i = 0; i < ammo; i++) { ctx.fillStyle = i < bar.charge ? style.frame : '#273a47'; ctx.fillRect(left + 11, top + track - (i + 1) * track / ammo, 3, Math.max(1, track / ammo - 1)); }
+        if (bar.status) { ctx.font = '500 9px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.status, x + width / 2, top + 43); ctx.fillStyle = '#f4ce82'; ctx.fillText(bar.status, x + width / 2, top + 43); }
+        continue;
+      }
       ctx.fillStyle = '#081116ed'; ctx.fillRect(x, top, width, 9); ctx.strokeStyle = style.warning ? '#f3c66e' : style.frame; ctx.lineWidth = 1; ctx.strokeRect(x + .5, top + .5, width - 1, 8);
       ctx.fillStyle = style.color;
       if (style.hostile) { ctx.beginPath(); ctx.moveTo(x + 3.5, top + 1); ctx.lineTo(x + 6, top + 4.5); ctx.lineTo(x + 3.5, top + 8); ctx.lineTo(x + 1, top + 4.5); ctx.closePath(); ctx.fill(); }

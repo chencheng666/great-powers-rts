@@ -87,7 +87,7 @@ test('火箭炮需要展开、不能近射，区域伤害不误伤友军或攻�
   const g = setup(), rocket = g.addUnit(0, 'rocket', 620, 700), target = g.addUnit(1, 'tank', 1180, 700);
   rocket.fireTimer = 0; rocket.order = { type: 'attack', targetId: target.id, x: target.x, y: target.y };
   for (let n = 0; n < 39; n++) g.updateUnit(rocket, .05);
-  assert.equal(g.projectiles.length, 0); g.updateUnit(rocket, .05); assert.equal(g.projectiles.length, 1); assert.equal(rocket.ammo, UNITS.rocket.ammo - 1);
+  assert.equal(g.projectiles.length, 0); g.updateUnit(rocket, .05); assert.equal(g.projectiles.length, 4); assert.equal(rocket.ammo, UNITS.rocket.ammo - 1);
   const ally = g.addUnit(0, 'tank', 1180, 710), second = g.addUnit(1, 'rifle', 1180, 725), jet = g.addUnit(1, 'fighter', 1180, 715);
   for (let n = 0; n < 45; n++) { g.time += .05; g.updateProjectiles(.05); }
   assert.ok(target.hp < target.maxHp); assert.ok(second.hp < second.maxHp); assert.equal(ally.hp, ally.maxHp); assert.equal(jet.hp, jet.maxHp);

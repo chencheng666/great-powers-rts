@@ -97,6 +97,7 @@ export const modernCombat = {
   requestResupply(u, home = null) {
     if (!u || u.hp <= 0 || u.embarkedIn || ['harvester', 'supply'].includes(u.type) || UNITS[u.type].tags.includes('logistics')) return false;
     if (u.order?.type !== 'rearm') { u.resumeOrder = u.order; u.order = { type: 'rearm' }; u.path = []; u.pathTimer = 0; }
+    if (home?.type === 'airfield' && home.hp > 0 && home.owner === u.owner && UNITS[u.type].tags.includes('air')) u.order.homeId = home.id;
     if (home?.type === 'dock' && home.hp > 0 && home.owner === u.owner && UNITS[u.type].tags.includes('ship')) u.order.homeId = home.id;
     return true;
   },
@@ -182,13 +183,13 @@ export const modernCombat = {
       const flights = this.projectiles.filter(p => !p.finished && p.sourceId === source.id && p.kind === 'wing').length;
       if (flights >= source.wing || source.wing <= 0) return false;
     }
-    const kind = style === 'ballistic' ? 'ballistic' : style === 'bomber' ? 'bomb' : style === 'carrier' ? 'wing' : style === 'rocket' ? 'rocket' : style === 'submarine' ? 'torpedo' : style === 'loiterer' ? 'loitering' : 'missile';
+    const kind = style === 'ballistic' ? 'ballistic' : style === 'bomber' ? 'bomb' : style === 'carrier' ? 'wing' : style === 'rocket' ? 'rocket' : ['submarine', 'antiSub'].includes(style) ? 'torpedo' : style === 'loiterer' ? 'loitering' : 'missile';
     this.projectiles.push({ id: this.nextProjectileId++, kind, owner: source.owner, sourceId: source.id, targetId: target.id, targetType: target.type, x: source.x, y: source.y, startX: source.x, startY: source.y, toX: target.x, toY: target.y, angle: Math.atan2(target.y - source.y, target.x - source.x), age: 0, jam: 0, amount, hp: kind === 'wing' ? 90 : 38, speed: kind === 'wing' ? 185 : kind === 'torpedo' ? 155 : kind === 'rocket' ? 300 : kind === 'missile' ? 360 : 185, returning: false });
     const p = this.projectiles.at(-1);
     if(kind==='ballistic'){p.hp=70;p.speed=120;}
     if (kind === 'torpedo') {
       // 艇首沿当前艇身方向发射，然后按原有目标进行有限角速度转弯。
-      const offset = 6.2 * 8;
+      const offset = style === 'submarine' ? 6.2 * 8 : source.type === 'destroyer' ? 55 : 32;
       p.x = p.startX = Math.max(0, Math.min(this.world.width, source.x + Math.cos(source.angle) * offset));
       p.y = p.startY = Math.max(0, Math.min(this.world.height, source.y + Math.sin(source.angle) * offset));
       p.angle = source.angle;

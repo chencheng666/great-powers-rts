@@ -50,14 +50,14 @@ export const UNITS = {
   aa: { name: '防空车', cost: 360, time: 17, hp: 230, speed: 72, range: 250, damage: 22, cooldown: 0.8, sight: 320, icon: 'radar', producer: 'armory', requires: 'radar', tags: ['vehicle', 'anti-air'], desc: '防空与弹药拦截，不能对地；需要装甲或步兵护卫。' },
   fighter: { name: '制空战机', cost: 620, time: 24, hp: 215, speed: 210, range: 275, damage: 37, cooldown: 0.85, sight: 470, ammo: 9, rearmTime: 8, icon: 'plane', producer: 'airfield', tags: ['air', 'jet', 'anti-air'], desc: '优先制空；可对地对舰，但伤害仅基础的35%；各任务共用有限弹药，返场整备。' },
   strike: { name: '对地攻击机', cost: 760, time: 29, hp: 235, speed: 170, range: 245, damage: 62, cooldown: 1.55, sight: 420, ammo: 3, rearmTime: 10, icon: 'plane-takeoff', producer: 'airfield', tags: ['air', 'jet', 'bomber'], desc: '优先对地对舰；具备基础伤害35%的空战自卫能力，各任务共用有限弹药，返场整备。' },
-  patrol: { name: '近海巡逻艇', cost: 380, time: 18, hp: 270, speed: 110, range: 235, damage: 26, cooldown: 0.9, sight: 355, sonar: 150, icon: 'ship', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-sub'], desc: '高速夺取海面优势，近距声呐发现潜艇；对建筑伤害较低。' },
-  frigate: { name: '防空护卫舰', cost: 760, time: 29, hp: 470, speed: 72, range: 335, damage: 38, cooldown: 1.55, sight: 435, sonar: 230, icon: 'sailboat', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-air', 'anti-sub'], desc: '区域防空与反潜护航；可拦截巡飞弹和舰载机。' },
+  patrol: { name: '近海巡逻艇', cost: 380, time: 18, hp: 270, speed: 110, range: 235, damage: 26, cooldown: 0.9, sight: 355, sonar: 150, icon: 'ship', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-sub'], desc: '高速夺取海面优势，舰炮对水面，声呐发现潜艇后发射反潜鱼雷；对建筑伤害较低。' },
+  frigate: { name: '防空护卫舰', cost: 760, time: 29, hp: 470, speed: 72, range: 335, damage: 38, cooldown: 1.55, sight: 435, sonar: 230, icon: 'sailboat', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-air', 'anti-sub'], desc: '区域防空与反潜护航；舰炮对水面、鱼雷对潜艇，可拦截巡飞弹和舰载机。' },
   harvester: { name: '采矿车', cost: 440, time: 19, hp: 350, speed: 59, range: 0, damage: 0, cooldown: 1, sight: 240, icon: 'pickaxe', producer: 'factory', tags: ['vehicle', 'harvester'], desc: '自动采集矿石，扩张经济。' },
   elite: { name: '阵营特色单位', cost: 650, time: 27, hp: 330, speed: 65, range: 315, damage: 35, cooldown: 1.25, sight: 380, icon: 'sparkles', producer: 'armory', requires: 'lab', tags: ['elite'], desc: '阵营专属战术单位。' },
   loiterer: { name: '巡飞弹发射车', cost: 620, time: 26, hp: 250, speed: 64, range: 520, minRange: 100, damage: 95, cooldown: 4.5, sight: 260, ammo: 6, rearmTime: 8, icon: 'send', producer: 'armory', requires: 'radar', tags: ['vehicle', 'artillery'], desc: '共享侦察视野发射追踪巡飞弹；可被激光、防空与电子干扰反制。' },
   jammer: { name: '电子干扰车', cost: 520, time: 23, hp: 240, speed: 70, range: 235, damage: 0, cooldown: 1, sight: 300, icon: 'radio-tower', producer: 'armory', requires: 'radar', tags: ['vehicle', 'support'], desc: '235 范围压制敌方无人机与导引弹药；不造成直接伤害，不能反制无制导火箭。' },
   laser: { name: '激光反无人机车', cost: 580, time: 25, hp: 220, speed: 67, range: 250, damage: 45, cooldown: .75, sight: 320, icon: 'focus', producer: 'armory', requires: 'radar', tags: ['vehicle', 'anti-drone'], desc: '拦截巡飞弹、击落无人机；连续射击会过热，不能攻击坦克或高空战机。' },
-  rocket: { name: '远程火箭炮', cost: 880, time: 34, hp: 230, speed: 52, range: 680, minRange: 180, damage: 85, cooldown: 3.8, sight: 240, ammo: 8, rearmTime: 10, deployTime: 2, icon: 'rocket', producer: 'armory', requires: 'lab', tags: ['vehicle', 'artillery'], desc: '展开 2 秒后发射区域火箭；需要侦察，180 最小射程，有限弹药。' },
+  rocket: { name: '远程火箭炮', cost: 880, time: 34, hp: 230, speed: 52, range: 680, minRange: 180, damage: 85, cooldown: 3.8, sight: 240, ammo: 8, rearmTime: 10, deployTime: 2, icon: 'rocket', producer: 'armory', requires: 'lab', tags: ['vehicle', 'artillery'], desc: '展开 2 秒后四发齐射压制区域；每格弹药为一轮，总伤害保持原预算。射程 680，需侦察，最小射程 180。' },
   apc: { name: '装甲运输车', cost: 420, time: 19, hp: 430, speed: 90, range: 0, damage: 0, cooldown: 1, sight: 280, capacity: 4, icon: 'bus-front', producer: 'factory', tags: ['vehicle', 'armor', 'transport'], desc: '运载 4 名步兵或工程师；车毁乘员受伤撤出，无法无敌穿越封锁线。' },
   supply: { name: '维修补给车', cost: 300, time: 17, hp: 230, speed: 72, range: 240, damage: 0, cooldown: 1, sight: 300, stock: 360, icon: 'wrench', producer: 'factory', tags: ['vehicle', 'support'], desc: '240 范围光环自动为多支陆军补弹，脱战后分配维修；优先圈内保障，不与缺弹部队相向挤靠。360 库存，缺货回厂，消耗资金。' },
   destroyer: { name: '导弹驱逐舰', cost: 1150, time: 40, hp: 800, speed: 67, range: 470, damage: 72, cooldown: 2.6, sight: 440, sonar: 290, ammo: 8, rearmTime: 10, icon: 'ship', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'anti-air', 'anti-sub', 'artillery'], desc: '远程对舰、防空与反潜；导弹有飞行时间，须返回有电船坞付费补弹。' },
@@ -92,10 +92,13 @@ UNIT_ORDER.push('railgun', 'aegis', 'relay');
 UNIT_ORDER.push('landing', 'bomber', 'airlift');
 UNIT_ORDER.push('navalFighter', 'navalStrike');
 Object.assign(UNITS, STRATEGIC_UNITS);
-BUILDINGS.nuclearSilo={name:'战略威慑发射井',cost:2400,time:70,hp:950,power:-100,size:90,icon:'radiation',requires:'lab',map:'strategic',nuclear:true,desc:'仅开局启用核威慑规则可造；240 秒准备，4500 资金，8 秒可中止准备与20 秒公开飞行预警，每方每局一次实际发射。需雷达、实验室和供电；准备期摧毁设施或断网可取消，投入资金不退。区域反导、分散和疏散可反制，友军亦受损。'};
+BUILDINGS.nuclearSilo={name:'战略威慑发射井',cost:2400,time:70,hp:950,power:-100,size:90,icon:'radiation',requires:'lab',map:'modern',nuclear:true,desc:'仅开局启用核威慑规则可造；240 秒准备，4500 资金，8 秒可中止准备与20 秒公开飞行预警，每方每局一次实际发射。需雷达、实验室和供电；准备期摧毁设施或断网可取消，投入资金不退。区域反导、分散和疏散可反制，友军亦受损。'};
 BUILD_ORDER.push('nuclearSilo');
 UNIT_ORDER.push('ewPlane', ...Object.keys(STRATEGIC_UNITS).filter(type => STRATEGIC_UNITS[type].producer));
-export const supportsMap = (required, mapId) => !required || required === mapId || required === 'ocean' && (['archipelago','islandwatch'].includes(mapId)||MAPS[mapId]?.naval) || required === 'meridian' && mapId === 'moonsea' || required === 'strategic' && mapId === 'sentinel';
+// 常规装备按战区能力解锁；保留月面、科幻和固定任务各自的装备规则。
+export const supportsModernMap = mapId => !!MAPS[mapId] && !MAPS[mapId].future && !MAPS[mapId].missionOnly;
+export const supportsNuclearMap = mapId => supportsModernMap(mapId) && MAPS[mapId].maxPlayers !== 6;
+export const supportsMap = (required, mapId) => !required || required === mapId || required === 'modern' && supportsModernMap(mapId) || required === 'ocean' && (['archipelago','islandwatch'].includes(mapId)||MAPS[mapId]?.naval) || required === 'meridian' && mapId === 'moonsea' || required === 'strategic' && mapId === 'sentinel';
 UNITS.carrier.capacity = 3;
 UNITS.carrier.desc = '可驻泊三架自行生产的兼容舰载机；停航着舰、维修补弹、弹射起飞。编入真实舰载机后不再同时出动自带攻击编组，需反潜护卫。';
 

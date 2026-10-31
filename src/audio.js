@@ -95,7 +95,7 @@ export class GameAudio {
     this.nuclearAlarm?.setActive(alarm);
     const duck = alarm ? .25 : this.currentVoice ? .45 : 1, pause = this.paused ? .23 : 1;
     this.musicBus.gain.setTargetAtTime(settings.music * duck * pause, time, .12);
-    this.voiceBus.gain.setTargetAtTime(settings.voice, time, .04); this.effectsBus.gain.setTargetAtTime(settings.effects, time, .04);
+    this.voiceBus.gain.setTargetAtTime(settings.voice, time, .04); this.effectsBus.gain.setTargetAtTime(settings.effects * 2, time, .04);
   }
 
   setPaused(value) {

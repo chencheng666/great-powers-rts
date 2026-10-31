@@ -12,6 +12,31 @@ const HULLS = {
   carrier: [-10.8, 11.8, 4.2, -.4, .9, .9]
 };
 const OLD_HULLS = new Set(['舰船船体', '舰船主甲板', '隐身舰艏船体', '主甲板', '驱逐舰船体', '驱逐舰主甲板', '集装箱船体', '货运甲板', '航母船体']);
+
+export function refineNavalWeapons(model, type) {
+  if (model.userData.navalWeapons) return model;
+  const weapon = model.getObjectByName('weapon'), barrel = model.getObjectByName('barrel');
+  if (weapon && barrel && type !== 'destroyer_china') {
+    const box = new THREE.Box3().setFromObject(barrel), pivot = box.min.x;
+    if (!box.isEmpty()) {
+      const mount = new THREE.Group(); mount.name = '舰炮转动底座'; mount.position.x = pivot;
+      model.remove(weapon); model.add(mount); mount.add(weapon);
+      weapon.traverse(part => { if (part.isMesh) part.geometry.translate(-pivot, 0, 0); });
+      const muzzle = new THREE.Object3D(); muzzle.name = 'open_asset_muzzle';
+      muzzle.position.set(box.max.x - pivot, (box.min.y + box.max.y) / 2, (box.min.z + box.max.z) / 2); barrel.add(muzzle);
+    }
+  }
+  if (['patrol', 'frigate', 'destroyer', 'destroyer_china'].includes(type)) {
+    const tubes = new THREE.Group(); tubes.name = '反潜鱼雷发射器';
+    const steel = new THREE.MeshStandardMaterial({ name: '反潜发射器', color: '#657c82', metalness: .55, roughness: .54 });
+    for (const side of [-1, 1]) for (let i = 0; i < 3; i++) {
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .85, 8), steel);
+      tube.rotation.z = Math.PI / 2; tube.position.set(-1, 1.05 + i * .19, side * (type.includes('destroyer') ? 1.6 : .95)); tubes.add(tube);
+    }
+    model.add(mergeParts(tubes));
+  }
+  model.userData.navalWeapons = true; return model;
+}
 const LANDING_REPLACED=new Set(['平底登陆舰体','车辆甲板','舰艏跳板','跳板液压臂']);
 export const replacedNavalPart = (model, part) => model==='landing'?LANDING_REPLACED.has(part.replace(/\.\d+$/, '')):!!HULLS[model] && OLD_HULLS.has(part.replace(/\.\d+$/, ''));
 

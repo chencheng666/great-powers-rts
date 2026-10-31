@@ -1,3 +1,4 @@
+import { armyComposition, unitRole } from './feedback6-presentation.js';
 import { setupMapDiscovery } from './map-discovery-ui.js';
 import { setupTutorial } from './tutorial-ui.js';
 import './growth-ui.js';
@@ -8,7 +9,7 @@ import { PlayerTelemetry } from './player-telemetry.js';
 import { GAME_VERSION, BUILD_ID } from './version.js';
 import { isDesktop, desktopInvoke, desktopNotice } from './desktop.js';
 import { createIcons, icons } from 'lucide';
-import { BUILDINGS, BUILD_ORDER, FACTIONS, MAPS, PRODUCERS, UNITS, UNIT_ORDER, VICTORY_MODES, supportsMap } from './data.js';
+import { BUILDINGS, BUILD_ORDER, FACTIONS, MAPS, PRODUCERS, UNITS, UNIT_ORDER, VICTORY_MODES, supportsMap, supportsNuclearMap } from './data.js';
 import { DETERRENCE } from './deterrence-rules.js';
 import { COUNTER_INTEL_LABELS } from './strategic-combat.js';
 import { Game } from './game.js';
@@ -471,7 +472,12 @@ function updateUI(force = false) {
   $('.resource.power').classList.toggle('warning', !g.hasPower(0));
   if (state.lastPower !== g.hasPower(0)) { gameAudio.say(g.hasPower(0) ? 'powerRestored' : 'powerLow'); state.lastPower = g.hasPower(0); }
   if (p.credits < 5 && (p.buildQueue || g.ownedBuildings(0).some(b => b.active))) gameAudio.say('fundsLow');
-  $('#army').textContent = g.ownedUnits(0).length;
+  const army = armyComposition(g.ownedUnits(0));
+  $('#army').textContent = army.total;
+  $('#army-detail').textContent = `陆 ${army.ground} · 空 ${army.air} · 海 ${army.naval}`;
+  $('.resource.army').title = `作战部队 ${army.total}，含运输机内乘员；不含自动物流。陆军 ${army.ground}，空军 ${army.air}，海军 ${army.naval}`;
+  $('#power-meter').style.setProperty('--power-fill', `${Math.max(0, Math.min(100, p.powerIn / Math.max(1, p.powerOut) * 100))}%`);
+  $('.resource.power').title = `供电 ${p.powerIn} / 耗电 ${p.powerOut}${g.hasPower(0) ? ' · 供电正常' : ' · 电力不足，建造发电站'}`;
   $('#clock').textContent = seconds(g.time);
   $('#battle-status').textContent = g.online && onlineClient.socket?.readyState !== WebSocket.OPEN ? '连接中断，正在重连' : g.online && g.paused ? `等待对手重连 ${Math.max(0,Math.ceil(((g.room?.deadline||Date.now())-Date.now())/1000))} 秒` : !g.hasPower(0) ? '电力不足' : g.pendingBuilding ? '等待部署建筑' : g.pendingAbility ? '选择技能目标' : g.paused ? '战斗暂停' : g.online ? '联网对战' : '战斗进行中';
   const q = p.buildQueue;
@@ -546,7 +552,7 @@ function updateSidebar(force = false) {
   root.dataset.intelligenceKey=intelligenceKey;
   const p = g.players[0], faction = FACTIONS[p.faction];
   if (state.tab === 'build') {
-    root.innerHTML = `<p class="content-subhead">基地设施 · 按顺序解锁</p><div class="action-list">${BUILD_ORDER.filter(type => (!BUILDINGS[type].nuclear||g.nuclearEnabled)&&(!BUILDINGS[type].naval || g.map.water) && (!BUILDINGS[type].map || BUILDINGS[type].map === g.mapId)).map(type => {
+    root.innerHTML = `<p class="content-subhead">基地设施 · 按顺序解锁</p><div class="action-list">${BUILD_ORDER.filter(type => (!BUILDINGS[type].nuclear||g.nuclearEnabled)&&(!BUILDINGS[type].naval || g.map.water) && supportsMap(BUILDINGS[type].map, g.mapId)).map(type => {
       const d = lunarBuildingProfile(g.map.future, type, BUILDINGS[type]), locked = !g.canBuild(0, type), queued = p.buildQueue?.type === type || g.pendingBuilding === type;
       const label = locked ? `需要 ${lunarBuildingProfile(g.map.future, d.requires, BUILDINGS[d.requires])?.name || '指挥中心'}` : d.desc;
       const ready = g.pendingBuilding === type;
@@ -566,7 +572,7 @@ function updateSidebar(force = false) {
         const d = UNITS[type], locked = !g.hasBuilding(0, d.producer) || d.requires && !g.hasBuilding(0, d.requires);
         const profile = equipmentProfile(p.faction, type, g.map.future);
         const label = locked ? `需要 ${lunarBuildingProfile(g.map.future, !g.hasBuilding(0, d.producer) ? d.producer : d.requires, BUILDINGS[!g.hasBuilding(0, d.producer) ? d.producer : d.requires]).name}` : isLunarRobot(g.map, type) ? '电池驱动 · 电力充能' : d.desc;
-        return `<button class="action-card ${locked ? 'locked' : ''}" data-unit="${type}" ${locked ? 'disabled' : ''} title="${profile.category} · ${profile.country}：${profile.description}；游戏定位：${d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${profile.name}</strong><small>${label} · ${profile.category}</small></span><span class="action-cost">¤ ${fmt(g.unitCost(0, type))}<small>${Math.ceil(productionDuration(g, {owner:0,type:producer}, type))} 秒</small></span></button>`;
+        return `<button class="action-card ${locked ? 'locked' : ''}" data-unit="${type}" ${locked ? 'disabled' : ''} title="${profile.category} · ${profile.country}：${profile.description}；游戏定位：${d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${profile.name}</strong>${unitRole(type, p.faction) ? `<em class="unit-role">${unitRole(type, p.faction)}</em>` : ''}<small>${label} · ${profile.category}</small></span><span class="action-cost">¤ ${fmt(g.unitCost(0, type))}<small>${Math.ceil(productionDuration(g, {owner:0,type:producer}, type))} 秒</small></span></button>`;
       }).join('')}</div></section>`;
     }).join('');
     root.querySelectorAll('[data-unit]').forEach(button => button.addEventListener('click', () => { if (!g.queueUnit(0, button.dataset.unit)) toast(UNITS[button.dataset.unit].limit?'该装备已达到数量上限（含生产队列），或队列已满':'生产队列已满', true); updateUI(true); }));
@@ -677,7 +683,8 @@ function updateBuildingInspector(now) {
   if (!g || !r || !$('#modal').classList.contains('hidden') || g.placingBuilding || g.pendingAbility || state.panning || state.touchPan || state.touchPinching || state.drag?.moved) { panel.hidden = true; return; }
   const selected = g.selected.length === 1 ? g.getEntity(g.selected[0]) : null;
   const hovered = now - (r.hoverChangedAt || now) > 350 ? g.getEntity(r.hoveredId) : null;
-  const entity = selected?.kind === 'building' ? selected : hovered?.kind === 'building' ? hovered : null;
+  const hasUnitSelection = g.selected.some(id => g.getEntity(id)?.kind === 'unit');
+  const entity = selected?.kind === 'building' ? selected : !hasUnitSelection && hovered?.kind === 'building' ? hovered : null;
   const data = buildingInformation(g, entity);
   if (!data || data.id === state.dismissedInspectorId) { panel.hidden = true; return; }
   const anchor = r.entityAnchor(entity);
@@ -1314,7 +1321,7 @@ const onlineClient=new OnlineClient({
   onIdentity:name=>playerTelemetry.identify(name),
   refreshIcons, prepare:()=>prepareRenderer(),onNotice:toast,
   onAck:action=>{const voice={build:'construction',train:'queued',place:'deployed',stop:'stopOrder',move:'moveOrder',cyber:'cyberLaunch',satellite:'ability'}[action];if(state.game?.online&&voice)gameAudio.say(voice);},
-  config:()=>({mapId:$('#map-select').value,victoryMode:state.victoryMode,faction:state.faction,nuclearEnabled:$('#map-select').value==='strategic'&&$('#nuclear-enabled').checked}),
+  config:()=>({mapId:$('#map-select').value,victoryMode:state.victoryMode,faction:state.faction,nuclearEnabled:supportsNuclearMap($('#map-select').value)&&$('#nuclear-enabled').checked}),
   onBattle:async payload=>{
     if(state.game?.online&&state.game.battleId===payload.config.battleId){state.game.apply(payload);return;}
     await startGame(null,payload);
@@ -1327,7 +1334,7 @@ const onlineClient=new OnlineClient({
 drawFactionPicker();
 $('#map-select').innerHTML = Object.entries(MAPS).sort(([a],[b])=>Number(b==='valleyTraining')-Number(a==='valleyTraining')).filter(([,map])=>!map.missionOnly&&(!candidateMode||map.maxPlayers===6)).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
 $('#map-select').value = state.mapId;
-const updateNuclearOption=()=>{const enabled=$('#map-select').value==='strategic';$('#nuclear-option').hidden=!enabled;if(!enabled)$('#nuclear-enabled').checked=false;};
+const updateNuclearOption=()=>{const enabled=supportsNuclearMap($('#map-select').value);$('#nuclear-option').hidden=!enabled;if(!enabled)$('#nuclear-enabled').checked=false;};
 $('#map-select').addEventListener('change',updateNuclearOption);updateNuclearOption();
 setupMapDiscovery();
 if (location.protocol === 'file:') $('#desktop-download-link').href = 'https://www.daguojueqi.site/downloads/';

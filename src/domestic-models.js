@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { craftedMaterial, mergeParts } from './model-craft.js';
 import { createMovingTracks } from './track-motion.js';
-import { refineNavalHull } from './naval-presentation.js';
+import { refineNavalHull, refineNavalWeapons } from './naval-presentation.js';
 
 function tools(root) {
   const mesh = (parent, geometry, material, position = [0, 0, 0], rotation) => {
@@ -104,11 +104,6 @@ export function createChineseDestroyer() {
     box(upper,dark,[.65,3.11,side*1.07],[.87,.44,.015],[side*.16,0,0]);
     for(let i=0;i<8;i++)box(upper,coat,[.28+i*.11,3.11,side*1.08],[.025,.4,.018]);
     box(upper,team,[-3.4,2.2,side*1.2],[1.1,.13,.028]);
-    for(let x=-9.2;x<=8.3;x+=.85){
-      const z=side*(x>6?1.8-(x-6)*.33:1.83);
-      beam(upper,steel,[x,1.15,z],[x,1.49,z],.012,5);
-      if(x<7.4)beam(upper,steel,[x,1.49,z],[x+.85,1.49,side*((x+.85)>6?1.8-(x+.85-6)*.33:1.83)],.009,5);
-    }
     for(let i=0;i<5;i++)box(upper,dark,[-3.1+i*.26,2.74,side*.95],[.15,.14,.05]);
     box(upper,coat,[-3.9,2.0,side*1.63],[1.15,.54,.28]);
     beam(upper,steel,[-1,3.8,side*.4],[-1,5.1,side*.4],.035);
@@ -130,6 +125,7 @@ export function createChineseDestroyer() {
     [2.05,[[6.4,-.5],[7.3,-.4],[7.6,0],[7.3,.4],[6.4,.5]]]]);
   beam(barrel,coat,[7.2,1.78,0],[9.9,1.95,0],.085,12);
   mergeParts(upper);mergeParts(weapon);
+  refineNavalWeapons(root, root.name);
   const muzzle=new THREE.Object3D();muzzle.name='open_asset_muzzle';muzzle.position.set(9.9,1.95,0);barrel.add(muzzle);
   // 舰炮以舰艏炮座为轴旋转，后坐动画仍使用炮管的局部坐标。
   const mount = group('舰艏炮座'); mount.position.x = 6.9; mount.add(weapon);

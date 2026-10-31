@@ -29,12 +29,12 @@ test('战略图固定尺寸、资源和开局公平，不受旧纵深倍数二�
   const loaded=Game.fromSave(g.toSave());assert.deepEqual(loaded.resourceSites,g.resourceSites);assert.equal(loaded.world.width,6400);
 });
 
-test('现代装备有真实原型边界、独立模型和完整图鉴，老地图不混入实验单位',()=>{
+test('现代装备有真实原型边界、独立模型和完整图鉴，常规装备跨图可用而实验单位仍独立',()=>{
   assert.equal(equipmentModel('nato','fighter'),'fighter_nato');assert.match(equipmentProfile('china','ballistic').name,/东风-26/);
   assert.match(equipmentProfile('nato','helicopter').name,/阿帕奇/);assert.match(equipmentProfile('china','swarmCarrier').category,/公开原型/);
   for(const type of ['ballistic','abm','counterIntel','helicopter','swarmCarrier','swarmScout','swarmDecoy']) {
     const entry=catalogEntry('unit',type,'china','strategic');assert.ok(entry.tactics.length&&entry.attention.length);assert.ok(entry.model);
-    assert.equal(catalogEntry('unit',type,'china','valley').availability.available,false);
+    assert.equal(catalogEntry('unit',type,'china','valley').availability.available,['ballistic','abm','helicopter'].includes(type));
   }
 });
 

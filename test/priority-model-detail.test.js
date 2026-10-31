@@ -33,12 +33,12 @@ test('F22 起落架与弹舱连续收放、暂停不推进，克隆不修改模�
   assert.equal(model.getObjectByName('fighter_gear_nose').visible,false);
 });
 
-test('新增起落架接地不下沉，返场与滑跑高度连续且不改变旧飞机偏移',()=>{
+test('新增起落架接地不下沉，返场与滑跑高度连续且适配地面展示缩放',()=>{
   const model=createStrategicModel('fighter_nato'),entry={model,scale:11},entity={type:'fighter',x:900,y:700};
   const game={map:{future:false},aircraftGrounded:()=>true};
   const pose=fixedWingHeight(game,entity,entry,0,95);
   animatePriorityAircraft(entry,entity,game,.05,pose.height);
-  model.scale.setScalar(11);model.position.y=pose.height;
+  model.scale.setScalar(11/3);model.position.y=pose.height;
   const bounds=new THREE.Box3().setFromObject(model);assert.ok(bounds.min.y>=-.01&&bounds.min.y<1);
   assert.equal(fixedWingHeight(game,entity,{},0,95).height,4);
   const airport={x:900,y:660,size:140};game.ownedBuildings=()=>[airport];

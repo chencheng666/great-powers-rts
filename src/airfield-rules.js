@@ -16,6 +16,21 @@ export function airfieldDeparture(home, type) {
 }
 
 export const AIRFIELD_SLOTS = 6;
+export function airfieldRunwayAvailable(game, unit, home) {
+  const peers = game.units.filter(other => other.hp > 0 && !other.embarkedIn && other.owner === unit.owner);
+  if (peers.some(other => other !== unit && other.deployment?.buildingId === home.id)) return false;
+  // 已进入跑道的飞机先完成滑行；尚未进场时，出场优先，再按机号排队。
+  const operations = peers.filter(other => other.airfieldOps?.homeId === home.id && other.airfieldOps.phase !== 'parked');
+  const priority = other => ['taxiIn', 'taxiOut'].includes(other.airfieldOps.phase) ? 0 : 1;
+  operations.sort((a, b) => priority(a) - priority(b) || a.id - b.id);
+  return !operations.length || operations[0] === unit;
+}
+
+export function airfieldHoldingPoint(game, unit, home) {
+  const angle = game.time * .28 + unit.id * 2.4;
+  return { x: Math.max(60, Math.min(game.world.width - 60, home.x - 320 + Math.cos(angle) * 150)),
+    y: Math.max(60, Math.min(game.world.height - 60, home.y - 300 + Math.sin(angle) * 150)) };
+}
 export function airfieldParking(home, slot) {
   const apron = airfieldApron(home), row = Math.floor(slot / 3), column = slot % 3;
   return { x: apron.x + (column - 1) * 100, y: apron.y + 88 + row * 95,

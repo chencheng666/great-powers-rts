@@ -26,8 +26,8 @@ function tick(g,seconds) {
   }
 }
 
-test('核威慑默认关闭、限战略图，关闭时不可建井、发射或从普通指令绕过',()=>{
-  const old=new Game('china','nato'),wrong=new Game('china','nato',{}, {nuclearEnabled:true,mapId:'valley'}),g=setup(false);
+test('核威慑默认关闭、排除科幻图，关闭时不可建井、发射或从普通指令绕过',()=>{
+  const old=new Game('china','nato'),wrong=new Game('china','nato',{}, {nuclearEnabled:true,mapId:'meridian'}),g=setup(false);
   assert.equal(old.nuclearEnabled,false);assert.equal(wrong.nuclearEnabled,false);assert.equal(g.canBuild(0,'nuclearSilo'),false);
   assert.equal(g.canPlace(0,'nuclearSilo',1200,1200),false);assert.equal(g.launchNuclear(3000,1800),false);assert.equal(executeCommand(g,0,{action:'nuclear',x:3000,y:1800}),false);
 });
