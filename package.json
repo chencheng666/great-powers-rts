@@ -16,7 +16,8 @@
     "test": "node --test",
     "dev:desktop": "vite --host 127.0.0.1 --port 4187 --strictPort --configLoader native",
     "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build"
+    "desktop:build": "tauri build",
+    "package:utools": "node scripts/package-utools.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.2",

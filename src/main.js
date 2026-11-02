@@ -12,6 +12,7 @@ import { CommanderLoyalty, SANDBOX_FUNDS, applySandbox, canUseSandbox, sandboxSp
 import { PlayerTelemetry } from './player-telemetry.js';
 import { GAME_VERSION, BUILD_ID } from './version.js';
 import { isDesktop, desktopInvoke, desktopNotice } from './desktop.js';
+import { isUtools, setupUtools } from './utools-runtime.js';
 import { createIcons, icons } from 'lucide';
 import { BUILDINGS, BUILD_ORDER, FACTIONS, MAPS, PRODUCERS, UNITS, UNIT_ORDER, VICTORY_MODES, supportsMap, supportsNuclearMap } from './data.js';
 import { DETERRENCE } from './deterrence-rules.js';
@@ -1322,7 +1323,7 @@ function updateVoiceOptions() {
   if (select.selectedIndex < 0) select.value = 'auto';
 }
 
-const playerTelemetry=new PlayerTelemetry({version:`${GAME_VERSION}+${BUILD_ID}`,desktop:isDesktop(),getGame:()=>state.game});
+const playerTelemetry=new PlayerTelemetry({version:`${GAME_VERSION}+${BUILD_ID}`,desktop:isDesktop(),enabled:!isUtools(),getGame:()=>state.game});
 const onlineClient=new OnlineClient({
   onIdentity:name=>playerTelemetry.identify(name),
   refreshIcons, prepare:()=>prepareRenderer(),onNotice:toast,
@@ -1361,3 +1362,4 @@ async function importDesktopOrWeb() {
 }
 desktopNotice();
 if (location.protocol === 'file:' || isDesktop()) $('#offline-telemetry-note').hidden = false;
+setupUtools();

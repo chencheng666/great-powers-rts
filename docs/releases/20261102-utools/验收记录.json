@@ -1,0 +1,39 @@
+{
+  "applicationId": "zb3fvcnl",
+  "marketName": "红警2030之大国崛起",
+  "version": "2.0.2",
+  "format": "upxs",
+  "bytes": 53610604,
+  "sha256": "69fb6951b01de3c0c8a27e8e746656c903dab3f3f9b1bf00241fca3460dc0436",
+  "tests": {
+    "fullPass": 620,
+    "finalTargetedPass": 5,
+    "failed": 0
+  },
+  "native": {
+    "system": "macOS",
+    "utools": "7.8.0",
+    "installedDevelopmentMode": true,
+    "battleStart": true,
+    "pause": true,
+    "manualSave": true,
+    "exportJson": true,
+    "restoreManualSave": true,
+    "restoredTime": "00:54",
+    "restoredFunds": 5720,
+    "restoredUnits": 9,
+    "windowsLinuxPhysicalValidation": false
+  },
+  "privacy": {
+    "automaticTelemetry": false,
+    "gameNodeIntegration": false,
+    "preloadExposesLocalFiles": false,
+    "browserQaAutomaticHttpRequests": 0
+  },
+  "publication": {
+    "marketReceiptConfirmed": false,
+    "fieldsFilledAndReadBack": true,
+    "screenshotsPending": true,
+    "serverDeployed": false
+  }
+}

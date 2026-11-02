@@ -1,4 +1,5 @@
 import { isDesktop, desktopInvoke } from './desktop.js';
+import { isUtools, openUtoolsLink } from './utools-runtime.js';
 import { FACTIONS, MAPS, VICTORY_MODES } from './data.js';
 import { nickname, roomCode, PROTOCOL_VERSION,SIX_PROTOCOL_VERSION } from './network-protocol.js';
 const key='great-powers-player-name-v1';
@@ -18,7 +19,7 @@ export class OnlineClient {
     document.querySelector('#player-name-btn').addEventListener('click',()=>this.editName());
     let name='';try{name=localStorage.getItem(key)||'';}catch{}
     this.name=name;this.renderName();if(!name)this.editName();
-    if(name && !isDesktop())fetch(this.prefix+'/api/session').then(r=>r.ok?r.json():null).then(data=>{if(data?.user&&data.room?.code){this.user=data.user;this.room=data.room;this.connect().catch(()=>{});}}).catch(()=>{});
+    if(name && !isDesktop() && !isUtools())fetch(this.prefix+'/api/session').then(r=>r.ok?r.json():null).then(data=>{if(data?.user&&data.room?.code){this.user=data.user;this.room=data.room;this.connect().catch(()=>{});}}).catch(()=>{});
   }
   renderName(){document.querySelector('#player-name').textContent=this.name||'指挥官';this.onIdentity?.(this.name);}
   editName(){this.nameDialog.querySelector('input').value=this.name||'';this.nameDialog.querySelector('[role=alert]').textContent='';if(!this.nameDialog.open)this.nameDialog.showModal();}
@@ -40,6 +41,7 @@ export class OnlineClient {
     this.user=data.user;return data;
   }
   async open(){
+    if (isUtools()) { try { await openUtoolsLink('online'); } catch (error) { this.onNotice(error.message, true); } return; }
     if (isDesktop()) { await this.openDesktop(); return; }
     if(!this.name){this.editName();return;}
     this.dialog.showModal();this.showError('');this.render();this.dialog.querySelector('#online-status').textContent='正在连接战区…';

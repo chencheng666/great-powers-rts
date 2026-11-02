@@ -4,6 +4,13 @@
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
     {
+      "name": "packages/Great-Powers-RTS-v2.0.2-utools.upxs",
+      "label": "2.0.2 · uTools 插件应用 · UPXS 安装包",
+      "size": 53610604,
+      "sha256": "69fb6951b01de3c0c8a27e8e746656c903dab3f3f9b1bf00241fca3460dc0436",
+      "status": "独立窗口离线单机，内置资源、挑战、成长记录与存档导入导出；本机macOS + uTools 7.8已检查开局、暂停、导出与读档。市场状态以审核结果为准，Windows/Linux待更多环境验证；本插件不自动上传玩家统计。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback-r2.zip",
       "label": "2.0.2 · 11月2日界面与故障定位修复 · 最新免安装离线 ZIP",
       "size": 55412479,
@@ -327,5 +334,6 @@
     "v2.0.0"
   ],
   "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback-r2.zip",
-  "webBuild": "20261102-feedback-diagnostics-r2"
+  "webBuild": "20261102-feedback-diagnostics-r2",
+  "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools.upxs"
 }

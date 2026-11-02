@@ -1,0 +1,12 @@
+{
+  "main": "index.html",
+  "logo": "logo.png",
+  "pluginSetting": { "height": 540 },
+  "features": [
+    {
+      "code": "great-powers",
+      "description": "大国崛起 · 海陆空即时战略，离线单机与战术挑战",
+      "cmds": ["大国崛起", "海陆空即时战略"]
+    }
+  ]
+}

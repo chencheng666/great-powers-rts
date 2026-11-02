@@ -6,11 +6,11 @@ export function telemetryContext(game) {
   return { battleId: game.battleId, mode: game.spectator ? 'spectator' : game.online ? game.playerCount === 6 ? 'candidate' : 'online' : game.challenge ? 'challenge' : game.sandbox ? 'sandbox' : 'single', mapId: game.mapId, faction: game.players[0]?.faction, outcome: game.running ? null : game.winner === 'draw' ? 'draw' : game.winner === 0 ? 'win' : 'loss' };
 }
 export class PlayerTelemetry {
-  constructor({ version, desktop = false, getGame = () => null, environment = globalThis, now = () => performance.now() } = {}) {
+  constructor({ version, desktop = false, enabled = true, getGame = () => null, environment = globalThis, now = () => performance.now() } = {}) {
     this.source = entrySource(environment.location); this.env = environment; this.version = version; this.getGame = getGame; this.now = now;
     this.external = desktop || environment.location?.protocol === 'file:'; this.entry = desktop ? 'desktop' : this.external ? 'zip' : /^\/candidate(?:\/|$)/.test(environment.location?.pathname || '') ? 'candidate' : 'game'; this.endpoint = this.external ? 'https://www.daguojueqi.site/api/external-telemetry' : '/api/telemetry'; this.token = '';
     try { if (this.external) this.token = environment.localStorage?.getItem('great-powers-analytics-token-v1') || ''; } catch { /* 不支持本地存储时仅记录当前会话。 */ }
-    this.enabled = this.external || ['http:', 'https:'].includes(environment.location?.protocol); this.activeMs = 0; this.seq = 0; this.name = ''; this.context = null; this.playing = false; this.lastFrame = now(); this.queue = Promise.resolve(); this.pending = 0;
+    this.enabled = enabled && (this.external || ['http:', 'https:'].includes(environment.location?.protocol)); this.activeMs = 0; this.seq = 0; this.name = ''; this.context = null; this.playing = false; this.lastFrame = now(); this.queue = Promise.resolve(); this.pending = 0;
     if (!this.enabled) return;
     this.sessionId = sessionId(environment);
     this.timer = environment.setInterval(() => { if (!environment.document.hidden) this.flush(); }, 15000);

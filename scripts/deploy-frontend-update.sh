@@ -18,8 +18,12 @@ finish() {
   result=$?
   if [[ "$result" != 0 && "$switched" == true ]]; then
     for page in "${pages[@]}"; do
-      install -m 644 "$backup/$page" "$root/$page.rollback"
-      mv -Tf "$root/$page.rollback" "$root/$page"
+      if [[ -f "$backup/$page" ]]; then
+        install -m 644 "$backup/$page" "$root/$page.rollback"
+        mv -Tf "$root/$page.rollback" "$root/$page"
+      elif [[ "$page" == utools/privacy/index.html && -f "$backup/utools-privacy-was-absent" ]]; then
+        rm -f "$root/$page"
+      fi
     done
     printf '校验失败，已恢复上一版页面\n'
   fi
@@ -30,13 +34,18 @@ trap finish EXIT
 tar -xzf "$archive" -C "$stage"
 install -d "$backup"
 # 可选同步官网和下载页，白名单内的每页均先备份，再统一校验。
-for page in official/index.html downloads/index.html downloads/manifest.json; do
+for page in official/index.html downloads/index.html downloads/manifest.json utools/privacy/index.html; do
   if [[ -f "$stage/$page" ]]; then pages+=("$page"); fi
 done
 for page in "${pages[@]}"; do
-  [[ -f "$root/$page" ]]
-  install -d "$backup/$(dirname "$page")"
-  install -m 644 "$root/$page" "$backup/$page"
+  if [[ -f "$root/$page" ]]; then
+    install -d "$backup/$(dirname "$page")"
+    install -m 644 "$root/$page" "$backup/$page"
+  elif [[ "$page" == utools/privacy/index.html ]]; then
+    touch "$backup/utools-privacy-was-absent"
+  else
+    exit 1
+  fi
 done
 for file in "$stage"/assets/*; do
   [[ -f "$file" ]]
@@ -47,13 +56,15 @@ done
 # 新离线包只新增，同名历史包必须完全一致，不能覆盖玩家正在下载的文件。
 if [[ -d "$stage/downloads/packages" ]]; then
   install -d "$root/downloads/packages"
-  for file in "$stage"/downloads/packages/*.zip; do
+  for file in "$stage"/downloads/packages/*; do
+    [[ -f "$file" ]]
     name=$(basename "$file")
-    [[ "$name" =~ ^[0-9A-Za-z_.-]+\.zip$ ]]
+    [[ "$name" =~ ^[0-9A-Za-z_.-]+\.(zip|upxs)$ ]]
     if [[ -e "$root/downloads/packages/$name" ]]; then cmp "$file" "$root/downloads/packages/$name"; else install -m 644 "$file" "$root/downloads/packages/$name"; fi
   done
 fi
 for page in "${pages[@]}"; do
+  install -d "$root/$(dirname "$page")"
   install -m 644 "$stage/$page" "$root/$page.next"
 done
 cd "$root"

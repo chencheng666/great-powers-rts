@@ -130,3 +130,11 @@ node scripts/verify-theater-missions.mjs
 感谢 **CAI** 和所有长期试玩、提交截图与复现步骤的玩家。欢迎贡献程序、原创模型、关卡和测试，在 [Issues](https://github.com/chencheng666/great-powers-rts/issues) 提出建议，或提交 Pull Request。反馈请附版本、系统、浏览器、地图、模式与复现步骤；分享存档前移除个人信息。
 
 代码许可见 [LICENSE](LICENSE)，模型与材质逐项许可见 [ASSETS.md](ASSETS.md)、[THIRD-PARTY-ASSETS.txt](THIRD-PARTY-ASSETS.txt)，依赖许可见 [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt)。不接收来源不明的游戏提取素材；修改或 AI 转换不能消除原始授权义务。
+
+### uTools 插件应用
+
+运行 `npm run package:utools`，将 `releases/utools/大国崛起/plugin.json` 导入 uTools 开发者工具。入口会打开独立单机战场；联网入口在系统浏览器打开官网。模型、音乐和语音随包安装，本插件不自动上报玩家统计，反馈由玩家主动提交。
+
+插件源码在 `packaging/utools/`，隐私说明在 `public/utools/privacy/index.html`。打包目录不包含 Node.js 对战服务器、后台、玩家数据库或凭据；不向游戏窗口开放 Node.js 和任意本地文件能力。存档与网页隔离，升级前应导出 JSON 备份。
+
+ZIP 是应用目录备份，正式 `.upxs` 安装包由 uTools 开发者工具生成；本地安装、市场送审与审核上架分别核验。当前发布状态见 `docs/releases/20261102-utools/验收说明.md`。
