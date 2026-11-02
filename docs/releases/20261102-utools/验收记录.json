@@ -34,6 +34,16 @@
     "marketReceiptConfirmed": false,
     "fieldsFilledAndReadBack": true,
     "screenshotsPending": true,
-    "serverDeployed": false
+    "serverDeployed": false,
+    "githubSourceCommit": "36d7a10a57e23aa53cd5e317de1e70c6749fafa1",
+    "githubRelease": "https://github.com/chencheng666/great-powers-rts/releases/tag/utools-v2.0.2",
+    "githubPublished": true,
+    "githubPrerelease": true,
+    "githubAssetDigestMatches": true,
+    "localDownloadHttpStatus": 200,
+    "localPrivacyHttpStatus": 200,
+    "localDownloadCounterVerified": true,
+    "frontendArchiveSha256": "76cbe0cdc25b733c0b8c868960d18e963c77ed521b4c5290632ee38a33be8081",
+    "serverWorkspaceClosed": true
   }
 }
