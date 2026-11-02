@@ -1,0 +1,29 @@
+{
+  "frontBuild": "20261102-land-air-scale",
+  "sourceCommit": "3482d75716ba1badc3898f31a31aa0f733aa3757",
+  "fullTests": {
+    "pass": 607,
+    "fail": 0
+  },
+  "targetedAfterTaxiPavement": {
+    "pass": 17,
+    "fail": 0
+  },
+  "publicOfflinePackage": {
+    "status": 200,
+    "bytes": 55409651,
+    "sha256": "2f7011e48d7a4a5c01837cc74b69885f9889e9c16a76e4ea44db5e340e855bc4",
+    "matches": true,
+    "rangeStatus": 206
+  },
+  "backend": {
+    "build": "20261031-fan-bugs6",
+    "protocols": [
+      4,
+      5
+    ],
+    "restarted": false
+  },
+  "storeAndDesktopRebuilt": false,
+  "carrierCapacity": 3
+}
