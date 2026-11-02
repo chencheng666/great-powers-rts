@@ -3,8 +3,8 @@
   "marketName": "红警2030之大国崛起",
   "version": "2.0.2",
   "format": "upxs",
-  "bytes": 53610604,
-  "sha256": "69fb6951b01de3c0c8a27e8e746656c903dab3f3f9b1bf00241fca3460dc0436",
+  "bytes": 18308236,
+  "sha256": "b1a997a41dae25d60a84440da980fb9a3adcdd86e2b22d83f3718200a2808341",
   "tests": {
     "fullPass": 620,
     "finalTargetedPass": 5,
@@ -31,9 +31,9 @@
     "browserQaAutomaticHttpRequests": 0
   },
   "publication": {
-    "marketReceiptConfirmed": false,
+    "marketReceiptConfirmed": true,
     "fieldsFilledAndReadBack": true,
-    "screenshotsPending": true,
+    "screenshotsPending": false,
     "serverDeployed": false,
     "githubSourceCommit": "36d7a10a57e23aa53cd5e317de1e70c6749fafa1",
     "githubRelease": "https://github.com/chencheng666/great-powers-rts/releases/tag/utools-v2.0.2",
@@ -46,7 +46,14 @@
     "frontendArchiveSha256": "b02b7f03625cbcc95316f8d21e0c6b681dc7919d39d442006bd7a9af57dbd5ea",
     "serverWorkspaceClosed": false,
     "serverWorkspace": 30,
-    "serverPendingMfa": true
+    "serverPendingMfa": true,
+    "marketStatus": "待审核",
+    "marketVersion": "2.0.2",
+    "marketSize": "18.31MB",
+    "marketSubmittedAt": "2026-11-02 19:27:45 +08:00",
+    "screenshotsSubmitted": 3,
+    "githubCompactSourceCommit": "8341134",
+    "githubCompactAssetDigestMatches": true
   },
   "marketPackage": {
     "name": "Great-Powers-RTS-v2.0.2-utools-market.upxs",
@@ -56,6 +63,16 @@
     "all146VoiceClipsDecoded": true,
     "craneGeometryUnchanged": true,
     "nativeSaveRestored": true,
-    "fullTestsPass": 620
-  }
+    "fullTestsPass": 620,
+    "localHttpDownloadVerified": true,
+    "localCountIncrement": 1,
+    "localPrivacyStatus": 200
+  },
+  "legacyPackage": {
+    "name": "Great-Powers-RTS-v2.0.2-utools.upxs",
+    "bytes": 53610604,
+    "sha256": "69fb6951b01de3c0c8a27e8e746656c903dab3f3f9b1bf00241fca3460dc0436",
+    "marketSubmitted": false
+  },
+  "file": "Great-Powers-RTS-v2.0.2-utools-market.upxs"
 }
