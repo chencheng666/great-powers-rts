@@ -43,7 +43,19 @@
     "localDownloadHttpStatus": 200,
     "localPrivacyHttpStatus": 200,
     "localDownloadCounterVerified": true,
-    "frontendArchiveSha256": "76cbe0cdc25b733c0b8c868960d18e963c77ed521b4c5290632ee38a33be8081",
-    "serverWorkspaceClosed": true
+    "frontendArchiveSha256": "b02b7f03625cbcc95316f8d21e0c6b681dc7919d39d442006bd7a9af57dbd5ea",
+    "serverWorkspaceClosed": false,
+    "serverWorkspace": 30,
+    "serverPendingMfa": true
+  },
+  "marketPackage": {
+    "name": "Great-Powers-RTS-v2.0.2-utools-market.upxs",
+    "bytes": 18308236,
+    "sha256": "b1a997a41dae25d60a84440da980fb9a3adcdd86e2b22d83f3718200a2808341",
+    "platformLimitBytes": 20000000,
+    "all146VoiceClipsDecoded": true,
+    "craneGeometryUnchanged": true,
+    "nativeSaveRestored": true,
+    "fullTestsPass": 620
   }
 }

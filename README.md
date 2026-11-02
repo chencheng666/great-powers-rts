@@ -135,6 +135,8 @@ node scripts/verify-theater-missions.mjs
 
 运行 `npm run package:utools`，将 `releases/utools/大国崛起/plugin.json` 导入 uTools 开发者工具。入口会打开独立单机战场；联网入口在系统浏览器打开官网。模型、音乐和语音随包安装，本插件不自动上报玩家统计，反馈由玩家主动提交。
 
+uTools 市场限制安装包不超过 20MB。构建需要支持 Opus、WebP 和 H.264 的 FFmpeg，可用 `FFMPEG_BIN` 指定可执行文件。仅在忽略的发行缓存中压缩全部内置语音、菜单图像／视频与起重机贴图，保留原资源和完整玩法；目录备份 ZIP 超过 19.5MB 会中止，正式 UPXS 仍需检查实际体积和宿主运行结果。
+
 插件源码在 `packaging/utools/`，隐私说明在 `public/utools/privacy/index.html`。打包目录不包含 Node.js 对战服务器、后台、玩家数据库或凭据；不向游戏窗口开放 Node.js 和任意本地文件能力。存档与网页隔离，升级前应导出 JSON 备份。
 
 ZIP 是应用目录备份，正式 `.upxs` 安装包由 uTools 开发者工具生成；本地安装、市场送审与审核上架分别核验。当前发布状态见 `docs/releases/20261102-utools/验收说明.md`。

@@ -4,11 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { prepareUtoolsAssets } from './utools-assets.mjs';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const out = join(root, 'releases/utools'), destination = join(out, '大国崛起');
 await mkdir(destination, { recursive: true });
 // 单文件内联避免 file:// ES 模块与外置模型的跨源限制；不复制官网、后台或服务器文件。
-const result = await build({ root, configFile: false, publicDir: false, base: './', build: { write: false, assetsInlineLimit: () => true, cssCodeSplit: false, sourcemap: false, rollupOptions: { output: { inlineDynamicImports: true } }, chunkSizeWarningLimit: 200000 } });
+const result = await build({ root, configFile: false, publicDir: false, base: './', plugins: [await prepareUtoolsAssets(root)], build: { write: false, assetsInlineLimit: () => true, cssCodeSplit: false, sourcemap: false, rollupOptions: { output: { inlineDynamicImports: true } }, chunkSizeWarningLimit: 200000 } });
 const outputs = (Array.isArray(result) ? result : [result]).flatMap(r => r.output);
 const entries = outputs.filter(o => o.type === 'chunk'), css = outputs.filter(o => o.type === 'asset' && o.fileName.endsWith('.css'));
 if (entries.length !== 1 || !entries[0].isEntry || entries[0].imports.length || entries[0].dynamicImports.length || css.length !== 1) throw new Error('uTools 构建必须只有一个完整游戏入口和一份样式');
@@ -47,6 +48,7 @@ const zip = join(out, '大国崛起-uTools-2.0.2-待平台打包.zip');
 // ZIP 是导入目录备份；正式 UPXS 必须由 uTools 开发者工具签名打包，不能改扩展名冒充。
 execFileSync('/usr/bin/tar', ['--format', 'zip', '-cf', zip, '大国崛起'], { cwd: out, env: { ...process.env, COPYFILE_DISABLE: '1' } });
 execFileSync('/usr/bin/unzip', ['-t', zip], { stdio: 'ignore' });
+if ((await stat(zip)).size > 19_500_000) throw new Error('uTools 发行包超过安全预算，不能提交到 20MB 限制的市场');
 const report = { version: '2.0.2', sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), sourceDirty: !!execFileSync('git', ['diff', '--name-only'], { cwd: root, encoding: 'utf8' }).trim(), directory: destination, plugin: join(destination, 'plugin.json'), zip, bytes: (await stat(zip)).size, sha256: createHash('sha256').update(await readFile(zip)).digest('hex'), nativeAcceptance: '待 uTools 真机导入、运行和导出 UPXS 验收', submitted: false };
 await writeFile(join(out, '构建报告.json'), JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));

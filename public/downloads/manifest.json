@@ -4,6 +4,13 @@
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
     {
+      "name": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs",
+      "label": "2.0.2 · uTools 商店精简版 · UPXS 安装包（18.3MB）",
+      "size": 18308236,
+      "sha256": "b1a997a41dae25d60a84440da980fb9a3adcdd86e2b22d83f3718200a2808341",
+      "status": "完整单机玩法、全部146段语音；压缩背景与贴图以符合市场20MB限制。本机macOS + uTools 7.8验收，商店审核状态以平台为准，Windows/Linux待更多环境验证；不自动上传玩家统计。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.2-utools.upxs",
       "label": "2.0.2 · uTools 插件应用 · UPXS 安装包",
       "size": 53610604,
@@ -335,5 +342,5 @@
   ],
   "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback-r2.zip",
   "webBuild": "20261102-feedback-diagnostics-r2",
-  "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools.upxs"
+  "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs"
 }
