@@ -1,14 +1,6 @@
 import { UNITS } from './data.js';
 
-// 对同一机种按机身长度统一比例，避免不同阵营、机场与航母各用一套缩放。
-export const AIRCRAFT_LENGTHS = Object.freeze({ fighter: 84, strike: 84, navalFighter: 84, navalStrike: 84, bomber: 168, ewPlane: 84 });
-export function airframeScale(type, modelLength, fallback) {
-  return AIRCRAFT_LENGTHS[type] && modelLength > 0 ? AIRCRAFT_LENGTHS[type] / modelLength : fallback;
-}
-export function flightScaleFactor(relativeHeight) {
-  const t = Math.max(0, Math.min(1, (relativeHeight - 12) / 83));
-  return 1 / 3 + 2 / 3 * t * t * (3 - 2 * t);
-}
+export { AIRCRAFT_LENGTHS, airframeScale, flightScaleFactor } from './model-scale.js';
 
 export function armyComposition(units) {
   const counts = { total: 0, ground: 0, air: 0, naval: 0 };

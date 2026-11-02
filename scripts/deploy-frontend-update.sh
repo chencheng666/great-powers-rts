@@ -30,7 +30,7 @@ trap finish EXIT
 tar -xzf "$archive" -C "$stage"
 install -d "$backup"
 # 可选同步官网和下载页，白名单内的每页均先备份，再统一校验。
-for page in official/index.html downloads/index.html; do
+for page in official/index.html downloads/index.html downloads/manifest.json; do
   if [[ -f "$stage/$page" ]]; then pages+=("$page"); fi
 done
 for page in "${pages[@]}"; do
@@ -44,6 +44,15 @@ for file in "$stage"/assets/*; do
   [[ "$name" =~ ^[0-9A-Za-z_.-]+\.(js|css|svg|png|webp|glb)$ ]]
   if [[ -e "$root/assets/$name" ]]; then cmp "$file" "$root/assets/$name"; else install -m 644 "$file" "$root/assets/$name"; fi
 done
+# 新离线包只新增，同名历史包必须完全一致，不能覆盖玩家正在下载的文件。
+if [[ -d "$stage/downloads/packages" ]]; then
+  install -d "$root/downloads/packages"
+  for file in "$stage"/downloads/packages/*.zip; do
+    name=$(basename "$file")
+    [[ "$name" =~ ^[0-9A-Za-z_.-]+\.zip$ ]]
+    if [[ -e "$root/downloads/packages/$name" ]]; then cmp "$file" "$root/downloads/packages/$name"; else install -m 644 "$file" "$root/downloads/packages/$name"; fi
+  done
+fi
 for page in "${pages[@]}"; do
   install -m 644 "$stage/$page" "$root/$page.next"
 done

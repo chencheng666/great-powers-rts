@@ -44,6 +44,7 @@ export function equipmentModel(faction, type, future = false) {
   if (type === 'ewPlane') return future ? 'space_ewPlane' : 'ewPlane';
   if (future && ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis'].includes(type)) return `space_${type}`;
   if (faction === 'nato' && ['airlift', 'freightPlane'].includes(type)) return 'nato_tandem';
+  if (type === 'freightPlane') return 'airlift';
   if (type === 'navalFighter') return 'fighter';
   if (type === 'navalStrike') return 'strike';
   if (type === 'refinery' && !future) return 'logistics_depot';

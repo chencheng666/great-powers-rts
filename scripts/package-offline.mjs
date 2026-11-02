@@ -10,7 +10,7 @@ const releaseRoot = join(root, 'releases'), stage = join(releaseRoot, timestamp)
 const destination = join(stage, folder), archive = join(releaseRoot, `大国崛起-离线试玩版-${timestamp}.zip`);
 
 // 让 Vite 内联所有资源，再把它生成的唯一入口和样式装入同一个 HTML。
-const result = await build({ root, configFile: false, base: './', build: { write: false, assetsInlineLimit: () => true, cssCodeSplit: false, sourcemap: false, chunkSizeWarningLimit: 40000 } });
+const result = await build({ root, configFile: false, base: './', build: { write: false, assetsInlineLimit: () => true, cssCodeSplit: false, sourcemap: false, rollupOptions: { output: { inlineDynamicImports: true } }, chunkSizeWarningLimit: 40000 } });
 const outputs = Array.isArray(result) ? result.flatMap(value => value.output) : result.output;
 const entries = outputs.filter(output => output.type === 'chunk');
 if (entries.length !== 1 || !entries[0].isEntry || entries[0].imports.length || entries[0].dynamicImports.length) throw new Error('离线包需要一个无外部依赖的入口');
@@ -25,7 +25,14 @@ if (!scriptPattern.test(html) || !cssPattern.test(html)) throw new Error('Vite �
 html = html.replace(scriptPattern, () => `<script type="module">${entries[0].code.replace(/<\/script/gi, '<\\/script')}</script>`);
 html = html.replace(cssPattern, () => `<style>${String(css[0].source).replace(/<\/style/gi, '<\\/style')}</style>`);
 html = html.replace(/<link\b[^>]*https:\/\/fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, '');
-if (outputs.some(output => output.type === 'asset' && !['index.html', css[0].fileName].includes(output.fileName))) throw new Error('仍有外置资源，离线包不能独立运行');
+// HTML 图标由 Vite 独立输出，离线版同样内联，避免 file:// 下出现裂图。
+for (const asset of outputs.filter(output => output.type === 'asset' && !['index.html', css[0].fileName].includes(output.fileName))) {
+  const mime = asset.fileName.endsWith('.png') ? 'image/png' : asset.fileName.endsWith('.svg') ? 'image/svg+xml' : null;
+  if (!mime) throw new Error(`仍有外置资源：${asset.fileName}`);
+  const data = `data:${mime};base64,${Buffer.from(asset.source).toString('base64')}`;
+  html = html.replaceAll(`./${asset.fileName}`, data);
+}
+
 if (/<(?:script|link)\b[^>]*(?:src|href)=["'](?:\.\/)?assets\//.test(html)) throw new Error('页面仍引用外部构建文件');
 
 await mkdir(destination, { recursive: true });

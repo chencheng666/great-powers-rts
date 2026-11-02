@@ -1,4 +1,5 @@
-import { airframeScale, flightScaleFactor } from './feedback6-presentation.js';
+import { AIRCRAFT_LENGTHS, airframeScale, flightScaleFactor, unitModelScale, presentationRadius } from './model-scale.js';
+import { carrierAirGroupLabel } from './carrier-airgroup.js';
 import { growthAppearance } from './growth-rewards.js';
 import { valleyRockPositions } from './kenney-rock-geometry.js';
 import { confirmedAircraftLoss, aircraftCrashPose, aircraftShadowOpacity } from './destruction-presentation.js';
@@ -28,7 +29,7 @@ import { orderRoutes } from './order-routes.js';
 import { RESOURCE_TYPES } from './battlefield-expansion.js';
 import { COMMUNITY_3D_BUILDINGS } from './community-visuals.js';
 import { BATTLE_READABILITY, readableMaterial, identityRadius, identityVisible } from './battle-readability.js';
-import { fixedWingHeight, fixedWingPresentation, airfieldSurfaceHeight } from './airfield-presentation.js';
+import { fixedWingHeight, aircraftGroundHeight, airfieldSurfaceHeight } from './airfield-presentation.js';
 import { animateIdleGun } from './idle-gun.js';
 import { lunarCraters } from './lunar-terrain.js';
 import { battleElevation, battleAzimuth, groundPan, groundExtents } from './battle-camera.js';
@@ -700,8 +701,9 @@ export class Renderer {
   createEntity(entity) {
     const color = teamVisual(entity.owner).color, name = equipmentModel(this.game.players[entity.owner].faction, entity.type, this.game.map.future);
     const model = createModel(name, color);
-    const length = entity.kind === 'unit' && !this.game.map.future ? new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3()).x : 0;
-    const scale = entity.kind === 'building' ? entity.size / 7.2 : airframeScale(entity.type, length, UNIT_SCALE[entity.type]);
+    const unscaledBounds = new THREE.Box3().setFromObject(model), size = unscaledBounds.getSize(new THREE.Vector3());
+    const groundClearance = Math.max(0, -unscaledBounds.min.y);
+    const scale = entity.kind === 'building' ? entity.size / 7.2 : unitModelScale(entity.type, size, UNIT_SCALE[entity.type], this.game.map.future);
     let damageDetail = null;
     model.scale.setScalar(scale);
     if (!this.game.map.future && ['barracks', 'factory', 'armory'].includes(entity.type)) {
@@ -749,18 +751,10 @@ export class Renderer {
     }
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model), topHeight = bounds.max.y;
+    this.modelEffectHeights ||= new Map();
+    if (entity.kind === 'unit' && !this.game.map.future) this.modelEffectHeights.set(entity.type, Math.max(2, topHeight * .65));
     const wakeStern = Math.max(35, -bounds.min.x + 8);
     const rotors = []; model.traverse(object => { if (/^rotor_\d+_/.test(object.name)) rotors.push(object); });
-    if (entity.kind === 'unit' && !this.game.map.future && !UNITS[entity.type].tags.some(t => ['air', 'ship', 'infantry'].includes(t))) {
-      if (!this.teamStarGeometry) {
-        const shape = new THREE.Shape();
-        for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? .19 : .43; if (!i) shape.moveTo(Math.cos(a) * r, Math.sin(a) * r); else shape.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
-        shape.closePath(); this.teamStarGeometry = this.track(new THREE.ShapeGeometry(shape));
-      }
-      this.starMaterials ||= new Map();
-      if (!this.starMaterials.has(entity.owner)) this.starMaterials.set(entity.owner, this.track(new THREE.MeshStandardMaterial({ name: '阵营标识', color, emissive: color, emissiveIntensity: .75, side: THREE.DoubleSide, roughness: .6 })));
-      for (const sign of [-1, 1]) { const star = new THREE.Mesh(this.teamStarGeometry, this.starMaterials.get(entity.owner)); star.position.set(-.6, 1.25, sign * 1.86); model.add(star); }
-    }
     let submergedMaterials = null;
     if (entity.type === 'submarine') {
       submergedMaterials = [];
@@ -780,7 +774,7 @@ export class Renderer {
     const damageMeshes = [];
     model.traverse(mesh => { if (mesh.isMesh) damageMeshes.push({ mesh, original: mesh.material }); });
     const tracks = []; model.traverse(object => { if (object.isInstancedMesh && object.name.startsWith('track_belt_')) tracks.push(object); });
-    const value = { model, ring, identity, entity, scale, airShadow, wakeStern, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
+    const value = { model, ring, identity, entity, scale, groundClearance, airShadow, wakeStern, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
   }
 
   setDamageStage(entry, stage) {
@@ -868,7 +862,7 @@ export class Renderer {
     }
     const { geometry, material } = this.identityStyles.get(key);
     root.add(new THREE.LineSegments(geometry, material));
-    const radius = identityRadius(entity, UNITS[entity.type]?.tags); root.scale.set(radius, 1, radius);
+    const radius = this.game.map.future ? identityRadius(entity, UNITS[entity.type]?.tags) : presentationRadius(entity.type, identityRadius(entity, UNITS[entity.type]?.tags)); root.scale.set(radius, 1, radius);
     return root;
   }
 
@@ -950,6 +944,7 @@ export class Renderer {
         else if (tags.includes('drone')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x, entity.y) + 4 : 23 + Math.sin(this.game.time * 3 + entity.id) * 1.5;
         else if (tags.includes('rotorcraft')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x,entity.y)+4 : 45+Math.sin(this.game.time*2+entity.id);
         if (entity.type === 'airlift' && !moving && this.game.transportGrounded(entity)) height = this.elevation(entity.x, entity.y) + 6;
+        if (!this.game.map.future && AIRCRAFT_LENGTHS[entity.type] && !entity.embarkedIn && (this.game.aircraftGrounded(entity) || entity.type === 'airlift' && !moving && this.game.transportGrounded(entity))) height = aircraftGroundHeight(this.game, entity, entry, this.elevation(entity.x, entity.y));
         else if (tags.includes('ship')) height = 2 + Math.sin(now * .002 + entity.id) * .6;
         if (entry.submergedMaterials) {
           const pose = submarinePose(this.game, entity, now); height = pose.height;
@@ -971,6 +966,11 @@ export class Renderer {
           const h = a => this.elevation(entity.x + Math.cos(a) * 24, entity.y + Math.sin(a) * 24);
           const targetPitch = Math.atan2(h(entry.heading) - h(entry.heading + Math.PI), 48);
           entry.pitch += (targetPitch - entry.pitch) * (1 - Math.exp(-dt * 6)); entry.model.rotation.z = entry.pitch;
+        }
+        if (!this.game.map.future && tags.includes('rotorcraft') && !tags.includes('jet')) {
+          entry.flightHeight ??= height;
+          entry.flightHeight += (height - entry.flightHeight) * (1 - Math.exp(-dt * 5));
+          height = entry.flightHeight;
         }
         if (tags.includes('jet')) {
           const flightPose = fixedWingHeight(this.game, entity, entry, this.elevation(entity.x, entity.y), 95);
@@ -1023,8 +1023,9 @@ export class Renderer {
         if(entry.cargoLoad)entry.cargoLoad.visible=(entity.freight?.value??900)>0;
       }
       animateFacility(entry.model, entity, this.game);
-      if (!this.game.map.future && fixedWingPresentation(entity.type)) {
-        const factor = flightScaleFactor(height - this.elevation(entity.x, entity.y));
+      if (!this.game.map.future && AIRCRAFT_LENGTHS[entity.type]) {
+        const rotor = UNITS[entity.type].tags.includes('rotorcraft') || entry.model.userData.tandemRotors;
+        const factor = flightScaleFactor(height - airfieldSurfaceHeight(this.game, entity, this.elevation(entity.x, entity.y)), entity.type, rotor ? 45 : 95);
         entry.model.scale.setScalar(entry.scale * factor); entry.displayTopHeight = entry.topHeight * factor;
         entry.flightScaleFactor = factor;
       }
@@ -1109,7 +1110,7 @@ export class Renderer {
       for (const exhaust of entry.exhausts) exhaust.material.opacity = .7 + Math.sin(now * .02 + entity.id) * .15;
       entry.ring.visible = visible && (this.game.selected.includes(entity.id) || entity.owner !== 0 && (this.hoveredId === entity.id || targeted.has(entity.id))); entry.ring.position.set(entity.x, this.elevation(entity.x, entity.y) + .65, entity.y);
       if (UNITS[entity.type]?.tags.includes('ship')) entry.ring.position.y = 3;
-      const radius = entity.kind === 'building' ? entity.size * .65 : unitRadius(entity) + 4; entry.ring.scale.set(radius, 1, radius);
+      const radius = entity.kind === 'building' ? entity.size * .65 : this.game.map.future ? unitRadius(entity) + 4 : presentationRadius(entity.type, unitRadius(entity) + 4); entry.ring.scale.set(radius, 1, radius);
     }
     for (const [id, entry] of this.entities) if (!active.has(id)) {
       if (entry.airShadow) { this.scene.remove(entry.airShadow); entry.airShadow.material.dispose(); }
@@ -1160,7 +1161,7 @@ export class Renderer {
 
   effectHeight(type, x, y) {
     const tags = UNITS[type]?.tags || [];
-    return tags.includes('jet') ? 98 : tags.includes('rotorcraft') ? 55 : tags.includes('drone') ? 29 : this.elevation(x, y) + (BUILDINGS[type] ? 28 : type === 'tank' ? 21.3 : tags.includes('infantry') ? 15.5 : 18);
+    return tags.includes('jet') ? 98 : tags.includes('rotorcraft') ? 55 : tags.includes('drone') ? 29 : this.elevation(x, y) + (BUILDINGS[type] ? 28 : !this.game.map.future && this.modelEffectHeights?.has(type) ? this.modelEffectHeights.get(type) : type === 'tank' ? 21.3 : tags.includes('infantry') ? 15.5 : 18);
   }
 
   updateEffects() {
@@ -1300,7 +1301,8 @@ export class Renderer {
       const { entity, model, scale, sprite } = entry, ratio = clamp(entity.hp / entity.maxHp, 0, 1), hovered = this.hoveredId === entity.id, isSelected = selected.has(entity.id);
       const elapsed = Math.max(0, this.game.time - entry.healthAt); entry.healthAt = this.game.time;
       entry.healthEcho = Math.max(ratio, entry.healthEcho - elapsed * .24);
-      if (!showHealthBar(entity, model.visible, isSelected, hovered, this.game.time - (entity.lastDamageAt ?? -100) < 2)) continue;
+      const carrierLabel = entity.type === 'carrier' && entity.owner === 0 && model.visible ? carrierAirGroupLabel(this.game, entity) : '';
+      if (!showHealthBar(entity, model.visible, isSelected, hovered, this.game.time - (entity.lastDamageAt ?? -100) < 2) && !carrierLabel) continue;
       let screen;
       if (sprite) { screen = this.entityAnchor(entity); screen.y -= 7; }
       else screen = this.worldToScreen(entity.x, entity.y, model.position.y + (entry.displayTopHeight ?? entry.topHeight) + 9);
@@ -1309,7 +1311,7 @@ export class Renderer {
       const numeric = hovered || isSelected && selected.size === 1;
       const label = `${entity.owner !== 0 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
       const stance = entity.owner === 0 && isSelected && supportsCombatStance(entity) ? combatStance(entity) : 'free';
-      const status = entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : stance !== 'free' ? COMBAT_STANCES[stance].name : '';
+      const status = carrierLabel || (entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : stance !== 'free' ? COMBAT_STANCES[stance].name : '');
       ctx.font = '500 10px "Noto Sans SC",sans-serif';
       const vertical = entity.kind === 'unit';
       const width = Math.max(entity.kind === 'building' ? 76 : 22, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0, status ? Math.ceil(ctx.measureText(status).width) + 8 : 0);

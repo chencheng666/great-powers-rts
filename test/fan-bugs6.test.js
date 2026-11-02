@@ -78,9 +78,9 @@ test('舰艇反潜使用有航行时间的鱼雷，火箭四弹分摊整轮伤�
 });
 
 test('统一飞机机身比例、平滑起飞尺寸和海陆空计数，物流不计战力但乘员计入', () => {
-  assert.equal(airframeScale('fighter', 7, 10) * 7 / 3, airframeScale('navalFighter', 14, 10) * 14 / 3);
-  assert.equal(airframeScale('bomber', 14, 10) * 14, 168);
-  assert.equal(flightScaleFactor(0), 1 / 3); assert.equal(flightScaleFactor(95), 1);
+  assert.equal(airframeScale('fighter', 7, 10) * 7, airframeScale('navalFighter', 14, 10) * 14);
+  assert.equal(airframeScale('bomber', 14, 10) * 14, 126);
+  assert.equal(flightScaleFactor(0), 2 / 3); assert.equal(flightScaleFactor(95), 1);
   for (let h = 1; h <= 110; h++) assert.ok(flightScaleFactor(h) >= flightScaleFactor(h - 1) && flightScaleFactor(h) <= 1);
   assert.deepEqual(armyComposition([{ type: 'rifle', hp: 1, embarkedIn: 2 }, { type: 'fighter', hp: 1 }, { type: 'frigate', hp: 1 }, { type: 'freightPlane', hp: 1 }, { type: 'tank', hp: 0 }]), { total: 3, ground: 1, air: 1, naval: 1 });
   assert.notEqual(unitRole('jammer'), unitRole('laser')); assert.notEqual(unitRole('rocket'), unitRole('loiterer'));

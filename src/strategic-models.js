@@ -84,7 +84,8 @@ export function createStrategicModel(type) {
     const rotor=new THREE.Group();rotor.name='rotor_0_main';rotor.position.set(-.55,2.86,0);root.add(rotor);
     for(const angle of [0,Math.PI/2])box([11,.045,.22],dark,[0,0,0],[0,angle,0],rotor);
     const tailRotor=new THREE.Group();tailRotor.name='rotor_1_tail';tailRotor.userData.rotationAxis='z';tailRotor.position.set(-3.65,1.5,.3);root.add(tailRotor);
-    for(const angle of [0,Math.PI/2])box([1.4,.08,.04],metal,[0,0,0],[0,0,angle],tailRotor);
+    const tailBlade = new THREE.MeshStandardMaterial({ name:'尾旋翼黑色复合材料', color:'#161b1d', roughness:.94, metalness:.05 });
+    for(const angle of [0,Math.PI/2])box([1.4,.08,.04],tailBlade,[0,0,0],[0,0,angle],tailRotor);
     for(const side of [-1,1]) {
       box([2.4,.045,.06],metal,[.9,1.75,side*.58],[0,0,-.07]);
       for(let i=0;i<5;i++)box([.04,.3,.35],panels,[-.7-i*.23,2.21,side*1.2]);

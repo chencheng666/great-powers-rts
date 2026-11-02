@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeParts } from './model-craft.js';
 import { runwayAircraft } from './airfield-rules.js';
+import { aircraftGroundFactor } from './model-scale.js';
 
 const clamp = value => Math.max(0, Math.min(1, value));
 
@@ -11,9 +12,15 @@ export function fixedWingPresentation(type, future = false) {
 export function airfieldSurfaceHeight(game, entity, groundHeight) {
   const pavement = game.ownedBuildings?.(entity.owner, 'airfield').find(b => {
     const scale = b.size / 7.2, z = (entity.y - b.y) / scale;
-    return Math.abs(entity.x - b.x) <= 7.2 * scale && (Math.abs(z - 2.1) <= 1.1 || z >= 4.3 && z <= 13.6);
+    return Math.abs(entity.x - b.x) <= 7.2 * scale && z >= 1 && z <= 13.6;
   });
   return groundHeight + (pavement ? pavement.size / 7.2 * .5 : 0);
+}
+
+export function aircraftGroundHeight(game, entity, entry, groundHeight) {
+  const clearance = entry.model?.userData.groundClearance ?? entry.groundClearance;
+  const offset = clearance === undefined ? 4 : Math.max(0, clearance) * entry.scale * aircraftGroundFactor(entity.type) + .2;
+  return airfieldSurfaceHeight(game, entity, groundHeight) + offset;
 }
 
 export function glideProfile(distance, groundRadius) {
@@ -32,12 +39,11 @@ export function glideProfile(distance, groundRadius) {
 export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight) {
   if (!fixedWingPresentation(entity.type, game.map.future) || entity.deckApproach || entity.embarkedIn) return null;
   const grounded = game.aircraftGrounded(entity);
-  let groundOffset = entry.model?.userData.groundClearance ? entry.model.userData.groundClearance * entry.scale / 3 + .2 : 4;
-  if(entry.model?.userData.groundClearance){
-    // 跑道的可视铺装高于地形，轮胎接触面不能仍按裸地高度计算。
-    groundOffset += airfieldSurfaceHeight(game, entity, groundHeight) - groundHeight;
-  }
+  // 所有机型都须站在铺装表面上，不能仅为带起落架细节的机型抬高。
+  const groundOffset = aircraftGroundHeight(game, entity, entry, groundHeight) - groundHeight;
   if (entity.deployment) {
+    // 起飞队列已经接管离场，清掉停机标记，避免离开队列后再次从地面起飞。
+    entry.wasGrounded = false; entry.takeoffOrigin = null;
     const travel = Math.hypot(entity.x - entity.deployment.fromX, entity.y - entity.deployment.fromY);
     const fraction = clamp((travel - 45) / 110);
     return { height: groundHeight + groundOffset + (cruiseHeight - groundHeight - groundOffset) * fraction, pitch: fraction > 0 && fraction < 1 ? .08 : 0 };
@@ -72,6 +78,8 @@ export function refineAirfieldRunway(model) {
   part(pavement, [13.8, .07, 2.2], [0, .43, 2.1]);
   // 跑道外侧铺设六个斜列机位，位置与实际补给和滑行路径一致。
   part(pavement, [14.4, .06, 9.4], [0, .42, 8.9]);
+  // 机坪到跑道之间补齐连接铺装，滑行时接地高度保持一致。
+  part(pavement, [14.4, .06, 1.1], [0, .42, 3.7]);
   for (const x of [-5.625, 0, 5.625]) for (const z of [7.05, 12.4]) part(white, [2.7, .012, .055], [x, .46, z], Math.PI / 4);
   for (const z of [1.13, 3.07]) part(white, [13.2, .012, .04], [0, .475, z]);
   for (let x = -5.2; x <= 5.2; x += 1.3) part(white, [.62, .012, .06], [x, .479, 2.1]);

@@ -4,8 +4,15 @@
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
     {
+      "name": "packages/Great-Powers-RTS-v2.0.2-20261102.zip",
+      "label": "2.0.2 · 11月2日陆空比例修复 · 最新免安装离线 ZIP",
+      "size": 55409651,
+      "sha256": "2f7011e48d7a4a5c01837cc74b69885f9889e9c16a76e4ea44db5e340e855bc4",
+      "status": "陆空比例、黑色尾桨、补给机与运输机同外观同尺度、机场接地及起飞表现、航母载机数量显示；完整解压后打开PLAY.html。与本轮网页同构建，桌面安装包和商店版另行更新。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.2.zip",
-      "label": "2.0.2 · 指挥官征途 · 最新免安装离线 ZIP",
+      "label": "2.0.2 · 10月29日指挥官征途 · 历史离线 ZIP",
       "size": 56573006,
       "sha256": "db4967abbe0ac3db47147568e7ac0fef58ea198aa1abb6df3f21eb017a263479",
       "status": "成长目标、三款奖励涂装、先锋试炼、战报分享；灰谷入门、冒烟与命中特效、附图反馈。完整解压后打开PLAY.html，断网单机；联网时匿名统计，进度本机保存。"
@@ -299,10 +306,12 @@
     }
   ],
   "webReleaseTag": "v2.0.2",
-  "updatedAt": "2026-10-29T09:00:00+08:00",
+  "updatedAt": "2026-11-02T11:30:00+08:00",
   "archiveTags": [
     "v2.0.1",
     "v1.3.1",
     "v2.0.0"
-  ]
+  ],
+  "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261102.zip",
+  "webBuild": "20261102-land-air-scale"
 }

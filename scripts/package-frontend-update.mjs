@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 const root = resolve(import.meta.dirname, '..'), dist = join(root, 'dist');
 const release = process.argv[2];
 const sitePages = process.argv.includes('--site-pages');
+const offline = process.argv.includes('--offline');
 if (!/^[0-9A-Za-z-]+$/.test(release || '')) throw new Error('请提供合法的前端发布编号');
 const stage = await mkdtemp(join(tmpdir(), 'great-powers-frontend-'));
 try {
@@ -20,7 +21,18 @@ try {
     // 本轮仅改前端代码，媒体文件由哈希校验确认服务器已有，避免重复上传。
     if (/\.(js|css)$/.test(name)||/^official-.*\.(svg|png|webp)$/.test(name)||/^battle-library-[0-9A-Za-z_-]+\.glb$/.test(name)) await copyFile(join(dist, 'assets', name), join(stage, 'assets', name));
   }
-  const pages = ['index.html', ...(sitePages ? ['official/index.html', 'downloads/index.html'] : [])];
+  const pages = ['index.html', ...(sitePages ? ['official/index.html', 'downloads/index.html'] : []), ...(offline ? ['downloads/manifest.json'] : [])];
+  if (offline) {
+    const manifest = JSON.parse(await readFile(join(dist, 'downloads/manifest.json'), 'utf8'));
+    const file = manifest.files.find(f => f.name === manifest.offlineFile);
+    if (!file || !/^packages\/[0-9A-Za-z_.-]+\.zip$/.test(file.name)) throw new Error('离线包清单不合法');
+    const content = await readFile(join(root, 'public/downloads', file.name));
+    const digest = createHash('sha256').update(content).digest('hex');
+    if (digest !== file.sha256 || content.length !== file.size) throw new Error('离线包与清单不一致');
+    await mkdir(join(stage, 'downloads/packages'), { recursive: true });
+    await copyFile(join(root, 'public/downloads', file.name), join(stage, 'downloads', file.name));
+    checksums.push(`${digest}  downloads/${file.name}`);
+  }
   for (const page of pages) {
     const content = await readFile(join(dist, page));
     if (page !== 'index.html') {
