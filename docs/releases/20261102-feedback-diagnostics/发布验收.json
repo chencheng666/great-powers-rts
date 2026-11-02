@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-02",
+  "sourceCommit": "758b6c51b3f59dba2d0dad4b54228664e8388f89",
+  "build": "20261102-feedback-diagnostics-r2",
+  "release": "feedback-diagnostics-20261102-r2",
+  "tests": {
+    "fullSuitePass": 613,
+    "finalTargetedPass": 28,
+    "failed": 0
+  },
+  "publicPackage": {
+    "bytes": 55412479,
+    "sha256": "d4b773bba6d221531fd95130d5b6734a1a9ac75564606d1d99699ab98d80d2f5",
+    "fullDownloadMatches": true
+  },
+  "replies": {
+    "commentsSentAndReadBack": 2,
+    "privateMessagesSentAndReadBack": 1,
+    "startupEnvironmentStillNeedsInformation": true
+  },
+  "privacy": {
+    "rawPrivateMessagesCommitted": false,
+    "rawErrorMessagesUploaded": false,
+    "productionTestRecordsCreated": false,
+    "unauthenticatedDiagnosticsStatus": 401
+  },
+  "deployment": {
+    "battleProcessesRestarted": false,
+    "backendBuild": "20261031-fan-bugs6",
+    "desktopAndStoreRebuilt": false
+  }
+}
