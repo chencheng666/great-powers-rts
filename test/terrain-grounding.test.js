@@ -51,3 +51,14 @@ test('建筑地面过渡复用实例槽位，迷雾隐藏及拆除及时回收',
   assert.equal(renderer.foundationSlots.get(8), 0);
   mesh.geometry.dispose(); mesh.material.dispose();
 });
+
+test('树影直立接地并朝向太阳，旋转镜头不改变树影，迷雾下不泄露轮廓', () => {
+  const renderer = { elevation: () => 12, cameraElevation: Math.PI / 4, cameraAzimuth: .5, sun: { position: new THREE.Vector3(-1750,1850,-1050), target: { position: new THREE.Vector3() } } };
+  const point = { x: 40, z: 60, height: 50, width: 24, angle: .8 }, dummy = new THREE.Object3D();
+  Renderer.prototype.placeFoliage.call(renderer,dummy,point,'shadow',0,true);dummy.updateMatrix();
+  const matrix=dummy.matrix.clone();assert.equal(dummy.position.x,point.x);assert.equal(dummy.position.z,point.z);
+  assert.equal(dummy.position.y-dummy.scale.y/2,12);
+  const normal=new THREE.Vector3(0,0,1).applyQuaternion(dummy.quaternion);const light=renderer.sun.position.clone().setY(0).normalize();assert.ok(normal.dot(light)>.9999);
+  renderer.cameraElevation=.2;renderer.cameraAzimuth=2.4;Renderer.prototype.placeFoliage.call(renderer,dummy,point,'shadow',0,true);dummy.updateMatrix();assert.ok(matrix.equals(dummy.matrix));
+  Renderer.prototype.placeFoliage.call(renderer,dummy,point,'shadow',0,false);assert.equal(dummy.scale.x,0);assert.equal(dummy.scale.y,0);
+});

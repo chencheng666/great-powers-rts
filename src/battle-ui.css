@@ -1,0 +1,12 @@
+#battlefield>.battle-hud.top-left,.camera-tools{transform:scale(var(--battle-ui-scale,1));transform-origin:top left}
+#battlefield>.battle-hud.top-left[hidden],.camera-tools[hidden]{display:none!important}
+.battle-ui-panel{position:absolute;z-index:20;top:66px;right:12px;width:min(300px,calc(100vw - 24px));padding:16px;background:#14252bf5;border:1px solid #6b8d84;box-shadow:0 12px 32px #0008;border-radius:12px;color:#dce9df}
+.battle-ui-panel[hidden]{display:none}
+.battle-ui-panel header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.battle-ui-panel label{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;font-size:13px}
+.battle-ui-panel input[type=checkbox]{width:20px;height:20px;accent-color:#71c3a6}
+.battle-ui-panel .battle-ui-scale{display:grid;grid-template-columns:1fr auto;margin:8px 0}
+.battle-ui-scale input{grid-column:1/-1;width:100%;accent-color:#71c3a6;min-height:28px}
+.battle-ui-panel p{font-size:12px;line-height:1.6;color:#a9beb4;margin:12px 0}
+.battle-ui-panel .secondary-btn{min-height:44px;width:100%}
+@media(max-width:700px),(pointer:coarse) and (max-width:1000px){.battle-ui-panel{top:66px}.battle-ui-panel .icon-btn{min-width:44px;min-height:44px}.battle-ui-panel label:has(:disabled){opacity:.55}}

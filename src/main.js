@@ -5,6 +5,9 @@ import { setupTutorial } from './tutorial-ui.js';
 import './growth-ui.js';
 import './feedback-ui.js';
 import { setupMenuVideo } from './background-video.js';
+import { setupBattleUI } from './battle-ui.js';
+import { errorDetail } from './client-diagnostics.js';
+import './battle-ui.css';
 import { CommanderLoyalty, SANDBOX_FUNDS, applySandbox, canUseSandbox, sandboxSpeed } from './commander-sandbox.js';
 import { PlayerTelemetry } from './player-telemetry.js';
 import { GAME_VERSION, BUILD_ID } from './version.js';
@@ -69,6 +72,7 @@ import { lifelinePanelHTML } from './lifeline-ui.js';
 import { loadChallengeThumbnails } from './challenge-thumbnails.js';
 
 setupMenuVideo();
+setupBattleUI();
 const updateBattleTutorial = setupTutorial();
 const loyalty = new CommanderLoyalty(localStorage);
 let sandboxNoticePending = false;
@@ -412,7 +416,7 @@ function advanceFrame(now, token) {
 }
 
 function handleBattleFailure(error, retry = {}) {
-  playerTelemetry.error('render');
+  playerTelemetry.error('render', errorDetail(error, { stage: retry.startup ? 'startup' : 'frame' }));
   if (state.renderFailure) return;
   ++state.loopToken;
   state.renderFailure = retry;

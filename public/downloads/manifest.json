@@ -4,8 +4,15 @@
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
     {
+      "name": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback.zip",
+      "label": "2.0.2 · 11月2日界面与稳定性修复 · 最新免安装离线 ZIP",
+      "size": 55412400,
+      "sha256": "71b48527a8640421649e99430b7a41ead9e401baadf5a1bf211e8cb8d07e8e70",
+      "status": "包含本日陆空比例修复；新增战区提示和镜头工具的隐藏、恢复及桌面缩放，修正树影随镜头漂移，背景视频失败可重试，日志定位脱敏增强。完整解压后打开PLAY.html；桌面安装包和商店版另行更新。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.2-20261102.zip",
-      "label": "2.0.2 · 11月2日陆空比例修复 · 最新免安装离线 ZIP",
+      "label": "2.0.2 · 11月2日陆空比例修复 · 历史离线 ZIP",
       "size": 55409651,
       "sha256": "2f7011e48d7a4a5c01837cc74b69885f9889e9c16a76e4ea44db5e340e855bc4",
       "status": "陆空比例、黑色尾桨、补给机与运输机同外观同尺度、机场接地及起飞表现、航母载机数量显示；完整解压后打开PLAY.html。与本轮网页同构建，桌面安装包和商店版另行更新。"
@@ -306,12 +313,12 @@
     }
   ],
   "webReleaseTag": "v2.0.2",
-  "updatedAt": "2026-11-02T11:30:00+08:00",
+  "updatedAt": "2026-11-02T11:55:00+08:00",
   "archiveTags": [
     "v2.0.1",
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261102.zip",
-  "webBuild": "20261102-land-air-scale"
+  "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback.zip",
+  "webBuild": "20261102-feedback-diagnostics"
 }

@@ -1,4 +1,5 @@
 import { entrySource } from './growth-rewards.js';
+import { errorDetail, resourceDetail } from './client-diagnostics.js';
 const sessionId = environment => environment.crypto?.randomUUID?.() || `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,14)}`;
 export function telemetryContext(game) {
   if (!game) return null;
@@ -20,13 +21,12 @@ export class PlayerTelemetry {
     this.onPageShow = event => { if(event.persisted){this.sessionId=sessionId(environment);this.seq=0;this.activeMs=0;this.lastFrame=now();this.flush();} };
     environment.addEventListener('pageshow',this.onPageShow);
     this.onError = event => {
-      const resource = event.target && event.target !== environment;
-      const source = resource ? event.target?.src || event.target?.href : event.filename;
-      let file = ''; try { const url = new URL(source, environment.location?.href); if (url.origin === environment.location?.origin) file = url.pathname.split('/').pop().replace(/[^A-Za-z0-9._-]/g, '').slice(0, 80); } catch { /* 不上报未知来源。 */ }
-      const name = ['Error','TypeError','ReferenceError','RangeError','SyntaxError'].includes(event.error?.name) ? event.error.name : '';
-      this.error(resource ? 'resource' : 'script', [name, file, Number.isInteger(event.lineno) ? `line:${event.lineno}` : ''].filter(Boolean).join(' '));
+      if (event.target && event.target !== environment) {
+        const detail = resourceDetail(event.target, environment);
+        if (detail) this.error('resource', detail);
+      } else this.error('script', errorDetail(event.error, { environment, filename: event.filename, line: event.lineno, column: event.colno }));
     };
-    this.onRejection = () => this.error('script', 'UnhandledPromiseRejection');
+    this.onRejection = event => this.error('script', errorDetail(event.reason, { environment, stage: 'rejection' }));
     environment.addEventListener('unhandledrejection', this.onRejection);
     environment.addEventListener('error',this.onError,true);
     this.lastErrors = new Map();

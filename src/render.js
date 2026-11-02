@@ -479,17 +479,28 @@ export class Renderer {
       const sides = this.track(new THREE.MeshStandardMaterial({ map: texture, color: '#819078', alphaTest: .18, side: THREE.DoubleSide, roughness: 1, metalness: 0 }));
       transforms.forEach(point => { point.height = point.scale * 6.5; point.width = point.height * texture.image.width / texture.image.height; });
       for (const [foliage, angle] of [['billboard', 0], ['volume', -.58], ['volume', .58]]) {
-        const mesh = new THREE.InstancedMesh(geometry, foliage === 'billboard' ? face : sides, transforms.length); mesh.castShadow = true; mesh.receiveShadow = true; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        const mesh = new THREE.InstancedMesh(geometry, foliage === 'billboard' ? face : sides, transforms.length); mesh.castShadow = false; mesh.receiveShadow = true; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         transforms.forEach((point, index) => { this.placeFoliage(dummy, point, foliage, angle, true); dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix); });
         this.scene.add(mesh); this.environment.push({ mesh, transforms, foliage, angle });
       }
+      // 镜头朝向的贴片只负责树冠画面，投影使用独立直立面，避免转动镜头后树影方向漂移。
+      const shadowMaterial = this.track(new THREE.MeshBasicMaterial({ map: texture, alphaTest: .18, side: THREE.DoubleSide, colorWrite: false, depthWrite: false }));
+      const shadow = new THREE.InstancedMesh(geometry, shadowMaterial, transforms.length);
+      shadow.customDepthMaterial = this.track(new THREE.MeshDepthMaterial({ map: texture, alphaTest: .18, side: THREE.DoubleSide, depthPacking: THREE.RGBADepthPacking }));
+      shadow.name = '树木太阳投影'; shadow.castShadow = true; shadow.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      transforms.forEach((point, index) => { this.placeFoliage(dummy, point, 'shadow', 0, true); dummy.updateMatrix(); shadow.setMatrixAt(index, dummy.matrix); });
+      this.scene.add(shadow); this.environment.push({ mesh: shadow, transforms, foliage: 'shadow', angle: 0 });
     }
     this.updateFoliageLayers();
   }
 
   placeFoliage(dummy, point, foliage, angle, known) {
     const ground = this.elevation(point.x, point.z);
-    if (foliage === 'billboard') {
+    if (foliage === 'shadow') {
+      const yaw = Math.atan2(this.sun.position.x - this.sun.target.position.x, this.sun.position.z - this.sun.target.position.z);
+      dummy.position.set(point.x, ground + point.height / 2, point.z);
+      dummy.rotation.set(0, yaw, 0); dummy.scale.set(known ? point.width : 0, known ? point.height : 0, 1);
+    } else if (foliage === 'billboard') {
       const yaw = this.cameraAzimuth || 0, offset = point.height * Math.sin(this.cameraElevation) / 2;
       dummy.position.set(point.x - Math.sin(yaw) * offset, ground + point.height * Math.cos(this.cameraElevation) / 2, point.z - Math.cos(yaw) * offset);
       dummy.rotation.set(-this.cameraElevation, yaw, 0, 'YXZ');

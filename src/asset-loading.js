@@ -20,7 +20,9 @@ export function createAssetLoader({ concurrency = 4, attempts = 3, wait = ms => 
       }
     }
     const file = url.split('/').pop().split('?')[0];
-    throw new Error(`${file}：${cause?.message || '网络中断或图片解码失败，请检查连接后重试'}`, { cause });
+    const error = new Error(`${file}：${cause?.message || '网络中断或图片解码失败，请检查连接后重试'}`, { cause });
+    error.assetFile = file;
+    throw error;
   };
 }
 export const loadAsset = createAssetLoader();
