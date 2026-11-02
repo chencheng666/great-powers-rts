@@ -44,3 +44,13 @@ test('真实客户端错误监听只发送脱敏定位，取消背景不产生�
   assert.match(requests.filter(r=>r.error==='script').at(-1).errorDetail,/stage:rejection render.js:10:4/);
   assert.ok(!JSON.stringify(requests).includes('private'));assert.ok(!JSON.stringify(requests).includes('私信'));client.destroy();
 });
+
+test('背景视频与关键模型故障分别记录，重复去重且每分钟内存和上报均有界',async()=>{
+  const {PlayerTelemetry}=await import('../src/player-telemetry.js');const requests=[];let now=0;
+  const env={location:new URL('https://example.test/play/'),document:{hidden:false,addEventListener(){},removeEventListener(){}},crypto:{randomUUID:()=> 'bounded-diagnostic-session'},navigator:{},setInterval:()=>1,clearInterval(){},addEventListener(){},removeEventListener(){},fetch:async(url,options)=>{requests.push(JSON.parse(options.body));return{ok:true}}};
+  const c=new PlayerTelemetry({environment:env,now:()=>now});
+  c.error('resource','MenuVideoError movie.mp4 media:2');c.error('resource','Error stage:startup battle-library.glb');c.error('resource','Error stage:startup battle-library.glb');
+  for(let i=0;i<200;i++)c.error('resource',`AssetError image${i}.png`);
+  await c.flush();assert.equal(requests.filter(r=>r.error).length,8);assert.equal(c.lastErrors.size,8);assert.ok(requests.some(r=>r.errorDetail?.includes('stage:startup')));
+  now=60001;c.error('resource','Error stage:startup battle-library.glb');await c.flush();assert.equal(requests.filter(r=>r.error).length,9);assert.equal(c.lastErrors.size,1);c.destroy();
+});

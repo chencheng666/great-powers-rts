@@ -4,8 +4,15 @@
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
     {
+      "name": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback-r2.zip",
+      "label": "2.0.2 · 11月2日界面与故障定位修复 · 最新免安装离线 ZIP",
+      "size": 55412479,
+      "sha256": "d4b773bba6d221531fd95130d5b6734a1a9ac75564606d1d99699ab98d80d2f5",
+      "status": "包含本日陆空比例、界面隐藏和桌面缩放、树影与视频重试修复；补齐启动阶段错误定位，同类不同故障分别去重且每分钟最多8类。仅上报脱敏标识；桌面安装包与商店版另行更新。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback.zip",
-      "label": "2.0.2 · 11月2日界面与稳定性修复 · 最新免安装离线 ZIP",
+      "label": "2.0.2 · 11月2日界面与稳定性修复 · 历史离线 ZIP",
       "size": 55412400,
       "sha256": "71b48527a8640421649e99430b7a41ead9e401baadf5a1bf211e8cb8d07e8e70",
       "status": "包含本日陆空比例修复；新增战区提示和镜头工具的隐藏、恢复及桌面缩放，修正树影随镜头漂移，背景视频失败可重试，日志定位脱敏增强。完整解压后打开PLAY.html；桌面安装包和商店版另行更新。"
@@ -313,12 +320,12 @@
     }
   ],
   "webReleaseTag": "v2.0.2",
-  "updatedAt": "2026-11-02T11:55:00+08:00",
+  "updatedAt": "2026-11-02T12:00:00+08:00",
   "archiveTags": [
     "v2.0.1",
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback.zip",
-  "webBuild": "20261102-feedback-diagnostics"
+  "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback-r2.zip",
+  "webBuild": "20261102-feedback-diagnostics-r2"
 }

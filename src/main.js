@@ -288,6 +288,7 @@ async function deployGame(save = null, onlinePayload = null) {
   try {
     await prepareRenderer();
   } catch (error) {
+    playerTelemetry.error('resource', errorDetail(error, { stage: 'startup' }));
     toast(`战场素材载入失败：${error.message}`, true);
     button.disabled = false;
     state.loading = false;

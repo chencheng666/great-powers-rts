@@ -43,7 +43,14 @@ export class PlayerTelemetry {
     this.context = context; this.playing = playing;
     if (changed) this.flush();
   }
-  error(kind, detail = '') { if(!this.enabled)return;const now=this.now();if(now-(this.lastErrors.get(kind)??-Infinity)<60000)return;this.lastErrors.set(kind,now);this.flush({ error: kind, errorDetail: detail }); }
+  error(kind, detail = '') {
+    if (!this.enabled) return;
+    const now = this.now(), key = `${kind}:${detail}`;
+    for (const [seen, at] of this.lastErrors) if (now - at >= 60000) this.lastErrors.delete(seen);
+    // 同一故障一分钟只报一次，最多八个指纹；非关键视频不能遮住随后发生的模型加载故障。
+    if (this.lastErrors.has(key) || this.lastErrors.size >= 8) return;
+    this.lastErrors.set(key, now); this.flush({ error: kind, errorDetail: detail });
+  }
   flush({ closed = false, beacon = false, error, errorDetail } = {}) {
     if (!this.enabled || !beacon && this.pending >= 64) return Promise.resolve(false);
     const body = JSON.stringify({ sessionId: this.sessionId, seq: ++this.seq, activeMs: Math.floor(this.activeMs), name: this.name, context: this.context, playing: this.playing, visible: !this.env.document.hidden, entry: this.entry, version: this.version, source: this.source, closed, error, errorDetail });
