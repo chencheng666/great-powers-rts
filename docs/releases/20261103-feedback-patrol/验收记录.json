@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "bac769f3822cf0cefca6b114cab918c114b4d541",
+  "build": "20261103-patrol-guide-r1",
+  "tests": {
+    "total": 625,
+    "passed": 625
+  },
+  "published": true,
+  "publicEntry": "/assets/index-CCQYQ5II.js",
+  "zip": {
+    "status": 200,
+    "size": 55413967,
+    "sha256": "eab1073f7f05a2d6680d00aa69d0b7307202692432ec25a2a72c5f0f8a50224a"
+  },
+  "databaseIntegrity": "6个数据库全部ok，逐表计数未减少",
+  "wechat": {
+    "draftId": "100000834",
+    "images": 6,
+    "imageLoadPassed": true,
+    "published": false
+  },
+  "limits": [
+    "桌面安装包和商店包未重建",
+    "首次公网模型加载仍可能耗时较长"
+  ]
+}
