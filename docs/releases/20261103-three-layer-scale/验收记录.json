@@ -258,8 +258,109 @@
   "offlineBytes": 55413303,
   "offlineSha256": "a4b550507cd5e74c6075a185f045a647eff17c397255dc647ccf118fe8dd6406",
   "publication": {
-    "github": false,
-    "server": false,
-    "publicAcceptance": false
+    "github": true,
+    "server": true,
+    "publicAcceptance": true,
+    "sourceCommit": "d78096c7cbf62d5c797f4f50c7460e9deef0612a",
+    "release": "https://github.com/chencheng666/great-powers-rts/releases/tag/web-scale-20261103",
+    "githubAssetDigestMatches": true,
+    "archiveSha256": "500018b99803ab2e6f52358180ba7a45104d39d576eaea763cca08fedc281aff",
+    "serverBeforePids": {
+      "main": 655917,
+      "six": 655918
+    },
+    "serverDataDirectories": [
+      "/var/lib/great-powers-domestic/main",
+      "/var/lib/great-powers-domestic/six"
+    ],
+    "releaseId": "scale-20261103-r2",
+    "publicHttp": {
+      "report": [
+        {
+          "path": "/",
+          "status": 200,
+          "cache": "no-cache"
+        },
+        {
+          "path": "/play/",
+          "status": 200,
+          "cache": "no-cache"
+        },
+        {
+          "path": "/candidate/",
+          "status": 200,
+          "cache": "no-cache"
+        },
+        {
+          "path": "/downloads/index.html",
+          "status": 200,
+          "cache": "no-cache"
+        },
+        {
+          "path": "/downloads/manifest.json",
+          "status": 200,
+          "cache": "no-store"
+        },
+        {
+          "path": "/utools/privacy/index.html",
+          "status": 200,
+          "cache": "no-cache"
+        },
+        {
+          "path": "/api/health",
+          "status": 200,
+          "cache": "no-store"
+        },
+        {
+          "path": "/candidate/api/health",
+          "status": 200,
+          "cache": "no-store"
+        },
+        {
+          "path": "/resume/",
+          "status": 200,
+          "cache": null
+        }
+      ],
+      "entry": "/assets/index-DSQIGL28.js",
+      "frontendBuild": "20261103-three-layer-scale-r1",
+      "privacyShaMatches": true,
+      "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261103-scale.zip",
+      "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs"
+    },
+    "publicDownloads": [
+      {
+        "status": "fulfilled",
+        "value": {
+          "name": "Great-Powers-RTS-v2.0.2-20261103-scale.zip",
+          "status": 200,
+          "bytes": 55413303,
+          "sha256": "a4b550507cd5e74c6075a185f045a647eff17c397255dc647ccf118fe8dd6406",
+          "seconds": 285.72
+        }
+      },
+      {
+        "status": "fulfilled",
+        "value": {
+          "name": "Great-Powers-RTS-v2.0.2-utools-market.upxs",
+          "status": 200,
+          "bytes": 18308236,
+          "sha256": "b1a997a41dae25d60a84440da980fb9a3adcdd86e2b22d83f3718200a2808341",
+          "seconds": 73.065
+        }
+      }
+    ],
+    "publicPlay": {
+      "zoom": "100%",
+      "units": "9陆 9 · 空 0 · 海 0",
+      "credits": "5,000",
+      "scriptErrors": [],
+      "brokenImages": 0
+    },
+    "serverPidsUnchanged": true,
+    "backup": "/opt/great-powers/frontend-backups/scale-20261103-r2",
+    "nginxPrivacyRouteVerified": true,
+    "publicStorageRestored": true,
+    "previousZipPreserved": true
   }
 }
