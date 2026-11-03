@@ -1,0 +1,12 @@
+{
+  "title": "钢铁洪流",
+  "bpm": 132,
+  "seconds": 58.18181818181818,
+  "pcmBytes": 10263272,
+  "wavBytes": 10263316,
+  "flacBytes": 4515187,
+  "aacBytes": 892097,
+  "flacLosslessRoundtrip": true,
+  "aacIsLossy": true,
+  "aacSHA256": "51000c1b9d8182e23b174bfbf05fa6be7d5d92ee2f7f941afe51caab0d1a229a"
+}

@@ -15,6 +15,7 @@ if not re.fullmatch(r'[0-9A-Za-z-]+', release):
 if subprocess.check_output(['git', 'diff', '--name-only', 'HEAD'], cwd=root, text=True).strip():
     raise SystemExit('请先提交本轮代码，确保构建与提交可对应')
 include_offline = '--offline' in sys.argv[2:]
+include_media = {v.split('=',1)[1] for v in sys.argv[2:] if v.startswith('--media=')}
 dist = root / 'dist'
 if not (dist / 'index.html').is_file():
     raise SystemExit('请先构建网页')
@@ -39,9 +40,11 @@ if include_offline:
         raise SystemExit('离线包大小或摘要与清单不一致')
     paths.append(offline)
 media = {'.glb', '.wav', '.mp3', '.m4a', '.mp4', '.webm', '.png', '.jpg', '.jpeg', '.webp'}
+if include_media - set(files):
+    raise SystemExit('指定媒体不在构建清单中')
 for relative in files:
     path = dist / relative
-    if (relative.startswith('assets/') or relative.startswith('official/assets/')) and path.suffix.lower() in media:
+    if (relative.startswith('assets/') or relative.startswith('official/assets/')) and path.suffix.lower() in media and relative not in include_media:
         continue
     paths.append(path)
 folder = root / 'releases' / release

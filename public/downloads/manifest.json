@@ -1,8 +1,78 @@
 {
-  "version": "2.0.2",
-  "releaseTag": "v2.0.2",
+  "version": "2.0.3",
+  "releaseTag": "v2.0.3",
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
+    {
+      "name": "packages/Great-Powers-RTS-v2.0.3.zip",
+      "label": "2.0.3 · 原创配乐与生产数量提示 · 免安装离线 ZIP",
+      "size": 54946347,
+      "sha256": "e2412cbf12ecfca6d6af441ef90ae4b85109c5958063f18104a635259608059b",
+      "status": "新版原创配乐、右侧实时生产倒计时与各型号数量、人员与车辆分项及零员提醒、就绪提示上移；ZIP无需安装，桌面更新检查仅在2.0.3桌面安装包提供。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.3/Great.Powers_2.0.3_aarch64.app.tar.gz",
+      "label": "2.0.3 · macOS Apple Silicon · Great.Powers_2.0.3_aarch64.app.tar.gz",
+      "size": 81253885,
+      "sha256": "424accdfe70d53590c7d7225e362528aadb99c66fb832196a8b11534010ced59",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.3/Great.Powers_2.0.3_aarch64.AppImage",
+      "label": "2.0.3 · Linux ARM64 · Great.Powers_2.0.3_aarch64.AppImage",
+      "size": 157825544,
+      "sha256": "074e6d505a58d40d46161f28700d43a297898a6886f3308169194c98e39e66b0",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.3/Great.Powers_2.0.3_aarch64.dmg",
+      "label": "2.0.3 · macOS Apple Silicon · Great.Powers_2.0.3_aarch64.dmg",
+      "size": 81356462,
+      "sha256": "14841c341a7fb3b781e3d9024a51f2eb14fbe31228247e7dcbcc484a3d180663",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.3/Great.Powers_2.0.3_amd64.AppImage",
+      "label": "2.0.3 · Linux x64 · Great.Powers_2.0.3_amd64.AppImage",
+      "size": 159652344,
+      "sha256": "4c36fd954ff3e2062bfdb8581cf823369229cfa3039594abb1b6e731327e4ccf",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.3/Great.Powers_2.0.3_amd64.deb",
+      "label": "2.0.3 · Linux x64 · Great.Powers_2.0.3_amd64.deb",
+      "size": 81280132,
+      "sha256": "5330ca9e7f24baacd50ca29bd470233c98adab8fcef50ec48a558ab6580d4482",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.3/Great.Powers_2.0.3_arm64.deb",
+      "label": "2.0.3 · Linux ARM64 · Great.Powers_2.0.3_arm64.deb",
+      "size": 81328624,
+      "sha256": "343d97da916c635cfaeb3b84e49d8c636c6d3f74ec3173cfc7d14359d85a4098",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.3/Great.Powers_2.0.3_x64-setup.exe",
+      "label": "2.0.3 · Windows x64 · Great.Powers_2.0.3_x64-setup.exe",
+      "size": 298481888,
+      "sha256": "5df78797cbda11a4d8c4686b482074034b5e9dace89723a2f3dad85d904262e0",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.3/Great.Powers_2.0.3_x64.app.tar.gz",
+      "label": "2.0.3 · macOS Intel · Great.Powers_2.0.3_x64.app.tar.gz",
+      "size": 81912453,
+      "sha256": "5259da3cbd2676073604c9e4774d0b9e93bac84dd1c818ddb0f6defac04b44e4",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v2.0.3/Great.Powers_2.0.3_x64.dmg",
+      "label": "2.0.3 · macOS Intel · Great.Powers_2.0.3_x64.dmg",
+      "size": 81997960,
+      "sha256": "e54d8d3a5980b65945b9089021911ad6fa032810dc667f8c84576bc5d371d8b2",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
     {
       "name": "packages/Great-Powers-RTS-v2.0.2-20261103-patrol.zip",
       "label": "2.0.2 · 11月3日 · 巡逻修复与直达教学 · 免安装离线 ZIP",
@@ -343,11 +413,12 @@
   "webReleaseTag": "v2.0.2",
   "updatedAt": "2026-11-02T12:00:00+08:00",
   "archiveTags": [
+    "v2.0.2",
     "v2.0.1",
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261103-patrol.zip",
+  "offlineFile": "packages/Great-Powers-RTS-v2.0.3.zip",
   "webBuild": "20261102-feedback-diagnostics-r2",
   "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs"
 }
