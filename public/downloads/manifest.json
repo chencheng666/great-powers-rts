@@ -4,6 +4,13 @@
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
     {
+      "name": "packages/Great-Powers-RTS-v2.0.2-20261103-scale.zip",
+      "label": "2.0.2 · 11月3日三层比例与人物辨识 · 最新免安装离线 ZIP",
+      "size": 55413303,
+      "sha256": "a4b550507cd5e74c6075a185f045a647eff17c397255dc647ccf118fe8dd6406",
+      "status": "按100%镜头重新校准人物、坦克和陆基飞机；运输机与补给机缩小，高低空分层，人物增大并增强头盔、背心和阵营识别。完整解压后打开PLAY.html；桌面安装包与商店包仍以各自版本说明为准。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs",
       "label": "2.0.2 · uTools 商店精简版 · UPXS 安装包（18.3MB）",
       "size": 18308236,
@@ -11,15 +18,15 @@
       "status": "完整单机玩法、全部146段语音；压缩背景与贴图以符合市场20MB限制。本机macOS + uTools 7.8验收，商店审核状态以平台为准，Windows/Linux待更多环境验证；不自动上传玩家统计。"
     },
     {
-      "name": "packages/Great-Powers-RTS-v2.0.2-utools.upxs",
-      "label": "2.0.2 · uTools 插件应用 · UPXS 安装包",
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/utools-v2.0.2/Great-Powers-RTS-v2.0.2-utools.upxs",
+      "label": "2.0.2 · uTools 原始候选大包 · 历史文件",
       "size": 53610604,
       "sha256": "69fb6951b01de3c0c8a27e8e746656c903dab3f3f9b1bf00241fca3460dc0436",
-      "status": "独立窗口离线单机，内置资源、挑战、成长记录与存档导入导出；本机macOS + uTools 7.8已检查开局、暂停、导出与读档。市场状态以审核结果为准，Windows/Linux待更多环境验证；本插件不自动上传玩家统计。"
+      "status": "原始53.6MB候选包，超出市场20MB限制且未送审；建议选择18.3MB商店精简包。原文件保留于GitHub，内容不包含11月3日比例调整。"
     },
     {
       "name": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback-r2.zip",
-      "label": "2.0.2 · 11月2日界面与故障定位修复 · 最新免安装离线 ZIP",
+      "label": "2.0.2 · 11月2日界面与故障定位修复 · 历史免安装离线 ZIP",
       "size": 55412479,
       "sha256": "d4b773bba6d221531fd95130d5b6734a1a9ac75564606d1d99699ab98d80d2f5",
       "status": "包含本日陆空比例、界面隐藏和桌面缩放、树影与视频重试修复；补齐启动阶段错误定位，同类不同故障分别去重且每分钟最多8类。仅上报脱敏标识；桌面安装包与商店版另行更新。"
@@ -340,7 +347,7 @@
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback-r2.zip",
+  "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261103-scale.zip",
   "webBuild": "20261102-feedback-diagnostics-r2",
   "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs"
 }

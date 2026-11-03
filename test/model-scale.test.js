@@ -6,7 +6,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createChineseTank } from '../src/domestic-models.js';
 import { createModernAircraft, createTandemTransport } from '../src/aircraft-models.js';
 import { createStrategicModel } from '../src/strategic-models.js';
-import { unitModelScale, flightScaleFactor } from '../src/model-scale.js';
+import { unitModelScale, flightScaleFactor, aircraftCruiseHeight, PERSONNEL_HEIGHT } from '../src/model-scale.js';
+import { createPersonnel } from '../src/personnel-models.js';
 import { equipmentModel } from '../src/equipment.js';
 import { aircraftGroundHeight, airfieldSurfaceHeight, fixedWingHeight } from '../src/airfield-presentation.js';
 import { carrierAirGroupLabel } from '../src/carrier-airgroup.js';
@@ -25,13 +26,31 @@ test('用真实模型校验陆地坦克、直升机、战斗机、轰炸机和�
     model.scale.setScalar(scale*(type==='tank'?1:flightScaleFactor(0,type)));
     grounded[type]=size(model).x;
     if(type!=='tank'){
-      model.scale.setScalar(scale*flightScaleFactor(95,type));close(size(model).x/grounded[type],1.5);
+      model.scale.setScalar(scale*flightScaleFactor(95,type));close(size(model).x/grounded[type],1.25);
     }
   }
-  for(const [type,ratio] of Object.entries({helicopter:.6,fighter:1,bomber:1.5,airlift:4}))close(grounded[type]/grounded.tank,ratio/.5);
+  for(const [type,ratio] of Object.entries({helicopter:.6,fighter:1,bomber:1.5,airlift:2}))close(grounded[type]/grounded.tank,ratio/.5);
   close(flightScaleFactor(0,'navalFighter'),1/3);
   close(unitModelScale('tank',size(models.tank),10,true),10);
   for(const type of ['fighter','bomber','airlift','helicopter'])for(let h=1;h<=100;h++)assert.ok(flightScaleFactor(h,type)>=flightScaleFactor(h-1,type));
+});
+
+test('100%镜头基准下人物约为参考坦克高度的73%，运输机空中长度有明确上限',()=>{
+  const tank=createChineseTank(),person=createPersonnel('rifle'),transport=createModernAircraft('airlift');
+  for(const [type,model]of [['tank',tank],['rifle',person],['airlift',transport]])model.scale.setScalar(unitModelScale(type,size(model),10));
+  assert.ok(Math.abs(size(person).y/size(tank).y-1.75/2.4)<.002);
+  close(size(person).y,PERSONNEL_HEIGHT);assert.ok(size(person).y>9);
+  close(size(tank).x,36);assert.ok(size(transport).x<=180.001);
+  for(const type of ['engineer','scout','evacuee']){const model=createPersonnel(type);close(unitModelScale(type,size(model),10)*size(model).y,PERSONNEL_HEIGHT);}
+});
+
+test('三层高度区分地面、低空旋翼和高空固定翼，运输机与补给机保持一致',()=>{
+  const drone=aircraftCruiseHeight('drone',['drone','air']),rotor=aircraftCruiseHeight('helicopter',['rotorcraft','air']);
+  assert.ok(drone>15&&drone<rotor);assert.ok(rotor<aircraftCruiseHeight('fighter',['jet','air']));
+  assert.ok(aircraftCruiseHeight('fighter')<aircraftCruiseHeight('bomber'));assert.ok(aircraftCruiseHeight('bomber')<aircraftCruiseHeight('airlift'));
+  close(aircraftCruiseHeight('airlift'),aircraftCruiseHeight('freightPlane'));
+  close(aircraftCruiseHeight('airlift',['jet','air'],false,true),rotor);
+  close(aircraftCruiseHeight('navalFighter'),95);close(aircraftCruiseHeight('fighter',['jet'],true),95);
 });
 
 test('五个阵营的货运机与运输机共用外观和空中尺度，月面保留独立造型',()=>{

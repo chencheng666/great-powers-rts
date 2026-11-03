@@ -10,7 +10,7 @@ export function createPersonnel(type, { distant = false } = {}) {
   const spy = type === 'scout', engineer = type === 'engineer' || type === 'evacuee';
   const fabric = craftedMaterial(spy ? '黑色西装' : '作战服', spy ? '#11151a' : type === 'evacuee' ? '#d6a56c' : engineer ? '#8b957b' : '#b1b99a', spy ? 'fabric' : 'uniform', .95, 0);
   const dark = craftedMaterial('皮革与橡胶', '#252b2d', 'rubber', .87, 0);
-  const armor = craftedMaterial('携行具', '#485549', 'fabric', .9, 0);
+  const armor = craftedMaterial('携行具', '#b4aa87', 'fabric', .9, 0);
   const steel = craftedMaterial('武器金属', '#677176', 'coating', .5, .65);
   const skin = new THREE.MeshStandardMaterial({ name: '皮肤', color: '#bb937c', roughness: .85 });
   const shirt = craftedMaterial('衬衣与工程护具', engineer ? '#b59d62' : '#f0f2ef', 'fabric', .92, 0);
@@ -66,7 +66,7 @@ export function createPersonnel(type, { distant = false } = {}) {
     limb(arm, fabric, shoulder, elbow, .066); limb(arm, fabric, elbow, hand, .055);
     sphere(arm, spy ? skin : dark, hand, .049, [.85,.8,1]);
     if (!spy) {
-      box(group, team, [.02,1.405,side*.32], [.04,.065,.006]);
+      box(group, team, [.02,1.405,side*.32], [.075,.105,.009]);
       box(group, armor, [-.002,1.30,side*.287], [.07,.09,.028]);
     }
   }
@@ -83,6 +83,8 @@ export function createPersonnel(type, { distant = false } = {}) {
   } else {
     const helmet = mesh(group, new THREE.SphereGeometry(.14,distant ? 6 : 20,distant ? 4 : 12,0,Math.PI*2,0,Math.PI*.59), engineer ? shirt : armor, [0,1.79,0]); helmet.scale.set(1,.82,1.02);
     const rim = mesh(group, new THREE.TorusGeometry(.137,.009,distant ? 3 : 6,distant ? 8 : 28), dark, [0,1.783,0], [Math.PI/2,0,0]); rim.scale.y=1.02;
+    // 顶视镜头能看到的识别带与肩章共用材质，合批后不增加人物绘制批次。
+    box(group, team, [-.01,1.903,0], [.13,.012,.045]);
     for (const side of [-1,1]) {
       limb(group, dark, [-.015,1.77,side*.115], [.08,1.64,side*.048], .007);
       box(group, armor, [.105,1.31,side*.135], [.05,.37,.055], [0,side*.1,0]);

@@ -4,7 +4,7 @@ export const BATTLE_READABILITY = Object.freeze({
   groundFilter: 'saturate(1.18) contrast(1.08) brightness(.88)',
   lunarFilter: 'saturate(.45) contrast(1.08) brightness(.66)',
   rimStrength: .09,
-  infantryRimStrength: .18,
+  infantryRimStrength: .34,
 });
 
 const coatings = new Set(['装甲钢', '航空涂层', '建筑面板', '屋顶', '战术织物', '携行具', '作战服']);
@@ -13,7 +13,8 @@ export function readableMaterial(source, infantry = false) {
   if (!source.isMeshStandardMaterial || source.transparent || source.colorWrite === false) return source;
   const material = source.clone();
   if (coatings.has(source.name)) {
-    material.color.lerp(new THREE.Color('#b4c0ba'), infantry ? .13 : .06);
+    material.color.lerp(new THREE.Color(infantry ? '#ddd8b4' : '#b4c0ba'), infantry ? .27 : .06);
+    if (infantry) { material.emissive.lerp(new THREE.Color('#718c91'), .12); }
   }
   // 保留原有迷彩和磨损着色，仅在掠视边缘补入冷色反射光。
   const compile = source.onBeforeCompile, cacheKey = source.customProgramCacheKey();

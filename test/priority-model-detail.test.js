@@ -38,7 +38,7 @@ test('新增起落架接地不下沉，返场与滑跑高度连续且适配地�
   const game={map:{future:false},aircraftGrounded:()=>true};
   const pose=fixedWingHeight(game,entity,entry,0,95);
   animatePriorityAircraft(entry,entity,game,.05,pose.height);
-  model.scale.setScalar(11*2/3);model.position.y=pose.height;
+  model.scale.setScalar(11*.8);model.position.y=pose.height;
   const bounds=new THREE.Box3().setFromObject(model);assert.ok(bounds.min.y>=-.01&&bounds.min.y<1);
   assert.equal(fixedWingHeight(game,entity,{},0,95).height,4);
   const airport={x:900,y:660,size:140};game.ownedBuildings=()=>[airport];

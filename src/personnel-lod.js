@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { createPersonnel } from './personnel-models.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { readableMaterial } from './battle-readability.js';
 
 export function personnelLOD(source, track = value => value) {
-  const material = track(new THREE.MeshStandardMaterial({ name: '远景人物合批', vertexColors: true, roughness: .83, metalness: .05 }));
+  const original = new THREE.MeshStandardMaterial({ name: '远景人物合批', vertexColors: true, roughness: .83, metalness: .05, emissive: '#718c91', emissiveIntensity: .08 });
+  const material = track(readableMaterial(original, true)); original.dispose();
   // 同一套人物配件与关节使用低分段几何，远景不用近景的细密曲面。
   const palette = new Map();
   source.traverse(mesh => {
@@ -12,7 +14,8 @@ export function personnelLOD(source, track = value => value) {
     if(map?.userData.surfaceKind==='uniform') {
       const data=map.image.data,total=data.length/4,channels=[0,0,0];
       for(let i=0;i<data.length;i+=4)for(let c=0;c<3;c++)channels[c]+=data[i+c];
-      color.multiply(new THREE.Color(...channels.map(v=>v/total/255)).convertSRGBToLinear());
+      const average = new THREE.Color(...channels.map(v=>v/total/255)).convertSRGBToLinear();
+      color.multiply(average.lerp(new THREE.Color('#e3dfc8'), .45));
     }
     palette.set(mesh.material.name,color);
   });

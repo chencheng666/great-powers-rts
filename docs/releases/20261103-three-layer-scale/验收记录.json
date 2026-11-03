@@ -1,0 +1,265 @@
+{
+  "build": "20261103-three-layer-scale-r1",
+  "tests": {
+    "pass": 622,
+    "fail": 0
+  },
+  "fixture": {
+    "flight": [
+      {
+        "type": "tank",
+        "length": 36.18,
+        "height": 13.74,
+        "altitude": 4.69,
+        "screen": {
+          "x": 330.1923788646685,
+          "y": 311.8543998620073
+        },
+        "visible": true
+      },
+      {
+        "type": "rifle",
+        "length": 5.46,
+        "height": 9.68,
+        "altitude": 3.31,
+        "screen": {
+          "x": 373.4936490538905,
+          "y": 330.506843269161
+        },
+        "visible": true
+      },
+      {
+        "type": "engineer",
+        "length": 2.78,
+        "height": 9.68,
+        "altitude": 2.87,
+        "screen": {
+          "x": 395.14428414850147,
+          "y": 339.65798096468916
+        },
+        "visible": true
+      },
+      {
+        "type": "scout",
+        "length": 1.61,
+        "height": 9.68,
+        "altitude": 2.58,
+        "screen": {
+          "x": 416.79491924311236,
+          "y": 348.70066458121505
+        },
+        "visible": true
+      },
+      {
+        "type": "helicopter",
+        "length": 67.4,
+        "height": 16.02,
+        "altitude": 49.06,
+        "screen": {
+          "x": 343.58983848622466,
+          "y": 122.64758010937167
+        },
+        "visible": true
+      },
+      {
+        "type": "drone",
+        "length": 37.91,
+        "height": 12.85,
+        "altitude": 33.41,
+        "screen": {
+          "x": 430.1923788646684,
+          "y": 169.07283411873934
+        },
+        "visible": true
+      },
+      {
+        "type": "fighter",
+        "length": 92.65,
+        "height": 21.93,
+        "altitude": 85.4,
+        "screen": {
+          "x": 516.7949192431124,
+          "y": 167.6674038933262
+        },
+        "visible": true
+      },
+      {
+        "type": "bomber",
+        "length": 135,
+        "height": 35.22,
+        "altitude": 101.24,
+        "screen": {
+          "x": 646.6987298107781,
+          "y": 209.49699491242768
+        },
+        "visible": true
+      },
+      {
+        "type": "airlift",
+        "length": 179.97,
+        "height": 50.24,
+        "altitude": 117.51,
+        "screen": {
+          "x": 819.9038105676659,
+          "y": 268.70419283338174
+        },
+        "visible": true
+      },
+      {
+        "type": "freightPlane",
+        "length": 179.96,
+        "height": 50.23,
+        "altitude": 112.89,
+        "screen": {
+          "x": 993.1088913245537,
+          "y": 342.6798671016911
+        },
+        "visible": true
+      }
+    ],
+    "ground": [
+      {
+        "type": "tank",
+        "length": 36.18,
+        "height": 13.74,
+        "altitude": 4.69,
+        "screen": {
+          "x": 330.1923788646685,
+          "y": 311.8543998620073
+        },
+        "visible": true
+      },
+      {
+        "type": "rifle",
+        "length": 5.46,
+        "height": 9.68,
+        "altitude": 3.31,
+        "screen": {
+          "x": 373.4936490538905,
+          "y": 330.506843269161
+        },
+        "visible": true
+      },
+      {
+        "type": "engineer",
+        "length": 2.78,
+        "height": 9.68,
+        "altitude": 2.87,
+        "screen": {
+          "x": 395.14428414850147,
+          "y": 339.65798096468916
+        },
+        "visible": true
+      },
+      {
+        "type": "scout",
+        "length": 1.61,
+        "height": 9.68,
+        "altitude": 2.58,
+        "screen": {
+          "x": 416.79491924311236,
+          "y": 348.70066458121505
+        },
+        "visible": true
+      },
+      {
+        "type": "helicopter",
+        "length": 59.82,
+        "height": 12.82,
+        "altitude": 6.88,
+        "screen": {
+          "x": 343.58983848622466,
+          "y": 152.47895628417675
+        },
+        "visible": true
+      },
+      {
+        "type": "drone",
+        "length": 36.97,
+        "height": 12.85,
+        "altitude": 10.86,
+        "screen": {
+          "x": 430.1923788646684,
+          "y": 185.01447407569026
+        },
+        "visible": true
+      },
+      {
+        "type": "fighter",
+        "length": 74.12,
+        "height": 17.54,
+        "altitude": 3.91,
+        "screen": {
+          "x": 516.7949192431124,
+          "y": 225.288439088745
+        },
+        "visible": true
+      },
+      {
+        "type": "bomber",
+        "length": 108,
+        "height": 28.17,
+        "altitude": 1.37,
+        "screen": {
+          "x": 646.6987298107781,
+          "y": 280.1194275399025
+        },
+        "visible": true
+      },
+      {
+        "type": "airlift",
+        "length": 144,
+        "height": 40.2,
+        "altitude": 7.32,
+        "screen": {
+          "x": 819.9038105676659,
+          "y": 346.61959022402766
+        },
+        "visible": true
+      },
+      {
+        "type": "freightPlane",
+        "length": 144,
+        "height": 40.2,
+        "altitude": 2.91,
+        "screen": {
+          "x": 993.1088913245537,
+          "y": 420.4473540860663
+        },
+        "visible": true
+      }
+    ],
+    "fog": {
+      "visibleStrokes": 8,
+      "hiddenStrokes": 6,
+      "enemyVisible": false
+    }
+  },
+  "mobile": {
+    "before": {
+      "x": 754.588990496982,
+      "y": 1200
+    },
+    "after": {
+      "x": 787.7210906274203,
+      "y": 1107.3864807873786
+    },
+    "width": 390,
+    "scroll": 390,
+    "sidebar": "false"
+  },
+  "offline": {
+    "protocol": "file:",
+    "canvas": 2058,
+    "units": "9陆 9 · 空 0 · 海 0",
+    "zoom": "100%",
+    "externalResources": 13
+  },
+  "offlineBytes": 55413303,
+  "offlineSha256": "a4b550507cd5e74c6075a185f045a647eff17c397255dc647ccf118fe8dd6406",
+  "publication": {
+    "github": false,
+    "server": false,
+    "publicAcceptance": false
+  }
+}
