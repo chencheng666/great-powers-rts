@@ -18,13 +18,6 @@
       "status": "完整单机玩法、全部146段语音；压缩背景与贴图以符合市场20MB限制。本机macOS + uTools 7.8验收，商店审核状态以平台为准，Windows/Linux待更多环境验证；不自动上传玩家统计。"
     },
     {
-      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/utools-v2.0.2/Great-Powers-RTS-v2.0.2-utools.upxs",
-      "label": "2.0.2 · uTools 原始候选大包 · 历史文件",
-      "size": 53610604,
-      "sha256": "69fb6951b01de3c0c8a27e8e746656c903dab3f3f9b1bf00241fca3460dc0436",
-      "status": "原始53.6MB候选包，超出市场20MB限制且未送审；建议选择18.3MB商店精简包。原文件保留于GitHub，内容不包含11月3日比例调整。"
-    },
-    {
       "name": "packages/Great-Powers-RTS-v2.0.2-20261102-feedback-r2.zip",
       "label": "2.0.2 · 11月2日界面与故障定位修复 · 历史免安装离线 ZIP",
       "size": 55412479,
