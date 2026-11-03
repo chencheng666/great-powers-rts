@@ -51,6 +51,15 @@ async fn desktop_online(app: tauri::AppHandle, window: WebviewWindow) -> Result<
  online.show().map_err(|e|e.to_string())?;online.set_focus().map_err(|e|e.to_string())?;Ok(())
 }
 #[tauri::command]
+fn desktop_downloads(window: WebviewWindow) -> Result<(),String> {
+ local(&window)?;
+ let url="https://www.daguojueqi.site/downloads/index.html";
+ #[cfg(target_os="macos")] let status=std::process::Command::new("open").arg(url).status();
+ #[cfg(target_os="windows")] let status=std::process::Command::new("explorer").arg(url).status();
+ #[cfg(target_os="linux")] let status=std::process::Command::new("xdg-open").arg(url).status();
+ status.map_err(|_|"无法打开系统浏览器".to_string())?.success().then_some(()).ok_or("无法打开游戏下载页".into())
+}
+#[tauri::command]
 fn desktop_backup(app: tauri::AppHandle, window: WebviewWindow, slot: String, contents: String, lock: tauri::State<Mutex<()>>) -> Result<(),String> {
  local(&window)?;validate(&contents)?;if slot!="manual" && slot!="auto" {return Err("未知存档槽".into())}
  let _guard=lock.lock().map_err(|_|"存档锁异常")?;
@@ -80,7 +89,7 @@ async fn desktop_import(app: tauri::AppHandle, window: WebviewWindow) -> Result<
 }
 fn main() {
  tauri::Builder::default().manage(Mutex::new(())).plugin(tauri_plugin_dialog::init())
- .invoke_handler(tauri::generate_handler![desktop_fullscreen,desktop_online,desktop_backup,desktop_export,desktop_import])
+ .invoke_handler(tauri::generate_handler![desktop_fullscreen,desktop_online,desktop_downloads,desktop_backup,desktop_export,desktop_import])
  .run(tauri::generate_context!()).expect("桌面应用启动失败");
 }
 

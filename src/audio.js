@@ -3,7 +3,7 @@ import { MovementSounds, soundPosition } from './battle-sound.js';
 import { COMMAND_LINES, normalizeAudioSettings, speechOptions, VOICE_COOLDOWN, VOICE_LINES, VOICE_PRIORITY, voiceFile } from './audio-data.js';
 import { NuclearAlarm, nuclearAlarmAudible, terminalNuclearWarning } from './nuclear-alarm.js';
 
-const assets = import.meta.glob('../assets/audio/*.m4a', { eager: true, query: '?url', import: 'default' });
+const assets = import.meta.glob(['../assets/audio/*.m4a','!../assets/audio/frontline-sequence.m4a'], { eager: true, query: '?url', import: 'default' });
 const portableVoices = import.meta.glob('../assets/audio/portable/*.wav', { eager: true, query: '?url', import: 'default' });
 const SETTINGS_KEY = 'great-powers-audio-v1';
 
@@ -53,11 +53,11 @@ export class GameAudio {
     this.stopBattle(); this.active = true; const session = this.session;
     if (!await this.unlock()) return false;
     try {
-      const buffer = await this.buffer('frontline-sequence.m4a');
+      const buffer = await this.buffer('iron-tide.m4a');
       if (!this.active || session !== this.session) return false;
-      const source = this.context.createBufferSource(); source.buffer = buffer; source.loop = true; source.loopEnd = Math.min(buffer.duration, 32 * 4 * 60 / 104); source.connect(this.musicBus); source.start(); this.music = source;
+      const source = this.context.createBufferSource(); source.buffer = buffer; source.loop = true; source.loopEnd = Math.min(buffer.duration, 32 * 4 * 60 / 132); source.connect(this.musicBus); source.start(); this.music = source;
       this.applySettings(); this.say('welcome');
-      for (const file of Object.keys(assets).map(path => path.split('/').at(-1)).filter(name => name !== 'frontline-sequence.m4a')) this.buffer(file).catch(() => {});
+      for (const file of Object.keys(assets).map(path => path.split('/').at(-1)).filter(name => name !== 'iron-tide.m4a')) this.buffer(file).catch(() => {});
       return true;
     } catch { return false; }
   }

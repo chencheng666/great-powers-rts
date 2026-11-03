@@ -1,3 +1,5 @@
+import { productionOverview } from './production-overview.js';
+import { setupDesktopUpdates } from './desktop-updates.js';
 import { carrierAirGroupLabel } from './carrier-airgroup.js';
 import { armyComposition, unitRole } from './feedback6-presentation.js';
 import { setupMapDiscovery } from './map-discovery-ui.js';
@@ -62,6 +64,7 @@ import './discovery.css';
 import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
 import './mobile-battle.css';
+import './fan-feedback.css';
 import { shouldPanMap, touchTransform } from './map-gestures.js';
 import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
 import { COMBAT_STANCES, supportsCombatStance, combatStance } from './combat-stance.js';
@@ -489,8 +492,13 @@ function updateUI(force = false) {
   if (p.credits < 5 && (p.buildQueue || g.ownedBuildings(0).some(b => b.active))) gameAudio.say('fundsLow');
   const army = armyComposition(g.ownedUnits(0));
   $('#army').textContent = army.total;
-  $('#army-detail').textContent = `陆 ${army.ground} · 空 ${army.air} · 海 ${army.naval}`;
-  $('.resource.army').title = `作战部队 ${army.total}，含运输机内乘员；不含自动物流。陆军 ${army.ground}，空军 ${army.air}，海军 ${army.naval}`;
+  const inventory=productionOverview(g).inventory;
+  $('#army-detail').textContent = `兵 ${inventory.infantry} · 车 ${inventory.vehicles} · 空 ${inventory.air} · 海 ${inventory.naval}`;
+  $('#army-detail').classList.toggle('no-infantry',inventory.infantry===0);
+  if(state.previousArmyGame!==g){state.previousArmyGame=g;state.previousInfantry=inventory.infantry;}
+  else if(state.previousInfantry>0&&inventory.infantry===0){toast('人员剩余 0，可在兵营补充；运输中的人员仍计入数量',true);}
+  state.previousInfantry=inventory.infantry;
+  $('.resource.army').title = `作战部队 ${army.total}，含运输机内乘员；不含自动物流。人员 ${inventory.infantry}，车辆 ${inventory.vehicles}，空军 ${army.air}，海军 ${army.naval}；各型号数量见右侧部队栏`;
   $('#power-meter').style.setProperty('--power-fill', `${Math.max(0, Math.min(100, p.powerIn / Math.max(1, p.powerOut) * 100))}%`);
   $('.resource.power').title = `供电 ${p.powerIn} / 耗电 ${p.powerOut}${g.hasPower(0) ? ' · 供电正常' : ' · 电力不足，建造发电站'}`;
   $('#clock').textContent = seconds(g.time);
@@ -523,6 +531,24 @@ function updateUI(force = false) {
   const healthLabel = $('#selection-panel .selection-health');
   if (selectedEntity && healthLabel) healthLabel.textContent = selectionStatus(selectedEntity);
   updateSidebar(force);
+}
+
+function updateProductionOverview(g,root) {
+  const {inventory,types,facilities}=productionOverview(g);
+  for(const el of root.querySelectorAll('[data-unit-stock]')){
+    const type=el.dataset.unitStock,entry=types[type],count=inventory.types[type]||0;
+    el.textContent=`现有 ${count}`+(entry?.active?` · ${entry.active>1?`${entry.active}线生产，最快 `:''}${entry.stopped||`剩 ${entry.remaining} 秒`}`:'')+(entry?.queued?` · 排队 ${entry.queued}`:'');
+  }
+  for(const el of root.querySelectorAll('[data-producer-status]')){
+    const tasks=facilities.filter(f=>f.producer===el.dataset.producerStatus);
+    const active=tasks.filter(f=>f.type),queued=tasks.reduce((sum,f)=>sum+f.queued,0);
+    el.textContent=active.length?`${active.length}线生产 · ${active.map(f=>`${equipmentProfile(g.players[0].faction,f.type,g.map.future).name} ${f.stopped||`${f.remaining}秒`}`).join(' / ')}`:queued?`排队 ${queued} 项`:g.hasBuilding(0,el.dataset.producerStatus)?'待命':'未部署';
+  }
+  for(const el of root.querySelectorAll('[data-build-time]')){
+    const type=el.dataset.buildTime,q=g.players[0].buildQueue;
+    if(g.pendingBuilding===type)el.textContent='待部署';
+    else if(q?.type===type)el.textContent=g.paused?'已暂停':g.players[0].credits<=0?'缺钱暂停':`剩 ${Math.max(0,Math.ceil(BUILDINGS[type].time/sandboxSpeed(g,0)-q.progress))} 秒`;
+  }
 }
 
 function updateSidebar(force = false) {
@@ -562,7 +588,7 @@ function updateSidebar(force = false) {
   const queues = g.ownedBuildings(0).filter(b => PRODUCERS.includes(b.type)).map(b => `${b.type}:${b.active?.type || ''}:${b.queue.join(',')}`).join(';');
   const key = `${state.tab}:${queues}:${g.players[0].buildQueue?.type || ''}:${g.pendingBuilding || ''}:${g.ownedBuildings(0).map(b => b.type).join(',')}:${g.players[0].abilityCharge >= 100}:${Math.floor(g.players[0].abilityCharge / 5)}:${g.players[0].abilityCooldown > 0}:${g.players[0].credits < 650}:${g.players[0].credits < 1000}:${Math.ceil(Math.max(0, (g.players[0].satelliteReadyAt || 0) - g.time))}:${Math.ceil(Math.max(0, (g.players[0].satelliteUntil || 0) - g.time))}:${g.hasPower(0)}`;
   const intelligenceKey=`${Math.floor(g.players[0].cyberCharge||0)}:${!!g.players[0].cyberPending}:${g.isControlLocked(0)}:${g.nuclearEnabled}:${Math.floor(g.players[0].nuclearCharge||0)}:${!!g.players[0].nuclearPending}:${!!g.players[0].nuclearSpent}:${g.players[0].credits<DETERRENCE.cost}`;
-  if (!force && root.dataset.renderKey === key&&root.dataset.intelligenceKey===intelligenceKey) return;
+  if (!force && root.dataset.renderKey === key&&root.dataset.intelligenceKey===intelligenceKey) {updateProductionOverview(g,root);return;}
   root.dataset.renderKey = key;
   root.dataset.intelligenceKey=intelligenceKey;
   const p = g.players[0], faction = FACTIONS[p.faction];
@@ -571,7 +597,7 @@ function updateSidebar(force = false) {
       const d = lunarBuildingProfile(g.map.future, type, BUILDINGS[type]), locked = !g.canBuild(0, type), queued = p.buildQueue?.type === type || g.pendingBuilding === type;
       const label = locked ? `需要 ${lunarBuildingProfile(g.map.future, d.requires, BUILDINGS[d.requires])?.name || '指挥中心'}` : d.desc;
       const ready = g.pendingBuilding === type;
-      return `<button class="action-card ${locked ? 'locked' : ''} ${queued ? 'queued' : ''}" data-build="${type}" ${!ready && (locked || p.buildQueue || g.pendingBuilding) ? 'disabled' : ''} title="${ready ? '建造完成，点击部署' : d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${d.name}</strong><small>${ready ? '已完成 · 点击部署' : label}</small></span><span class="action-cost">${ready ? '部署' : `¤ ${fmt(d.cost)}`}<small>${ready ? '待命' : `${Math.ceil(d.time / sandboxSpeed(g,0))} 秒`}</small></span></button>`;
+      return `<button class="action-card ${locked ? 'locked' : ''} ${queued ? 'queued' : ''}" data-build="${type}" ${!ready && (locked || p.buildQueue || g.pendingBuilding) ? 'disabled' : ''} title="${ready ? '建造完成，点击部署' : d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${d.name}</strong><small>${ready ? '已完成 · 点击部署' : label}</small></span><span class="action-cost">${ready ? '部署' : `¤ ${fmt(d.cost)}`}<small data-build-time="${type}">${ready ? '待命' : `${Math.ceil(d.time / sandboxSpeed(g,0))} 秒`}</small></span></button>`;
     }).join('')}</div>`;
     root.querySelectorAll('[data-build]').forEach(button => button.addEventListener('click', () => {
       if (g.pendingBuilding === button.dataset.build) { g.placingBuilding = true; g.orderMode = null; clearOrderButtons(); updateUI(true); }
@@ -583,11 +609,11 @@ function updateSidebar(force = false) {
       if (!types.length) return '';
       const facilities = g.ownedBuildings(0, producer), count = facilities.reduce((sum,b) => sum + b.queue.length + (b.active ? 1 : 0),0);
       const producerName = lunarBuildingProfile(g.map.future, producer, BUILDINGS[producer]).name;
-      return `<section class="production-group" data-producer="${producer}"><h3><span>${producerName}</span><small>${!facilities.length ? '未部署' : count ? `${count} 项生产任务` : '待命'}</small>${count ? `<button class="icon-btn" data-cancel-producer="${producer}" title="取消${producerName}当前生产" aria-label="取消${producerName}当前生产">${icon('x')}</button>` : ''}</h3><div class="action-list">${types.map(type => {
+      return `<section class="production-group" data-producer="${producer}"><h3><span>${producerName}</span><small data-producer-status="${producer}">${!facilities.length ? '未部署' : count ? `${count} 项生产任务` : '待命'}</small>${count ? `<button class="icon-btn" data-cancel-producer="${producer}" title="取消${producerName}当前生产" aria-label="取消${producerName}当前生产">${icon('x')}</button>` : ''}</h3><div class="action-list">${types.map(type => {
         const d = UNITS[type], locked = !g.hasBuilding(0, d.producer) || d.requires && !g.hasBuilding(0, d.requires);
         const profile = equipmentProfile(p.faction, type, g.map.future);
         const label = locked ? `需要 ${lunarBuildingProfile(g.map.future, !g.hasBuilding(0, d.producer) ? d.producer : d.requires, BUILDINGS[!g.hasBuilding(0, d.producer) ? d.producer : d.requires]).name}` : isLunarRobot(g.map, type) ? '电池驱动 · 电力充能' : d.desc;
-        return `<button class="action-card ${locked ? 'locked' : ''}" data-unit="${type}" ${locked ? 'disabled' : ''} title="${profile.category} · ${profile.country}：${profile.description}；游戏定位：${d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${profile.name}</strong>${unitRole(type, p.faction) ? `<em class="unit-role">${unitRole(type, p.faction)}</em>` : ''}<small>${label} · ${profile.category}</small></span><span class="action-cost">¤ ${fmt(g.unitCost(0, type))}<small>${Math.ceil(productionDuration(g, {owner:0,type:producer}, type))} 秒</small></span></button>`;
+        return `<button class="action-card ${locked ? 'locked' : ''}" data-unit="${type}" ${locked ? 'disabled' : ''} title="${profile.category} · ${profile.country}：${profile.description}；游戏定位：${d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${profile.name}</strong>${unitRole(type, p.faction) ? `<em class="unit-role">${unitRole(type, p.faction)}</em>` : ''}<span class="unit-stock" data-unit-stock="${type}">现有 0</span><small>${label} · ${profile.category}</small></span><span class="action-cost">¤ ${fmt(g.unitCost(0, type))}<small>${Math.ceil(productionDuration(g, {owner:0,type:producer}, type))} 秒</small></span></button>`;
       }).join('')}</div></section>`;
     }).join('');
     root.querySelectorAll('[data-unit]').forEach(button => button.addEventListener('click', () => { if (!g.queueUnit(0, button.dataset.unit)) toast(UNITS[button.dataset.unit].limit?'该装备已达到数量上限（含生产队列），或队列已满':'生产队列已满', true); updateUI(true); }));
@@ -619,6 +645,7 @@ function updateSidebar(force = false) {
     }
     root.querySelector('.tactic-details').insertAdjacentHTML('beforeend','<div>物资箱：陆军回收 300；设备回收场：工程师／矿车／补给车回收 900。</div><div>能源仓：工程师接管，40 电力、有限 1800 库存，可作为扩建前哨。</div>');
   }
+  updateProductionOverview(g,root);
   refreshIcons();
 }
 
@@ -1377,5 +1404,6 @@ async function importDesktopOrWeb() {
  try { const text = await desktopInvoke('desktop_import'); if (!text) return; const save = parseSave(text); if (state.game?.running && !saveProgress('auto', true)) return; await startGame(save); } catch (e) { toast(String(e), true); }
 }
 desktopNotice();
+setupDesktopUpdates({enabled:isDesktop(),version:GAME_VERSION,openDownloads:()=>desktopInvoke('desktop_downloads')});
 if (location.protocol === 'file:' || isDesktop()) $('#offline-telemetry-note').hidden = false;
 setupUtools();

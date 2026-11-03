@@ -175,6 +175,8 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
       if (url.pathname === '/downloads/') file = resolve(root,'downloads/index.html');
       if (file === root) file = resolve(root,'index.html');
       const info = await stat(file); if (!info.isFile()) return json(404, { error:'文件不存在' });
+      // 仅公开版本元数据允许桌面本地页面跨域读取，不携带账号或玩家信息。
+      if(url.pathname==='/downloads/desktop-update.json')res.setHeader('Access-Control-Allow-Origin','*');
       serveFile(req,res,file,info,{official:url.pathname.startsWith('/official/')});
     } catch (error) { json(error.code === 'ENOENT' ? 404 : 400, { error:error.code === 'ENOENT' ? '文件不存在' : '请求无效' }); }
   });

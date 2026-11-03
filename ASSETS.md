@@ -81,3 +81,7 @@ Three.js、PathFinding.js、ws 使用 MIT 许可；heap.js 保留 PSF 许可文�
 `assets/videos/battle-montage-20261026.mp4`、对应 JPG 封面及 `public/official/assets/` 同名副本由本项目当前游戏引擎受控场景录制：陆军合成编队、远洋舰队交火和海空交战。场景揭开迷雾并集中部署编队，非真人完整对局录像。原始场景沿用本文及 THIRD-PARTY-ASSETS.txt 中模型、材质的授权与署名。剪辑静音、12秒、1280×720，1.1倍播放，未添加第三方影视或音乐；支持暂停、减少动态效果和静态封面回退。
 
 灰谷入门的岩石使用 Kenney Nature Kit 2.1 的 `rock_largeA.stl`，CC0 1.0。原始文件位于 `assets/third-party/kenney-rock-largeA.stl`；`src/kenney-rock-geometry.js` 转换坐标并归一化，通过实例化与既有植被共同布景。来源和许可见 `THIRD-PARTY-ASSETS.txt`。
+
+## 2.0.3 战斗配乐
+
+`assets/audio/iron-tide.m4a`为本项目原创程序编曲《钢铁洪流》，132BPM，约58秒。生成器`scripts/generate-battle-music.mjs`；FLAC无损母版与PCM往返校验报告保存在构建目录。游戏分发使用128kbps AAC（有损），不宣称无损。旧《前线序列》仍保留源文件，不再打入新版游戏资源。
