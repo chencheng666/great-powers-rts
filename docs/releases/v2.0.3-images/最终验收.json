@@ -1,0 +1,22 @@
+{
+  "version": "2.0.3",
+  "build": "20261103-fan-experience-r1",
+  "tests": 629,
+  "desktopCI": {
+    "run": 41631862921,
+    "conclusion": "success",
+    "platforms": 5,
+    "assets": 9
+  },
+  "zip": {
+    "status": 200,
+    "size": 54946347,
+    "sha256": "e2412cbf12ecfca6d6af441ef90ae4b85109c5958063f18104a635259608059b"
+  },
+  "publicCountdown": [
+    "剩8秒",
+    "剩7秒"
+  ],
+  "databaseIntegrity": "6个数据库ok，逐表数量未减少",
+  "nativeHardware": "本轮没有全平台原生真机兼容验收"
+}
