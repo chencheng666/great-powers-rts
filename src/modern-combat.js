@@ -340,6 +340,7 @@ export const modernCombat = {
     }
     if (u.stock <= 0) {
       u.serviceTargetId = null;
+      if (this.patrolStep(u, dt)) return;
       if (manualMove) {
         if (distance(u, u.order) > 10) this.moveUnit(u, u.order, dt, 8);
         else u.order = null;
@@ -385,6 +386,8 @@ export const modernCombat = {
       if (distance(u, u.order) > 10) { this.moveUnit(u, u.order, dt, 8); return; }
       u.order = null;
     }
+    // 手动巡逻优先于自动追车；仍按原规则为途经范围内的友军补给。
+    if (this.patrolStep(u, dt)) { u.serviceTargetId = null; return; }
     // 圈内仍有任务时保持位置，避免修好一辆又追另一辆造成整支纵队堵塞。
     if (nearby.some(needs)) { u.serviceTargetId = null; u.path = []; return; }
     if (u.autoSupply !== false && (p.credits > 0 || this.hasPower(u.owner))) {

@@ -74,7 +74,15 @@ import { loadChallengeThumbnails } from './challenge-thumbnails.js';
 
 setupMenuVideo();
 setupBattleUI();
-const updateBattleTutorial = setupTutorial();
+const updateBattleTutorial = setupTutorial({onAction(step) {
+  const g=state.game;if(!g?.running||g.paused)return;
+  if(step===0){const u=g.activeUnits(0,'tank')[0]||g.activeUnits(0)[0];if(u)state.renderer.centerOn(u.x,u.y);toast('轻点己方部队，选中后会出现生命条');return;}
+  if(step===1){$('#move-btn').click();return;}
+  setSidebarCollapsed(false);
+  document.querySelector(`[data-tab="${step===2?'build':'units'}"]`).click();
+  const target=step===2?document.querySelector('[data-build="power"]'):document.querySelector('[data-unit]:not(:disabled)');
+  if(target){target.scrollIntoView({block:'nearest'});target.focus();}
+}});
 const loyalty = new CommanderLoyalty(localStorage);
 let sandboxNoticePending = false;
 const candidateMode=/^\/candidate(?:\/|$)/.test(location.pathname);
@@ -1002,6 +1010,14 @@ function closeModal() {
 }
 
 function canvasPoint(event) { const rect = $('#game-canvas').getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; }
+function beginPatrol() {
+  const g=state.game;if(!g?.running||g.paused||g.isControlLocked(0))return;
+  const units=g.activeUnits(0).filter(u=>g.selected.includes(u.id));
+  if(!units.length){toast('先选择要巡逻的部队');return;}
+  g.placingBuilding=false;g.orderMode='patrol';clearOrderButtons();$('#patrol-btn').classList.add('active');
+  toast('点击巡逻终点：部队会从当前位置往返；点“停止”结束');
+}
+
 function clearOrderButtons() { for (const id of ['move-btn', 'attack-btn', 'patrol-btn']) $(`#${id}`).classList.remove('active'); }
 
 function setupControls() {
@@ -1145,7 +1161,7 @@ function setupControls() {
     } else if (key === ' ') { g.selectAllCombat(); }
     else if (key === 't' && !event.repeat) { event.preventDefault(); selectSameModel(); }
     else if (key === 'a') { g.placingBuilding = false; g.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('左键指定攻击移动目标'); }
-    else if (key === 'p') { g.placingBuilding = false; g.orderMode = 'patrol'; clearOrderButtons(); $('#patrol-btn').classList.add('active'); }
+    else if (key === 'p') beginPatrol();
     else if (key === 's') { g.stopSelected(); clearOrderButtons(); }
     else if (key === 'h') state.renderer.centerOn(state.game.homeX||state.game.map.spawns?.[0]?.x||280,state.game.online?state.game.homeY:state.game.map.spawns?.[0]?.y||state.game.homeY);
     else if (key === 'u') { for (const id of state.game.selected) state.game.unloadTransport(state.game.getEntity(id)); updateSelection(); }
@@ -1181,7 +1197,7 @@ function setupControls() {
   });
   $('#move-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'move'; clearOrderButtons(); $('#move-btn').classList.add('active'); toast('在战场上指定移动目标'); });
   $('#attack-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('在战场上指定攻击移动目标'); });
-  $('#patrol-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'patrol'; clearOrderButtons(); $('#patrol-btn').classList.add('active'); });
+  $('#patrol-btn').addEventListener('click', beginPatrol);
   $('#unload-btn').addEventListener('click', () => { const g = state.game; if (!g || g.paused) return; for (const id of [...g.selected]) g.unloadTransport(g.getEntity(id)); updateSelection(); });
   $('#resupply-btn').addEventListener('click', () => { const g = state.game; if (!g || g.paused) return; for (const id of g.selected) g.requestResupply(g.getEntity(id)); updateSelection(); });
   $('#toolbar-toggle').addEventListener('click', () => {

@@ -1,8 +1,8 @@
 export const TUTORIAL_STEPS = [
-  ['选择部队','点击己方坦克，或拖动框选。手机端可轻点单位。'],
-  ['下达移动','选中部队后右键点击地面；手机端点“移动”再轻点目的地。'],
-  ['扩建供电','在建筑栏建造电力站，完成后选择基地附近空地部署。'],
-  ['补充兵力','在部队栏生产一个可用单位，等待它出现在基地。']
+  ['选择部队','点击己方坦克。手机上轻点即可。'],
+  ['下达移动','点下方“移动”，再点地面。电脑也可以右键移动。'],
+  ['扩建供电','在“建筑”选电力站，完成后点基地附近空地部署。'],
+  ['补充兵力','在“部队”选一个可用单位，等它出现在基地。']
 ];
 export function createTutorial(game) { return {done:[false,false,false,false],produced:game.battleStats?.sides?.[0]?.unitsProduced||0,buildings:new Set(game.ownedBuildings(0).map(b=>b.id))}; }
 export function updateTutorial(progress,game) {

@@ -4,6 +4,13 @@
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
     {
+      "name": "packages/Great-Powers-RTS-v2.0.2-20261103-patrol.zip",
+      "label": "2.0.2 · 11月3日 · 巡逻修复与直达教学 · 免安装离线 ZIP",
+      "size": 55413967,
+      "sha256": "eab1073f7f05a2d6680d00aa69d0b7307202692432ec25a2a72c5f0f8a50224a",
+      "status": "含三层比例与人物辨识改动；修复补给车巡逻、沿途保障及返厂恢复路线；教学新增定位部队和打开生产栏入口。网页与此ZIP同步，桌面及商店包分别维护。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.2-20261103-scale.zip",
       "label": "2.0.2 · 11月3日三层比例与人物辨识 · 最新免安装离线 ZIP",
       "size": 55413303,
@@ -340,7 +347,7 @@
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261103-scale.zip",
+  "offlineFile": "packages/Great-Powers-RTS-v2.0.2-20261103-patrol.zip",
   "webBuild": "20261102-feedback-diagnostics-r2",
   "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs"
 }
