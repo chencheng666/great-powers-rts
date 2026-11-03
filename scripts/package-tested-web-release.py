@@ -14,6 +14,7 @@ if not re.fullmatch(r'[0-9A-Za-z-]+', release):
     raise SystemExit('请提供合法发布编号')
 if subprocess.check_output(['git', 'diff', '--name-only', 'HEAD'], cwd=root, text=True).strip():
     raise SystemExit('请先提交本轮代码，确保构建与提交可对应')
+include_offline = '--offline' in sys.argv[2:]
 dist = root / 'dist'
 if not (dist / 'index.html').is_file():
     raise SystemExit('请先构建网页')
@@ -28,6 +29,15 @@ manifest = {'sourceCommit': commit, 'build': build, 'files': files,
 paths = [root / 'package.json', root / 'package-lock.json', root / 'scripts/deploy-strategic-release.py', dist / 'release.json']
 for folder in ['src', 'server']:
     paths.extend(p for p in (root / folder).rglob('*') if p.is_file() and '__pycache__' not in p.parts)
+if include_offline:
+    downloads = json.loads((dist / 'downloads/manifest.json').read_text())
+    entry = next(f for f in downloads['files'] if f['name'] == downloads['offlineFile'])
+    if not re.fullmatch(r'packages/[0-9A-Za-z_.-]+\.zip', entry['name']):
+        raise SystemExit('离线包路径无效')
+    offline = dist / 'downloads' / entry['name']
+    if not offline.is_file() or offline.stat().st_size != entry['size'] or sha(offline) != entry['sha256']:
+        raise SystemExit('离线包大小或摘要与清单不一致')
+    paths.append(offline)
 media = {'.glb', '.wav', '.mp3', '.m4a', '.mp4', '.webm', '.png', '.jpg', '.jpeg', '.webp'}
 for relative in files:
     path = dist / relative
