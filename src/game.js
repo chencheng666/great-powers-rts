@@ -403,7 +403,11 @@ export class Game {
   selectAt(x, y, additive = false) {
     const friendUnits = this.activeUnits(0).filter(u => distance(u, { x, y }) < Math.max(UNITS[u.type].tags.includes('infantry') ? 22 : 28, unitRadius(u)));
     const friendBuildings = this.ownedBuildings(0).filter(b => distance(b, { x, y }) < b.size * 0.58);
-    const picked = friendUnits.at(-1) || friendBuildings.at(-1);
+    return this.selectEntity(friendUnits.at(-1) || friendBuildings.at(-1), additive);
+  }
+
+  selectEntity(entity, additive = false) {
+    const picked = entity?.owner === 0 && entity.hp > 0 && !entity.embarkedIn && !FREIGHT_TYPES.includes(entity.type) ? entity : null;
     if (!additive) this.selected = [];
     if (picked) {
       if (additive && this.selected.includes(picked.id)) this.selected = this.selected.filter(id => id !== picked.id);

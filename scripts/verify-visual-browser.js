@@ -35,8 +35,8 @@ for (const mapId of ['valley', 'canyon', 'strait']) {
       const model = renderer.entities.get(unit.id).model, screen = renderer.worldToScreen(unit.x,unit.y,model.position.y + (unit.type==='fighter'?7:18));
       const point = renderer.pickPoint(screen.x,screen.y); return {type:unit.type,error:Math.hypot(point.x-unit.x,point.y-unit.y)};
     });
-    const airScreen=renderer.worldToScreen(fighter.x,fighter.y,102), a=renderer.screenToWorld(airScreen.x-35,airScreen.y-28), b=renderer.screenToWorld(airScreen.x+35,airScreen.y+28);
-    renderer.selectBox(a,b,false);
+    const airScreen=renderer.worldToScreen(fighter.x,fighter.y,102), a={x:airScreen.x-35,y:airScreen.y-28}, b={x:airScreen.x+35,y:airScreen.y+28};
+    renderer.selectScreenBox(a,b,false);
     const airBox = game.selected.includes(fighter.id);
     const pixelSample=()=>{ const gl=renderer.webgl.getContext(),data=new Uint8Array(canvas.width*canvas.height*4);gl.readPixels(0,0,canvas.width,canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,data); return data; };
     const before=pixelSample(); renderer.render(6000); const after=pixelSample(); let movingPixels=0; const colors=new Set();

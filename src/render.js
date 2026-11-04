@@ -39,6 +39,7 @@ import { animateFacility, drawRepairBadge } from './facility-motion.js';
 import { unitAnimation, weaponElevation } from './unit-animation.js';
 import { animateStrategicEquipment } from './deterrence-models.js';
 import { isLifeline, FREIGHT_LANES, freightLanePoints } from './maritime-logistics.js';
+import { FREIGHT_TYPES } from './logistics-economy.js';
 import { createDeterrenceBlast,animateDeterrenceBlast } from './deterrence-fx.js';
 import { DETERRENCE } from './deterrence-rules.js';
 import { animateTracks } from './track-motion.js';
@@ -687,14 +688,39 @@ export class Renderer {
     while (model && !model.userData.entity) model = model.parent;
     return model?.userData.entity || null;
   }
-  selectBox(start, end, additive) {
-    const a = this.worldToScreen(start.x, start.y), b = this.worldToScreen(end.x, end.y);
-    if (!additive) this.game.selected = [];
-    for (const { entity, model } of this.entities.values()) {
-      if (entity.kind !== 'unit' || entity.owner !== 0 || !model.visible) continue;
-      const screen = this.worldToScreen(entity.x, entity.y, model.position.y + 10);
-      if (screen.x >= Math.min(a.x, b.x) && screen.x <= Math.max(a.x, b.x) && screen.y >= Math.min(a.y, b.y) && screen.y <= Math.max(a.y, b.y) && !this.game.selected.includes(entity.id)) this.game.selected.push(entity.id);
+  selectionCenter({ entity, model, displayTopHeight, topHeight }) {
+    return this.worldToScreen(entity.x, entity.y, model.position.y + (displayTopHeight ?? topHeight) * .5);
+  }
+
+  isSelectable({ entity, model }) {
+    return model.visible && entity.owner === 0 && entity.hp > 0 && !entity.embarkedIn && !FREIGHT_TYPES.includes(entity.type);
+  }
+
+  pickSelection(x, y) {
+    const direct = this.entities.get(this.pickEntity(x, y)?.id);
+    if (direct && this.isSelectable(direct)) return direct.entity;
+    let closest = null, limit = 12;
+    for (const entry of this.entities.values()) {
+      if (!this.isSelectable(entry)) continue;
+      const point = this.selectionCenter(entry);
+      const distance = Math.hypot(x - point.x, y - point.y);
+      if (distance < limit) { closest = entry.entity; limit = distance; }
     }
+    return closest;
+  }
+
+  selectScreenBox(start, end, additive) {
+    const left = Math.min(start.x, end.x), right = Math.max(start.x, end.x);
+    const top = Math.min(start.y, end.y), bottom = Math.max(start.y, end.y);
+    const units = [], buildings = [];
+    for (const entry of this.entities.values()) {
+      if (!this.isSelectable(entry)) continue;
+      const { x, y } = this.selectionCenter(entry);
+      if (x < left || x > right || y < top || y > bottom) continue;
+      (entry.entity.kind === 'unit' ? units : buildings).push(entry.entity.id);
+    }
+    const ids = units.length ? units : buildings.slice(0, 1);
+    this.game.selected = [...new Set([...(additive ? this.game.selected : []), ...ids])];
     this.game.events.selection?.();
   }
   selectSameType(entity, additive = false) {
@@ -1370,7 +1396,7 @@ export class Renderer {
       if (bar.status) { const baseline = top + (ammo ? 26 : 20); ctx.font = '500 9px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.status, x + width / 2, baseline); ctx.fillStyle = '#f4ce82'; ctx.fillText(bar.status, x + width / 2, baseline); }
     }
     if (this.dragBox) {
-      const a = this.worldToScreen(this.dragBox.start.x, this.dragBox.start.y), b = this.worldToScreen(this.dragBox.end.x, this.dragBox.end.y); ctx.fillStyle = 'rgba(104,220,239,.1)'; ctx.strokeStyle = '#8de5f0'; ctx.lineWidth = 1; ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y); ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+      const { start: a, end: b } = this.dragBox; ctx.fillStyle = 'rgba(104,220,239,.1)'; ctx.strokeStyle = '#8de5f0'; ctx.lineWidth = 1; ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y); ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
     }
     for (const building of this.game.ownedBuildings(0)) if (selected.has(building.id) && building.rallyPoint) {
       const start = this.worldToScreen(building.x, building.y), point = this.worldToScreen(building.rallyPoint.x, building.rallyPoint.y);

@@ -85,3 +85,7 @@ Three.js、PathFinding.js、ws 使用 MIT 许可；heap.js 保留 PSF 许可文�
 ## 2.0.3 战斗配乐
 
 `assets/audio/iron-tide.m4a`为本项目原创程序编曲《钢铁洪流》，132BPM，约58秒。生成器`scripts/generate-battle-music.mjs`；FLAC无损母版与PCM往返校验报告保存在构建目录。游戏分发使用128kbps AAC（有损），不宣称无损。旧《前线序列》仍保留源文件，不再打入新版游戏资源。
+
+## 网页热更新的《国际歌》器乐配乐
+
+曲调为皮埃尔·德盖特（Pierre De Geyter，1848–1932）1888 年作品，见 [IMSLP 早期曲谱](https://imslp.org/wiki/L%27Internationale_(De_Geyter,_Pierre)) 与 [ABC 旋律转录](https://abcnotation.com/tunePage?a=trillian.mit.edu%2F~jc%2Fmusic%2Fabc%2Fanthem%2FInternationale%2F0000)。游戏采用自主合成的 108 BPM 器乐编配，文件为 `assets/audio/internationale.m4a`，生成器为 `scripts/generate-internationale.mjs`。配器保留原曲署名，音轨不含歌词、演唱或第三方录音。AAC 用于随包分发，生成器可另存 FLAC。

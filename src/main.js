@@ -667,7 +667,7 @@ function updateSelection() {
   if (selectionKey !== state.lastSelection) { state.dismissedInspectorId = null; gameAudio.selection(selected); state.lastSelection = selectionKey; }
   const panel = $('#selection-panel');
   const touch = window.matchMedia('(pointer: coarse)').matches;
-  if (!selected.length) panel.innerHTML = `<span class="hud-label">当前选择</span><strong>未选择单位</strong><span>${touch ? '轻点选择 · 拖动地图' : '空白拖图 · Shift框选 · 右键指令'}</span>`;
+  if (!selected.length) panel.innerHTML = `<span class="hud-label">当前选择</span><strong>未选择单位</strong><span>${touch ? '轻点选择 · 拖动地图' : '左拖框选 · 右拖平移 · 右键指令'}</span>`;
   else if (selected.length === 1) {
     const e = selected[0], profile = e.kind === 'unit' ? equipmentProfile(g.players[e.owner].faction, e.type, g.map.future) : null, name = profile ? profile.name : lunarBuildingProfile(g.map.future, e.type, BUILDINGS[e.type]).name;
     const actions = e.kind === 'building' ? `<div class="selection-actions"><button type="button" data-action="repair" class="${e.repairing ? 'active' : ''}" title="${e.hp >= e.maxHp && !e.repairing ? '建筑完好' : e.repairing ? '停止维修' : '维修建筑'}" ${e.hp >= e.maxHp && !e.repairing ? 'disabled' : ''}>${icon('wrench')}</button>${e.type === 'hq' ? '' : `<button type="button" data-action="sell" title="出售建筑，返还一半造价" aria-label="出售建筑">${icon('coins')}<span>出售</span></button>`}</div>` : e.type === 'apc' ? `<div class="selection-actions"><button type="button" data-action="unload" title="乘员下车" aria-label="乘员下车">${icon('log-out')}</button></div>` : '';
@@ -1071,9 +1071,9 @@ function setupControls() {
         return;
       }
     }
-    if (event.pointerType !== 'touch' && shouldPanMap({button:event.button,shift:event.shiftKey,alt:event.altKey,panMode:state.cameraPanMode,targeting:!!(g.placingBuilding||g.pendingAbility||g.orderMode),hit:!!r.pickEntity(p.x,p.y)})) { state.panning = { ...p, start: p, button: event.button, moved: false }; updatePanControl(); return; }
+    if (event.pointerType !== 'touch' && shouldPanMap({button:event.button,alt:event.altKey,panMode:state.cameraPanMode,targeting:!!(g.placingBuilding||g.pendingAbility||g.orderMode)})) { state.panning = { ...p, start: p, button: event.button, moved: false }; updatePanControl(); return; }
     if (g.paused) return;
-    if (event.button === 0) { state.drag = { start: r.screenToWorld(p.x, p.y), end: r.screenToWorld(p.x, p.y), moved: false, additive: event.shiftKey }; }
+    if (event.button === 0) { state.drag = { start: p, end: p, moved: false, additive: event.shiftKey }; }
   });
   canvas.addEventListener('pointermove', event => {
     const g = state.game, r = state.renderer; if (!g || !r) return;
@@ -1106,11 +1106,11 @@ function setupControls() {
       if (state.panning.moved) { r.pan(state.panning.x - p.x, state.panning.y - p.y); state.panning.x = p.x; state.panning.y = p.y; }
       updatePanControl(); return;
     }
-    if (state.drag) { state.drag.end = r.pointer; state.drag.moved = Math.hypot(state.drag.end.x - state.drag.start.x, state.drag.end.y - state.drag.start.y) > 9; r.dragBox = state.drag.moved && !g.placingBuilding && !g.pendingAbility && !g.orderMode ? state.drag : null; }
+    if (state.drag) { state.drag.end = p; state.drag.moved ||= Math.hypot(p.x - state.drag.start.x, p.y - state.drag.start.y) > 6; r.dragBox = state.drag.moved && !g.placingBuilding && !g.pendingAbility && !g.orderMode ? state.drag : null; }
   });
   canvas.addEventListener('pointerup', event => {
     const g = state.game, r = state.renderer; if (!g || !r || !g.running) return;
-    const p = canvasPoint(event), world = g.placingBuilding || state.drag?.moved ? r.screenToWorld(p.x, p.y) : r.pickPoint(p.x, p.y);
+    const p = canvasPoint(event);
     if (event.pointerType === 'touch') {
       state.touchPoints.delete(event.pointerId);
       if (state.touchPan || state.touchPinching) {
@@ -1123,23 +1123,27 @@ function setupControls() {
     if (state.panning) { const pan = state.panning; state.panning = null; updatePanControl(); if (pan.button !== 2 || pan.moved) return; }
     if (g.paused) return;
     if (event.button === 2) {
+      const world = r.pickPoint(p.x, p.y);
       if (g.pendingAbility) { g.pendingAbility = false;g.pendingNuclear=false; toast('已取消技能定位'); }
-      else if (g.orderMode) { g.orderMode = null; clearOrderButtons(); }
       else if (g.placingBuilding) { g.placingBuilding = false; toast('已退出部署，建筑仍保留在建造面板'); }
-      else g.command(world.x, world.y, false, 0, event.shiftKey);
+      else {
+        g.command(world.x, world.y, g.orderMode === 'attackMove', 0, event.shiftKey && !['patrol', 'rally'].includes(g.orderMode));
+        g.orderMode = null; clearOrderButtons();
+      }
       updateUI(true); return;
     }
     if (event.button !== 0) return;
     const previousClick = state.lastSelectionClick;
     state.lastSelectionClick = null;
+    const world = g.placingBuilding ? r.screenToWorld(p.x, p.y) : g.pendingAbility || g.orderMode ? r.pickPoint(p.x, p.y) : null;
     if (g.pendingBuilding && g.placingBuilding) { if (!g.placeBuilding(0, g.pendingBuilding, world.x, world.y)) toast('此处无法部署，请靠近己方建筑并避开障碍', true); updateUI(true); }
     else if (g.pendingAbility) { if (!(g.pendingNuclear?g.launchNuclear(world.x,world.y):g.castAbility(world.x, world.y))) toast('技能未就绪，或目标区域尚未侦察', true);else if(g.pendingNuclear){g.pendingAbility=false;g.pendingNuclear=false;} updateUI(true); }
     else if (g.orderMode === 'rally') { g.command(world.x, world.y); g.orderMode = null; }
     else if (['attackMove', 'move', 'patrol'].includes(g.orderMode)) { g.command(world.x, world.y, g.orderMode === 'attackMove', 0, event.shiftKey && g.orderMode !== 'patrol'); clearOrderButtons(); }
-    else if (state.drag?.moved) r.selectBox(state.drag.start, world, state.drag.additive);
+    else if (state.drag?.moved) r.selectScreenBox(state.drag.start, p, state.drag.additive);
     else {
       state.dismissedInspectorId = null;
-      const picked = g.selectAt(world.x, world.y, event.shiftKey);
+      const picked = g.selectEntity(r.pickSelection(p.x, p.y), event.shiftKey);
       if (picked?.kind === 'unit' && event.pointerType !== 'touch') {
         state.lastSelectionClick = { id: picked.id, previousId: previousClick?.id };
       }
@@ -1187,7 +1191,7 @@ function setupControls() {
       else if (state.groups[key]) { g.selected = state.groups[key].filter(id => g.getEntity(id)?.owner === 0); updateSelection(); const target = g.getEntity(g.selected[0]); if (target && event.shiftKey) state.renderer.centerOn(target.x, target.y); }
     } else if (key === ' ') { g.selectAllCombat(); }
     else if (key === 't' && !event.repeat) { event.preventDefault(); selectSameModel(); }
-    else if (key === 'a') { g.placingBuilding = false; g.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('左键指定攻击移动目标'); }
+    else if (key === 'a') { g.placingBuilding = false; g.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('左键或右键指定攻击移动目标'); }
     else if (key === 'p') beginPatrol();
     else if (key === 's') { g.stopSelected(); clearOrderButtons(); }
     else if (key === 'h') state.renderer.centerOn(state.game.homeX||state.game.map.spawns?.[0]?.x||280,state.game.online?state.game.homeY:state.game.map.spawns?.[0]?.y||state.game.homeY);
@@ -1276,6 +1280,7 @@ function setupControls() {
   $('#audio-effects-test').addEventListener('click', async () => {
     $('#audio-effects-status').textContent = await gameAudio.previewEffects();
   });
+  $('#audio-music-track').addEventListener('change', event => { gameAudio.setSettings({ musicTrack: event.target.value }); });
   $('#audio-voice').addEventListener('change', event => { gameAudio.setSettings({ voiceURI: event.target.value }); });
   window.speechSynthesis?.addEventListener('voiceschanged', updateVoiceOptions);
   $('#audio-muted').addEventListener('change', event => { gameAudio.setSettings({ muted: event.target.checked }); updateAudioControls(); });
@@ -1350,6 +1355,7 @@ function setupControls() {
 function updateAudioControls() {
   const settings = gameAudio.settings;
   $('#audio-muted').checked = settings.muted;
+  $('#audio-music-track').value = settings.musicTrack || 'internationale';
   document.querySelectorAll('[data-audio]').forEach(slider => { slider.value = Math.round(settings[slider.dataset.audio] * 100); });
   document.querySelectorAll('[data-audio-value]').forEach(output => { output.value = `${Math.round(settings[output.dataset.audioValue] * 100)}%`; });
   $('#sound-btn').innerHTML = icon(settings.muted || !settings.master ? 'volume-x' : 'volume-2'); refreshIcons();

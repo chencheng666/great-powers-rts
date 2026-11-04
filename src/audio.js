@@ -5,6 +5,7 @@ import { NuclearAlarm, nuclearAlarmAudible, terminalNuclearWarning } from './nuc
 
 const assets = import.meta.glob(['../assets/audio/*.m4a','!../assets/audio/frontline-sequence.m4a'], { eager: true, query: '?url', import: 'default' });
 const portableVoices = import.meta.glob('../assets/audio/portable/*.wav', { eager: true, query: '?url', import: 'default' });
+const musicFiles = new Set(['internationale.m4a', 'iron-tide.m4a']);
 const SETTINGS_KEY = 'great-powers-audio-v1';
 
 export class GameAudio {
@@ -13,7 +14,7 @@ export class GameAudio {
     try { saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch { saved = {}; }
     this.settings = normalizeAudioSettings(saved || {});
     this.context = null; this.buffers = new Map(); this.pending = new Map();
-    this.active = false; this.paused = false; this.session = 0; this.music = null;
+    this.active = false; this.paused = false; this.session = 0; this.music = null; this.musicRequest = 0;
     this.voiceQueue = []; this.currentVoice = null; this.cooldowns = new Map(); this.variants = new Map(); this.lastSpeech = 0;
     this.celebrationNodes = new Set();
     this.movement = new MovementSounds(); this.listener = null;
@@ -52,13 +53,24 @@ export class GameAudio {
   async startBattle() {
     this.stopBattle(); this.active = true; const session = this.session;
     if (!await this.unlock()) return false;
+    if (!this.active || session !== this.session) return false;
+    this.say('welcome');
+    for (const file of Object.keys(assets).map(path => path.split('/').at(-1)).filter(name => !musicFiles.has(name))) this.buffer(file).catch(() => {});
+    return this.startMusic();
+  }
+
+  async startMusic() {
+    const session = this.session, request = ++this.musicRequest;
+    const file = (this.settings.musicTrack || 'internationale') + '.m4a';
     try {
-      const buffer = await this.buffer('iron-tide.m4a');
-      if (!this.active || session !== this.session) return false;
-      const source = this.context.createBufferSource(); source.buffer = buffer; source.loop = true; source.loopEnd = Math.min(buffer.duration, 32 * 4 * 60 / 132); source.connect(this.musicBus); source.start(); this.music = source;
-      this.applySettings(); this.say('welcome');
-      for (const file of Object.keys(assets).map(path => path.split('/').at(-1)).filter(name => name !== 'iron-tide.m4a')) this.buffer(file).catch(() => {});
-      return true;
+      const buffer = await this.buffer(file);
+      if (!this.active || session !== this.session || request !== this.musicRequest) return false;
+      if (this.music) { this.music.stop(); this.music.disconnect(); }
+      const source = this.context.createBufferSource();
+      source.buffer = buffer; source.loop = true;
+      source.loopEnd = file === 'iron-tide.m4a' ? Math.min(buffer.duration, 32 * 4 * 60 / 132) : buffer.duration;
+      source.connect(this.musicBus); source.start(); this.music = source;
+      this.applySettings(); return true;
     } catch { return false; }
   }
 
@@ -80,7 +92,9 @@ export class GameAudio {
   }
 
   setSettings(patch) {
+    const previousTrack = this.settings.musicTrack || 'internationale';
     this.settings = normalizeAudioSettings({ ...this.settings, ...patch });
+    if (this.active && this.context && previousTrack !== (this.settings.musicTrack || 'internationale')) this.startMusic();
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings)); } catch { /* 设置不能持久化时仍正常播放。 */ }
     if (this.settings.muted || this.settings.voice === 0 || this.settings.master === 0) this.clearVoices();
     this.applySettings();
