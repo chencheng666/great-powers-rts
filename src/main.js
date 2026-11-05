@@ -715,7 +715,9 @@ function updateSelection() {
 }
 
 function updatePanControl() {
-  $('#pan-map-btn').setAttribute('aria-pressed', String(state.cameraPanMode));
+  const button = $('#pan-map-btn');
+  button.setAttribute('aria-pressed', String(state.cameraPanMode));
+  button.title = state.cameraPanMode ? '拖图已开启 · Esc退出 · Shift左拖框选' : '拖拽地图模式（M）';
   $('#game-canvas').classList.toggle('pan-mode', state.cameraPanMode);
   $('#game-canvas').classList.toggle('panning', Boolean(state.panning?.moved || state.panning?.button !== undefined && state.panning.button !== 2));
 }
@@ -864,12 +866,13 @@ function showHelp() {
   showModal('操作说明', `<p>${mission ? mission.briefing+missionRules : VICTORY_MODES[state.game?.victoryMode || 'quick'].description+'即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。'}补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。先选中一名单位，按 T 或点「同型」可选中全图同型号我方单位。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
     <div class="keyline"><span>选择 / 框选部队</span><kbd>左键 / 拖动</kbd></div>
     <div class="keyline"><span>移动 / 攻击目标</span><kbd>右键</kbd></div>
-    <div class="keyline"><span>攻击移动 / 停止</span><kbd>A / S</kbd></div>
+    <div class="keyline"><span>攻击移动 / 巡逻 / 停止</span><kbd>A / P / S</kbd></div>
     <div class="keyline"><span>返场整备 / 卸载或起飞</span><kbd>R / U</kbd></div>
     <div class="keyline"><span>选中所有作战单位</span><kbd>空格</kbd></div>
     <div class="keyline"><span>保存 / 选择编队</span><kbd>Ctrl+1~9 / 1~9</kbd></div>
     <div class="keyline"><span>平移 / 缩放</span><kbd>右键或中键拖动 / 滚轮</kbd></div>
-    <div class="keyline"><span>拖拽地图模式 / 集结点</span><kbd>M / 选中工厂后右键</kbd></div>
+    <div class="keyline"><span>拖图模式 / 临时框选</span><kbd>M / Shift+左拖</kbd></div>
+    <div class="keyline"><span>工厂集结点</span><kbd>选中工厂后右键</kbd></div>
     <div class="keyline"><span>全屏 / 收起指挥面板</span><kbd>F / B</kbd></div>
     <div class="keyline"><span>暂停 / 返回基地</span><kbd>Esc / H</kbd></div>
     <p><a href="${new URL('../THIRD-PARTY-ASSETS.txt', import.meta.url).href}" download="第三方模型与材质署名.txt">第三方模型与材质署名</a></p>`, '<button class="primary-btn" data-modal="resume">进入战场</button>');
@@ -1042,7 +1045,7 @@ function beginPatrol() {
   const units=g.activeUnits(0).filter(u=>g.selected.includes(u.id));
   if(!units.length){toast('先选择要巡逻的部队');return;}
   g.placingBuilding=false;g.orderMode='patrol';clearOrderButtons();$('#patrol-btn').classList.add('active');
-  toast('点击巡逻终点：部队会从当前位置往返；点“停止”结束');
+  toast('在战场上左键或右键指定巡逻终点；点“停止”结束');
 }
 
 function clearOrderButtons() { for (const id of ['move-btn', 'attack-btn', 'patrol-btn']) $(`#${id}`).classList.remove('active'); }
@@ -1071,7 +1074,7 @@ function setupControls() {
         return;
       }
     }
-    if (event.pointerType !== 'touch' && shouldPanMap({button:event.button,alt:event.altKey,panMode:state.cameraPanMode,targeting:!!(g.placingBuilding||g.pendingAbility||g.orderMode)})) { state.panning = { ...p, start: p, button: event.button, moved: false }; updatePanControl(); return; }
+    if (event.pointerType !== 'touch' && shouldPanMap({button:event.button,alt:event.altKey,shift:event.shiftKey,panMode:state.cameraPanMode,targeting:!!(g.placingBuilding||g.pendingAbility||g.orderMode)})) { state.panning = { ...p, start: p, button: event.button, moved: false }; updatePanControl(); return; }
     if (g.paused) return;
     if (event.button === 0) { state.drag = { start: p, end: p, moved: false, additive: event.shiftKey }; }
   });
@@ -1183,7 +1186,7 @@ function setupControls() {
     if (key === 'm' && !event.repeat) { event.preventDefault(); state.cameraPanMode = !state.cameraPanMode; updatePanControl(); return; }
     if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' '].includes(key)) event.preventDefault();
     if (key.startsWith('arrow')) state.keys.add(key);
-    if (key === 'escape') { if(g.pendingAbility){g.pendingAbility=false;g.pendingNuclear=false;updateUI(true);}else if (g.placingBuilding) { g.placingBuilding = false; updateUI(true); } else if (g.orderMode) { g.orderMode = null; clearOrderButtons(); } else if (!$('#modal').classList.contains('hidden')) closeModal(); else showPause(); return; }
+    if (key === 'escape') { if(g.pendingAbility){g.pendingAbility=false;g.pendingNuclear=false;updateUI(true);}else if (g.placingBuilding) { g.placingBuilding = false; updateUI(true); } else if (g.orderMode) { g.orderMode = null; clearOrderButtons(); } else if (!$('#modal').classList.contains('hidden')) closeModal(); else if (state.cameraPanMode) { state.cameraPanMode = false; updatePanControl(); } else showPause(); return; }
     if (!g.running || g.paused || !$('#modal').classList.contains('hidden')) return;
     if(g.isControlLocked(0)&&['a','p','s','u','r'].includes(key))return;
     if (key >= '1' && key <= '9') {
@@ -1226,8 +1229,8 @@ function setupControls() {
     if (action === 'rally') { g.selected = [id]; g.orderMode = 'rally'; state.cameraPanMode = false; updatePanControl(); }
     updateSelection(); updateUI(true);
   });
-  $('#move-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'move'; clearOrderButtons(); $('#move-btn').classList.add('active'); toast('在战场上指定移动目标'); });
-  $('#attack-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('在战场上指定攻击移动目标'); });
+  $('#move-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'move'; clearOrderButtons(); $('#move-btn').classList.add('active'); toast('在战场上左键或右键指定移动目标'); });
+  $('#attack-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('在战场上左键或右键指定攻击移动目标'); });
   $('#patrol-btn').addEventListener('click', beginPatrol);
   $('#unload-btn').addEventListener('click', () => { const g = state.game; if (!g || g.paused) return; for (const id of [...g.selected]) g.unloadTransport(g.getEntity(id)); updateSelection(); });
   $('#resupply-btn').addEventListener('click', () => { const g = state.game; if (!g || g.paused) return; for (const id of g.selected) g.requestResupply(g.getEntity(id)); updateSelection(); });
