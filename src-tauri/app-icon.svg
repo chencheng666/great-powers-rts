@@ -2,11 +2,13 @@
   <rect width="64" height="64" rx="12" fill="#101c20"/>
   <g fill="none" stroke="#f0d397" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round">
     <path d="M17 9C23 7.5 42 7.5 47 9C51 16 51.5 31 49 43C47 52 41 57 33 57C23 57 15 52 13 42C11 30 12 16 17 9Z"/>
-    <path d="M14 18.5C24 18 40 18 50 18.5M36 18C39 15.5 41.5 13 43 11"/>
+    <path d="M36 18C39 15.5 41.5 13 43 11"/>
+    <path d="M44 25C41 29 38.5 32 36.5 36"/>
     <path d="M20 27C23 26 29 26 32 27V32.5Q32 35 29 35H22Q20 35 20 33ZM15 44C20 42.5 27 42 33 42"/>
   </g>
   <g fill="none" stroke="#ff765d" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 18.5C24 18 40 18 50 18.5"/>
     <path d="M35.5 8C37 15 36 24 37 32C38 40 41.5 46 46 51"/>
-    <path d="M44 25C41 29 38.5 32 36.5 36C33.5 42 31 48 29.5 53"/>
+    <path d="M36.5 36C33.5 42 31 48 29.5 53"/>
   </g>
 </svg>
