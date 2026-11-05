@@ -373,7 +373,7 @@ async function deployGame(save = null, onlinePayload = null) {
   }
   $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false');
   const battle = state.game;
-  gameAudio.startBattle().then(ok => { if (state.game === battle) { gameAudio.setPaused(battle.paused); if (!ok) toast('声音未能启动，可在声音设置中重试', true); } });
+  gameAudio.startBattle().then(ok => { if (state.game === battle) { gameAudio.setPaused(battle.paused); if (ok === false) toast('声音未能启动，可在声音设置中重试', true); } });
   state.tab = 'build';
   document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.tab === 'build'));
   updateUI(true);
@@ -1273,7 +1273,7 @@ function setupControls() {
   $('#sound-btn').addEventListener('click', () => {
     $('#audio-panel').hidden = !$('#audio-panel').hidden;
     $('#sound-btn').setAttribute('aria-expanded', String(!$('#audio-panel').hidden));
-    gameAudio.unlock().then(ok => { if (ok && state.game && !gameAudio.music) gameAudio.startBattle(); }).catch(() => {});
+    gameAudio.unlock().catch(() => {});
   });
   $('#audio-close').addEventListener('click', () => { $('#audio-panel').hidden = true; $('#sound-btn').setAttribute('aria-expanded', 'false'); });
   $('#audio-test').addEventListener('click', () => { gameAudio.unlock().then(ok => { if (ok) gameAudio.say('welcome', { preview: true }); }).catch(() => {}); });
@@ -1290,7 +1290,7 @@ function setupControls() {
     }
     status.textContent = '正在切换配乐…';
     const playing = await gameAudio.switchMusic(select.value);
-    if (request !== musicSelection) return;
+    if (playing === null || request !== musicSelection) return;
     const { muted, master, music } = gameAudio.settings;
     status.textContent = playing
       ? muted || !master || !music ? '已切换，当前配乐音量为零' : '正在播放《' + select.selectedOptions[0].textContent.split(' · ')[0] + '》'

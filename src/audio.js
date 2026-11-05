@@ -53,7 +53,7 @@ export class GameAudio {
   async startBattle() {
     this.stopBattle(); this.active = true; const session = this.session;
     if (!await this.unlock()) return false;
-    if (!this.active || session !== this.session) return false;
+    if (!this.active || session !== this.session) return null;
     this.say('welcome');
     for (const file of Object.keys(assets).map(path => path.split('/').at(-1)).filter(name => !musicFiles.has(name))) this.buffer(file).catch(() => {});
     return this.startMusic();
@@ -61,7 +61,9 @@ export class GameAudio {
 
   async switchMusic(track) {
     this.setSettings({ musicTrack: track });
+    const session = this.session;
     if (!this.active || !await this.unlock()) return false;
+    if (session !== this.session) return null;
     return this.startMusic();
   }
 
@@ -70,7 +72,7 @@ export class GameAudio {
     const file = (this.settings.musicTrack || 'internationale') + '.m4a';
     try {
       const buffer = await this.buffer(file);
-      if (!this.active || session !== this.session || request !== this.musicRequest) return false;
+      if (!this.active || session !== this.session || request !== this.musicRequest) return null;
       const source = this.context.createBufferSource();
       source.buffer = buffer; source.loop = true;
       source.loopEnd = file === 'iron-tide.m4a' ? Math.min(buffer.duration, 32 * 4 * 60 / 132) : buffer.duration;
@@ -78,7 +80,7 @@ export class GameAudio {
       if (this.music) { this.music.stop(); this.music.disconnect(); }
       this.music = source;
       this.applySettings(); return true;
-    } catch { return false; }
+    } catch { return this.active && session === this.session && request === this.musicRequest ? false : null; }
   }
 
   stopBattle() {
