@@ -59,17 +59,24 @@ export class GameAudio {
     return this.startMusic();
   }
 
+  async switchMusic(track) {
+    this.setSettings({ musicTrack: track });
+    if (!this.active || !await this.unlock()) return false;
+    return this.startMusic();
+  }
+
   async startMusic() {
     const session = this.session, request = ++this.musicRequest;
     const file = (this.settings.musicTrack || 'internationale') + '.m4a';
     try {
       const buffer = await this.buffer(file);
       if (!this.active || session !== this.session || request !== this.musicRequest) return false;
-      if (this.music) { this.music.stop(); this.music.disconnect(); }
       const source = this.context.createBufferSource();
       source.buffer = buffer; source.loop = true;
       source.loopEnd = file === 'iron-tide.m4a' ? Math.min(buffer.duration, 32 * 4 * 60 / 132) : buffer.duration;
-      source.connect(this.musicBus); source.start(); this.music = source;
+      source.connect(this.musicBus); source.start();
+      if (this.music) { this.music.stop(); this.music.disconnect(); }
+      this.music = source;
       this.applySettings(); return true;
     } catch { return false; }
   }
@@ -92,9 +99,7 @@ export class GameAudio {
   }
 
   setSettings(patch) {
-    const previousTrack = this.settings.musicTrack || 'internationale';
     this.settings = normalizeAudioSettings({ ...this.settings, ...patch });
-    if (this.active && this.context && previousTrack !== (this.settings.musicTrack || 'internationale')) this.startMusic();
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings)); } catch { /* 设置不能持久化时仍正常播放。 */ }
     if (this.settings.muted || this.settings.voice === 0 || this.settings.master === 0) this.clearVoices();
     this.applySettings();

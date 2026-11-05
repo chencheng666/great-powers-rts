@@ -36,7 +36,7 @@ export function glideProfile(distance, groundRadius) {
   return { fraction, pitch: pitch || 0 };
 }
 
-export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight) {
+export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight, deckHeight) {
   if (!fixedWingPresentation(entity.type, game.map.future) || entity.deckApproach || entity.embarkedIn) return null;
   const grounded = game.aircraftGrounded(entity);
   // 所有机型都须站在铺装表面上，不能仅为带起落架细节的机型抬高。
@@ -46,7 +46,8 @@ export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight)
     entry.wasGrounded = false; entry.takeoffOrigin = null;
     const travel = Math.hypot(entity.x - entity.deployment.fromX, entity.y - entity.deployment.fromY);
     const fraction = clamp((travel - 45) / 110);
-    return { height: groundHeight + groundOffset + (cruiseHeight - groundHeight - groundOffset) * fraction, pitch: fraction > 0 && fraction < 1 ? .08 : 0 };
+    const start = deckHeight ?? (groundHeight + groundOffset);
+    return { height: start + (cruiseHeight - start) * fraction, pitch: fraction > 0 && fraction < 1 ? .08 : 0 };
   }
   if (entry.wasGrounded && !grounded) entry.takeoffOrigin = { x: entity.x, y: entity.y };
   entry.wasGrounded = grounded;

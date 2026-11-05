@@ -4,10 +4,10 @@
   "createdAt": "2026-10-27T01:11:56.432676+00:00",
   "files": [
     {
-      "name": "packages/Great-Powers-RTS-v2.0.3-20261104.zip",
+      "name": "packages/Great-Powers-RTS-v2.0.3-20261105.zip",
       "label": "2.0.3 网页热更新 · 免安装 ZIP",
-      "size": 55909738,
-      "sha256": "0ea18965ffa95acae8a3e4e817de62de2d8d9ce643caa503e1cf1536395b6c5a",
+      "size": 55910250,
+      "sha256": "5188defaf21ac7fea8e49ad1780088598d64d3fdbdd1e703dcc45c11276926a4",
       "status": "新版原创配乐、右侧实时生产倒计时与各型号数量、人员与车辆分项及零员提醒、就绪提示上移；ZIP无需安装，桌面更新检查仅在2.0.3桌面安装包提供。"
     },
     {
@@ -417,7 +417,7 @@
       "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
     }
   ],
-  "webReleaseTag": "web-20261104-selection-music-r1",
+  "webReleaseTag": "web-20261105-naval-audio-r1",
   "updatedAt": "2026-11-02T12:00:00+08:00",
   "archiveTags": [
     "v2.0.2",
@@ -425,7 +425,7 @@
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v2.0.3-20261104.zip",
+  "offlineFile": "packages/Great-Powers-RTS-v2.0.3-20261105.zip",
   "webBuild": "20261102-feedback-diagnostics-r2",
   "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs"
 }

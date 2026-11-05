@@ -1,4 +1,4 @@
-import { AIRCRAFT_LENGTHS, airframeScale, flightScaleFactor, unitModelScale, presentationRadius, aircraftCruiseHeight } from './model-scale.js';
+import { AIRCRAFT_LENGTHS, airframeScale, flightScaleFactor, unitModelScale, presentationRadius, aircraftCruiseHeight, aircraftGroundFactor, CARRIER_DECK_HEIGHT, CARRIER_MODEL_LENGTH } from './model-scale.js';
 import { carrierAirGroupLabel } from './carrier-airgroup.js';
 import { growthAppearance } from './growth-rewards.js';
 import { valleyRockPositions } from './kenney-rock-geometry.js';
@@ -946,7 +946,7 @@ export class Renderer {
       if (entity.hp <= 0) continue; active.add(entity.id);
       const visible=visibility.get(entity.id),cached=this.entities.get(entity.id);
       if (!visible) {
-        if (cached) { cached.entity=entity;cached.model.visible=false;cached.identity.visible=false;cached.ring.visible=false;cached.lastX=entity.x;cached.lastY=entity.y; }
+        if (cached) { cached.entity=entity;cached.model.visible=false;cached.identity.visible=false;cached.ring.visible=false;cached.lastX=entity.x;cached.lastY=entity.y;if (entity.embarkedIn) cached.flightHeight = undefined; }
         if(entity.kind==='building')this.updateFoundation(entity,false);
         continue;
       }
@@ -957,7 +957,8 @@ export class Renderer {
       if (entity.kind === 'building') this.updateFoundation(entity, visible);
       const damage = damagePresentation(entity); this.setDamageStage(entry, damage.stage);
       const moving = Math.hypot(entity.x - entry.lastX, entity.y - entry.lastY) > .05;
-      let height = this.elevation(entity.x, entity.y);
+      const ground = this.elevation(entity.x, entity.y);
+      let height = ground, deckHeight;
       if (entity.kind === 'unit') {
         const tags = UNITS[entity.type].tags;
         const cruise = aircraftCruiseHeight(entity.type, tags, this.game.map.future, entry.model.userData.tandemRotors);
@@ -979,8 +980,19 @@ export class Renderer {
         }
         if (entry.model.userData.tandemRotors) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x,entity.y)+4 : cruiseHeight+Math.sin(this.game.time*2+entity.id);
         else if (tags.includes('jet')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x, entity.y) + 4 : cruiseHeight * (entity.deployment ? Math.min(1, (this.game.time - entity.deployment.start) / 2.6) : 1) + Math.sin(now * .001 + entity.id) * 2;
-        if (entity.deckApproach) height = 15 + 80 * Math.max(0, (entity.deckApproach.until - this.game.time) / 2.4);
-        if (entity.embarkedIn) height = 15;
+        if (tags.includes('deck') && (entity.deckApproach || entity.deployment)) {
+          const carrierId = entity.deckApproach?.carrierId ?? entity.deployment?.buildingId;
+          if (this.game.getEntity(carrierId)?.type === 'carrier') {
+            const scale = this.entities.get(carrierId)?.scale ?? CARRIER_MODEL_LENGTH / 24;
+            deckHeight = 2 + CARRIER_DECK_HEIGHT * scale;
+          }
+        }
+        if (entity.deckApproach) {
+          const base = deckHeight ?? 15;
+          const remaining = clamp((entity.deckApproach.until - this.game.time) / 2.4, 0, 1);
+          height = base + (cruiseHeight - base) * remaining;
+        }
+        if (entity.embarkedIn) height = deckHeight ?? 15;
         else if (tags.includes('drone')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x, entity.y) + 4 : cruiseHeight + Math.sin(this.game.time * 3 + entity.id) * 1.5;
         else if (tags.includes('rotorcraft')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x,entity.y)+4 : cruiseHeight+Math.sin(this.game.time*2+entity.id);
         if (entity.type === 'airlift' && !moving && this.game.transportGrounded(entity)) height = this.elevation(entity.x, entity.y) + 6;
@@ -1013,15 +1025,18 @@ export class Renderer {
           height = entry.flightHeight;
         }
         if (tags.includes('jet')) {
-          const flightPose = entry.model.userData.tandemRotors ? null : fixedWingHeight(this.game, entity, entry, this.elevation(entity.x, entity.y), cruiseHeight);
+          const flightPose = entry.model.userData.tandemRotors ? null : fixedWingHeight(this.game, entity, entry, this.elevation(entity.x, entity.y), cruiseHeight, deckHeight);
           if (flightPose) {
             height = flightPose.height;
             entry.pitch += (flightPose.pitch - entry.pitch) * (1 - Math.exp(-dt * 5)); entry.model.rotation.z = entry.pitch;
           } else { entry.pitch += (0 - entry.pitch) * (1 - Math.exp(-dt * 5)); entry.model.rotation.z = entry.pitch; }
           entry.bank += (clamp(turn * .65, -.4, .4) - entry.bank) * (1 - Math.exp(-dt * 5));
           entry.model.rotation.x = entry.bank;
-          entry.flightHeight ??= height;
-          entry.flightHeight += (height - entry.flightHeight) * (1 - Math.exp(-dt * 5));
+          if (entity.deckApproach) entry.flightHeight = height;
+          else {
+            entry.flightHeight ??= height;
+            entry.flightHeight += (height - entry.flightHeight) * (1 - Math.exp(-dt * 5));
+          }
           height = entry.flightHeight;
         }
         if (entry.weapon) { entry.weapon.rotation.y = entry.heading - animation.turret; entry.weapon.position.x = 0; }
@@ -1065,8 +1080,9 @@ export class Renderer {
       animateFacility(entry.model, entity, this.game);
       if (!this.game.map.future && AIRCRAFT_LENGTHS[entity.type]) {
         const cruise = aircraftCruiseHeight(entity.type, UNITS[entity.type].tags, false, entry.model.userData.tandemRotors);
-        const surface = airfieldSurfaceHeight(this.game, entity, this.elevation(entity.x, entity.y));
-        const factor = flightScaleFactor(height - surface, entity.type, cruise - (surface - this.elevation(entity.x, entity.y)));
+        const surface = deckHeight ?? airfieldSurfaceHeight(this.game, entity, ground);
+        const flightBase = UNITS[entity.type].tags.includes('deck') ? 0 : ground;
+        const factor = flightScaleFactor(height - surface, entity.type, flightBase + cruise - surface);
         entry.model.scale.setScalar(entry.scale * factor); entry.displayTopHeight = entry.topHeight * factor;
         entry.flightScaleFactor = factor;
       }
@@ -1089,10 +1105,16 @@ export class Renderer {
         for (const [id, plane] of entry.deckModels) if (!ids.has(id)) { entry.model.remove(plane); entry.deckModels.delete(id); }
         parked.forEach((plane, i) => {
           let mesh = entry.deckModels.get(plane.id);
-          if (!mesh) { mesh = createModel(equipmentModel(this.game.players[entity.owner].faction, plane.type), teamVisual(entity.owner).color); const length = new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3()).x; mesh.scale.setScalar(airframeScale(plane.type, length, 11) / 3 / entry.scale); entry.model.add(mesh); entry.deckModels.set(plane.id, mesh); }
+          if (!mesh) {
+            mesh = createModel(equipmentModel(this.game.players[entity.owner].faction, plane.type), teamVisual(entity.owner).color);
+            const bounds = new THREE.Box3().setFromObject(mesh);
+            mesh.scale.setScalar(airframeScale(plane.type, bounds.getSize(new THREE.Vector3()).x, 11) * aircraftGroundFactor(plane.type) / entry.scale);
+            mesh.userData.deckClearance = Math.max(0, -bounds.min.y) * mesh.scale.y;
+            entry.model.add(mesh); entry.deckModels.set(plane.id, mesh);
+          }
           const parkingX = -8 + i * 4.1, taxi = plane.deckTaxi;
           const progress = taxi?.phase === 'out' ? taxi.progress : taxi?.phase === 'in' ? 1 - taxi.progress : 0;
-          mesh.position.set(parkingX + (4 - parkingX) * progress, 1.3, -1.3 * (1 - progress));
+          mesh.position.set(parkingX + (4 - parkingX) * progress, CARRIER_DECK_HEIGHT + mesh.userData.deckClearance, -1.3 * (1 - progress));
           mesh.rotation.y = -Math.PI / 4 * (1 - progress);
         });
       }
@@ -1202,8 +1224,8 @@ export class Renderer {
 
   effectHeight(type, x, y) {
     const tags = UNITS[type]?.tags || [];
-    if (!this.game.map.future && tags.includes('air')) return this.elevation(x, y) + aircraftCruiseHeight(type, tags) + 3;
-    return tags.includes('jet') ? 98 : tags.includes('rotorcraft') ? 55 : tags.includes('drone') ? 29 : this.elevation(x, y) + (BUILDINGS[type] ? 28 : !this.game.map.future && this.modelEffectHeights?.has(type) ? this.modelEffectHeights.get(type) : type === 'tank' ? 21.3 : tags.includes('infantry') ? 15.5 : 18);
+    if (tags.includes('air')) return (this.game.map.future || tags.includes('deck') ? 0 : this.elevation(x, y)) + aircraftCruiseHeight(type, tags, this.game.map.future) + 3;
+    return this.elevation(x, y) + (BUILDINGS[type] ? 28 : !this.game.map.future && this.modelEffectHeights?.has(type) ? this.modelEffectHeights.get(type) : type === 'tank' ? 21.3 : tags.includes('infantry') ? 15.5 : 18);
   }
 
   updateEffects() {

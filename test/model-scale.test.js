@@ -6,7 +6,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createChineseTank } from '../src/domestic-models.js';
 import { createModernAircraft, createTandemTransport } from '../src/aircraft-models.js';
 import { createStrategicModel } from '../src/strategic-models.js';
-import { unitModelScale, flightScaleFactor, aircraftCruiseHeight, PERSONNEL_HEIGHT } from '../src/model-scale.js';
+import { unitModelScale, flightScaleFactor, aircraftCruiseHeight, PERSONNEL_HEIGHT, CARRIER_MODEL_LENGTH } from '../src/model-scale.js';
 import { createPersonnel } from '../src/personnel-models.js';
 import { equipmentModel } from '../src/equipment.js';
 import { aircraftGroundHeight, airfieldSurfaceHeight, fixedWingHeight } from '../src/airfield-presentation.js';
@@ -30,7 +30,11 @@ test('用真实模型校验陆地坦克、直升机、战斗机、轰炸机和�
     }
   }
   for(const [type,ratio] of Object.entries({helicopter:.6,fighter:1,bomber:1.5,airlift:2}))close(grounded[type]/grounded.tank,ratio/.5);
-  close(flightScaleFactor(0,'navalFighter'),1/3);
+  close(flightScaleFactor(0,'navalFighter'),2/7);
+  const carrier=gltf.scene.getObjectByName('carrier').clone(), dimensions=size(carrier);
+  carrier.scale.setScalar(unitModelScale('carrier',dimensions,8));
+  close(size(carrier).x,CARRIER_MODEL_LENGTH);
+  assert.ok(size(carrier).x / (84 * flightScaleFactor(0,'navalFighter')) >= 12);
   close(unitModelScale('tank',size(models.tank),10,true),10);
   for(const type of ['fighter','bomber','airlift','helicopter'])for(let h=1;h<=100;h++)assert.ok(flightScaleFactor(h,type)>=flightScaleFactor(h-1,type));
 });
@@ -49,7 +53,11 @@ test('三层高度区分地面、低空旋翼和高空固定翼，运输机与�
   assert.ok(drone>15&&drone<rotor);assert.ok(rotor<aircraftCruiseHeight('fighter',['jet','air']));
   assert.ok(aircraftCruiseHeight('fighter')<aircraftCruiseHeight('bomber'));assert.ok(aircraftCruiseHeight('bomber')<aircraftCruiseHeight('airlift'));
   close(aircraftCruiseHeight('airlift'),aircraftCruiseHeight('freightPlane'));
-  close(aircraftCruiseHeight('airlift',['jet','air'],false,true),rotor);
+  const fighter = aircraftCruiseHeight('fighter',['jet','air']);
+  assert.ok(aircraftCruiseHeight('freightPlane')-fighter >= 60);
+  assert.ok(fighter-aircraftCruiseHeight('freightPlane',['jet','air'],false,true)>=30);
+  close(aircraftCruiseHeight('airlift',['jet','air'],false,true),aircraftCruiseHeight('freightPlane',['jet','air'],false,true));
+  assert.ok(aircraftCruiseHeight('freightPlane',['jet'],true)-aircraftCruiseHeight('fighter',['jet'],true)>=45);
   close(aircraftCruiseHeight('navalFighter'),95);close(aircraftCruiseHeight('fighter',['jet'],true),95);
 });
 
@@ -74,6 +82,10 @@ test('无专用起落架的飞机也在机场铺装上接地，队列离场后�
   }
   game.aircraftGrounded=()=>false;entity.deployment={fromX:1000,fromY:1040};entity.x+=200;
   assert.equal(fixedWingHeight(game,entity,entry,1,95).height,95);
+  const carrierJet={...entity,type:'navalFighter',deployment:{fromX:entity.x,fromY:entity.y}};
+  assert.equal(fixedWingHeight(game,carrierJet,entry,1,95,18).height,18);
+  carrierJet.x+=200;
+  assert.equal(fixedWingHeight(game,carrierJet,entry,1,95,18).height,95);
   delete entity.deployment;assert.equal(fixedWingHeight(game,entity,entry,1,95),null);assert.equal(entry.takeoffOrigin,null);
 });
 

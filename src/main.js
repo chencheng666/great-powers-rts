@@ -1280,7 +1280,24 @@ function setupControls() {
   $('#audio-effects-test').addEventListener('click', async () => {
     $('#audio-effects-status').textContent = await gameAudio.previewEffects();
   });
-  $('#audio-music-track').addEventListener('change', event => { gameAudio.setSettings({ musicTrack: event.target.value }); });
+  let musicSelection = 0;
+  async function playSelectedMusic() {
+    const request = ++musicSelection, select = $('#audio-music-track'), status = $('#audio-music-status');
+    if (!state.game?.running) {
+      gameAudio.setSettings({ musicTrack: select.value });
+      status.textContent = '已保存配乐，下次开局播放';
+      return;
+    }
+    status.textContent = '正在切换配乐…';
+    const playing = await gameAudio.switchMusic(select.value);
+    if (request !== musicSelection) return;
+    const { muted, master, music } = gameAudio.settings;
+    status.textContent = playing
+      ? muted || !master || !music ? '已切换，当前配乐音量为零' : '正在播放《' + select.selectedOptions[0].textContent.split(' · ')[0] + '》'
+      : '未能播放，请点击“播放所选配乐”重试';
+  }
+  $('#audio-music-track').addEventListener('change', playSelectedMusic);
+  $('#audio-music-play').addEventListener('click', playSelectedMusic);
   $('#audio-voice').addEventListener('change', event => { gameAudio.setSettings({ voiceURI: event.target.value }); });
   window.speechSynthesis?.addEventListener('voiceschanged', updateVoiceOptions);
   $('#audio-muted').addEventListener('change', event => { gameAudio.setSettings({ muted: event.target.checked }); updateAudioControls(); });

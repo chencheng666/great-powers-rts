@@ -15,14 +15,20 @@ export const AIRCRAFT_LENGTHS = Object.freeze({
   ...Object.fromEntries(Object.entries(LAND_AIRCRAFT_LENGTHS).map(([type, length]) => [type, length * 1.25])),
   navalFighter: 84, navalStrike: 84,
 });
-export const aircraftGroundFactor = type => type === 'navalFighter' || type === 'navalStrike' ? 1 / 3 : .8;
+export const CARRIER_MODEL_LENGTH = 288;
+export const CARRIER_DECK_HEIGHT = 1.3;
+export const aircraftGroundFactor = type => type === 'navalFighter' || type === 'navalStrike' ? 2 / 7 : .8;
+
+const fixedWingCruise = { fighter: 86, strike: 82, ewPlane: 96, bomber: 112, airlift: 156, freightPlane: 156 };
+const lunarCruise = { airlift: 148, freightPlane: 148 };
 
 export function aircraftCruiseHeight(type, tags = [], future = false, tandem = false) {
   const rotor = tandem || tags.includes('rotorcraft'), drone = tags.includes('drone');
-  if (future) return rotor ? 45 : drone ? 23 : 95;
+  if (future) return rotor ? 45 : drone ? 23 : lunarCruise[type] ?? 95;
+  if (tandem) return 54;
   if (rotor) return 42;
   if (drone) return 26;
-  return ({ fighter: 80, strike: 78, ewPlane: 88, bomber: 100, airlift: 112, freightPlane: 112 })[type] || 95;
+  return fixedWingCruise[type] ?? 95;
 }
 
 export function airframeScale(type, modelLength, fallback) {
@@ -31,6 +37,7 @@ export function airframeScale(type, modelLength, fallback) {
 export function unitModelScale(type, size, fallback, future = false) {
   if (future) return fallback;
   if (['rifle', 'engineer', 'scout', 'evacuee'].includes(type)) return size.y > 0 ? PERSONNEL_HEIGHT / size.y : fallback;
+  if (type === 'carrier' && size.x > 0) return CARRIER_MODEL_LENGTH / size.x;
   if (GROUND_MODEL_LENGTHS[type]) return size.x > 0 ? GROUND_MODEL_LENGTHS[type] / size.x : fallback;
   return airframeScale(type, size.x, fallback);
 }
@@ -40,6 +47,7 @@ export function flightScaleFactor(relativeHeight, type = 'fighter', cruiseHeight
 }
 
 export function presentationRadius(type, fallback) {
+  if (type === 'carrier') return Math.max(fallback, CARRIER_MODEL_LENGTH * .42);
   const length = GROUND_MODEL_LENGTHS[type];
   return length ? Math.max(12, length * .55) : ['rifle', 'engineer', 'scout', 'evacuee'].includes(type) ? 6 : fallback;
 }
