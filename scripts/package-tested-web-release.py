@@ -52,9 +52,16 @@ folder.mkdir(parents=True, exist_ok=True)
 archive = folder / (release + '.tar.gz')
 if archive.exists():
     raise SystemExit('发布包已存在，禁止覆盖')
+def public_permissions(item):
+    # 发布包只有公开资源与服务代码，不继承来源文件的私人权限或本机属主。
+    item.mode = 0o755 if item.isdir() else 0o644
+    item.uid = item.gid = 0
+    item.uname = item.gname = 'root'
+    return item
+
 with tarfile.open(archive, 'w:gz') as tar:
     for path in sorted(set(paths)):
-        tar.add(path, arcname=str(path.relative_to(root)), recursive=False)
+        tar.add(path, arcname=str(path.relative_to(root)), recursive=False, filter=public_permissions)
 report = {'release': release, 'sourceCommit': commit, 'build': build, 'archive': str(archive),
           'bytes': archive.stat().st_size, 'sha256': sha(archive), 'entries': len(set(paths)), 'requiredFiles': len(files)}
 (folder / 'package.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
