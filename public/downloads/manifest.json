@@ -11,6 +11,69 @@
       "status": "六步教学、三条作战路线、战后建议、新图标及交响器乐配乐。断网可单机；换文件位置前请导出战局、荣誉与挑战档案。"
     },
     {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.0.0/Great.Powers_3.0.0_aarch64.app.tar.gz",
+      "label": "3.0.0 · macOS Apple Silicon · Great.Powers_3.0.0_aarch64.app.tar.gz",
+      "size": 89723152,
+      "sha256": "3e813b66aa9a4bfff63294f2e133f25cbcdeefdde1613affa4867362a66c39b5",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.0.0/Great.Powers_3.0.0_aarch64.AppImage",
+      "label": "3.0.0 · Linux ARM64 · Great.Powers_3.0.0_aarch64.AppImage",
+      "size": 166230536,
+      "sha256": "c4d48bb527e7fb2e33c1bed8494692824d0d936ac2319e63c16c8649b1790469",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.0.0/Great.Powers_3.0.0_aarch64.dmg",
+      "label": "3.0.0 · macOS Apple Silicon · Great.Powers_3.0.0_aarch64.dmg",
+      "size": 89854919,
+      "sha256": "345d14b616a9277a24f2948981be8ac75b8367e8e4ff7afcb2d778473eff6fda",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.0.0/Great.Powers_3.0.0_amd64.AppImage",
+      "label": "3.0.0 · Linux x64 · Great.Powers_3.0.0_amd64.AppImage",
+      "size": 168069624,
+      "sha256": "41ae3b9cb3113812b3de5fb62682ddf7eb4e3e79d6f449b36a99837092a80e24",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.0.0/Great.Powers_3.0.0_amd64.deb",
+      "label": "3.0.0 · Linux x64 · Great.Powers_3.0.0_amd64.deb",
+      "size": 89693496,
+      "sha256": "9d8751158a458b6edd14d83f529060b2321fc92eb5e1b91331bb313c1be71674",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.0.0/Great.Powers_3.0.0_arm64.deb",
+      "label": "3.0.0 · Linux ARM64 · Great.Powers_3.0.0_arm64.deb",
+      "size": 89741058,
+      "sha256": "f9c15137747fe8c8c4f21d9265e7591f4983016f4037a974f15275f93f08a147",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.0.0/Great.Powers_3.0.0_x64-setup.exe",
+      "label": "3.0.0 · Windows x64 · Great.Powers_3.0.0_x64-setup.exe",
+      "size": 306907416,
+      "sha256": "cf561f616182e8ce3e942e05914055af22ff93d7366747a26fec18197eac4e77",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.0.0/Great.Powers_3.0.0_x64.app.tar.gz",
+      "label": "3.0.0 · macOS Intel · Great.Powers_3.0.0_x64.app.tar.gz",
+      "size": 90432606,
+      "sha256": "074e58be68f6ca37fd742d111a0ef4aabe038ea5fc519373ed9b1beb9b0ff34f",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.0.0/Great.Powers_3.0.0_x64.dmg",
+      "label": "3.0.0 · macOS Intel · Great.Powers_3.0.0_x64.dmg",
+      "size": 90562957,
+      "sha256": "fa08c27c879365fedb4fbb4275b47276a611e1ed1d541b4ae771e45de36a498d",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v2.0.3-20261105.zip",
       "label": "2.0.3 网页热更新 · 免安装 ZIP",
       "size": 55910315,
