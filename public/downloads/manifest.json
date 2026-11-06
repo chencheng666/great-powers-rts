@@ -4,6 +4,13 @@
   "createdAt": "2026-11-06T11:20:00+08:00",
   "files": [
     {
+      "name": "packages/Great-Powers-Starport-v3.0.0-TapTap.zip",
+      "label": "3.0.0 星港演习 · 独立科幻战术 H5 ZIP",
+      "size": 14047231,
+      "sha256": "c42bb55aef44967189d17cc894fa29c35d92f2a7076bd203b0fccbae792adf31",
+      "status": "仅含虚构工程组、两张月表地图与原创机体；本地单机，不上报统计。TapTap候选包，平台审核状态另行核验。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v3.0.0.zip",
       "label": "3.0.0 指挥官征途 · 免安装离线 ZIP",
       "size": 58948805,

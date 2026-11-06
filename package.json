@@ -17,7 +17,9 @@
     "dev:desktop": "vite --host 127.0.0.1 --port 4187 --strictPort --configLoader native",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
-    "package:utools": "node scripts/package-utools.mjs"
+    "package:utools": "node scripts/package-utools.mjs",
+    "package:taptap-scifi": "node scripts/package-taptap-scifi.mjs",
+    "stage:taptap-scifi": "node scripts/stage-taptap-scifi.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.2",
