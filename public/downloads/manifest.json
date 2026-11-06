@@ -4,11 +4,18 @@
   "createdAt": "2026-11-06T11:20:00+08:00",
   "files": [
     {
+      "name": "packages/Great-Powers-Starport-v3.0.0-TapTap-r3.zip",
+      "label": "3.0.0 星港演习 r3 · 独立科幻战术 H5 ZIP",
+      "size": 5824433,
+      "sha256": "6d54c6240fcda990d359caee61223463e45deffad4f260facab1989a7dff22e4",
+      "status": "清理共享模块中的未使用旧资源导入，含AI辅助美术说明；本地匿名单机。TapTap候选包，审核状态另行核验。"
+    },
+    {
       "name": "packages/Great-Powers-Starport-v3.0.0-TapTap-r2.zip",
-      "label": "3.0.0 星港演习 r2 · 独立科幻战术 H5 ZIP",
+      "label": "3.0.0 星港演习 r2 · 历史 H5 候选包",
       "size": 14047462,
       "sha256": "922355912d1d1d2f28d772f332eecccb6f3255088ca6839d47cfbf487245d298",
-      "status": "含AI辅助美术说明，仅存本机战局与成绩，无需姓名或账号。TapTap候选包，审核状态另行核验。"
+      "status": "已由移除旧资源导入残留的r3替代，保留历史下载。"
     },
     {
       "name": "packages/Great-Powers-Starport-v3.0.0-TapTap.zip",

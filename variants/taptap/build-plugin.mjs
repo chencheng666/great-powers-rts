@@ -5,6 +5,7 @@ import * as base from '../../src/data.js';
 import { scifiDataSource, fictionText, SCIFI_TITLE, SCIFI_BUILD } from './config.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..'), variant = join(root, 'variants/taptap');
 const overrides = {
+  'open-assets.js': 'export async function loadOpenAssets(){return {}} export function installOpenModels(){} export function validateOpenModel(){return false} export function openAssetDetail(){return \'far\'} export function syncOpenAssetLOD(){} export function modelShotOrigin(){return null}',
   'equipment.js': await readFile(join(variant, 'equipment.js'), 'utf8'),
   'visual-assets.js': await readFile(join(variant, 'visual-assets.js'), 'utf8'),
   'player-telemetry.js': 'export class PlayerTelemetry { identify(){} tick(){} error(){} flush(){return Promise.resolve(false)} }',
@@ -18,6 +19,8 @@ const overrides = {
 const plugin = {
   name: 'starport-independent-edition',
   async load(id) {
+    if (id.includes('/assets/third-party/')) throw new Error('科幻包不能引用原版第三方现实装备或材质');
+    if (id.startsWith(join(root, 'src')) && id.endsWith('.css')) return (await readFile(id, 'utf8')).replace(/url\([^)]*\)/g, value => value.includes('player-ranks-v1.webp') ? value : 'none');
     if (id.includes('/assets/models/')) throw new Error('科幻包不能引用官网现实装备模型库');
     if (id.includes('/assets/videos/')) throw new Error('科幻包不能引用官网现代战斗视频');
     if (id.includes('/assets/audio/') && !/\/(iron-tide|east-wind)\.m4a(?:\?|$)/.test(id)) throw new Error('科幻包只分发两首原创器乐');

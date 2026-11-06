@@ -65,7 +65,7 @@ def main():
     node=BASE/'runtime/bin/node';env=dict(os.environ,PATH=str(node.parent)+':'+os.environ['PATH'])
     print(run(['npm','ci','--omit=dev','--ignore-scripts','--registry=https://registry.npmjs.org'],cwd=stage,env=env),flush=True)
     for previous in set(links.values()):
-        for relative in ['assets','official/assets']:
+        for relative in ['assets','official/assets','starport/assets']:
             assets=previous/'dist'/relative
             if assets.is_dir():
                 for file in assets.rglob('*'):
