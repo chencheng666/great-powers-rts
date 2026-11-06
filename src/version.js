@@ -1,2 +1,2 @@
 export const GAME_VERSION = '3.1.0';
-export const BUILD_ID = '20261106-v4-readability-r1';
+export const BUILD_ID = '20261106-v4-readability-r2';

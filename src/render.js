@@ -1,3 +1,4 @@
+import { healthBarPresentation, healthBarBudget } from './health-bar-presentation.js';
 import { readPresentation, groundPresentationFactor, selectionTolerance, nearestScreenSelection, personnelRoleMark } from './unit-presentation.js';
 import { AIRCRAFT_LENGTHS, airframeScale, flightScaleFactor, unitModelScale, presentationRadius, aircraftCruiseHeight, aircraftGroundFactor, CARRIER_DECK_HEIGHT, CARRIER_MODEL_LENGTH } from './model-scale.js';
 import { carrierAirGroupLabel } from './carrier-airgroup.js';
@@ -1377,49 +1378,35 @@ export class Renderer {
       else screen = this.worldToScreen(entity.x, entity.y, model.position.y + (entry.displayTopHeight ?? entry.topHeight) + 9);
       if (screen.x < 0 || screen.x > this.viewport.width || screen.y < 0 || screen.y > this.viewport.height) continue;
       const infantry = entity.kind === 'unit' && UNITS[entity.type].tags.includes('infantry'), robot = entity.kind === 'unit' && isLunarRobot(this.game.map, entity.type), ammo = robot ? 10 : UNITS[entity.type]?.ammo;
-      const numeric = hovered || isSelected && selected.size === 1;
+      const presentation = healthBarPresentation(entity, { infantry, ship: UNITS[entity.type]?.tags.includes('ship'), selected: isSelected, hovered, selectedCount: selected.size, recentlyHit: this.game.time - (entity.lastDamageAt ?? -100) < 2 });
+      const numeric = presentation.numeric;
       const label = `${entity.owner !== 0 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
       const stance = entity.owner === 0 && isSelected && supportsCombatStance(entity) ? combatStance(entity) : 'free';
-      const status = carrierLabel || (entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : stance !== 'free' ? COMBAT_STANCES[stance].name : '');
+      const status = presentation.detailed ? carrierLabel || (entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : stance !== 'free' ? COMBAT_STANCES[stance].name : '') : '';
       ctx.font = '500 10px "Noto Sans SC",sans-serif';
-      const vertical = entity.kind === 'unit';
-      const width = Math.max(entity.kind === 'building' ? 76 : 22, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0, status ? Math.ceil(ctx.measureText(status).width) + 8 : 0);
-      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo, vertical, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: (vertical ? 36 : 10) + (numeric ? 12 : 0) + (!vertical && ammo ? 6 : 0) + (status ? 12 : 0), priority: isSelected ? 4 : hovered ? 3 : entity.owner !== 0 ? 2 : 1 });
+      const shownAmmo = presentation.detailed ? ammo : 0;
+      const width = Math.max(presentation.width, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0, status ? Math.ceil(ctx.measureText(status).width) + 8 : 0);
+      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo: shownAmmo, trackHeight: presentation.trackHeight, maxOffset: presentation.maxOffset, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: presentation.trackHeight + 2 + (numeric ? 12 : 0) + (shownAmmo ? 5 : 0) + (status ? 12 : 0), priority: presentation.priority });
     }
     const repairs = this.game.ownedBuildings(0).filter(b => b.repairing && b.hp < b.maxHp).map(building => {
       const point = this.entityAnchor(building);
       return { id: building.id, anchorX: point.x + 55, anchorY: point.y - 7, width: 30, height: 30, priority: 5 };
     });
     this.repairBadges = layoutHealthBars(repairs, this.viewport, obstacles);
-    this.healthBars = layoutHealthBars(bars, this.viewport, [...obstacles, ...this.repairBadges]);
+    this.healthBars = layoutHealthBars(bars, this.viewport, [...obstacles, ...this.repairBadges], healthBarBudget(this.viewport));
     for (const bar of this.healthBars) {
       const { entity, x, y, width, numeric, ammo } = bar, top = y + (numeric ? 12 : 0), style = healthVisual(entity.owner, bar.ratio);
-      if (Math.abs(x + width / 2 - bar.anchorX) > 2 || Math.abs(y + bar.height - bar.anchorY) > 2) {
+      if (bar.priority >= 5 && (Math.abs(x + width / 2 - bar.anchorX) > 12 || Math.abs(y + bar.height - bar.anchorY) > 12)) {
         ctx.strokeStyle = style.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + width / 2, y + bar.height); ctx.lineTo(bar.anchorX, bar.anchorY + 4); ctx.stroke();
       }
       if (numeric) { ctx.font = '500 10px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.label, x + width / 2, y + 9); ctx.fillStyle = style.frame; ctx.fillText(bar.label, x + width / 2, y + 9); }
-      if (bar.vertical) {
-        const left = x + width / 2 - (ammo ? 8 : 4), track = 30;
-        ctx.fillStyle = '#081116ed'; ctx.fillRect(left - 1, top, 10, track + 2);
-        ctx.strokeStyle = style.warning ? '#f3c66e' : style.frame; ctx.strokeRect(left - .5, top + .5, 9, track + 1);
-        ctx.fillStyle = style.echo; ctx.fillRect(left + 1, top + 1 + track * (1 - bar.echo), 6, track * bar.echo);
-        ctx.fillStyle = style.fill; ctx.fillRect(left + 1, top + 1 + track * (1 - bar.ratio), 6, track * bar.ratio);
-        ctx.fillStyle = '#0c191b99'; for (let i = 1; i < 5; i++) ctx.fillRect(left + 1, top + 1 + track * i / 5, 6, 1);
-        if (ammo) for (let i = 0; i < ammo; i++) { ctx.fillStyle = i < bar.charge ? style.frame : '#273a47'; ctx.fillRect(left + 11, top + track - (i + 1) * track / ammo, 3, Math.max(1, track / ammo - 1)); }
-        if (bar.status) { ctx.font = '500 9px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.status, x + width / 2, top + 43); ctx.fillStyle = '#f4ce82'; ctx.fillText(bar.status, x + width / 2, top + 43); }
-        continue;
-      }
-      ctx.fillStyle = '#081116ed'; ctx.fillRect(x, top, width, 9); ctx.strokeStyle = style.warning ? '#f3c66e' : style.frame; ctx.lineWidth = 1; ctx.strokeRect(x + .5, top + .5, width - 1, 8);
-      ctx.fillStyle = style.color;
-      if (style.hostile) { ctx.beginPath(); ctx.moveTo(x + 3.5, top + 1); ctx.lineTo(x + 6, top + 4.5); ctx.lineTo(x + 3.5, top + 8); ctx.lineTo(x + 1, top + 4.5); ctx.closePath(); ctx.fill(); }
-      else ctx.fillRect(x + 2, top + 2, 3, 5);
-      const innerWidth = width - 10;
-      ctx.fillStyle = style.echo; ctx.fillRect(x + 7, top + 2, innerWidth * bar.echo, 5);
-      ctx.fillStyle = style.fill; ctx.fillRect(x + 7, top + 2, innerWidth * bar.ratio, 5);
-      ctx.fillStyle = '#0c191b77'; const segments = entity.kind === 'building' ? 10 : width < 30 ? 4 : 6;
-      for (let i = 1; i < segments; i++) ctx.fillRect(Math.round(x + 7 + innerWidth * i / segments), top + 2, 1, 5);
-      if (ammo) for (let i = 0; i < ammo; i++) { ctx.fillStyle = i < bar.charge ? style.frame : '#273a47'; ctx.fillRect(x + 2 + i * (width - 4) / ammo, top + 11, Math.max(1, (width - 4) / ammo - 2), 3); }
-      if (bar.status) { const baseline = top + (ammo ? 26 : 20); ctx.font = '500 9px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.status, x + width / 2, baseline); ctx.fillStyle = '#f4ce82'; ctx.fillText(bar.status, x + width / 2, baseline); }
+      const track = bar.trackHeight, inner = width - 4;
+      ctx.fillStyle = '#081116ed'; ctx.fillRect(x, top, width, track);
+      ctx.strokeStyle = style.warning ? '#f3c66e' : style.frame; ctx.lineWidth = 1; ctx.strokeRect(x + .5, top + .5, width - 1, track - 1);
+      ctx.fillStyle = style.echo; ctx.fillRect(x + 2, top + 1, inner * bar.echo, track - 2);
+      ctx.fillStyle = style.fill; ctx.fillRect(x + 2, top + 1, inner * bar.ratio, track - 2);
+      if (ammo) for (let i = 0; i < ammo; i++) { ctx.fillStyle = i < bar.charge ? style.frame : '#273a47'; ctx.fillRect(x + 2 + i * inner / ammo, top + track + 2, Math.max(1, inner / ammo - 1), 2); }
+      if (bar.status) { const baseline = top + track + (ammo ? 15 : 10); ctx.font = '500 9px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.status, x + width / 2, baseline); ctx.fillStyle = '#f4ce82'; ctx.fillText(bar.status, x + width / 2, baseline); }
     }
     if (this.dragBox) {
       const { start: a, end: b } = this.dragBox; ctx.fillStyle = 'rgba(104,220,239,.1)'; ctx.strokeStyle = '#8de5f0'; ctx.lineWidth = 1; ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y); ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
@@ -1546,7 +1533,7 @@ export class Renderer {
 
   drawPersonnelMarkers() {
     if (this.game.map.future) return;
-    const ctx = this.overlay;
+    const ctx = this.overlay, markerCells = new Set(), dense = (this.framedUnits?.size || 0) > 80;
     // 小识别符随已知单位绘制，人物登载或被战争迷雾隐藏时也必须消失。
     for (const entry of this.entities.values()) {
       const entity = entry.entity;
@@ -1554,6 +1541,11 @@ export class Renderer {
       const point = this.worldToScreen(entity.x, entity.y, entry.model.position.y + (entry.displayTopHeight ?? entry.topHeight) + 2);
       if (point.x < 0 || point.y < 0 || point.x > this.viewport.width || point.y > this.viewport.height) continue;
       if (this.presentation === 'readable' && (this.camera.zoom < 1.5 || this.game.selected.includes(entity.id))) {
+        // 密集编队隐藏普通步兵文字；工程师、侦察员每个屏幕小格最多一个标记。
+        const focused = this.hoveredId === entity.id || this.game.selected.length === 1 && this.game.selected[0] === entity.id;
+        const cell = `${Math.floor(point.x / 28)}:${Math.floor(point.y / 22)}`;
+        if (dense && !focused && (entity.type === 'rifle' || markerCells.has(cell))) continue;
+        markerCells.add(cell);
         const mark = personnelRoleMark(entity.type);
         if (mark) {
           ctx.save(); ctx.font = '700 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
