@@ -1,0 +1,50 @@
+[
+  {
+    "type": "image",
+    "file": "02-home.png",
+    "caption": "3.0 指挥官征途首页，本轮本地正式构建截图。",
+    "url": "https://www.daguojueqi.site/official/articles/v3-20261106/images/02-home.png"
+  },
+  {
+    "type": "image",
+    "file": "01-emblem.png",
+    "caption": "新版图标，红色笔画收在金色外框以内。",
+    "url": "https://www.daguojueqi.site/official/articles/v3-20261106/images/01-emblem.png"
+  },
+  {
+    "type": "image",
+    "file": "04-audio.png",
+    "caption": "声音设置里可以切换配乐、调整音量和试听。",
+    "url": "https://www.daguojueqi.site/official/articles/v3-20261106/images/04-audio.png"
+  },
+  {
+    "type": "image",
+    "file": "03-tutorial.png",
+    "caption": "灰谷入门的六步教学，按实际操作推进，也可以收起。",
+    "url": "https://www.daguojueqi.site/official/articles/v3-20261106/images/03-tutorial.png"
+  },
+  {
+    "type": "image",
+    "file": "05-routes.png",
+    "caption": "作战路线会接续已有挑战成绩，截图展示本地验收档案的通关进度。",
+    "url": "https://www.daguojueqi.site/official/articles/v3-20261106/images/05-routes.png"
+  },
+  {
+    "type": "image",
+    "file": "06-review.png",
+    "caption": "补给走廊超时后的实际复盘，提醒保护运输车并注意接应条件。",
+    "url": "https://www.daguojueqi.site/official/articles/v3-20261106/images/06-review.png"
+  },
+  {
+    "type": "image",
+    "file": "07-naval.png",
+    "caption": "远洋战区的海空单位展示。本地受控场景用于核对航母比例、甲板停放和飞行高度。",
+    "url": "https://www.daguojueqi.site/official/articles/v3-20261106/images/07-naval.png"
+  },
+  {
+    "type": "image",
+    "file": "08-wechat-group.png",
+    "caption": "扫码加入大国崛起玩家交流群。本次二维码在2026年11月13日前有效，到期请在公众号留言获取新码。",
+    "url": "https://www.daguojueqi.site/official/articles/v3-20261106/images/08-wechat-group.png"
+  }
+]

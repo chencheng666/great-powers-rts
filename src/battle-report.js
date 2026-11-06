@@ -57,6 +57,39 @@ export function reportEventLabel(event) {
   if(Object.hasOwn(theaterEvents,event.kind))return `${missionNames[event.type]} · ${theaterEvents[event.kind]}（${event.value}）`;
   return `${missionNames[event.type]||'任务'} · ${{challengeStart:'任务开始',challengeWave:`第 ${Math.round(event.value||0)} 波突击`,challengeWon:'任务完成',challengeLost:'任务失败'}[event.kind]||'事件'}`;
 }
+export function battleSuggestions(game, report = battleReport(game)) {
+  const own = report?.sides?.[0];
+  if (!own) return [];
+  const suggestions = [];
+  if (own.intercepted > 0 && own.intercepted > own.delivered * .25) {
+    suggestions.push({ title: '保护补给线', detail: `本局运输损失 ${Math.round(own.intercepted)} 资金。下次把防空与护航舰放在运输线上，海运可换航道或暂缓派船。` });
+  }
+  if (own.losses > 0 && own.losses > own.kills && own.resupplies < 2) {
+    suggestions.push({ title: '把受损部队带回来', detail: `本局战损 ${own.losses} 个单位、完成整备 ${own.resupplies || 0} 次。陆军靠近补给车，飞机与舰艇按 R 返场；分批轮换比持续补造更省资金。` });
+  }
+  if (!game.challenge && game.time > 180 && own.oilSeconds + own.beaconSeconds < 60) {
+    suggestions.push({ title: '给工程师一个任务', detail: '本局油井与信标合计控制不足一分钟。派工程师和护卫接管据点，再根据据点位置安排防守。' });
+  }
+  if (!game.challenge && game.time > 180 && own.unitsProduced < 3) {
+    suggestions.push({ title: '保持生产与供电', detail: '本局新造部队少于三支。右侧可查看队列与倒计时，电力不足会拖慢生产；先用已有部队保护基地和运输线。' });
+  }
+  if (game.challenge && game.winner !== 0) {
+    suggestions.unshift({ title: '先看本关任务', detail: CHALLENGE_REVIEW[game.challenge.id] || '重新查看任务说明和目标完整度；保护指定目标，按任务阶段推进。' });
+  }
+  if (!suggestions.length) {
+    suggestions.push({ title: '下一场换一种打法', detail: '可以比较不同阵营的反制单位，或在战术挑战的作战路线中练习护送、防空和登陆。通关后再尝试提高星级。' });
+  }
+  return suggestions.slice(0, 3);
+}
+
+const CHALLENGE_REVIEW = {
+  corridor: '任务运输车抵达撤离区后，还需要等接应开放并清理附近敌军。先保护运输车，再让装甲和防空开路。',
+  airshield: '防空单位需要装甲保护。撑过三波突击后清理剩余来袭部队，重伤单位轮换靠近补给车。',
+  beachhead: '登陆后按 U 卸载，再让工程师接管通信站。驻守期间留下陆战守军并清理进入警戒圈的敌人。',
+  lifeline: '至少保住一个港口。首船损失后仍可调整航道和接收港，保护剩余批次完成海运交付。',
+  recon: '侦察员在观察点停稳并脱离敌方视野后才会采集。移动或暴露会中断计时，已完成的情报保留。'
+};
+
 export function battleReportHTML(game) {
   const report = battleReport(game); if (!report) return '';
   const rows = [['击毁部队', 'kills'], ['战损部队', 'losses'], ['摧毁建筑', 'buildingsDestroyed'], ['建筑损失', 'buildingsLost'], ['有效伤害', 'damageDealt'], ['承受伤害', 'damageTaken'], ['新造部队', 'unitsProduced'], ['修复生命', 'repairHP'], ['完成整备', 'resupplies'], ['物资交付', 'delivered'], ['运输损失', 'intercepted'], ['油井控制·分钟', 'oilSeconds'], ['信标控制·分钟', 'beaconSeconds']];
@@ -64,9 +97,9 @@ export function battleReportHTML(game) {
   if(game.challenge?.operation)rows.push(['工业交付','industrialIncome'],['安全撤离人数','evacuated'],['矿物交付','mineralDelivery']);
   const value = (side, key) => key.endsWith('Seconds') ? ((side[key] || 0) / 60).toFixed(1) : Math.round(side[key] || 0).toLocaleString('zh-CN');
   const own = report.sides[0];
-  const advice = own.intercepted > own.delivered * .25 ? '后勤损失偏高，下次尝试为运输线路配置防空与海军护航。' : own.losses > own.kills && own.resupplies < 2 ? '交换战损偏高，可尝试保留补给车辆，并将重伤、低弹药部队及时撤回整备。' : own.oilSeconds + own.beaconSeconds < 60 && game.time > 180 ? '中立设施控制时间较短，可以用工程师与护卫编队增加资源和据点收益。' : '结合反制配兵、侦察和整备节奏，再比较下一场的战损与资源控制。';
+  const advice = battleSuggestions(game, report).map(item => `<li><strong>${item.title}</strong><p>${item.detail}</p></li>`).join('');
   const events = report.events.map(e => `<li data-event-kind="${category(e.kind)}"><time>${Math.floor(e.time / 60).toString().padStart(2, '0')}:${Math.floor(e.time % 60).toString().padStart(2, '0')}</time><span>${reportEventLabel(e)}</span></li>`).join('');
   const table = `<div class="report-table-scroll"><table><thead><tr><th>作战指标</th>${report.sides.map((_,i)=>`<th>${i===0?'我方':report.sides.length===2?'对手':`对手 ${i}`}</th>`).join('')}</tr></thead><tbody>${rows.map(([label, key]) => `<tr><th>${label}</th>${report.sides.map(side=>`<td>${value(side,key)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   const overview = [['击毁 / 战损',`${value(own,'kills')} / ${value(own,'losses')}`],['有效伤害',value(own,'damageDealt')],['修复生命',value(own,'repairHP')],['物资交付',value(own,'delivered')]].map(([label,number])=>`<div><small>${label}</small><strong>${number}</strong></div>`).join('');
-  return `<section class="battle-report"><h3>战后复盘</h3>${report.complete ? '' : '<p class="report-note">旧存档仅统计本次读档后的战斗，前段数据未计入。</p>'}<div class="report-overview">${overview}</div><p class="report-note">${advice}</p><details open><summary>关键事件时间线 · ${report.events.length} 条</summary><div class="report-filters" role="group" aria-label="复盘事件筛选">${[['all','全部'],['loss','战损'],['resource','资源'],['mission','任务']].map(([key,name])=>`<button type="button" data-report-filter="${key}" aria-pressed="${key==='all'}">${name}</button>`).join('')}</div><p class="report-note">${report.omittedEvents?`较早的 ${report.omittedEvents} 条事件已省略，保留最近 ${REPORT_EVENT_LIMIT} 条。`:'记录关键战损、占领、运输与挑战节点，不是完整录像回放。'}</p><ol class="report-timeline">${events}</ol><p class="report-empty" ${events?'hidden':''}>暂无此类事件</p></details>${lossBreakdownHTML(game,report)}<details class="report-metrics"><summary>双方完整数据对照</summary>${table}</details></section>`;
+  return `<section class="battle-report"><h3>战后复盘</h3>${report.complete ? '' : '<p class="report-note">旧存档仅统计本次读档后的战斗，前段数据未计入。</p>'}<div class="report-overview">${overview}</div><section class="battle-suggestions"><h4>下次可以试试</h4><ul>${advice}</ul></section><details open><summary>关键事件时间线 · ${report.events.length} 条</summary><div class="report-filters" role="group" aria-label="复盘事件筛选">${[['all','全部'],['loss','战损'],['resource','资源'],['mission','任务']].map(([key,name])=>`<button type="button" data-report-filter="${key}" aria-pressed="${key==='all'}">${name}</button>`).join('')}</div><p class="report-note">${report.omittedEvents?`较早的 ${report.omittedEvents} 条事件已省略，保留最近 ${REPORT_EVENT_LIMIT} 条。`:'记录关键战损、占领、运输与挑战节点，不是完整录像回放。'}</p><ol class="report-timeline">${events}</ol><p class="report-empty" ${events?'hidden':''}>暂无此类事件</p></details>${lossBreakdownHTML(game,report)}<details class="report-metrics"><summary>双方完整数据对照</summary>${table}</details></section>`;
 }

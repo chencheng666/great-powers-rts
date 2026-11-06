@@ -2,7 +2,7 @@ name: Desktop release
 on:
   workflow_dispatch:
   push:
-    tags: ['v1.*', 'v2.*']
+    tags: ['v1.*', 'v2.*', 'v3.*']
 permissions:
   contents: write
 jobs:
@@ -60,8 +60,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
-          releaseName: '大国崛起 v__VERSION__ 山海防线'
-          releaseBody: '2.0.3 粉丝体验改进：原创132BPM配乐、桌面自动检查与手动更新提示、右侧生产倒计时和各型号现有数量、人员／车辆分项及零员提醒、就绪提示上移。包含近期比例与巡逻修复。更新提示从此版本起提供，旧包需先安装一次。官网 https://www.daguojueqi.site/ ，公众号：数字机器莱西奥。升级前导出存档与荣誉；CI构建不等同于全部硬件实测。'
+          releaseName: '大国崛起 v__VERSION__ 指挥官征途'
+          releaseBody: '3.0 指挥官征途：国字新图标、首页国际歌交响器乐版、两首原创交响战斗曲、六步情境教学、三条作战路线、按战局数据给出的复盘建议、本站双域名荣誉恢复及图形故障指引。官网 https://www.daguojueqi.site/ ，公众号：数字机器莱西奥。升级前导出存档与荣誉；CI构建范围和实际硬件验收范围见发行说明。'
           # 复用同标签公开发行，避免已有网页包时额外生成同标签草稿。
           releaseDraft: false
           prerelease: false

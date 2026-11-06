@@ -24,3 +24,10 @@
 .report-metrics { margin-top: 18px; }
 .report-metrics table { margin-top: 10px; }
 .report-losses td small { display: block; margin-top: 4px; color: #a2b4bc; font-size: 10px; white-space: nowrap; }
+
+.battle-suggestions { padding: 14px 16px; margin: 16px 0; border: 1px solid #526d63; background: #172822; }
+.battle-suggestions h4 { margin: 0 0 10px; color: #ead39c; }
+.battle-suggestions ul { padding: 0; margin: 0; list-style: none; display: grid; gap: 12px; }
+.battle-suggestions li p { margin: 4px 0 0; font-size: 13px; color: #bfd0c6; line-height: 1.7; }
+.battle-suggestions li { display: block; }
+.battle-suggestions li strong { display: block; }

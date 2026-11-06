@@ -30,12 +30,13 @@
   </style>
 </head>
 <body>
-<header><b>大国崛起 <span style="color:#e4b66e">2.0.3</span></b><nav><a href="https://www.daguojueqi.site/">官网</a><a href="https://www.daguojueqi.site/play/">在线试玩</a><a href="https://github.com/chencheng666/great-powers-rts">源码</a></nav></header>
+<header><b>大国崛起 <span style="color:#e4b66e">3.0.0</span></b><nav><a href="https://www.daguojueqi.site/">官网</a><a href="https://www.daguojueqi.site/play/">在线试玩</a><a href="https://github.com/chencheng666/great-powers-rts">源码</a></nav></header>
 <main>
-  <div class="eyebrow">国内官网 / 2026.11.03</div>
+  <div class="eyebrow">国内官网 / 2026.11.06</div>
   <h1>大国崛起 · 游戏下载</h1>
   <p class="intro">免安装包完整解压后打开 PLAY.html，即可离线单机。桌面文件按系统与架构选择；联网使用独立窗口，六方对战仍是实验入口。升级前分别导出战局和荣誉备份。</p>
-  <div class="actions"><a href="/downloads/packages/Great-Powers-RTS-v2.0.3-20261105.zip">下载最新 ZIP ↓</a><a href="https://github.com/chencheng666/great-powers-rts/releases/tag/v2.0.3">查看 GitHub 发行页 ↗</a></div>
+  <div class="actions"><a href="/downloads/packages/Great-Powers-RTS-v3.0.0.zip">下载最新 ZIP ↓</a><a href="https://github.com/chencheng666/great-powers-rts/releases/tag/v3.0.0">查看 GitHub 发行页 ↗</a></div>
+  <section><h2>3.0.0 指挥官征途</h2><p>新国字图标、六步情境教学、三条九任务作战路线、通关后下一任务入口和战后建议。首页《国际歌》交响器乐编配，局内两首原创交响风配乐；本站双域名荣誉恢复、阵营说明、版本显示与图形故障指引同步更新。存档格式沿用现有版本，升级前请导出备份。</p><p><a href="/official/articles/v3-20261106/index.html">查看3.0开发手记与玩家交流群 →</a></p></section>
   <section><h2>11 月 5 日 · 航母比例、飞行分层与配乐切换</h2><p>网页与免安装 ZIP 更新航母舰体和甲板机比例，固定翼资源机巡航高于战斗机。声音设置支持重新播放所选配乐，并显示当前播放结果。</p></section>
   <section><h2>11 月 4 日 · 远景选取与指挥操作</h2><p>网页和免安装 ZIP 已更新。左键从空地框选，右键拖动镜头，移动、攻击移动和巡逻均可用右键指定目标。战斗配乐新增《国际歌》器乐版，可在声音设置中切回电子版。</p></section>
   <section><h2>2.0.3 · 配乐、生产与部队提示</h2><p>原创132BPM战斗配乐《钢铁洪流》，游戏分发使用压缩AAC；右侧建筑与部队卡片显示实时剩余时间、排队和现有数量，顶部拆分人员／车辆／空军／海军，人员归零会提醒。就绪提示居中上移。桌面版启动时检查新版，也可在首页“检查更新”；旧安装包需先安装本次新版才能获得提示。提示不会自动覆盖游戏或重启对局。</p></section>
@@ -45,9 +46,9 @@
   <details><summary>查看历史版本文件（不含本轮新功能）</summary><div id="archive"></div></details>
   <section><h2>安装与兼容</h2><div class="notes"><p>macOS 按 Intel / Apple Silicon 选择 DMG 或应用压缩包；目前未完成 Apple 公证。Windows x64 安装器未签名。请按系统正常的安全提示检查文件与校验值。</p><p>Linux 按 x64 / ARM64 选择 DEB 或 AppImage，需要 WebKitGTK 4.1、GTK3 和支持 WebGL2 的图形环境。麒麟、统信 UOS 需对应机器实测；目前没有龙芯、申威版本。</p></div><p>免安装 ZIP 由上海国内服务器提供。桌面安装包以清单标注的实际版本和地址为准，不能把旧包视为本轮更新。HTTPS 网页可直接联机，离线文件只提供单机。</p></section>
 </main>
-<footer>大国崛起 · 原创开源即时战略 · 2.0.2 山海防线<br><a href="https://beian.mps.gov.cn/#/query/webSearch?code=11010802050804" rel="noopener noreferrer" target="_blank">京公网安备11010802050804号</a></footer>
+<footer>大国崛起 · 原创开源即时战略 · 3.0 指挥官征途<br><a href="https://beian.mps.gov.cn/#/query/webSearch?code=11010802050804" rel="noopener noreferrer" target="_blank">京公网安备11010802050804号</a></footer>
 <script>
-Promise.all([fetch("manifest.json?v=2.0.2&t="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("清单暂不可用");return r.json()}),fetch("/api/download-counts",{cache:"no-store"}).then(r=>r.ok?r.json():{counts:{}}).catch(()=>({counts:{}}))]).then(([m,stats])=>{
+Promise.all([fetch("manifest.json?v=3.0.0&t="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("清单暂不可用");return r.json()}),fetch("/api/download-counts",{cache:"no-store"}).then(r=>r.ok?r.json():{counts:{}}).catch(()=>({counts:{}}))]).then(([m,stats])=>{
   const current=document.querySelector("#current"),archive=document.querySelector("#archive");current.replaceChildren();archive.replaceChildren();
   for(const f of [...(m.files||[])].sort((a,b)=>Number(!a.name.endsWith('.zip'))-Number(!b.name.endsWith('.zip')))){
     const u=new URL(f.name,location.href);

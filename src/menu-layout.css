@@ -52,3 +52,7 @@
   .start-screen #player-name-btn { max-width: 50%; }
   .start-screen #player-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+.faction-field-guide { margin-top: 12px; padding: 12px 14px; border: 1px solid #5d7667; color: #cad8cc; font-size: 12px; }
+.faction-field-guide summary { color: #e0c98f; cursor: pointer; }
+.faction-field-guide p { margin: 8px 0 0; line-height: 1.7; }

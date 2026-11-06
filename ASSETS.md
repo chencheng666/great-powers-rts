@@ -89,3 +89,9 @@ Three.js、PathFinding.js、ws 使用 MIT 许可；heap.js 保留 PSF 许可文�
 ## 网页热更新的《国际歌》器乐配乐
 
 曲调为皮埃尔·德盖特（Pierre De Geyter，1848–1932）1888 年作品，见 [IMSLP 早期曲谱](https://imslp.org/wiki/L%27Internationale_(De_Geyter,_Pierre)) 与 [ABC 旋律转录](https://abcnotation.com/tunePage?a=trillian.mit.edu%2F~jc%2Fmusic%2Fabc%2Fanthem%2FInternationale%2F0000)。游戏采用自主合成的 108 BPM 器乐编配，文件为 `assets/audio/internationale.m4a`，生成器为 `scripts/generate-internationale.mjs`。配器保留原曲署名，音轨不含歌词、演唱或第三方录音。AAC 用于随包分发，生成器可另存 FLAC。
+
+## 3.0 交响风配器（2026-11-06）
+
+首页《国际歌》使用上述原曲旋律，自行编配为 114 BPM 器乐版本。局内《钢铁洪流》（140 BPM）与《东风浩荡》（148 BPM）为本项目原创战斗曲，与同名的外部音乐录音无关。三曲均不含人声或歌词。
+
+乐谱与生成器为 `scripts/internationale-score.mjs`、`scripts/generate-orchestral-music.mjs`，使用 macOS 系统 MIDI 乐器离线渲染铜管、弦乐、大提琴、定音鼓和军鼓，再归一化与淡入淡出。系统音色库本身不随项目分发。母版保存在构建目录的 FLAC，游戏分发使用约 160 kbps AAC 有损音频。

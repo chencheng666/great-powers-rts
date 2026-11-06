@@ -49,7 +49,7 @@ export function normalizeAudioSettings(value = {}) {
   const settings = {};
   for (const key of ['master', 'music', 'voice', 'effects']) settings[key] = typeof value[key] === 'number' && Number.isFinite(value[key]) ? Math.max(0, Math.min(1, value[key])) : defaults[key];
   settings.muted = value.muted === true;
-  if (['internationale', 'iron-tide'].includes(value.musicTrack)) settings.musicTrack = value.musicTrack;
+  if (['internationale', 'iron-tide', 'east-wind'].includes(value.musicTrack)) settings.musicTrack = value.musicTrack;
   if (typeof value.voiceURI === 'string' && value.voiceURI.length <= 300) settings.voiceURI = value.voiceURI;
   return settings;
 }

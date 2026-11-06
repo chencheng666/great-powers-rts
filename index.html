@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#171d1b" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/official/official-emblem-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/official/official-emblem-180.png" />
-    <title>大国崛起 2.0 | 山海防线</title>
+    <title>大国崛起 3.0 | 指挥官征途</title>
   </head>
   <body>
     <div id="app">
@@ -33,7 +33,7 @@
         <label class="audio-mute"><span>静音</span><input id="audio-muted" type="checkbox"></label>
         <label class="audio-level"><span>总音量</span><input type="range" min="0" max="100" step="1" data-audio="master" aria-label="总音量"><output data-audio-value="master"></output></label>
         <label class="audio-level"><span>背景音乐</span><input type="range" min="0" max="100" step="1" data-audio="music" aria-label="背景音乐音量"><output data-audio-value="music"></output></label>
-        <label class="audio-voice"><span>战斗配乐</span><select id="audio-music-track" aria-label="战斗配乐"><option value="internationale">国际歌 · 器乐版</option><option value="iron-tide">钢铁洪流 · 电子版</option></select></label>
+        <label class="audio-voice"><span>战斗配乐</span><select id="audio-music-track" aria-label="战斗配乐"><option value="iron-tide">钢铁洪流 · 原创交响战斗曲</option><option value="east-wind">东风浩荡 · 原创交响战斗曲</option><option value="internationale">国际歌 · 交响器乐编配</option></select></label>
         <button id="audio-music-play" class="secondary-btn" type="button">播放所选配乐</button>
         <p id="audio-music-status" role="status" class="audio-effects-status"></p>
         <label class="audio-level"><span>中文语音</span><input type="range" min="0" max="100" step="1" data-audio="voice" aria-label="中文语音音量"><output data-audio-value="voice"></output></label>
@@ -87,7 +87,7 @@
       <div id="start-screen" class="start-screen">
         <div class="start-backdrop"><video id="menu-background-video" muted loop playsinline preload="none" aria-hidden="true"></video></div>
         <div class="start-shade"></div>
-        <header class="menu-topline"><span>大国崛起 2.0 / 山海防线</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
+        <header class="menu-topline"><span>大国崛起 3.0 / 指挥官征途</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
         <div class="start-content">
           <section class="menu-intro" aria-label="游戏介绍">
             <div class="start-kicker"><span class="live-dot"></span> 现代即时战略</div>
@@ -108,7 +108,7 @@
         </div>
         <div class="faction-picker">
           <div class="picker-heading"><strong>作战部署</strong><span>选择你的阵营</span></div>
-          <div class="faction-list" id="faction-list"></div>
+          <div class="faction-list" id="faction-list"></div><details class="faction-field-guide"><summary id="faction-guide-title"></summary><p id="faction-guide-perk"></p><p id="faction-guide-ability"></p></details>
           <label id="nuclear-option" class="nuclear-option" hidden><input type="checkbox" id="nuclear-enabled"> 核威慑规则 <small>默认关闭 · 双方确认 · 可预警与反制</small></label>
           <div class="deployment-controls">
             <section class="map-discovery-entry"><div><strong>选择你的下一场战斗</strong><p id="selected-map-summary"></p></div><button type="button" class="secondary-btn" data-map-browser>浏览全部战场</button></section><details class="mode-guide"><summary>新手指引 · 点击“战场”切换玩法</summary><p>初次推荐：灰谷入门 + 新兵。5000 初始资金、装甲与补给支援，首波进攻约 3 分钟后开始。先选坦克，右键移动；修理建筑、让战车靠近补给车。</p><p>想体验更多：战场下拉可选海峡海战、月表和纵深战区；“战术挑战”提供独立任务。准备好后也可提高难度。</p></details><div class="map-deployment"><label class="map-select">战场 <span class="select-shell"><select id="map-select"></select><i data-lucide="chevron-down"></i></span></label><input id="expanded-map" type="checkbox" checked hidden></div>
@@ -116,7 +116,7 @@
             <label class="enemy-select">对手 <span class="select-shell"><select id="enemy-select"><option value="random">随机阵营</option></select><i data-lucide="chevron-down"></i></span></label>
             <label class="enemy-select">难度 <span class="select-shell"><select id="difficulty-select"><option value="recruit" selected>新兵 · 推荐入门</option><option value="standard">标准</option><option value="veteran">专家</option></select><i data-lucide="chevron-down"></i></span></label>
             <a id="desktop-download-link" class="desktop-download-link" href="/downloads/index.html" target="_blank" rel="noopener noreferrer"><i data-lucide="download"></i> 下载游戏 · 免安装 / Windows / Mac / Linux</a>
-            <label class="tutorial-setting"><input id="tutorial-enabled" type="checkbox" checked> 灰谷入门启用操作教学（可在战斗中收起）</label><p id="offline-telemetry-note" hidden>单机支持离线游玩；联网时会统计匿名游玩时长和版本。</p><div class="menu-secondary-actions"><button id="feedback-open" class="secondary-btn" type="button">意见反馈</button><button id="menu-video-toggle" class="secondary-btn" aria-pressed="true">暂停实机背景</button><button id="sandbox-btn" class="secondary-btn">指挥官沙盘 · 忠实玩家奖励</button><button id="challenge-btn" class="secondary-btn"><i data-lucide="flag"></i> 战术挑战</button></div>
+            <label class="tutorial-setting"><input id="tutorial-enabled" type="checkbox" checked> 灰谷入门启用操作教学（可在战斗中收起）</label><p id="offline-telemetry-note" hidden>单机支持离线游玩；联网时会统计匿名游玩时长和版本。</p><div class="menu-secondary-actions"><button id="feedback-open" class="secondary-btn" type="button">意见反馈</button><button id="menu-music-toggle" class="secondary-btn" aria-pressed="false">开启首页配乐 · 国际歌</button><button id="menu-video-toggle" class="secondary-btn" aria-pressed="true">暂停实机背景</button><button id="sandbox-btn" class="secondary-btn">指挥官沙盘 · 忠实玩家奖励</button><button id="challenge-btn" class="secondary-btn"><i data-lucide="flag"></i> 作战路线 / 挑战</button></div>
             <div class="battle-entry"><output id="deployment-status" class="deployment-status" role="status" hidden></output><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 单机作战</button><button id="online-btn" class="secondary-btn"><i data-lucide="network"></i> 联网对战</button></div>
           </div>
         </div>

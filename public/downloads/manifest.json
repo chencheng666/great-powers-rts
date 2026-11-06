@@ -1,8 +1,15 @@
 {
-  "version": "2.0.3",
-  "releaseTag": "v2.0.3",
-  "createdAt": "2026-10-27T01:11:56.432676+00:00",
+  "version": "3.0.0",
+  "releaseTag": "v3.0.0",
+  "createdAt": "2026-11-06T11:20:00+08:00",
   "files": [
+    {
+      "name": "packages/Great-Powers-RTS-v3.0.0.zip",
+      "label": "3.0.0 指挥官征途 · 免安装离线 ZIP",
+      "size": 58948805,
+      "sha256": "b1d707f02dfe8bd2b132c037eb1db339c724818b055e5554c9e111beee8ffad1",
+      "status": "六步教学、三条作战路线、战后建议、新图标及交响器乐配乐。断网可单机；换文件位置前请导出战局、荣誉与挑战档案。"
+    },
     {
       "name": "packages/Great-Powers-RTS-v2.0.3-20261105.zip",
       "label": "2.0.3 网页热更新 · 免安装 ZIP",
@@ -417,15 +424,16 @@
       "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
     }
   ],
-  "webReleaseTag": "web-20261105-naval-audio-r2",
-  "updatedAt": "2026-11-02T12:00:00+08:00",
+  "webReleaseTag": "v3.0.0",
+  "updatedAt": "2026-11-06T11:16:00+08:00",
   "archiveTags": [
+    "v2.0.3",
     "v2.0.2",
     "v2.0.1",
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v2.0.3-20261105.zip",
-  "webBuild": "20261102-feedback-diagnostics-r2",
+  "offlineFile": "packages/Great-Powers-RTS-v3.0.0.zip",
+  "webBuild": "20261106-commanders-journey-r1",
   "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs"
 }

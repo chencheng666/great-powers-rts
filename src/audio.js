@@ -5,7 +5,7 @@ import { NuclearAlarm, nuclearAlarmAudible, terminalNuclearWarning } from './nuc
 
 const assets = import.meta.glob(['../assets/audio/*.m4a','!../assets/audio/frontline-sequence.m4a'], { eager: true, query: '?url', import: 'default' });
 const portableVoices = import.meta.glob('../assets/audio/portable/*.wav', { eager: true, query: '?url', import: 'default' });
-const musicFiles = new Set(['internationale.m4a', 'iron-tide.m4a']);
+const musicFiles = new Set(['internationale.m4a', 'iron-tide.m4a', 'east-wind.m4a']);
 const SETTINGS_KEY = 'great-powers-audio-v1';
 
 export class GameAudio {
@@ -14,7 +14,7 @@ export class GameAudio {
     try { saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch { saved = {}; }
     this.settings = normalizeAudioSettings(saved || {});
     this.context = null; this.buffers = new Map(); this.pending = new Map();
-    this.active = false; this.paused = false; this.session = 0; this.music = null; this.musicRequest = 0;
+    this.active = false; this.paused = false; this.hidden = false; this.scene = null; this.session = 0; this.music = null; this.musicRequest = 0;
     this.voiceQueue = []; this.currentVoice = null; this.cooldowns = new Map(); this.variants = new Map(); this.lastSpeech = 0;
     this.celebrationNodes = new Set();
     this.movement = new MovementSounds(); this.listener = null;
@@ -51,11 +51,18 @@ export class GameAudio {
   }
 
   async startBattle() {
-    this.stopBattle(); this.active = true; const session = this.session;
+    this.stopBattle(); this.active = true; this.hidden = document.hidden; this.scene = 'battle'; const session = this.session;
     if (!await this.unlock()) return false;
     if (!this.active || session !== this.session) return null;
     this.say('welcome');
     for (const file of Object.keys(assets).map(path => path.split('/').at(-1)).filter(name => !musicFiles.has(name))) this.buffer(file).catch(() => {});
+    return this.startMusic();
+  }
+
+  async startMenu() {
+    this.stopBattle(); this.active = true; this.hidden = document.hidden; this.scene = 'menu';
+    const session = this.session;
+    if (!await this.unlock() || session !== this.session) return false;
     return this.startMusic();
   }
 
@@ -69,13 +76,13 @@ export class GameAudio {
 
   async startMusic() {
     const session = this.session, request = ++this.musicRequest;
-    const file = (this.settings.musicTrack || 'internationale') + '.m4a';
+    const file = (this.scene === 'menu' ? 'internationale' : this.settings.musicTrack || 'iron-tide') + '.m4a';
     try {
       const buffer = await this.buffer(file);
       if (!this.active || session !== this.session || request !== this.musicRequest) return null;
       const source = this.context.createBufferSource();
       source.buffer = buffer; source.loop = true;
-      source.loopEnd = file === 'iron-tide.m4a' ? Math.min(buffer.duration, 32 * 4 * 60 / 132) : buffer.duration;
+      source.loopEnd = buffer.duration;
       source.connect(this.musicBus); source.start();
       if (this.music) { this.music.stop(); this.music.disconnect(); }
       this.music = source;
@@ -85,7 +92,7 @@ export class GameAudio {
 
   stopBattle() {
     this.soundEffects?.stop(); this.movement.reset();
-    this.session++; this.active = false; this.paused = false;
+    this.session++; this.active = false; this.paused = false; this.scene = null;
     this.nuclearWarning = false; this.nuclearAlarm?.setActive(false);
     for (const node of this.celebrationNodes) node.stop();
     this.celebrationNodes.clear();
@@ -111,7 +118,7 @@ export class GameAudio {
     if (!this.context) return;
     const time = this.context.currentTime, settings = this.settings;
     if (settings.muted || !settings.master || !settings.effects) { this.soundEffects?.stop(); this.movement.reset(); }
-    this.master.gain.setTargetAtTime(settings.muted ? 0 : settings.master, time, .04);
+    this.master.gain.setTargetAtTime(settings.muted || this.hidden ? 0 : settings.master, time, .04);
     const alarm = nuclearAlarmAudible({ active: this.active, paused: this.paused, wanted: this.nuclearWarning, settings });
     this.nuclearAlarm?.setActive(alarm);
     const duck = alarm ? .25 : this.currentVoice ? .45 : 1, pause = this.paused ? .23 : 1;
@@ -120,8 +127,9 @@ export class GameAudio {
   }
 
   setPaused(value) {
-    if (this.paused === value) return;
-    this.paused = value;
+    const hidden = document.hidden;
+    if (this.paused === value && this.hidden === hidden) return;
+    this.hidden = hidden; this.paused = value;
     if (value) { this.soundEffects?.stop(); this.movement.reset(); }
     if (value && !this.currentVoice?.preview) this.clearVoices();
     this.applySettings();

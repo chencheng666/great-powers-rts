@@ -4,11 +4,14 @@ import { carrierAirGroupLabel } from './carrier-airgroup.js';
 import { armyComposition, unitRole } from './feedback6-presentation.js';
 import { setupMapDiscovery } from './map-discovery-ui.js';
 import { setupTutorial } from './tutorial-ui.js';
+import { operationRoutesHTML, nextOperation } from './operation-routes.js';
 import './growth-ui.js';
 import './feedback-ui.js';
 import { setupMenuVideo } from './background-video.js';
 import { setupBattleUI } from './battle-ui.js';
 import { errorDetail } from './client-diagnostics.js';
+import { renderRecovery } from './render-recovery.js';
+import { restoreRelatedHonors } from './honor-recovery.js';
 import './battle-ui.css';
 import { CommanderLoyalty, SANDBOX_FUNDS, applySandbox, canUseSandbox, sandboxSpeed } from './commander-sandbox.js';
 import { PlayerTelemetry } from './player-telemetry.js';
@@ -81,6 +84,23 @@ const updateBattleTutorial = setupTutorial({onAction(step) {
   const g=state.game;if(!g?.running||g.paused)return;
   if(step===0){const u=g.activeUnits(0,'tank')[0]||g.activeUnits(0)[0];if(u)state.renderer.centerOn(u.x,u.y);toast('轻点己方部队，选中后会出现生命条');return;}
   if(step===1){$('#move-btn').click();return;}
+  if (step === 4) {
+    const target = g.activeUnits(0).find(u => u.hp < u.maxHp) || g.activeUnits(0, 'supply')[0];
+    if (target) { g.selected = [target.id]; state.renderer.centerOn(target.x, target.y); updateSelection(); }
+    toast('陆军靠近补给车自动维修；飞机与舰艇按 R 返场。整备需要可用设施、电力与资金。');
+    return;
+  }
+  if (step === 5) {
+    const engineer = g.activeUnits(0, 'engineer')[0];
+    if (engineer) {
+      g.selected = [engineer.id]; state.renderer.centerOn(engineer.x, engineer.y); updateSelection();
+      toast('工程师已选中，右键油井或雷达信标接管。小地图上可查看据点位置。');
+    } else {
+      setSidebarCollapsed(false); document.querySelector('[data-tab="units"]').click();
+      toast('先在部队栏生产工程师，再带护卫前往据点。');
+    }
+    return;
+  }
   setSidebarCollapsed(false);
   document.querySelector(`[data-tab="${step===2?'build':'units'}"]`).click();
   const target=step===2?document.querySelector('[data-build="power"]'):document.querySelector('[data-unit]:not(:disabled)');
@@ -156,7 +176,7 @@ function updateHonorOverview() {
   const {profile,error}=localHonorProfile(),{rank,next,pointsNeeded,winsNeeded}=honorProgress(profile);
   $('#honor-btn').innerHTML=honorBadge(rank);
   $('#honor-btn').title=`玩家荣誉 · ${rank.name}`;
-  $('#commander-title').textContent=`${rank.name} · 等级 ${rank.level}`;
+  $('#commander-title').textContent=error?'荣誉读取异常 · 打开档案查看':`${rank.name} · 等级 ${rank.level}`;
   $('#honor-profile-btn').innerHTML=`${honorBadge(rank)}<span><strong>${rank.name}</strong><small>${error?'荣誉暂不可读':`${fmt(profile.points)} 荣誉 · ${profile.wins} 场胜利`}</small><small>${error?'打开档案查看详情':next?`下一阶 ${next.name} · 还需 ${pointsNeeded} 分、${winsNeeded} 胜`:'最高称号已点亮 · 传奇仍在继续'}</small></span>${icon('chevron-right')}`;
   window.dispatchEvent(new Event('gp-honors-updated'));
   refreshIcons();
@@ -251,6 +271,10 @@ function drawFactionPicker() {
       <span><strong>${faction.name}</strong><small>${EQUIPMENT_SYSTEMS[key].country}原型 · ${faction.summary}</small></span>
       <span class="faction-role">${faction.role}</span>
     </button>`).join('');
+  const chosenFaction = FACTIONS[state.faction];
+  $('#faction-guide-title').textContent = `${chosenFaction.short} · ${chosenFaction.role} · 专属 ${chosenFaction.elite}`;
+  $('#faction-guide-perk').textContent = chosenFaction.perk;
+  $('#faction-guide-ability').textContent = `${chosenFaction.ability} · ${chosenFaction.abilityDesc}`;
   $('#enemy-select').innerHTML = '<option value="random">随机阵营</option>' + Object.entries(FACTIONS).map(([key, value]) => `<option value="${key}">${value.name}${key === state.faction ? ' · 镜像对战' : ''}</option>`).join('');
   $('#enemy-select').value = enemyChoice;
   $('#faction-list').querySelectorAll('button').forEach(button => button.addEventListener('click', () => { state.faction = button.dataset.faction; drawFactionPicker(); }));
@@ -436,7 +460,9 @@ function handleBattleFailure(error, retry = {}) {
   state.loading = false; state.keys.clear(); state.drag = null; state.panning = null;
   if (state.game && !state.game.online) state.game.paused = true;
   gameAudio.setPaused(true);
-  showModal('战场显示中断', '<p>战场未能正常显示。可以尝试流畅画质恢复；也可返回主界面重新选择战区。</p><p id="battle-error-detail"></p>', `<button class="primary-btn" data-modal="recover-render">${icon('refresh-cw')} 流畅画质恢复</button>${state.game && !state.game.online ? `<button class="secondary-btn" data-modal="export">${icon('download')} 导出当前战局</button>` : ''}<button class="secondary-btn" data-modal="failure-menu">${icon('house')} 返回主界面</button>`);
+  const recovery = renderRecovery(error);
+  showModal(recovery.title, '<p id="battle-recovery-guide"></p><p id="battle-error-detail"></p>', `${recovery.available ? `<button class="primary-btn" data-modal="recover-render">${icon('refresh-cw')} 流畅画质恢复</button>` : ''}${state.game && !state.game.online ? `<button class="secondary-btn" data-modal="export">${icon('download')} 导出当前战局</button>` : ''}<button class="secondary-btn" data-modal="failure-menu">${icon('house')} 返回主界面</button>`);
+  $('#battle-recovery-guide').textContent = recovery.detail;
   $('#battle-error-detail').textContent = `错误信息：${error?.message || String(error)}`;
 }
 
@@ -838,6 +864,7 @@ function returnToMenu() {
   $('#building-info').hidden = true; $('#attack-alert').hidden = true;$('#nuclear-alert').hidden=true; $('#audio-panel').hidden = true;
   $('#toast-container').replaceChildren(); $('#modal').classList.add('hidden'); state.modalMode = null;
   $('#start-screen').style.display = ''; $('#pause-btn').innerHTML = icon('pause');
+  $('#menu-music-toggle').setAttribute('aria-pressed', 'false'); $('#menu-music-toggle').textContent = '开启首页配乐 · 国际歌';
   updateContinueControl(); refreshIcons();
   updateHonorOverview();
 }
@@ -931,7 +958,7 @@ function showChallenges(notice='',danger=false) {
   const records=challengeRecords(profile),values=Object.values(records),recent=profile.results.slice().sort((a,b)=>b.at-a.at||a.battleId.localeCompare(b.battleId)).slice(0,8);
   const overview=error?'':`<p class="challenge-overview">${icon('medal')} 已通关 ${values.filter(r=>r.wins>0).length} / ${values.length} · 最佳 ${values.reduce((sum,r)=>sum+r.bestStars,0)} / ${values.length*3} 星</p>`;
   const history=recent.length?`<details class="challenge-history"><summary>最近挑战 · ${profile.results.length} 次尝试</summary><ol>${recent.map(r=>`<li><div><strong>${CHALLENGES[r.challengeId].name}</strong><small>${new Date(r.at).toLocaleString('zh-CN')}</small></div><span>${r.winner===0?`${r.stars} 星`:'未完成'}</span><time>${challengeTime(r.time)}</time></li>`).join('')}</ol></details>`:'';
-  showModal('战术挑战',`${overview}<p id="challenge-profile-message" class="${error||danger?'challenge-warning':'challenge-notice'}" role="${error||danger?'alert':'status'}" ${error||notice?'':'hidden'}></p><div class="challenge-list">${Object.entries(CHALLENGES).map(([id,d])=>{
+  showModal('战术挑战',`${overview}${operationRoutesHTML(records)}<p id="challenge-profile-message" class="${error||danger?'challenge-warning':'challenge-notice'}" role="${error||danger?'alert':'status'}" ${error||notice?'':'hidden'}></p><div class="challenge-list">${Object.entries(CHALLENGES).map(([id,d])=>{
     const r=records[id];
     return `<article class="challenge-choice"><img data-challenge-model="${equipmentModel('china',d.targetType,false)}" alt="${d.targetName}" style="visibility:hidden"><div><h3>${d.name}</h3><div class="challenge-personal-best">${challengeStars(r.bestStars)}<span>${error?'成绩暂不可读取':r.wins?`最快 ${challengeTime(r.fastestTime)} · ${r.wins} / ${r.attempts} 次通关`:`尚未通关 · ${r.attempts} 次尝试`}</span></div><p>${d.briefing}</p><p>${d.limit} 秒时限 · ${d.budget} 起始整备资金 · ${d.freight?'海运护航 · 有限补发':'固定编队'}</p><button class="primary-btn" data-modal="challenge-${id}">${icon('play')} ${r.attempts?'再次挑战':'开始挑战'}</button></div></article>`;
   }).join('')}</div>${history}<p class="challenge-local-note">本机挑战成绩 · 不计普通荣誉 · 未与服务器同步</p>`, `<button class="secondary-btn" data-modal="resume">返回</button><button class="icon-btn" data-modal="challenge-export" title="导出挑战成绩备份" aria-label="导出挑战成绩备份" ${error?'disabled':''}>${icon('download')}</button><button class="icon-btn" data-modal="challenge-import" title="合并导入挑战成绩" aria-label="合并导入挑战成绩">${icon('upload')}</button>`,'独立任务');
@@ -986,9 +1013,10 @@ function showChallengeResult(game,win) {
     state.lastResultBattleId=game.battleId;gameAudio.setPaused(false);gameAudio.say(win?'victory':'defeat');if(win)gameAudio.celebrate(false);
   }
   const record=settlement&&challengeRecords(settlement.profile)[game.challenge.id];
+  const nextMission = win && settlement ? nextOperation(game.challenge.id, challengeRecords(settlement.profile)) : null;
   const praise=!win?'这次尝试不会降低最佳成绩。整备后再来。':settlement?.previous.wins===0?'首次突破，新的战术履历属于你。':settlement?.improved.includes('stars')?'星级突破！这次指挥比上一次更出色。':settlement?.improved.includes('time')?'刷新最快通关！你的战术执行更利落了。':'任务完成，每一次稳健的指挥都值得肯定。';
   const best=record?`<p class="challenge-result-record">${challengeStars(record.bestStars)} 最佳星级 · 最快 ${challengeTime(record.fastestTime)}<small>${record.wins} / ${record.attempts} 次通关 · ${settlement.status==='duplicate'?'本局已记录，未重复累计':'本局成绩已保存'}</small></p>`:'';
-  showModal(win?'挑战完成':'挑战未完成',`<div class="challenge-result-stars" aria-label="${game.challenge.stars} 星">${[1,2,3].map(n=>`<span class="${n<=game.challenge.stars?'earned':''}">${icon('star')}</span>`).join('')}</div><p>${CHALLENGES[game.challenge.id].name} · ${challengeTime(game.time)}</p><p>${game.challenge.reason}</p><p>${praise}</p>${best}${error?'<p class="challenge-warning" id="challenge-save-warning" role="alert"></p>':''}${battleReportHTML(game)}`,`${error?`<button class="secondary-btn" data-modal="retry-challenge-record">${icon('refresh-cw')} 重试保存成绩</button>`:''}<button class="primary-btn" data-modal="retry-challenge">${icon('rotate-ccw')} 再次挑战</button><button class="secondary-btn" data-modal="challenges">挑战档案</button><button class="secondary-btn" data-modal="menu">返回主界面</button>`,'战术训练');
+  showModal(win?'挑战完成':'挑战未完成',`<div class="challenge-result-stars" aria-label="${game.challenge.stars} 星">${[1,2,3].map(n=>`<span class="${n<=game.challenge.stars?'earned':''}">${icon('star')}</span>`).join('')}</div><p>${CHALLENGES[game.challenge.id].name} · ${challengeTime(game.time)}</p><p>${game.challenge.reason}</p><p>${praise}</p>${best}${error?'<p class="challenge-warning" id="challenge-save-warning" role="alert"></p>':''}${battleReportHTML(game)}`,`${error?`<button class="secondary-btn" data-modal="retry-challenge-record">${icon('refresh-cw')} 重试保存成绩</button>`:''}<button class="primary-btn" data-modal="retry-challenge">${icon('rotate-ccw')} 再次挑战</button>${nextMission?`<button class="primary-btn" data-modal="challenge-${nextMission}">下一任务 · ${CHALLENGES[nextMission].name}</button>`: ''}<button class="secondary-btn" data-modal="challenges">作战路线 / 挑战档案</button><button class="secondary-btn" data-modal="menu">返回主界面</button>`,'战术训练');
   if(error)$('#challenge-save-warning').textContent=error;
 }
 
@@ -1299,6 +1327,19 @@ function setupControls() {
       ? muted || !master || !music ? '已切换，当前配乐音量为零' : '正在播放《' + select.selectedOptions[0].textContent.split(' · ')[0] + '》'
       : '未能播放，请点击“播放所选配乐”重试';
   }
+  $('#menu-music-toggle').addEventListener('click', async () => {
+    const button = $('#menu-music-toggle');
+    if (gameAudio.scene === 'menu' && gameAudio.active) {
+      gameAudio.stopBattle(); button.setAttribute('aria-pressed', 'false'); button.textContent = '开启首页配乐 · 国际歌';
+      return;
+    }
+    button.disabled = true;
+    const played = await gameAudio.startMenu();
+    button.disabled = false;
+    if (gameAudio.scene !== 'menu') return;
+    button.setAttribute('aria-pressed', String(played === true));
+    button.textContent = played ? '暂停首页配乐 · 国际歌' : '首页配乐未能播放，点击重试';
+  });
   $('#audio-music-track').addEventListener('change', playSelectedMusic);
   $('#audio-music-play').addEventListener('click', playSelectedMusic);
   $('#audio-voice').addEventListener('change', event => { gameAudio.setSettings({ voiceURI: event.target.value }); });
@@ -1375,7 +1416,7 @@ function setupControls() {
 function updateAudioControls() {
   const settings = gameAudio.settings;
   $('#audio-muted').checked = settings.muted;
-  $('#audio-music-track').value = settings.musicTrack || 'internationale';
+  $('#audio-music-track').value = settings.musicTrack || 'iron-tide';
   document.querySelectorAll('[data-audio]').forEach(slider => { slider.value = Math.round(settings[slider.dataset.audio] * 100); });
   document.querySelectorAll('[data-audio-value]').forEach(output => { output.value = `${Math.round(settings[output.dataset.audioValue] * 100)}%`; });
   $('#sound-btn').innerHTML = icon(settings.muted || !settings.master ? 'volume-x' : 'volume-2'); refreshIcons();
@@ -1418,6 +1459,7 @@ setupControls();
 try { setSidebarCollapsed(matchMedia('(max-width:700px), (pointer:coarse) and (max-width:1000px)').matches || localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(matchMedia('(max-width:700px), (pointer:coarse) and (max-width:1000px)').matches); }
 updateAudioControls();
 updateHonorOverview();
+restoreRelatedHonors({onRestored:()=>{updateHonorOverview();toast('已恢复本站旧地址的本机荣誉档案');}});
 updateContinueControl();
 refreshIcons();
 // 只在玩家明确准备开局时预取，首屏不与视频、模型抢占网络。

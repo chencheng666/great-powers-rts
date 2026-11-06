@@ -168,6 +168,11 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
       if (!file.startsWith(root+sep) && file !== root) return json(403, { error:'禁止访问' });
       if (url.pathname === '/admin') { res.writeHead(302,{Location:'/admin/'});return res.end(); }
       if (url.pathname === '/admin/') file=resolve(root,'admin/index.html');
+      if (url.pathname.startsWith('/official/profile-bridge/')) {
+        res.removeHeader('X-Frame-Options');
+        res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; frame-ancestors https://www.daguojueqi.site https://daguojueqi.site; base-uri 'none'; object-src 'none'");
+        res.setHeader('Cache-Control', 'no-store');
+      }
       if (url.pathname.startsWith('/admin/')) res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'");
       if (url.pathname === '/official') { res.writeHead(302,{Location:'/official/','Cache-Control':'no-cache'});return res.end(); }
       if (url.pathname === '/official/') file=resolve(root,'official/index.html');
@@ -177,7 +182,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
       const info = await stat(file); if (!info.isFile()) return json(404, { error:'文件不存在' });
       // 仅公开版本元数据允许桌面本地页面跨域读取，不携带账号或玩家信息。
       if(url.pathname==='/downloads/desktop-update.json')res.setHeader('Access-Control-Allow-Origin','*');
-      serveFile(req,res,file,info,{official:url.pathname.startsWith('/official/')});
+      serveFile(req,res,file,info,{official:url.pathname.startsWith('/official/')&&!url.pathname.startsWith('/official/profile-bridge/')});
     } catch (error) { json(error.code === 'ENOENT' ? 404 : 400, { error:error.code === 'ENOENT' ? '文件不存在' : '请求无效' }); }
   });
   // 六方快照较大，使用低压缩等级与有限并发，保持双人协议的传输方式不变。

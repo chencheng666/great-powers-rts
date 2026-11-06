@@ -18,3 +18,8 @@
   .downloads { gap: 18px; }
   .downloads article .button { max-width: none; }
 }
+
+.community-group { margin: 0; width: min(330px,100%); justify-self: center; }
+.community-group img { display: block; width: 100%; height: auto; background: #fff; border-radius: 10px; }
+.community-group figcaption { font-size: 12px; line-height: 1.7; color: #bbc9c4; margin-top: 10px; }
+.community-group[hidden], .community-group-expired[hidden] { display: none; }
