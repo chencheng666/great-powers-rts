@@ -41,8 +41,8 @@ for (const [name, file, section] of [['Three.js', 'three/LICENSE'], ['Lucide', '
   notices.push(`${name}\n${text}`);
 }
 await writeFile(join(game, 'THIRD-PARTY-NOTICES.txt'), notices.join('\n\n'));
-await writeFile(join(game, '版本与隐私说明.txt'), `${SCIFI_TITLE}\n${SCIFI_BUILD}\n独立科幻单机版本；仅包含虚构工程组、无人机体和月表演习。无核武器、现实国家映射、付费和广告。\n存档、呼号、成绩和声音偏好保存在当前设备，不上传姓名、设备、时长或错误；更新、清理数据或换设备前请导出备份。\n美术：项目原创月表设施、机器人、穿梭机与程序化悬浮机甲。配乐：原创器乐《星港启航》《群星航迹》。\n`);
-const zip = join(output, 'Great-Powers-Starport-v3.0.0-TapTap.zip'); await rm(zip, { force: true });
+await writeFile(join(game, '版本与隐私说明.txt'), `${SCIFI_TITLE}\n${SCIFI_BUILD}\n独立科幻单机版本；仅包含虚构工程组、无人机体和月表演习。无核武器、现实国家映射、付费和广告。\n战局存档、成绩和声音偏好保存在当前设备，不上传姓名、设备、时长或错误；更新、清理数据或换设备前请导出备份。\n美术：项目原创月表设施、机器人、穿梭机与程序化悬浮机甲；月表地表纹理由AI辅助生成并固定随包分发。游戏不提供在线AI生成服务。配乐：原创器乐《星港启航》《群星航迹》。\n`);
+const zip = join(output, 'Great-Powers-Starport-v3.0.0-TapTap-r2.zip'); await rm(zip, { force: true });
 execFileSync('/usr/bin/tar', ['--format', 'zip', '-cf', zip, 'Starport'], { cwd: output, env: { ...process.env, COPYFILE_DISABLE: '1' } });
 execFileSync('/usr/bin/unzip', ['-t', zip], { stdio: 'ignore' });
 const data = await readFile(zip), report = { title: SCIFI_TITLE, build: SCIFI_BUILD, zip, bytes: (await stat(zip)).size, sha256: createHash('sha256').update(data).digest('hex'), networkRequired: false, originalModels: keep, maps: ['meridian', 'moonsea'], nuclearEnabled: false, realCountryMapping: false };

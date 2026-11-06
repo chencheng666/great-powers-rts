@@ -1,5 +1,5 @@
 /* 这是持续分发的独立科幻版，未开放功能在运行时也被移除。 */
-#online-btn,#challenge-btn,#sandbox-btn,#growth-open,#feedback-open,#desktop-download-link,#menu-video-toggle,.nuclear-setting,.start-creed,.tutorial-setting,#nickname-edit-btn{display:none!important}
+#online-btn,#challenge-btn,#sandbox-btn,#growth-open,#feedback-open,#desktop-download-link,#menu-video-toggle,.nuclear-setting,.start-creed,.tutorial-setting,#nickname-edit-btn,#player-name-btn,#nickname-dialog{display:none!important}
 #start-screen{background:radial-gradient(ellipse at 25% 25%,#263e63 0,transparent 55%),linear-gradient(130deg,#081322,#12283a 58%,#102320)!important}
 #start-screen:before{background:radial-gradient(circle at 30% 38%,#67d8df22,transparent 40%);opacity:1}
 .start-hero-video{display:none!important}.start-kicker{color:#86e4e8}.start-hero-copy h1{letter-spacing:.12em}.start-hero-copy p{max-width:470px}
