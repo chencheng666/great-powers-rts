@@ -1,3 +1,6 @@
+import { setupUnitPresentation } from './unit-presentation.js';
+import { FACTION_DOCTRINES } from './faction-doctrine.js';
+import './v4-readability.css';
 import { productionOverview } from './production-overview.js';
 import { setupDesktopUpdates } from './desktop-updates.js';
 import { carrierAirGroupLabel } from './carrier-airgroup.js';
@@ -80,6 +83,7 @@ import { loadChallengeThumbnails } from './challenge-thumbnails.js';
 
 setupMenuVideo();
 setupBattleUI();
+setupUnitPresentation(() => state.renderer);
 const updateBattleTutorial = setupTutorial({onAction(step) {
   const g=state.game;if(!g?.running||g.paused)return;
   if(step===0){const u=g.activeUnits(0,'tank')[0]||g.activeUnits(0)[0];if(u)state.renderer.centerOn(u.x,u.y);toast('轻点己方部队，选中后会出现生命条');return;}
@@ -275,6 +279,11 @@ function drawFactionPicker() {
   $('#faction-guide-title').textContent = `${chosenFaction.short} · ${chosenFaction.role} · 专属 ${chosenFaction.elite}`;
   $('#faction-guide-perk').textContent = chosenFaction.perk;
   $('#faction-guide-ability').textContent = `${chosenFaction.ability} · ${chosenFaction.abilityDesc}`;
+  const doctrine = FACTION_DOCTRINES[state.faction], guide = $('#faction-doctrine');
+  if (guide) {
+    guide.hidden = !doctrine;
+    guide.innerHTML = doctrine ? `<div><b>${chosenFaction.elite} · ${doctrine.role}</b><small>${doctrine.silhouette}</small></div><p>${doctrine.plan}</p><p><strong>建议编队：</strong>${doctrine.squad.map(type => equipmentProfile(state.faction, type).name).join(' + ')}</p><p class="doctrine-caution"><strong>注意：</strong>${doctrine.weakness}</p>` : '';
+  }
   $('#enemy-select').innerHTML = '<option value="random">随机阵营</option>' + Object.entries(FACTIONS).map(([key, value]) => `<option value="${key}">${value.name}${key === state.faction ? ' · 镜像对战' : ''}</option>`).join('');
   $('#enemy-select').value = enemyChoice;
   $('#faction-list').querySelectorAll('button').forEach(button => button.addEventListener('click', () => { state.faction = button.dataset.faction; drawFactionPicker(); }));
@@ -1174,7 +1183,7 @@ function setupControls() {
     else if (state.drag?.moved) r.selectScreenBox(state.drag.start, p, state.drag.additive);
     else {
       state.dismissedInspectorId = null;
-      const picked = g.selectEntity(r.pickSelection(p.x, p.y), event.shiftKey);
+      const picked = g.selectEntity(r.pickSelection(p.x, p.y, event.pointerType === 'touch'), event.shiftKey);
       if (picked?.kind === 'unit' && event.pointerType !== 'touch') {
         state.lastSelectionClick = { id: picked.id, previousId: previousClick?.id };
       }

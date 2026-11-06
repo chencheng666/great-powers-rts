@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#171d1b" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/official/official-emblem-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/official/official-emblem-180.png" />
-    <title>大国崛起 3.0 | 指挥官征途</title>
+    <title>大国崛起 3.1 | 迈向4.0</title>
   </head>
   <body>
     <div id="app">
@@ -24,6 +24,8 @@
         <header><strong>战场界面</strong><button id="battle-ui-close" class="icon-btn" aria-label="关闭界面设置"><i data-lucide="x"></i></button></header>
         <label><span>战区信息（桌面）</span><input id="battle-ui-status" type="checkbox" checked></label>
         <label><span>镜头工具</span><input id="battle-ui-camera" type="checkbox" checked></label>
+        <label><span>单位比例</span><select id="unit-presentation" aria-label="单位比例"><option value="readable">易读比例 · 推荐</option><option value="reference">原比例 · 模型参考</option></select></label>
+        <p>易读比例适度放大地面单位与人员。只改变显示，不改变射程、碰撞或战斗数值。</p>
         <label class="battle-ui-scale"><span>面板大小（桌面）</span><output id="battle-ui-scale-value">100%</output><input id="battle-ui-scale" type="range" min="80" max="120" step="10" value="100" aria-label="战场面板大小"></label>
         <p>隐藏后可从顶部“界面设置”恢复。隐藏镜头工具后仍可拖图、滚轮或双指缩放；手机保持大触控按钮。</p>
         <button id="battle-ui-reset" class="secondary-btn">恢复默认</button>
@@ -87,7 +89,7 @@
       <div id="start-screen" class="start-screen">
         <div class="start-backdrop"><video id="menu-background-video" muted loop playsinline preload="none" aria-hidden="true"></video></div>
         <div class="start-shade"></div>
-        <header class="menu-topline"><span>大国崛起 3.0 / 指挥官征途</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
+        <header class="menu-topline"><span>大国崛起 3.1 / 迈向4.0 · 易读战场</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
         <div class="start-content">
           <section class="menu-intro" aria-label="游戏介绍">
             <div class="start-kicker"><span class="live-dot"></span> 现代即时战略</div>
@@ -108,7 +110,7 @@
         </div>
         <div class="faction-picker">
           <div class="picker-heading"><strong>作战部署</strong><span>选择你的阵营</span></div>
-          <div class="faction-list" id="faction-list"></div><details class="faction-field-guide"><summary id="faction-guide-title"></summary><p id="faction-guide-perk"></p><p id="faction-guide-ability"></p></details>
+          <div class="faction-list" id="faction-list"></div><details class="faction-field-guide"><summary id="faction-guide-title"></summary><p id="faction-guide-perk"></p><p id="faction-guide-ability"></p><div id="faction-doctrine" class="faction-doctrine"></div></details>
           <label id="nuclear-option" class="nuclear-option" hidden><input type="checkbox" id="nuclear-enabled"> 核威慑规则 <small>默认关闭 · 双方确认 · 可预警与反制</small></label>
           <div class="deployment-controls">
             <section class="map-discovery-entry"><div><strong>选择你的下一场战斗</strong><p id="selected-map-summary"></p></div><button type="button" class="secondary-btn" data-map-browser>浏览全部战场</button></section><details class="mode-guide"><summary>新手指引 · 点击“战场”切换玩法</summary><p>初次推荐：灰谷入门 + 新兵。5000 初始资金、装甲与补给支援，首波进攻约 3 分钟后开始。先选坦克，右键移动；修理建筑、让战车靠近补给车。</p><p>想体验更多：战场下拉可选海峡海战、月表和纵深战区；“战术挑战”提供独立任务。准备好后也可提高难度。</p></details><div class="map-deployment"><label class="map-select">战场 <span class="select-shell"><select id="map-select"></select><i data-lucide="chevron-down"></i></span></label><input id="expanded-map" type="checkbox" checked hidden></div>

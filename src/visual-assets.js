@@ -1,3 +1,4 @@
+import { createFactionElite } from './faction-models.js';
 import { loadAsset } from './asset-loading.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -151,6 +152,7 @@ export function prepareVisualAssets() {
     for (const name of ['fighter', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'ghost']) refineAircraftCanopy(models.get(name));
     for (const name of ['fighter', 'fighter_china', 'fighter_nato', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'helicopter', 'swarmCarrier', 'swarmScout', 'swarmDecoy', 'drone', 'ghost', 'aegis', ...['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane'].map(type => `space_${type}`)]) finishAirframe(models.get(name));
     installOpenModels(models, openAssets, weatherMaterial);
+    for (const faction of ['china','russia','nato','asia','middleeast']) models.set(`elite_${faction}`, createFactionElite(faction));
     models.set('tank_china', createChineseTank(weatherMaterial));
     models.set('destroyer_china', createChineseDestroyer());
     ground.colorSpace = THREE.SRGBColorSpace; ground.wrapS = ground.wrapT = THREE.RepeatWrapping;

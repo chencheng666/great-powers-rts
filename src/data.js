@@ -21,7 +21,7 @@ export const FACTIONS = {
   china: { name: '华夏防卫', short: '华夏', color: '#57d7c2', accent: '#9bf4df', symbol: '盾', role: '防守反击', summary: '防空和阵地防御占优，推进速度偏慢。', perk: '防御建筑与防空单位生命 +15%', elite: '陆盾防空车', ability: '协同电子防护', abilityDesc: '友军获得 12 秒减伤。这是电子防御的游戏化抽象，并非真实能量护盾；网络攻击为独立战术。' },
   russia: { name: '北境联邦', short: '北境', color: '#e96558', accent: '#ffac8e', symbol: '焰', role: '攻坚突击', summary: '攻城火力强，但无人机与防空能力较弱。', perk: '对建筑伤害 +15%，防空伤害 -12%', elite: '破城火箭车', ability: '震荡轰击', abilityDesc: '轰击指定区域，重创建筑并压制步兵。' },
   nato: { name: '西陆同盟', short: '西陆', color: '#86a9ec', accent: '#c3d4ff', symbol: '钢', role: '重装推进', summary: '装甲正面强势，展开速度略慢。', perk: '坦克生命 +15%，重坦可压制无人机群', elite: '堡垒重坦', ability: '精确轰炸', abilityDesc: '快速轰炸指定区域，对轻甲尤其有效。' },
-  asia: { name: '东亚科技体', short: '东亚', color: '#e8bc63', accent: '#ffe4a1', symbol: '蜂', role: '蜂群游击', summary: '无人机灵活廉价，无法承受持续火力。', perk: '无人机成本 -15%，生命 -15%', elite: '蜂群母机', ability: '蜂群突袭', abilityDesc: '向指定区域投放无人机群，持续袭扰。' },
+  asia: { name: '东亚科技体', short: '东亚', color: '#e8bc63', accent: '#ffe4a1', symbol: '蜂', role: '蜂群游击', summary: '无人机灵活廉价，无法承受持续火力。', perk: '无人机成本 -15%，生命 -15%', elite: '蜂群指挥车', ability: '蜂群突袭', abilityDesc: '向指定区域投放无人机群，持续袭扰。' },
   middleeast: { name: '新月能源体', short: '新月', color: '#bd9bdb', accent: '#e4cdf9', symbol: '磁', role: '电子压制', summary: '干扰敌方高科技单位，重装正面对抗较弱。', perk: '电子单位射程 +15%，坦克伤害 -10%', elite: '电磁干扰车', ability: '区域脉冲', abilityDesc: '使指定区域的敌军载具瘫痪 8 秒。' }
 };
 

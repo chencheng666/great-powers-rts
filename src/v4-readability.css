@@ -1,0 +1,6 @@
+.battle-ui-panel select { max-width: 185px; padding: 8px; border: 1px solid #476268; border-radius: 6px; background: #13282e; color: #e4f1ee; font: inherit; }
+.faction-doctrine { padding: 14px 16px; margin: 12px 0 4px; border-left: 3px solid #d7b66e; background: #122b2c; border-radius: 0 8px 8px 0; }
+.faction-doctrine > div { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; }
+.faction-doctrine small { color: #b4cdca; }
+.faction-doctrine p { margin: 8px 0 0; line-height: 1.7; }
+.faction-doctrine .doctrine-caution { color: #e8c8a9; }

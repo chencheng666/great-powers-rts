@@ -1,3 +1,4 @@
+import { readPresentation, groundPresentationFactor, selectionTolerance, nearestScreenSelection, personnelRoleMark } from './unit-presentation.js';
 import { AIRCRAFT_LENGTHS, airframeScale, flightScaleFactor, unitModelScale, presentationRadius, aircraftCruiseHeight, aircraftGroundFactor, CARRIER_DECK_HEIGHT, CARRIER_MODEL_LENGTH } from './model-scale.js';
 import { carrierAirGroupLabel } from './carrier-airgroup.js';
 import { growthAppearance } from './growth-rewards.js';
@@ -102,6 +103,8 @@ export class Renderer {
     try { const saved=localStorage.getItem(this.qualityKey);if(['standard','high'].includes(saved))this.quality=saved; } catch { /* 无存储时按模式选默认画质。 */ }
     if (['standard', 'high'].includes(options.quality)) this.quality = options.quality;
     this.world = game.world;
+    this.presentation = 'readable';
+    try { this.presentation = readPresentation(localStorage); } catch { /* 禁用存储时使用易读比例。 */ }
     this.growthAppearance=null; try { if(!game.online&&!game.multiplayer&&!game.challenge&&!game.mission)this.growthAppearance=growthAppearance(localStorage); } catch { /* 存储不可用时使用原外观。 */ }
     this.projectileModels = new Map();
     this.munitionTemplates = new Map();
@@ -696,17 +699,10 @@ export class Renderer {
     return model.visible && entity.owner === 0 && entity.hp > 0 && !entity.embarkedIn && !FREIGHT_TYPES.includes(entity.type);
   }
 
-  pickSelection(x, y) {
+  pickSelection(x, y, touch = false) {
     const direct = this.entities.get(this.pickEntity(x, y)?.id);
     if (direct && this.isSelectable(direct)) return direct.entity;
-    let closest = null, limit = 12;
-    for (const entry of this.entities.values()) {
-      if (!this.isSelectable(entry)) continue;
-      const point = this.selectionCenter(entry);
-      const distance = Math.hypot(x - point.x, y - point.y);
-      if (distance < limit) { closest = entry.entity; limit = distance; }
-    }
-    return closest;
+    return nearestScreenSelection(this.entities.values(), x, y, selectionTolerance(touch), entry => this.selectionCenter(entry), entry => this.isSelectable(entry));
   }
 
   selectScreenBox(start, end, additive) {
@@ -1086,6 +1082,14 @@ export class Renderer {
         entry.model.scale.setScalar(entry.scale * factor); entry.displayTopHeight = entry.topHeight * factor;
         entry.flightScaleFactor = factor;
       }
+      const groundFactor = groundPresentationFactor(entity, UNITS[entity.type]?.tags, this.camera.zoom, this.presentation, this.game.map.future);
+      if (entity.kind === 'unit' && !UNITS[entity.type]?.tags.some(t => ['air', 'ship', 'submerged'].includes(t))) {
+        entry.model.scale.setScalar(entry.scale * groundFactor);
+        entry.displayTopHeight = entry.topHeight * groundFactor;
+      }
+      entry.groundFactor = groundFactor;
+      const identitySize = this.game.map.future ? identityRadius(entity, UNITS[entity.type]?.tags) : presentationRadius(entity.type, identityRadius(entity, UNITS[entity.type]?.tags));
+      entry.identity.scale.set(identitySize * groundFactor, 1, identitySize * groundFactor);
       entry.model.position.set(entity.x, height, entity.y);
       if (entry.airShadow) {
         const ground = this.elevation(entity.x, entity.y), rotor = UNITS[entity.type].tags.includes('rotorcraft') || entry.model.userData.tandemRotors;
@@ -1161,7 +1165,7 @@ export class Renderer {
         this.leaveTracks(entry); entry.trackX = entity.x; entry.trackY = entity.y;
       }
       if (visible && damage.smoke && this.game.time >= entry.smokeAt && this.trails.length < 120) {
-        const smoke = this.effectSprite('#4d555a', true); smoke.position.set(entity.x, height + entry.topHeight + 4, entity.y); smoke.scale.setScalar(damage.smokeSize); smoke.material.opacity = .4;
+        const smoke = this.effectSprite('#4d555a', true); smoke.position.set(entity.x, height + (entry.displayTopHeight ?? entry.topHeight) + 4, entity.y); smoke.scale.setScalar(damage.smokeSize); smoke.material.opacity = .4;
         this.scene.add(smoke); this.trails.push({ sprite: smoke, baseY: smoke.position.y, start: this.game.time, damage: true, sourceEntity: entity, damageSize: damage.smokeSize });
         if (damage.fire) {
           const fire = this.effectSprite('#ffae61'); fire.position.copy(smoke.position); this.scene.add(fire);
@@ -1173,7 +1177,7 @@ export class Renderer {
       for (const exhaust of entry.exhausts) exhaust.material.opacity = .7 + Math.sin(now * .02 + entity.id) * .15;
       entry.ring.visible = visible && (this.game.selected.includes(entity.id) || entity.owner !== 0 && (this.hoveredId === entity.id || targeted.has(entity.id))); entry.ring.position.set(entity.x, this.elevation(entity.x, entity.y) + .65, entity.y);
       if (UNITS[entity.type]?.tags.includes('ship')) entry.ring.position.y = 3;
-      const radius = entity.kind === 'building' ? entity.size * .65 : this.game.map.future ? unitRadius(entity) + 4 : presentationRadius(entity.type, unitRadius(entity) + 4); entry.ring.scale.set(radius, 1, radius);
+      const radius = entity.kind === 'building' ? entity.size * .65 : this.game.map.future ? unitRadius(entity) + 4 : presentationRadius(entity.type, unitRadius(entity) + 4); entry.ring.scale.set(radius * groundFactor, 1, radius * groundFactor);
     }
     for (const [id, entry] of this.entities) if (!active.has(id)) {
       if (entry.airShadow) { this.scene.remove(entry.airShadow); entry.airShadow.material.dispose(); }
@@ -1547,8 +1551,18 @@ export class Renderer {
     for (const entry of this.entities.values()) {
       const entity = entry.entity;
       if (!UNITS[entity.type]?.tags.includes('infantry') || !identityVisible(entity, entry.model.visible)) continue;
-      const point = this.worldToScreen(entity.x, entity.y, entry.model.position.y + entry.topHeight + 2);
+      const point = this.worldToScreen(entity.x, entity.y, entry.model.position.y + (entry.displayTopHeight ?? entry.topHeight) + 2);
       if (point.x < 0 || point.y < 0 || point.x > this.viewport.width || point.y > this.viewport.height) continue;
+      if (this.presentation === 'readable' && (this.camera.zoom < 1.5 || this.game.selected.includes(entity.id))) {
+        const mark = personnelRoleMark(entity.type);
+        if (mark) {
+          ctx.save(); ctx.font = '700 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#0a1b22'; ctx.fillRect(point.x - 7, point.y - 14, 14, 14);
+          ctx.strokeStyle = teamVisual(entity.owner).color; ctx.lineWidth = 1; ctx.strokeRect(point.x - 7, point.y - 14, 14, 14);
+          ctx.fillStyle = '#f2f7f4'; ctx.fillText(mark, point.x, point.y - 7); ctx.restore();
+        }
+        continue;
+      }
       const width = clamp(2.7 * this.camera.zoom, 2.4, 4);
       ctx.save(); ctx.globalAlpha = .85; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(point.x - width, point.y - 2); ctx.lineTo(point.x, point.y); ctx.lineTo(point.x + width, point.y - 2);
