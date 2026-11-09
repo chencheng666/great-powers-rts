@@ -25,7 +25,8 @@ const plugin = {
     if (id.includes('/assets/videos/')) throw new Error('科幻包不能引用官网现代战斗视频');
     if (id.includes('/assets/audio/') && !/\/(iron-tide|east-wind)\.m4a(?:\?|$)/.test(id)) throw new Error('科幻包只分发两首原创器乐');
     if (id.endsWith('/src/data.js')) return scifiDataSource(base);
-    for (const [name, source] of Object.entries(overrides)) if (id === join(root, 'src', name)) return source.replaceAll('../../assets/', '../assets/').replaceAll('../../src/', join(root, 'src') + '/').replaceAll("'./assets/starport-library.glb'", "'../variants/taptap/assets/starport-library.glb'");
+    // 替换模块仍按 src 位置解析相对导入，避免文案替换误改构建机绝对目录。
+    for (const [name, source] of Object.entries(overrides)) if (id === join(root, 'src', name)) return source.replaceAll('../../assets/', '../assets/').replaceAll('../../src/', './').replaceAll("'./assets/starport-library.glb'", "'../variants/taptap/assets/starport-library.glb'");
   },
   transform(source, id) {
     if (id.startsWith(join(root, 'src')) && id.endsWith('.css')) return source.replace(/url\([^)]*\)/g, value => value.includes('player-ranks-v1.webp') ? value : 'none');
