@@ -34,7 +34,7 @@ trap finish EXIT
 tar -xzf "$archive" -C "$stage"
 install -d "$backup"
 # 可选同步官网和下载页，白名单内的每页均先备份，再统一校验。
-for page in official/index.html downloads/index.html downloads/manifest.json utools/privacy/index.html; do
+for page in official/index.html downloads/index.html downloads/manifest.json utools/privacy/index.html release.json; do
   if [[ -f "$stage/$page" ]]; then pages+=("$page"); fi
 done
 for page in "${pages[@]}"; do
