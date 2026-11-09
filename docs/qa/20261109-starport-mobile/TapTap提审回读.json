@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-09",
+  "app": 1027191,
+  "version": "V-20261109-1",
+  "status": "审核中",
+  "autoPublish": true,
+  "h5Version": "454350 / 版本号",
+  "packageId": "167744",
+  "mobileDescription": true,
+  "officialLink": true,
+  "screenshots": [
+    803872,
+    803873,
+    803874
+  ],
+  "screenshotResolution": [
+    1688,
+    780
+  ],
+  "videoId": 6073195,
+  "videoLocalDuration": 67.58,
+  "videoNote": "连续浏览器触屏录制；平台已绑定新视频，曾显示转码中，未代称平台客户端播放通过",
+  "aiQualification": "资质材料\n1 项\nAI接入声明\n审核中\nAI 内容使用声明、AI 相关截图或佐证\n查看"
+}

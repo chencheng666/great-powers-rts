@@ -1,0 +1,128 @@
+{
+  "build": "20261109-scifi-mobile-r4",
+  "version": "3.0.1",
+  "sourceCommit": "5b84e5ea21f5b8568fb78245bf6cadf0424316a2",
+  "files": [
+    {
+      "path": "starport/LICENSE",
+      "size": 1078,
+      "sha256": "58274901099584e1e0f1b7e3c3e19a2c18bce40b9c62f7e72491f6101f71d72e",
+      "ok": true
+    },
+    {
+      "path": "starport/THIRD-PARTY-NOTICES.txt",
+      "size": 5593,
+      "sha256": "4c57619e8d95a93c6a94fdd87b63da0bfc5ee869df055040fbd1a2406f28df30",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/RoomEnvironment-G0p-ULqM.js",
+      "size": 2070,
+      "sha256": "0e77784782ac7c22e6f334247caecccca5dd8e2b94f9a166077f49611255e47a",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/catalog-preview-CQrIHtIg.js",
+      "size": 22994,
+      "sha256": "b4392e4c97b9acf0152ce1a6772c4cfde0937b8c51ecb4942dc3c49779022f5a",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/east-wind-B_vGwSPu.m4a",
+      "size": 1683146,
+      "sha256": "10abe951779d2547fb38765dea42cd8ca0079032bf8d1e15cc5ea72fdc00978b",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/index-BEr1E0HY.js",
+      "size": 796986,
+      "sha256": "99332045958850beb6670dc7ce4687e2f6d8de3c2cfc93d05d41efb784d32d3a",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/index-CeyQ1kJK.css",
+      "size": 106237,
+      "sha256": "da9ba88e7f4c2edc51ba881709e9a05723be7b7b27598453ccfac1aeef7e985b",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/iron-tide-C8QY_9H6.m4a",
+      "size": 1783911,
+      "sha256": "a0b85115778fad0678c38fdc10edc9faab353aaf1f0c88cd4416e1e19177a151",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/meridian-regolith-v2-xTsbCUWN.webp",
+      "size": 516734,
+      "sha256": "0a3e42a4a41ec45390d47b35a19289dc974f06c47f249ae807ff7d2aa233d04b",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/official-emblem-180-C4Xq2ur3.png",
+      "size": 7912,
+      "sha256": "7deec962abecb881121ee7156beb1798957102735f8eb43d1c52457db4e265d2",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/official-emblem-32-CdZtwR6d.png",
+      "size": 1450,
+      "sha256": "6c93e4cc7b77fdf80f04a5baa3168d55157d8c264b183932991c77a9cf80b4c2",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/player-ranks-v1-CI3vqyJS.webp",
+      "size": 327650,
+      "sha256": "6150d1a5c88593bf68d1b9ce9bb8e79cd3ed7fcc702fefb40966912200605b18",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/render-T2i65CL-.js",
+      "size": 170847,
+      "sha256": "d533a3f7f086184dff6bae0be83f20f688655105efc87332acb1ec397e15215a",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/starport-library-dr6DlC-C.glb",
+      "size": 8523540,
+      "sha256": "5a6c3c86aaa8318df9f5b801592091bb5eae52dc8db964c46794de80f082215f",
+      "ok": true
+    },
+    {
+      "path": "starport/assets/visual-assets-DA--e7yo.js",
+      "size": 647221,
+      "sha256": "e94257874b3dc4b4949471566b4dd04f7d7935afe3f097058f036373e06e3cab",
+      "ok": true
+    },
+    {
+      "path": "starport/index.html",
+      "size": 24908,
+      "sha256": "2fec74515ee3ef5c948ce3641db7c6ffa5b7c906ee6d88bc93631d48dce8aaf1",
+      "ok": true
+    },
+    {
+      "path": "starport/版本与隐私说明.txt",
+      "size": 594,
+      "sha256": "6eb4a58445030b528a814635670651ba5526b2f90e4438bf83e9c9c13311766e",
+      "ok": true
+    }
+  ],
+  "zip": {
+    "name": "packages/Great-Powers-Starport-v3.0.1-TapTap-r4.zip",
+    "label": "3.0.1 星港演习 r4 · 手机触屏优化 H5 ZIP",
+    "size": 5997301,
+    "sha256": "6d681b11250739bb5f9e032fa7fa3f859fd4f1acdde07ffbfb794d432cdcc2e5",
+    "status": "重排手机横竖屏界面，建造抽屉、触屏落点预览、精简指令和安全区；包含小格横血条与本机恢复改进。科幻版独立维护，TapTap以平台审核后的版本为准。"
+  },
+  "zipFullVerified": true,
+  "oldR3StillListed": true,
+  "modernHealth": {
+    "ok": true,
+    "version": "3.1.0",
+    "build": "20261109-recovery-r2",
+    "protocol": 4,
+    "maxPlayers": 2,
+    "rooms": 0,
+    "battles": 0
+  },
+  "officialPageExactMatch": true
+}
