@@ -1,0 +1,174 @@
+{
+  "sourceCommit": "b9b19ee97d79a59d2e558c5a90bc4a1f30afaa9e",
+  "build": "20261109-defense-seal-r1",
+  "checks": [
+    {
+      "path": "/play/assets/RoomEnvironment-DrW-v4R3.js",
+      "ok": true,
+      "bytes": 2068,
+      "sha256": "e4725da8875375a72c7057046c85cac4a0a0737bb2e32fb493bd8efdeaaa7bb9",
+      "expected": "e4725da8875375a72c7057046c85cac4a0a0737bb2e32fb493bd8efdeaaa7bb9"
+    },
+    {
+      "path": "/play/assets/catalog-preview-DBU9PS3q.js",
+      "ok": true,
+      "bytes": 22995,
+      "sha256": "f4580ead718d08623b77996e2869ac024f56afa5345f14b854796d80f40702b0",
+      "expected": "f4580ead718d08623b77996e2869ac024f56afa5345f14b854796d80f40702b0"
+    },
+    {
+      "path": "/play/assets/east-wind-B_vGwSPu.m4a",
+      "ok": true,
+      "bytes": 1683146,
+      "sha256": "10abe951779d2547fb38765dea42cd8ca0079032bf8d1e15cc5ea72fdc00978b",
+      "expected": "10abe951779d2547fb38765dea42cd8ca0079032bf8d1e15cc5ea72fdc00978b"
+    },
+    {
+      "path": "/play/assets/index-e31RT2uf.js",
+      "ok": true,
+      "bytes": 871067,
+      "sha256": "a6dd5b797857423d6974ae457a42ca3630be459c7987f3a0ea16a425f18b779d",
+      "expected": "a6dd5b797857423d6974ae457a42ca3630be459c7987f3a0ea16a425f18b779d"
+    },
+    {
+      "path": "/play/assets/internationale-CXzu0I5N.m4a",
+      "ok": true,
+      "bytes": 1548423,
+      "sha256": "32407f619370ae1767e213b37b82630f586fc861763e91a997cc8f32fe597536",
+      "expected": "32407f619370ae1767e213b37b82630f586fc861763e91a997cc8f32fe597536"
+    },
+    {
+      "path": "/play/assets/iron-tide-C8QY_9H6.m4a",
+      "ok": true,
+      "bytes": 1783911,
+      "sha256": "a0b85115778fad0678c38fdc10edc9faab353aaf1f0c88cd4416e1e19177a151",
+      "expected": "a0b85115778fad0678c38fdc10edc9faab353aaf1f0c88cd4416e1e19177a151"
+    },
+    {
+      "path": "/play/assets/official-cinematic-CaZOwm5T.js",
+      "ok": true,
+      "bytes": 13627,
+      "sha256": "58d6bec8b553a17147500978e3da184847d7da7e5642d2a4d64633c6a819ff2f",
+      "expected": "58d6bec8b553a17147500978e3da184847d7da7e5642d2a4d64633c6a819ff2f"
+    },
+    {
+      "path": "/play/assets/official-emblem-180-C4Xq2ur3.png",
+      "ok": true,
+      "bytes": 7912,
+      "sha256": "7deec962abecb881121ee7156beb1798957102735f8eb43d1c52457db4e265d2",
+      "expected": "7deec962abecb881121ee7156beb1798957102735f8eb43d1c52457db4e265d2"
+    },
+    {
+      "path": "/play/assets/official-emblem-32-CdZtwR6d.png",
+      "ok": true,
+      "bytes": 1450,
+      "sha256": "6c93e4cc7b77fdf80f04a5baa3168d55157d8c264b183932991c77a9cf80b4c2",
+      "expected": "6c93e4cc7b77fdf80f04a5baa3168d55157d8c264b183932991c77a9cf80b4c2"
+    },
+    {
+      "path": "/play/assets/official-official-emblem-180-C4Xq2ur3.png",
+      "ok": true,
+      "bytes": 7912,
+      "sha256": "7deec962abecb881121ee7156beb1798957102735f8eb43d1c52457db4e265d2",
+      "expected": "7deec962abecb881121ee7156beb1798957102735f8eb43d1c52457db4e265d2"
+    },
+    {
+      "path": "/play/assets/official-official-emblem-32-CdZtwR6d.png",
+      "ok": true,
+      "bytes": 1450,
+      "sha256": "6c93e4cc7b77fdf80f04a5baa3168d55157d8c264b183932991c77a9cf80b4c2",
+      "expected": "6c93e4cc7b77fdf80f04a5baa3168d55157d8c264b183932991c77a9cf80b4c2"
+    },
+    {
+      "path": "/play/assets/official-official-scene3d-Du2SQqvj.js",
+      "ok": true,
+      "bytes": 640416,
+      "sha256": "34ccb403c8f774c2024dfcc7dccb85c18e5ab0342830268b7217a871c4e84bb1",
+      "expected": "34ccb403c8f774c2024dfcc7dccb85c18e5ab0342830268b7217a871c4e84bb1"
+    },
+    {
+      "path": "/play/assets/render-Yw3kUubr.js",
+      "ok": true,
+      "bytes": 143774,
+      "sha256": "ac2f63af57db37cb3c3f653cbcb2d8bc1b52f0741ca626c15d7b0a315f49d882",
+      "expected": "ac2f63af57db37cb3c3f653cbcb2d8bc1b52f0741ca626c15d7b0a315f49d882"
+    },
+    {
+      "path": "/play/assets/visual-assets-CilLkI3g.js",
+      "ok": true,
+      "bytes": 771929,
+      "sha256": "7dfe0d9f2fb97a29ed633f5b7588910b0630d9698579832fa85bb88e9d0c9a71",
+      "expected": "7dfe0d9f2fb97a29ed633f5b7588910b0630d9698579832fa85bb88e9d0c9a71"
+    },
+    {
+      "path": "/play/index.html",
+      "ok": true,
+      "bytes": 24661,
+      "sha256": "56c9fdd2049bf1c07cfd51eda85fbe84053e970f4cc3b06d2ae3ba4cec6115d9",
+      "expected": "56c9fdd2049bf1c07cfd51eda85fbe84053e970f4cc3b06d2ae3ba4cec6115d9"
+    },
+    {
+      "path": "/official/assets/air-defense-20261109.jpg",
+      "ok": true,
+      "bytes": 43130,
+      "sha256": "7869c838fb55ce0f7a11ca6882360342c71bd4bbeb1c0fd41d7e34c0180cbc4f",
+      "expected": "7869c838fb55ce0f7a11ca6882360342c71bd4bbeb1c0fd41d7e34c0180cbc4f"
+    },
+    {
+      "path": "/official/index.html",
+      "ok": true,
+      "bytes": 19101,
+      "sha256": "b34e375af4be2000f25efead550447d87cb7850f18d450f1847274d85d8b73e4",
+      "expected": "b34e375af4be2000f25efead550447d87cb7850f18d450f1847274d85d8b73e4"
+    },
+    {
+      "path": "/resume/",
+      "ok": true,
+      "bytes": 8683,
+      "sha256": "fa78dc5a3c3cee90ea248766b15ac6c9c1ea7480c136b0284ab04548788f5dde",
+      "expected": "fa78dc5a3c3cee90ea248766b15ac6c9c1ea7480c136b0284ab04548788f5dde"
+    },
+    {
+      "path": "/play/starport/index.html",
+      "ok": true,
+      "bytes": 24493,
+      "sha256": "166d77745057167bc4a2b34e555c550c17eca91c936c802d66b72c81c6d07b51",
+      "expected": "166d77745057167bc4a2b34e555c550c17eca91c936c802d66b72c81c6d07b51"
+    },
+    {
+      "path": "/downloads/manifest.json",
+      "ok": true,
+      "bytes": 33975,
+      "sha256": "6a52145b476e2abacb09d058328e42765f0dc9fa6b70a9ace7aacd5c30a70bee",
+      "expected": "6a52145b476e2abacb09d058328e42765f0dc9fa6b70a9ace7aacd5c30a70bee"
+    },
+    {
+      "path": "/play/",
+      "ok": true,
+      "bytes": 24661,
+      "sha256": "56c9fdd2049bf1c07cfd51eda85fbe84053e970f4cc3b06d2ae3ba4cec6115d9",
+      "expected": "56c9fdd2049bf1c07cfd51eda85fbe84053e970f4cc3b06d2ae3ba4cec6115d9"
+    }
+  ],
+  "health": {
+    "/api/health": {
+      "ok": true,
+      "version": "3.1.0",
+      "build": "20261109-defense-seal-r1",
+      "protocol": 4,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    "/candidate/api/health": {
+      "ok": true,
+      "version": "3.1.0",
+      "build": "20261109-defense-seal-r1",
+      "protocol": 5,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  },
+  "allPassed": true
+}
