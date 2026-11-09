@@ -12,29 +12,32 @@ export function recoverRelatedHonors(storage, text) {
   return true;
 }
 
-export function restoreRelatedHonors({ environment = window, onRestored = () => {} } = {}) {
+export function restoreRelatedHonors({ environment = window, onRestored = () => {}, automatic = true } = {}) {
   const origins = ['https://www.daguojueqi.site', 'https://daguojueqi.site'];
-  if (!origins.includes(environment.location.origin)) return;
+  if (!origins.includes(environment.location.origin)) return Promise.resolve({ status: 'unavailable' });
   const origin = origins.find(value => value !== environment.location.origin);
-  const nonce = environment.crypto.randomUUID();
-  const frame = environment.document.createElement('iframe');
-  frame.hidden = true;
-  frame.title = '检查本站旧地址的本机荣誉';
-  frame.src = origin + '/official/profile-bridge/index.html';
-  const cleanup = () => {
-    environment.clearTimeout(timer);
-    environment.removeEventListener('message', receive);
-    frame.remove();
-  };
-  const receive = event => {
-    if (event.source !== frame.contentWindow || event.origin !== origin || event.data?.type !== 'gp-local-honors' || event.data.nonce !== nonce) return;
-    try {
-      if (recoverRelatedHonors(environment.localStorage, event.data.profile)) onRestored();
-    } catch { /* 无效、分叉或不可访问的档案保留原状。 */ }
-    cleanup();
-  };
-  environment.addEventListener('message', receive);
-  frame.addEventListener('load', () => frame.contentWindow.postMessage({ type: 'gp-read-honors', nonce }, origin));
-  const timer = environment.setTimeout(cleanup, 8000);
-  environment.document.body.append(frame);
+  return new Promise(resolve => {
+    const nonce = environment.crypto.randomUUID();
+    const frame = environment.document.createElement('iframe');
+    frame.hidden = true; frame.title = '检查本站旧地址的本机荣誉';
+    frame.src = origin + '/official/profile-bridge/index.html';
+    let finished = false;
+    const cleanup = result => {
+      if (finished) return;
+      finished = true; environment.clearTimeout(timer);
+      environment.removeEventListener('message', receive); frame.remove(); resolve(result);
+    };
+    const receive = event => {
+      if (event.source !== frame.contentWindow || event.origin !== origin || event.data?.type !== 'gp-local-honors' || event.data.nonce !== nonce) return;
+      try {
+        const profile = validateHonors(JSON.parse(event.data.profile));
+        if (automatic && recoverRelatedHonors(environment.localStorage, event.data.profile)) { onRestored(); cleanup({ status: 'restored', profile, origin }); }
+        else cleanup({ status: 'candidate', profile, origin });
+      } catch { cleanup({ status: 'none' }); }
+    };
+    environment.addEventListener('message', receive);
+    frame.addEventListener('load', () => frame.contentWindow.postMessage({ type: 'gp-read-honors', nonce }, origin));
+    const timer = environment.setTimeout(() => cleanup({ status: 'unavailable' }), 8000);
+    environment.document.body.append(frame);
+  });
 }

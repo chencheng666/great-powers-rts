@@ -72,8 +72,16 @@ ${stone ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.19,.18,.16), smoothste
   return result;
 }
 
+function fallbackMoonTexture() {
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#777a76'; ctx.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 512; i++) { ctx.fillStyle = i % 2 ? '#737570' : '#7d807a'; ctx.fillRect(i * 37 % 128, i * 61 % 128, 3, 3); }
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 export function prepareVisualAssets() {
-  pending ||= Promise.all([loadAsset(modelURL, () => new GLTFLoader().loadAsync(modelURL)), loadAsset(groundURL, () => new THREE.TextureLoader().loadAsync(groundURL)), loadAsset(buildingsURL, () => new THREE.TextureLoader().loadAsync(buildingsURL)), loadAsset(foliageURL, () => new THREE.TextureLoader().loadAsync(foliageURL)), loadAsset(armoryURL, () => new THREE.TextureLoader().loadAsync(armoryURL)), loadAsset(meridianURL, () => new THREE.TextureLoader().loadAsync(meridianURL))]).then(([gltf, ground, buildings, foliage, armory, meridian]) => {
+  pending ||= Promise.all([loadAsset(modelURL, () => new GLTFLoader().loadAsync(modelURL)), loadAsset(groundURL, () => new THREE.TextureLoader().loadAsync(groundURL)), loadAsset(buildingsURL, () => new THREE.TextureLoader().loadAsync(buildingsURL)), loadAsset(foliageURL, () => new THREE.TextureLoader().loadAsync(foliageURL)), loadAsset(armoryURL, () => new THREE.TextureLoader().loadAsync(armoryURL)), loadAsset(meridianURL, () => new THREE.TextureLoader().loadAsync(meridianURL)).catch(() => null)]).then(([gltf, ground, buildings, foliage, armory, meridian]) => {
     const openAssets = {};
     const models = new Map();
     gltf.scene.updateMatrixWorld(true);
@@ -158,8 +166,8 @@ export function prepareVisualAssets() {
     models.set('tank_china', createChineseTank(weatherMaterial));
     models.set('destroyer_china', createChineseDestroyer());
     ground.colorSpace = THREE.SRGBColorSpace; ground.wrapS = ground.wrapT = THREE.RepeatWrapping;
-    meridian.colorSpace = THREE.SRGBColorSpace;
-    library = { models, ground, groundSurface: null, buildings, foliage, armory, meridian };
+    if (meridian) meridian.colorSpace = THREE.SRGBColorSpace;
+    library = { models, ground, groundSurface: null, buildings, foliage, armory, meridian: meridian || fallbackMoonTexture() };
     // 非必需的高精度开源模型和贴图在首帧之后加载；断网或损坏时保留原有模型。
     setTimeout(() => loadOpenAssets().then(assets => {
       installOpenModels(models, assets, weatherMaterial);

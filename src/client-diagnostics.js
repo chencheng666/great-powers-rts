@@ -38,5 +38,9 @@ export function resourceDetail(target, environment = globalThis) {
   if (video && (!target.getAttribute('src') || target.dataset?.backgroundState === 'suspended' || target.error?.code === 1)) return null;
   const file = locationDetail(target?.currentSrc || target?.src || target?.href, environment);
   if (!file) return null;
+  try {
+    const path = new URL(target?.currentSrc || target?.src || target?.href, environment.location.href).pathname;
+    if (['LINK', 'SCRIPT'].includes(target?.tagName) && !/(?:^|\/)(?:assets|src)\//.test(path)) return null;
+  } catch { return null; }
   return [video ? 'MenuVideoError' : 'AssetError', file, ...(video && [2,3,4].includes(target.error?.code) ? [`media:${target.error.code}`] : [])].join(' ').slice(0,160);
 }

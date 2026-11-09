@@ -1,3 +1,4 @@
+import { ensureBattleCanvas } from './battle-canvas.js';
 import { setupUnitPresentation } from './unit-presentation.js';
 import { FACTION_DOCTRINES } from './faction-doctrine.js';
 import './v4-readability.css';
@@ -56,7 +57,7 @@ import './player-feedback.css';
 import { Catalog } from './catalog.js';
 import { CatalogSession } from './catalog-data.js';
 import './catalog.css';
-import { HONOR_KEY, readHonors, writeHonors, exportHonors, emptyHonors, honorProgress, settleHonors } from './player-honors.js';
+import { HONOR_KEY, readHonors, writeHonors, localHonorCandidates, exportHonors, emptyHonors, honorProgress, settleHonors } from './player-honors.js';
 import { HonorPanel, honorBadge, honorResultHTML } from './honor-ui.js';
 import './honors.css';
 import { INTELLIGENCE_RULES } from './intelligence.js';
@@ -187,7 +188,13 @@ function updateHonorOverview() {
 }
 
 const honorSession=new CatalogSession();
-const honorPanel=new HonorPanel($('#honor-dialog'),{refreshIcons,onImport:profile=>{writeHonors(localStorage,profile);updateHonorOverview();},onExport:profile=>{
+const honorPanel=new HonorPanel($('#honor-dialog'),{refreshIcons,onRecover:async current=>{
+  const local = localHonorCandidates(localStorage).find(p=>JSON.stringify(p)!==JSON.stringify(current));
+  const remote = await restoreRelatedHonors({automatic:false});
+  const candidates = [local, remote.profile].filter(p=>p&&JSON.stringify(p)!==JSON.stringify(current)&&(p.points||p.wins));
+  const profile = candidates.sort((a,b)=>b.points-a.points||b.wins-a.wins)[0];
+  return profile ? {profile,message:'找到一份有效旧档案，请核对后恢复；不会自动叠加积分。'} : {message:'没有找到其他有效档案。请用原浏览器、原网址或原离线文件打开并导出荣誉档案，再到这里导入。清除浏览器数据后，本机副本也可能被删除。'};
+},onImport:profile=>{writeHonors(localStorage,profile);updateHonorOverview();},onExport:profile=>{
   const url=URL.createObjectURL(new Blob([JSON.stringify(exportHonors(profile),null,2)],{type:'application/json'}));
   const link=document.createElement('a');link.href=url;link.download=`大国崛起-荣誉档案-${new Date().toISOString().slice(0,10)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
 },onClose:()=>{
@@ -467,7 +474,10 @@ function handleBattleFailure(error, retry = {}) {
   ++state.loopToken;
   state.renderFailure = retry;
   state.loading = false; state.keys.clear(); state.drag = null; state.panning = null;
-  if (state.game && !state.game.online) state.game.paused = true;
+  if (state.game && !state.game.online) { state.game.paused = true; saveProgress('auto', false); }
+  if (/context.?lost|图形设备连接中断/i.test(error?.message || '')) {
+    try { localStorage.setItem(state.renderer?.qualityKey || 'great-powers-quality', 'standard'); } catch { /* 本局仍可选择流畅画质恢复。 */ }
+  }
   gameAudio.setPaused(true);
   const recovery = renderRecovery(error);
   showModal(recovery.title, '<p id="battle-recovery-guide"></p><p id="battle-error-detail"></p>', `${recovery.available ? `<button class="primary-btn" data-modal="recover-render">${icon('refresh-cw')} 流畅画质恢复</button>` : ''}${state.game && !state.game.online ? `<button class="secondary-btn" data-modal="export">${icon('download')} 导出当前战局</button>` : ''}<button class="secondary-btn" data-modal="failure-menu">${icon('house')} 返回主界面</button>`);
@@ -753,8 +763,11 @@ function updatePanControl() {
   const button = $('#pan-map-btn');
   button.setAttribute('aria-pressed', String(state.cameraPanMode));
   button.title = state.cameraPanMode ? '拖图已开启 · Esc退出 · Shift左拖框选' : '拖拽地图模式（M）';
-  $('#game-canvas').classList.toggle('pan-mode', state.cameraPanMode);
-  $('#game-canvas').classList.toggle('panning', Boolean(state.panning?.moved || state.panning?.button !== undefined && state.panning.button !== 2));
+  const canvas = state.renderer?.canvas || $('#game-canvas');
+  if (!canvas) return;
+  ensureBattleCanvas(canvas, document);
+  canvas.classList.toggle('pan-mode', state.cameraPanMode);
+  canvas.classList.toggle('panning', Boolean(state.panning?.moved || state.panning?.button !== undefined && state.panning.button !== 2));
 }
 
 function updateBuildingInspector(now) {
@@ -1454,7 +1467,7 @@ const onlineClient=new OnlineClient({
     if(state.game?.online&&onlineClient.latest?.config.battleId===state.game.battleId)state.game.apply(onlineClient.latest);
   },
   onSnapshot:payload=>{if(state.game?.online&&state.game.battleId===payload.config.battleId)state.game.apply(payload);},
-  onStatus:message=>{if(message.includes('中断'))playerTelemetry.error('network');if(state.game?.online)$('#battle-status').textContent=message;},
+  onStatus:message=>{if(message.includes('中断'))playerTelemetry.error('network', 'NetworkError code:socket-disconnected');if(state.game?.online)$('#battle-status').textContent=message;},
   onInterrupted:()=>{if(state.game?.online){state.game.running=false;showModal('战局已取消','<p>服务器维护或房间已过期，本局未记录胜负。</p>','<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button>');}}
 });
 drawFactionPicker();

@@ -1,3 +1,4 @@
+import { ensureBattleCanvas } from './battle-canvas.js';
 import { healthBarPresentation, healthBarBudget } from './health-bar-presentation.js';
 import { readPresentation, groundPresentationFactor, selectionTolerance, nearestScreenSelection, personnelRoleMark } from './unit-presentation.js';
 import { AIRCRAFT_LENGTHS, airframeScale, flightScaleFactor, unitModelScale, presentationRadius, aircraftCruiseHeight, aircraftGroundFactor, CARRIER_DECK_HEIGHT, CARRIER_MODEL_LENGTH } from './model-scale.js';
@@ -99,7 +100,7 @@ export class Renderer {
   constructor(canvas, minimap, game, options = {}) {
     this.canvas = canvas; this.minimap = minimap; this.mctx = minimap.getContext('2d'); this.game = game;
     this.mobileBudget = matchMedia('(pointer: coarse)').matches || innerWidth <= 700;
-    this.quality=game.map.maxPlayers===6||this.mobileBudget?'standard':'high';
+    this.quality = 'standard';
     this.qualityKey = game.map.maxPlayers === 6 ? 'great-powers-quality-six' : 'great-powers-quality';
     try { const saved=localStorage.getItem(this.qualityKey);if(['standard','high'].includes(saved))this.quality=saved; } catch { /* 无存储时按模式选默认画质。 */ }
     if (['standard', 'high'].includes(options.quality)) this.quality = options.quality;
@@ -115,7 +116,7 @@ export class Renderer {
     this.cameraElevation = battleElevation(this.viewMode); this.cameraAzimuth = battleAzimuth(this.viewMode); this.wrecks = []; this.cosmeticEffects = []; this.damageMaterials = new Map(); this.damageTemplates = new Map();
     this.pointer = null; this.dragBox = null; this.lastMinimap = 0; this.lastFog = -1000;
     this.entities = new Map(); this.effects = new Map(); this.environment = []; this.bridges = []; this.trails = []; this.ownedResources = [];
-    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: this.quality!=='standard', alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: this.quality!=='standard', alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false });
     // 返回菜单或读档时复用同一画布，先清理上一渲染器遗留的 WebGL 绑定。
     this.webgl.resetState();
     this.webgl.setPixelRatio(armyRenderBudget(this.quality,0,devicePixelRatio).pixelRatio);
@@ -618,6 +619,8 @@ export class Renderer {
   }
 
   resize() {
+    if (this.disposed) return;
+    ensureBattleCanvas(this.canvas, document);
     const rect = this.canvas.getBoundingClientRect(); if (rect.width < 1 || rect.height < 1) return;
     this.viewport = { width: rect.width, height: rect.height }; this.webgl.setSize(rect.width, rect.height, false);
     if (this.composer) {
@@ -1514,6 +1517,8 @@ export class Renderer {
   }
 
   render(now = 0) {
+    if (this.disposed) return;
+    ensureBattleCanvas(this.canvas, document);
     if (this.webgl.getContext().isContextLost()) throw new Error('图形设备连接中断，请等待设备恢复后重试流畅画质');
     this.updateEntities(now); this.updateEffects(); this.updateProjectileModels(now); this.updateTracks(); this.updatePlacement();
     if (now - this.lastFog >= 180) { this.updateFog(); this.lastFog = now; }
@@ -1638,6 +1643,8 @@ export class Renderer {
   }
 
   dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
     this.armyBatches.dispose();
     this.webgl.setRenderTarget(null); this.webgl.resetState();
     this.composer?.passes.forEach(pass => pass.dispose()); this.composer?.dispose();

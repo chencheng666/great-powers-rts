@@ -2,6 +2,8 @@ import { AI_DIFFICULTIES, FACTIONS, MAPS, VICTORY_MODES } from './data.js';
 import { validBattleId } from './battle-identity.js';
 
 export const HONOR_KEY = 'great-powers-player-honors-v1';
+export const HONOR_BACKUP_KEY = HONOR_KEY + '-backup';
+export const HONOR_PREVIOUS_KEY = HONOR_KEY + '-previous';
 export const HONOR_RANKS = [
   { name:'预备指挥官', points:0, wins:0, motto:'你的第一场凯旋，正在前方。' },
   { name:'前线新锐', points:100, wins:1, motto:'第一场胜利，让战区记住了你的名字。' },
@@ -57,19 +59,54 @@ export function validateHonors(profile) {
   return profile;
 }
 
+function parseLocalHonors(text) {
+  if (typeof text !== 'string' || text.length > 8 * 1024 * 1024) throw new Error('荣誉档案异常；原有记录未被覆盖');
+  let value;
+  try { value = JSON.parse(text); } catch { throw new Error('荣誉档案无法解析；原有记录未被覆盖'); }
+  return validateHonors(value);
+}
+
 export function readHonors(storage) {
   let text;
-  try { text=storage.getItem(HONOR_KEY); } catch { throw new Error('无法读取本机荣誉档案，请检查浏览器存储权限'); }
-  if(text===null)return emptyHonors();
-  if(typeof text!=='string'||text.length>8*1024*1024)throw new Error('荣誉档案异常；原有记录未被覆盖');
-  let value;
-  try { value=JSON.parse(text); } catch { throw new Error('荣誉档案无法解析；原有记录未被覆盖'); }
-  return validateHonors(value);
+  try { text = storage.getItem(HONOR_KEY); } catch { throw new Error('无法读取本机荣誉档案，请检查浏览器存储权限'); }
+  let error;
+  if (text !== null) {
+    try {
+      const profile = parseLocalHonors(text);
+      try { if (storage.getItem(HONOR_BACKUP_KEY) === null) storage.setItem(HONOR_BACKUP_KEY, text); } catch { /* 首次副本不可写时仍可读主记录。 */ }
+      return profile;
+    } catch (cause) { error = cause; }
+  }
+  // 主记录缺失或损坏时，使用同一浏览器内的有效副本；不凭昵称拼接战绩。
+  for (const key of [HONOR_BACKUP_KEY, HONOR_PREVIOUS_KEY]) {
+    try {
+      const backup = storage.getItem(key);
+      if (backup === null) continue;
+      const profile = parseLocalHonors(backup);
+      try {
+        if (text !== null) storage.setItem(HONOR_KEY + '-damaged', text);
+        storage.setItem(HONOR_KEY, backup);
+      } catch { /* 副本仍可读取和导出，无法保存损坏原文时不覆盖主记录。 */ }
+      return profile;
+    } catch { /* 无效副本不能替换原记录。 */ }
+  }
+  if (error) throw error;
+  return emptyHonors();
 }
 
 export function writeHonors(storage, profile) {
   validateHonors(profile);
-  try { storage.setItem(HONOR_KEY,JSON.stringify(profile)); } catch { throw new Error('荣誉暂未保存：本机存储不可用或空间不足，可重试；原有积分未被覆盖'); }
+  const text = JSON.stringify(profile);
+  let previous;
+  try { previous = storage.getItem(HONOR_KEY); } catch { /* 仍尝试保存本次有效成绩。 */ }
+  try { storage.setItem(HONOR_KEY, text); } catch { throw new Error('荣誉暂未保存：本机存储不可用或空间不足，可重试；原有积分未被覆盖'); }
+  // 辅助副本空间不足不能把已经保存的胜利误报为失败。
+  try {
+    if (previous && previous !== text) {
+      try { parseLocalHonors(previous); storage.setItem(HONOR_PREVIOUS_KEY, previous); } catch { /* 不备份损坏内容。 */ }
+    }
+    storage.setItem(HONOR_BACKUP_KEY, text);
+  } catch { /* 主记录已保存；可通过荣誉档案手动导出。 */ }
 }
 
 export function exportHonors(profile, at = Date.now()) {
@@ -145,4 +182,15 @@ export function victoryPraise(settlement, mode) {
   if(settlement.unlocked.some(a=>a.id==='first-expert'))return '专家战区被你攻克。指挥官，这场更有分量的胜利属于你。';
   if(settlement.unlocked.some(a=>a.id==='first-win'))return '第一场胜利，正式写入你的指挥履历。属于你的征程，从这里开始。';
   return {quick:'敌方生产核心已被摧毁。指挥官，这片战区记住了你的胜利。',annihilation:'你把战术执行到了最后。耐心与坚持，换来了这场完整的胜利。',control:'你把主动权握在了自己手里。占领与守护，同样是制胜的本领。'}[mode];
+}
+
+export function localHonorCandidates(storage) {
+  const candidates = [];
+  for (const key of [HONOR_KEY, HONOR_BACKUP_KEY, HONOR_PREVIOUS_KEY]) {
+    try {
+      const profile = parseLocalHonors(storage.getItem(key));
+      if (!candidates.some(p => JSON.stringify(p) === JSON.stringify(profile))) candidates.push(profile);
+    } catch { /* 只提供经过完整校验的候选。 */ }
+  }
+  return candidates.sort((a, b) => b.points - a.points || b.wins - a.wins);
 }
