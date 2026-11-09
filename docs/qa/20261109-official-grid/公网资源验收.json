@@ -1,0 +1,47 @@
+{
+  "frontendRelease": "20261109-official-grid-r1",
+  "sourceCommit": "6e1cc5ce76eb3d66578756b7301fa0f078c57bc2",
+  "checks": [
+    {
+      "path": "/official/index.html",
+      "ok": true
+    },
+    {
+      "path": "/play/release.json",
+      "ok": true
+    },
+    {
+      "path": "/assets/official-cinematic-C-gSdYNk.js",
+      "ok": true
+    },
+    {
+      "path": "/assets/official-official-cinematic-DZzzadIY.css",
+      "ok": true
+    },
+    {
+      "path": "/assets/official-official-scene3d-CgdzLMxo.js",
+      "ok": true
+    },
+    {
+      "path": "/play/",
+      "ok": true
+    },
+    {
+      "path": "/resume/",
+      "ok": true
+    },
+    {
+      "path": "/play/starport/index.html",
+      "ok": true
+    },
+    {
+      "path": "/api/health",
+      "ok": true
+    },
+    {
+      "path": "/candidate/api/health",
+      "ok": true
+    }
+  ],
+  "allPassed": true
+}
