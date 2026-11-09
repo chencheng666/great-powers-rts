@@ -1,0 +1,174 @@
+{
+  "sourceCommit": "e71b4c5b10e4dc8eff0c0d14af5f24273fd425b3",
+  "build": "20261109-recovery-r2",
+  "checks": [
+    {
+      "path": "/play/assets/RoomEnvironment-Cyav3FUS.js",
+      "ok": true,
+      "bytes": 2068,
+      "sha256": "ba7e4619b2d11f3f81445938ba2169aad3adc22dfe425c80e79413d2e6e78587",
+      "expected": "ba7e4619b2d11f3f81445938ba2169aad3adc22dfe425c80e79413d2e6e78587"
+    },
+    {
+      "path": "/play/assets/catalog-preview-C7je1T27.js",
+      "ok": true,
+      "bytes": 22995,
+      "sha256": "e8ac285c27efa667c3cbc72fe6251278991a64e5962bc16917da0bc8cf554177",
+      "expected": "e8ac285c27efa667c3cbc72fe6251278991a64e5962bc16917da0bc8cf554177"
+    },
+    {
+      "path": "/play/assets/east-wind-B_vGwSPu.m4a",
+      "ok": true,
+      "bytes": 1683146,
+      "sha256": "10abe951779d2547fb38765dea42cd8ca0079032bf8d1e15cc5ea72fdc00978b",
+      "expected": "10abe951779d2547fb38765dea42cd8ca0079032bf8d1e15cc5ea72fdc00978b"
+    },
+    {
+      "path": "/play/assets/index-D_ws6nqP.js",
+      "ok": true,
+      "bytes": 874076,
+      "sha256": "be567424aa5afc58a59c978f03bd2ec678d4eb7ff587ba641740debcd97dea6e",
+      "expected": "be567424aa5afc58a59c978f03bd2ec678d4eb7ff587ba641740debcd97dea6e"
+    },
+    {
+      "path": "/play/assets/internationale-CXzu0I5N.m4a",
+      "ok": true,
+      "bytes": 1548423,
+      "sha256": "32407f619370ae1767e213b37b82630f586fc861763e91a997cc8f32fe597536",
+      "expected": "32407f619370ae1767e213b37b82630f586fc861763e91a997cc8f32fe597536"
+    },
+    {
+      "path": "/play/assets/iron-tide-C8QY_9H6.m4a",
+      "ok": true,
+      "bytes": 1783911,
+      "sha256": "a0b85115778fad0678c38fdc10edc9faab353aaf1f0c88cd4416e1e19177a151",
+      "expected": "a0b85115778fad0678c38fdc10edc9faab353aaf1f0c88cd4416e1e19177a151"
+    },
+    {
+      "path": "/play/assets/official-cinematic-CaZOwm5T.js",
+      "ok": true,
+      "bytes": 13627,
+      "sha256": "58d6bec8b553a17147500978e3da184847d7da7e5642d2a4d64633c6a819ff2f",
+      "expected": "58d6bec8b553a17147500978e3da184847d7da7e5642d2a4d64633c6a819ff2f"
+    },
+    {
+      "path": "/play/assets/official-emblem-180-C4Xq2ur3.png",
+      "ok": true,
+      "bytes": 7912,
+      "sha256": "7deec962abecb881121ee7156beb1798957102735f8eb43d1c52457db4e265d2",
+      "expected": "7deec962abecb881121ee7156beb1798957102735f8eb43d1c52457db4e265d2"
+    },
+    {
+      "path": "/play/assets/official-emblem-32-CdZtwR6d.png",
+      "ok": true,
+      "bytes": 1450,
+      "sha256": "6c93e4cc7b77fdf80f04a5baa3168d55157d8c264b183932991c77a9cf80b4c2",
+      "expected": "6c93e4cc7b77fdf80f04a5baa3168d55157d8c264b183932991c77a9cf80b4c2"
+    },
+    {
+      "path": "/play/assets/official-official-emblem-180-C4Xq2ur3.png",
+      "ok": true,
+      "bytes": 7912,
+      "sha256": "7deec962abecb881121ee7156beb1798957102735f8eb43d1c52457db4e265d2",
+      "expected": "7deec962abecb881121ee7156beb1798957102735f8eb43d1c52457db4e265d2"
+    },
+    {
+      "path": "/play/assets/official-official-emblem-32-CdZtwR6d.png",
+      "ok": true,
+      "bytes": 1450,
+      "sha256": "6c93e4cc7b77fdf80f04a5baa3168d55157d8c264b183932991c77a9cf80b4c2",
+      "expected": "6c93e4cc7b77fdf80f04a5baa3168d55157d8c264b183932991c77a9cf80b4c2"
+    },
+    {
+      "path": "/play/assets/official-official-scene3d-Du2SQqvj.js",
+      "ok": true,
+      "bytes": 640416,
+      "sha256": "34ccb403c8f774c2024dfcc7dccb85c18e5ab0342830268b7217a871c4e84bb1",
+      "expected": "34ccb403c8f774c2024dfcc7dccb85c18e5ab0342830268b7217a871c4e84bb1"
+    },
+    {
+      "path": "/play/assets/render-D5xTYlBP.js",
+      "ok": true,
+      "bytes": 143867,
+      "sha256": "6ccd14bb2e0829b23df4bd72fac7c35dad51499d90c213a550accd81bfbb2da8",
+      "expected": "6ccd14bb2e0829b23df4bd72fac7c35dad51499d90c213a550accd81bfbb2da8"
+    },
+    {
+      "path": "/play/assets/visual-assets-IQLT6xPs.js",
+      "ok": true,
+      "bytes": 772240,
+      "sha256": "84be03ac3f338dc738b1f37de1101561646649ee997509647b12df3acd6d1a6f",
+      "expected": "84be03ac3f338dc738b1f37de1101561646649ee997509647b12df3acd6d1a6f"
+    },
+    {
+      "path": "/play/index.html",
+      "ok": true,
+      "bytes": 24661,
+      "sha256": "c8ccca076988d1c193b3c0573bc51aa14a7b843ce77fa40208e879657acebb41",
+      "expected": "c8ccca076988d1c193b3c0573bc51aa14a7b843ce77fa40208e879657acebb41"
+    },
+    {
+      "path": "/official/assets/air-defense-20261109.jpg",
+      "ok": true,
+      "bytes": 43130,
+      "sha256": "7869c838fb55ce0f7a11ca6882360342c71bd4bbeb1c0fd41d7e34c0180cbc4f",
+      "expected": "7869c838fb55ce0f7a11ca6882360342c71bd4bbeb1c0fd41d7e34c0180cbc4f"
+    },
+    {
+      "path": "/official/index.html",
+      "ok": true,
+      "bytes": 19138,
+      "sha256": "20e82c735e3c8eb6000749ea7181fb06270b76f32103d2dda2bae53a75779716",
+      "expected": "20e82c735e3c8eb6000749ea7181fb06270b76f32103d2dda2bae53a75779716"
+    },
+    {
+      "path": "/resume/",
+      "ok": true,
+      "bytes": 8683,
+      "sha256": "fa78dc5a3c3cee90ea248766b15ac6c9c1ea7480c136b0284ab04548788f5dde",
+      "expected": "fa78dc5a3c3cee90ea248766b15ac6c9c1ea7480c136b0284ab04548788f5dde"
+    },
+    {
+      "path": "/play/starport/index.html",
+      "ok": true,
+      "bytes": 24493,
+      "sha256": "166d77745057167bc4a2b34e555c550c17eca91c936c802d66b72c81c6d07b51",
+      "expected": "166d77745057167bc4a2b34e555c550c17eca91c936c802d66b72c81c6d07b51"
+    },
+    {
+      "path": "/downloads/manifest.json",
+      "ok": true,
+      "bytes": 33975,
+      "sha256": "6a52145b476e2abacb09d058328e42765f0dc9fa6b70a9ace7aacd5c30a70bee",
+      "expected": "6a52145b476e2abacb09d058328e42765f0dc9fa6b70a9ace7aacd5c30a70bee"
+    },
+    {
+      "path": "/play/",
+      "ok": true,
+      "bytes": 24661,
+      "sha256": "c8ccca076988d1c193b3c0573bc51aa14a7b843ce77fa40208e879657acebb41",
+      "expected": "c8ccca076988d1c193b3c0573bc51aa14a7b843ce77fa40208e879657acebb41"
+    }
+  ],
+  "health": {
+    "/api/health": {
+      "ok": true,
+      "version": "3.1.0",
+      "build": "20261109-recovery-r2",
+      "protocol": 4,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    "/candidate/api/health": {
+      "ok": true,
+      "version": "3.1.0",
+      "build": "20261109-recovery-r2",
+      "protocol": 5,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  },
+  "allPassed": true
+}
