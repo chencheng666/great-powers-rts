@@ -1,0 +1,518 @@
+[
+  {
+    "viewport": [
+      667,
+      375
+    ],
+    "scrollWidth": 667,
+    "field": {
+      "x": 0,
+      "y": 44,
+      "width": 667,
+      "height": 275,
+      "right": 667,
+      "bottom": 319
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 319,
+      "width": 667,
+      "height": 56,
+      "right": 667,
+      "bottom": 375
+    },
+    "selection": null,
+    "tutorial": {
+      "x": 467,
+      "y": 51,
+      "width": 192,
+      "height": 42,
+      "right": 659,
+      "bottom": 93
+    },
+    "sidebar": null,
+    "commands": [
+      {
+        "id": "all-btn",
+        "text": "全军",
+        "rect": {
+          "x": 8,
+          "y": 325.5,
+          "width": 52,
+          "height": 44,
+          "right": 60,
+          "bottom": 369.5
+        }
+      },
+      {
+        "id": "home-btn",
+        "text": "基地",
+        "rect": {
+          "x": 65,
+          "y": 325.5,
+          "width": 52,
+          "height": 44,
+          "right": 117,
+          "bottom": 369.5
+        }
+      },
+      {
+        "id": "sp-build-btn",
+        "text": "建造",
+        "rect": {
+          "x": 538,
+          "y": 325.5,
+          "width": 64,
+          "height": 44,
+          "right": 602,
+          "bottom": 369.5
+        }
+      },
+      {
+        "id": "sp-orders-btn",
+        "text": "更多",
+        "rect": {
+          "x": 607,
+          "y": 325.5,
+          "width": 52,
+          "height": 44,
+          "right": 659,
+          "bottom": 369.5
+        }
+      }
+    ],
+    "headerEnd": 352.25
+  },
+  {
+    "viewport": [
+      932,
+      430
+    ],
+    "scrollWidth": 932,
+    "field": {
+      "x": 0,
+      "y": 44,
+      "width": 932,
+      "height": 330,
+      "right": 932,
+      "bottom": 374
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 374,
+      "width": 932,
+      "height": 56,
+      "right": 932,
+      "bottom": 430
+    },
+    "selection": null,
+    "tutorial": {
+      "x": 732,
+      "y": 51,
+      "width": 192,
+      "height": 42,
+      "right": 924,
+      "bottom": 93
+    },
+    "sidebar": null,
+    "commands": [
+      {
+        "id": "all-btn",
+        "text": "全军",
+        "rect": {
+          "x": 8,
+          "y": 380.5,
+          "width": 52,
+          "height": 44,
+          "right": 60,
+          "bottom": 424.5
+        }
+      },
+      {
+        "id": "home-btn",
+        "text": "基地",
+        "rect": {
+          "x": 65,
+          "y": 380.5,
+          "width": 52,
+          "height": 44,
+          "right": 117,
+          "bottom": 424.5
+        }
+      },
+      {
+        "id": "sp-build-btn",
+        "text": "建造",
+        "rect": {
+          "x": 803,
+          "y": 380.5,
+          "width": 64,
+          "height": 44,
+          "right": 867,
+          "bottom": 424.5
+        }
+      },
+      {
+        "id": "sp-orders-btn",
+        "text": "更多",
+        "rect": {
+          "x": 872,
+          "y": 380.5,
+          "width": 52,
+          "height": 44,
+          "right": 924,
+          "bottom": 424.5
+        }
+      }
+    ],
+    "headerEnd": 363.4296875
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "scrollWidth": 390,
+    "field": {
+      "x": 0,
+      "y": 44,
+      "width": 390,
+      "height": 744,
+      "right": 390,
+      "bottom": 788
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 788,
+      "width": 390,
+      "height": 56,
+      "right": 390,
+      "bottom": 844
+    },
+    "selection": null,
+    "tutorial": {
+      "x": 190,
+      "y": 51,
+      "width": 192,
+      "height": 42,
+      "right": 382,
+      "bottom": 93
+    },
+    "sidebar": null,
+    "commands": [
+      {
+        "id": "all-btn",
+        "text": "全军",
+        "rect": {
+          "x": 8,
+          "y": 794.5,
+          "width": 44,
+          "height": 44,
+          "right": 52,
+          "bottom": 838.5
+        }
+      },
+      {
+        "id": "home-btn",
+        "text": "基地",
+        "rect": {
+          "x": 57,
+          "y": 794.5,
+          "width": 44,
+          "height": 44,
+          "right": 101,
+          "bottom": 838.5
+        }
+      },
+      {
+        "id": "sp-build-btn",
+        "text": "建造",
+        "rect": {
+          "x": 279,
+          "y": 794.5,
+          "width": 54,
+          "height": 44,
+          "right": 333,
+          "bottom": 838.5
+        }
+      },
+      {
+        "id": "sp-orders-btn",
+        "text": "更多",
+        "rect": {
+          "x": 338,
+          "y": 794.5,
+          "width": 44,
+          "height": 44,
+          "right": 382,
+          "bottom": 838.5
+        }
+      }
+    ],
+    "headerEnd": 208.65625
+  },
+  {
+    "viewport": [
+      320,
+      568
+    ],
+    "scrollWidth": 320,
+    "field": {
+      "x": 0,
+      "y": 44,
+      "width": 320,
+      "height": 468,
+      "right": 320,
+      "bottom": 512
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 512,
+      "width": 320,
+      "height": 56,
+      "right": 320,
+      "bottom": 568
+    },
+    "selection": null,
+    "tutorial": {
+      "x": 166,
+      "y": 51,
+      "width": 146,
+      "height": 42,
+      "right": 312,
+      "bottom": 93
+    },
+    "sidebar": null,
+    "commands": [
+      {
+        "id": "all-btn",
+        "text": "全军",
+        "rect": {
+          "x": 8,
+          "y": 518.5,
+          "width": 41,
+          "height": 44,
+          "right": 49,
+          "bottom": 562.5
+        }
+      },
+      {
+        "id": "home-btn",
+        "text": "基地",
+        "rect": {
+          "x": 52,
+          "y": 518.5,
+          "width": 41,
+          "height": 44,
+          "right": 93,
+          "bottom": 562.5
+        }
+      },
+      {
+        "id": "sp-build-btn",
+        "text": "建造",
+        "rect": {
+          "x": 218,
+          "y": 518.5,
+          "width": 50,
+          "height": 44,
+          "right": 268,
+          "bottom": 562.5
+        }
+      },
+      {
+        "id": "sp-orders-btn",
+        "text": "更多",
+        "rect": {
+          "x": 271,
+          "y": 518.5,
+          "width": 41,
+          "height": 44,
+          "right": 312,
+          "bottom": 562.5
+        }
+      }
+    ],
+    "headerEnd": 192.046875
+  },
+  {
+    "viewport": [
+      1024,
+      768
+    ],
+    "scrollWidth": 1024,
+    "field": {
+      "x": 0,
+      "y": 44,
+      "width": 1024,
+      "height": 668,
+      "right": 1024,
+      "bottom": 712
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 712,
+      "width": 1024,
+      "height": 56,
+      "right": 1024,
+      "bottom": 768
+    },
+    "selection": null,
+    "tutorial": {
+      "x": 824,
+      "y": 51,
+      "width": 192,
+      "height": 42,
+      "right": 1016,
+      "bottom": 93
+    },
+    "sidebar": null,
+    "commands": [
+      {
+        "id": "all-btn",
+        "text": "全军",
+        "rect": {
+          "x": 8,
+          "y": 718.5,
+          "width": 52,
+          "height": 44,
+          "right": 60,
+          "bottom": 762.5
+        }
+      },
+      {
+        "id": "home-btn",
+        "text": "基地",
+        "rect": {
+          "x": 65,
+          "y": 718.5,
+          "width": 52,
+          "height": 44,
+          "right": 117,
+          "bottom": 762.5
+        }
+      },
+      {
+        "id": "toolbar-toggle",
+        "text": "",
+        "rect": {
+          "x": 122,
+          "y": 718.5,
+          "width": 52,
+          "height": 44,
+          "right": 174,
+          "bottom": 762.5
+        }
+      },
+      {
+        "id": "sp-build-btn",
+        "text": "建造",
+        "rect": {
+          "x": 895,
+          "y": 718.5,
+          "width": 64,
+          "height": 44,
+          "right": 959,
+          "bottom": 762.5
+        }
+      },
+      {
+        "id": "sp-orders-btn",
+        "text": "更多",
+        "rect": {
+          "x": 964,
+          "y": 718.5,
+          "width": 52,
+          "height": 44,
+          "right": 1016,
+          "bottom": 762.5
+        }
+      }
+    ],
+    "headerEnd": 363.4296875
+  },
+  {
+    "viewport": [
+      844,
+      390
+    ],
+    "scrollWidth": 844,
+    "field": {
+      "x": 0,
+      "y": 44,
+      "width": 844,
+      "height": 290,
+      "right": 844,
+      "bottom": 334
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 334,
+      "width": 844,
+      "height": 56,
+      "right": 844,
+      "bottom": 390
+    },
+    "selection": null,
+    "tutorial": {
+      "x": 644,
+      "y": 51,
+      "width": 192,
+      "height": 42,
+      "right": 836,
+      "bottom": 93
+    },
+    "sidebar": null,
+    "commands": [
+      {
+        "id": "all-btn",
+        "text": "全军",
+        "rect": {
+          "x": 8,
+          "y": 340.5,
+          "width": 52,
+          "height": 44,
+          "right": 60,
+          "bottom": 384.5
+        }
+      },
+      {
+        "id": "home-btn",
+        "text": "基地",
+        "rect": {
+          "x": 65,
+          "y": 340.5,
+          "width": 52,
+          "height": 44,
+          "right": 117,
+          "bottom": 384.5
+        }
+      },
+      {
+        "id": "sp-build-btn",
+        "text": "建造",
+        "rect": {
+          "x": 715,
+          "y": 340.5,
+          "width": 64,
+          "height": 44,
+          "right": 779,
+          "bottom": 384.5
+        }
+      },
+      {
+        "id": "sp-orders-btn",
+        "text": "更多",
+        "rect": {
+          "x": 784,
+          "y": 340.5,
+          "width": 52,
+          "height": 44,
+          "right": 836,
+          "bottom": 384.5
+        }
+      }
+    ],
+    "headerEnd": 363.4296875
+  }
+]

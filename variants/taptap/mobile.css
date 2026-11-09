@@ -1,0 +1,112 @@
+/* 触屏独立布局：给战场、手指和宿主胶囊分别留出空间。 */
+.sp-mobile-control,.sp-system-actions,#sp-start-dock{display:none}
+#sp-order-tray,#sp-selection-shell{display:contents}
+.starport-touch{--sp-bar:56px;--sp-top:44px;--sp-edge:max(8px,env(safe-area-inset-left));--sp-bottom:env(safe-area-inset-bottom,0px)}
+.starport-touch,.starport-touch #app{height:100dvh;min-height:0;overflow:hidden}
+.starport-touch #app{display:flex;flex-direction:column}
+.starport-touch .topbar{display:flex!important;flex-wrap:nowrap;justify-content:flex-start;flex:none;height:calc(var(--sp-top) + env(safe-area-inset-top));min-height:0;padding:env(safe-area-inset-top) 150px 0 var(--sp-edge);gap:8px;z-index:8}
+.starport-touch .topbar>.brand,.starport-touch .topbar>.mission{display:none!important}
+.starport-touch .resources{margin:0!important;gap:6px;flex:none;order:0}
+.starport-touch .topbar .resource{min-width:0;width:auto;height:30px;padding:4px 7px;font-size:11px;gap:4px;border-radius:8px}
+.starport-touch .topbar .resource svg{width:14px;height:14px}
+.starport-touch .topbar .resource.army{display:flex!important;position:static;z-index:auto;min-width:0;background:transparent}
+.starport-touch .topbar .resource.army small{font-size:8px}
+.starport-touch .power-meter{height:20px;width:5px}
+.starport-touch .top-actions{position:static!important;margin:0;padding:0;gap:0;flex:none;max-width:none;background:none;border:0;box-shadow:none}
+.starport-touch .top-actions>.icon-btn{display:none!important}
+.starport-touch .top-actions>#pause-btn{display:flex!important;width:40px;height:40px;min-width:40px;border-radius:10px}
+.starport-touch .game-layout{flex:1;display:flex!important;position:relative;min-height:0;height:auto!important;padding-bottom:calc(var(--sp-bar) + var(--sp-bottom));overflow:hidden}
+.starport-touch #battlefield{flex:1;width:100%;height:100%!important;min-height:0!important;overflow:hidden}
+.starport-touch #command-toolbar{position:fixed;z-index:12;left:0;right:0;bottom:0;width:100%;height:calc(var(--sp-bar) + var(--sp-bottom));max-width:100vw;padding:5px max(8px,env(safe-area-inset-right)) calc(5px + var(--sp-bottom)) var(--sp-edge);display:flex;align-items:center;gap:5px;overflow:visible;background:#101f27f5;border-top:1px solid #52747a77;touch-action:manipulation}
+.starport-touch #command-toolbar .command-btn{display:flex!important;flex:none;width:52px;min-width:44px;height:44px;border-radius:10px;padding:3px 4px;gap:1px;font-size:11px}
+.starport-touch #command-toolbar .command-btn svg{width:18px;height:18px}
+.starport-touch #command-toolbar .command-btn span{font-size:10px}
+.starport-touch #command-toolbar .command-btn[hidden],.starport-touch #toolbar-toggle{display:none!important}
+.starport-touch:not(.sp-has-units) #command-toolbar :is(#move-btn,#attack-btn,#stop-btn,#same-type-btn){display:none!important}
+.starport-touch.sp-has-units #command-toolbar :is(#all-btn,#home-btn){display:none!important}
+.starport-touch.sp-targeting #command-toolbar #same-type-btn{display:none!important}
+.starport-touch #sp-build-btn{display:flex;position:relative;margin-left:auto;width:64px!important;border-color:#80d7d2;background:#224047}
+.starport-touch #sp-build-btn[aria-expanded=true]{background:#376069;box-shadow:inset 0 -2px #9ee9dc}
+.starport-touch #sp-production-badge{position:absolute;right:0;top:-11px;background:#d8bc74;color:#162128;border-radius:7px;padding:2px 4px;font-size:9px;white-space:nowrap;line-height:12px}
+.starport-touch #sp-production-badge:empty{display:none}
+.starport-touch #sp-order-tray{display:none;position:absolute;right:max(8px,env(safe-area-inset-right));bottom:calc(var(--sp-bar) + var(--sp-bottom) + 4px);width:272px;max-width:calc(100vw - 16px);max-height:min(66dvh,320px);overflow:auto;overscroll-behavior:contain;background:#142a33fa;border:1px solid #638c90;border-radius:14px;padding:8px;gap:6px;grid-template-columns:repeat(4,minmax(0,1fr));box-shadow:0 -8px 30px #0006}
+.starport-touch.sp-orders-open #sp-order-tray{display:grid}
+.starport-touch #sp-order-tray .command-btn{width:100%;min-width:0;min-height:44px}
+.starport-touch .sp-system-actions{display:contents}
+.starport-touch:not(.sp-has-units) #sp-order-tray :is(#sp-system-all,#sp-system-home){display:none!important}
+.starport-touch #command-sidebar{position:absolute;z-index:10;left:auto;right:max(6px,env(safe-area-inset-right));top:5px;bottom:calc(var(--sp-bar) + var(--sp-bottom) + 5px);width:min(332px,46vw)!important;min-width:0!important;height:auto;max-height:none;border:1px solid #65878b;border-radius:14px;box-shadow:-8px 0 25px #0005;background:#152a32f5;padding:0;overflow:hidden}
+.starport-touch #command-sidebar[hidden]{display:none!important}
+.starport-touch #command-sidebar .side-heading{height:40px;min-height:40px;padding:4px 9px}
+.starport-touch #command-sidebar .side-heading small,.starport-touch #command-sidebar .minimap-shell,.starport-touch #compact-radar{display:none!important}
+.starport-touch #command-sidebar .side-heading h2{font-size:13px;margin:0}
+.starport-touch #command-sidebar .side-heading button{width:40px;height:36px}
+.starport-touch #command-sidebar .sidebar-tabs{height:42px;min-height:42px;margin:0}
+.starport-touch #command-sidebar .tab{min-height:40px;font-size:12px;gap:5px}
+.starport-touch #command-sidebar .sidebar-content{padding:7px;flex:1;height:auto;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}
+.starport-touch #command-sidebar .action-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.starport-touch #command-sidebar .action-card{display:grid;grid-template-columns:26px minmax(0,1fr);gap:4px;padding:7px;min-height:68px;border-radius:9px;align-content:start}
+.starport-touch #command-sidebar .action-icon{width:26px;height:28px}
+.starport-touch #command-sidebar .action-icon img{width:26px;height:28px;object-fit:contain}
+.starport-touch #command-sidebar .action-text strong{font-size:11px!important;white-space:normal;line-height:1.35;overflow-wrap:anywhere}
+.starport-touch #command-sidebar .action-text small{display:none}
+.starport-touch #command-sidebar .action-card.locked .action-text small{display:block;font-size:9px;white-space:normal;line-height:1.35}
+.starport-touch #command-sidebar .unit-role{display:none}
+.starport-touch #command-sidebar .action-cost{grid-column:1/-1;width:100%;display:flex;flex-direction:row;justify-content:space-between;align-items:center;font-size:10px;margin:0}
+.starport-touch #command-sidebar .sidebar-footer{flex:none;padding:6px 9px}
+.starport-touch #command-sidebar .progress-track{margin:4px 0;height:4px}
+.starport-touch #command-sidebar .sidebar-footer p{font-size:9px;line-height:1.4}
+.starport-touch.sp-drawer-open #battle-tutorial{display:none!important}
+.starport-touch #sp-selection-shell{display:block;position:absolute;z-index:5;left:var(--sp-edge);bottom:8px;width:min(264px,48vw);max-width:calc(100% - 16px)}
+.starport-touch #sp-selection-shell[hidden],.starport-touch.sp-targeting #sp-selection-shell{display:none!important}
+.starport-touch #selection-panel{position:static!important;display:block;left:auto;right:auto;bottom:auto;transform:none;min-width:0;max-width:none;width:100%;padding:6px 42px 6px 9px;border-radius:10px;pointer-events:auto;max-height:64px;overflow:hidden;background:#10262ee8}
+.starport-touch #selection-panel strong{display:block;font-size:11px;line-height:17px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+.starport-touch #selection-panel .selection-health{display:block;max-width:none!important;font-size:10px;line-height:15px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.starport-touch #selection-panel>.hud-label,.starport-touch #selection-panel>.equipment-detail,.starport-touch #selection-panel>.selection-actions,.starport-touch #selection-panel>.combat-stance-control,.starport-touch #selection-panel>span:not(.selection-health){display:none!important}
+.starport-touch #sp-selection-details{position:absolute;right:3px;top:3px;display:flex;width:36px;min-width:36px;height:38px;border:0;background:transparent}
+.starport-touch #sp-selection-details svg{display:none}
+.starport-touch #sp-selection-details span{font-size:10px}
+.starport-touch #sp-selection-shell.sp-details-open{width:min(320px,62vw)}
+.starport-touch .sp-details-open #selection-panel{max-height:min(52dvh,240px);padding:8px 42px 8px 10px;overflow:auto}
+.starport-touch .sp-details-open #selection-panel>.selection-actions{position:static;display:flex!important;flex-wrap:wrap;gap:5px;margin-top:5px}
+.starport-touch .sp-details-open #selection-panel>.combat-stance-control{display:block!important;margin-top:6px}
+.starport-touch .sp-details-open #selection-panel .selection-actions button,.starport-touch .sp-details-open #selection-panel [data-stance]{min-width:40px;min-height:40px}
+.starport-touch .sp-details-open #selection-panel .selection-health{white-space:normal}
+.starport-touch .touch-battle-hint{display:none!important}
+.starport-touch .camera-tools{top:7px!important;left:var(--sp-edge)!important;padding:2px;border-radius:9px;gap:2px}
+.starport-touch .camera-tools .icon-btn{width:36px!important;min-width:36px!important;height:36px!important}
+.starport-touch .camera-tools #pan-map-btn{display:none!important}
+.starport-touch .camera-tools output{width:34px!important;font-size:10px}
+.starport-touch #battlefield #battle-tutorial{top:7px!important;left:auto;right:max(8px,env(safe-area-inset-right));width:192px;max-width:calc(100% - 174px);min-height:0;padding:4px 6px;max-height:min(52dvh,220px);border-radius:10px;font-size:10px;background:#152f2bec;overflow:auto}
+.starport-touch #battle-tutorial header{min-height:30px;gap:5px}
+.starport-touch #battle-tutorial header strong{font-size:10px;line-height:16px}
+.starport-touch #battle-tutorial header button{min-height:32px;min-width:40px;padding:3px 5px;font-size:10px}
+.starport-touch #tutorial-steps{margin-top:4px}
+.starport-touch #tutorial-steps[hidden]{display:none!important}
+.starport-touch #tutorial-steps button{min-height:40px}
+.starport-touch .battle-hud.top-left,.starport-touch .battle-hud.top-right{display:none!important}
+.starport-touch .toast-container{top:54px!important;max-width:calc(100% - 16px);gap:3px}
+.starport-touch .toast{font-size:10px;min-width:0;max-width:280px;padding:5px 9px}
+.starport-touch .audio-panel,.starport-touch .battle-ui-panel{top:calc(var(--sp-top) + env(safe-area-inset-top) + 4px);right:8px;max-height:calc(100dvh - var(--sp-top) - var(--sp-bar) - 16px);overflow:auto;z-index:16}
+.starport-touch .modal-card{width:min(540px,calc(100vw - 20px));max-height:calc(100dvh - 16px);padding:18px;overscroll-behavior:contain}
+.starport-touch .modal-actions{flex-wrap:wrap;margin-top:14px}
+.starport-touch .modal-actions button{min-height:44px}
+.starport-touch #start-screen{height:100dvh;overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(76px + var(--sp-bottom))}
+.starport-touch .start-hero-copy h1{font-size:46px;line-height:1.1;margin:8px 0}
+.starport-touch .start-hero-copy>p{font-size:12px;line-height:1.6}
+.starport-touch .scifi-privacy{font-size:11px;padding:9px 11px;line-height:1.6}
+.starport-touch #sp-start-dock{display:none;position:fixed;z-index:15;bottom:0;left:0;right:0;align-items:center;justify-content:space-between;gap:12px;padding:8px max(12px,env(safe-area-inset-right)) calc(8px + var(--sp-bottom)) max(12px,env(safe-area-inset-left));background:#102331f5;border-top:1px solid #62969c}
+.starport-touch.sp-in-menu #sp-start-dock{display:flex}
+.starport-touch.sp-in-menu #command-toolbar{visibility:hidden}
+.starport-touch #sp-start-dock>span{font-size:11px;color:#bad8df;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.starport-touch #sp-start-btn{height:44px;min-width:132px;border-radius:10px;background:#277a7c;border-color:#8be0dc;font-size:13px}
+@media(orientation:portrait){
+ .starport-touch .topbar{padding-right:120px;gap:5px}
+ .starport-touch .topbar .resource.army{display:none!important}
+ .starport-touch #command-sidebar{width:calc(100% - 12px)!important;left:6px;right:6px;top:auto;height:58dvh;max-height:calc(100% - var(--sp-bar) - var(--sp-bottom) - 10px)}
+ .starport-touch #sp-selection-shell{width:calc(100% - 16px);max-width:290px}
+ .starport-touch #sp-selection-shell.sp-details-open{width:calc(100% - 16px)}
+ .starport-touch #command-toolbar .command-btn{width:44px;min-width:40px}
+ .starport-touch #sp-build-btn{width:54px!important}
+ .starport-touch .start-hero-copy h1{font-size:40px}
+}
+@media(max-width:360px){.starport-touch .topbar .resource{font-size:10px;padding:4px 5px}.starport-touch .resources{gap:4px}.starport-touch #command-toolbar{gap:3px}.starport-touch #command-toolbar .command-btn{width:41px;min-width:38px}.starport-touch #sp-build-btn{width:50px!important}}

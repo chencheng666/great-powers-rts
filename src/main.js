@@ -72,7 +72,7 @@ import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
 import './mobile-battle.css';
 import './fan-feedback.css';
-import { shouldPanMap, touchTransform } from './map-gestures.js';
+import { shouldPanMap, touchTransform, touchDragMode } from './map-gestures.js';
 import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
 import { COMBAT_STANCES, supportsCombatStance, combatStance } from './combat-stance.js';
 import { isLifeline, LIFELINE, lifelineSummary, harborPlan, freightRules } from './maritime-logistics.js';
@@ -711,6 +711,8 @@ function updateSelection() {
   const selectionKey = selected.map(entity => entity.id).join(',');
   if (selectionKey !== state.lastSelection) { state.dismissedInspectorId = null; gameAudio.selection(selected); state.lastSelection = selectionKey; }
   const panel = $('#selection-panel');
+  panel.dataset.selectionKind = !selected.length ? 'none' : selected.every(e => e.kind === 'unit') ? 'units' : 'building';
+  panel.dataset.selectionCount = String(selected.length);
   const touch = window.matchMedia('(pointer: coarse)').matches;
   if (!selected.length) panel.innerHTML = `<span class="hud-label">当前选择</span><strong>未选择单位</strong><span>${touch ? '轻点选择 · 拖动地图' : '左拖框选 · 右拖平移 · 右键指令'}</span>`;
   else if (selected.length === 1) {
@@ -1115,6 +1117,7 @@ function setupControls() {
     const p = canvasPoint(event); canvas.setPointerCapture(event.pointerId);
     if (event.pointerType === 'touch') {
       if (!state.touchPoints.size) { state.touchPan = state.touchPinching = false; state.pinchDistance = 0; }
+      if (g.placingBuilding) r.pointer = r.screenToWorld(p.x, p.y);
       state.touchPoints.set(event.pointerId, p);
       state.touchLast = p;
       state.touchStart = p;
@@ -1148,7 +1151,9 @@ function setupControls() {
         r.pan(delta.dx,delta.dy); r.zoomAt(delta.scale,center.x,center.y);
         state.touchLast = center; state.pinchDistance = next; state.touchPinching = true; return;
       }
-      if (state.touchLast && (state.touchPan || Math.hypot(p.x - state.touchStart.x, p.y - state.touchStart.y) > 8)) {
+      const gesture = touchDragMode({ targeting: !!(g.placingBuilding || g.pendingAbility || g.orderMode), panning: state.touchPan, distance: Math.hypot(p.x - state.touchStart.x, p.y - state.touchStart.y) });
+      if (gesture === 'target') { state.touchLast = p; return; }
+      if (state.touchLast && gesture === 'pan') {
         state.touchPan = true; r.pan(state.touchLast.x - p.x, state.touchLast.y - p.y);
         state.drag = null; r.dragBox = null;
       }

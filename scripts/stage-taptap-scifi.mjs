@@ -1,15 +1,16 @@
 import { build } from 'vite';
 import variantPlugin from '../variants/taptap/build-plugin.mjs';
-import { readFile, mkdir, copyFile } from 'node:fs/promises';
+import { readFile, mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SCIFI_RELEASE_DIR, SCIFI_ARCHIVE } from '../variants/taptap/config.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const source = join(root, 'releases/taptap-scifi-20261106');
+const source = join(root, 'releases', SCIFI_RELEASE_DIR);
 const report = JSON.parse(await readFile(join(source, '构建报告.json'), 'utf8'));
-const name = 'packages/Great-Powers-Starport-v3.0.0-TapTap-r3.zip';
-const manifest = JSON.parse(await readFile(join(root, 'dist/downloads/manifest.json'), 'utf8'));
+const name = `packages/${SCIFI_ARCHIVE}`;
+const manifest = JSON.parse(await readFile(join(root, 'public/downloads/manifest.json'), 'utf8'));
 const entry = manifest.files.find(f => f.name === name);
 const zip = await readFile(report.zip);
 const sha = createHash('sha256').update(zip).digest('hex');
@@ -25,5 +26,6 @@ for (const file of ['LICENSE', 'THIRD-PARTY-NOTICES.txt', '版本与隐私说明
   await copyFile(join(source, 'Starport', file), join(root, 'dist/starport', file));
 }
 await mkdir(join(root, 'dist/downloads/packages'), { recursive: true });
+await writeFile(join(root, 'dist/downloads/manifest.json'), JSON.stringify(manifest, null, 2));
 await copyFile(report.zip, join(root, 'dist/downloads', name));
 console.log(JSON.stringify({ title: report.title, build: report.build, bytes: zip.length, sha256: sha }));

@@ -1,0 +1,448 @@
+{
+  "checks": [
+    {
+      "viewport": [
+        320,
+        568
+      ],
+      "scrollWidth": 320,
+      "field": {
+        "x": 0,
+        "y": 44,
+        "width": 320,
+        "height": 468,
+        "right": 320,
+        "bottom": 512
+      },
+      "toolbar": {
+        "x": 0,
+        "y": 512,
+        "width": 320,
+        "height": 56,
+        "right": 320,
+        "bottom": 568
+      },
+      "selection": {
+        "x": 8,
+        "y": 469,
+        "width": 290,
+        "height": 35,
+        "right": 298,
+        "bottom": 504
+      },
+      "tutorial": null,
+      "sidebar": null,
+      "commands": [
+        {
+          "id": "move-btn",
+          "text": "移动",
+          "rect": {
+            "x": 8,
+            "y": 518.5,
+            "width": 41,
+            "height": 44,
+            "right": 49,
+            "bottom": 562.5
+          }
+        },
+        {
+          "id": "attack-btn",
+          "text": "攻击",
+          "rect": {
+            "x": 52,
+            "y": 518.5,
+            "width": 41,
+            "height": 44,
+            "right": 93,
+            "bottom": 562.5
+          }
+        },
+        {
+          "id": "same-type-btn",
+          "text": "同型",
+          "rect": {
+            "x": 96,
+            "y": 518.5,
+            "width": 41,
+            "height": 44,
+            "right": 137,
+            "bottom": 562.5
+          }
+        },
+        {
+          "id": "stop-btn",
+          "text": "停止",
+          "rect": {
+            "x": 140,
+            "y": 518.5,
+            "width": 41,
+            "height": 44,
+            "right": 181,
+            "bottom": 562.5
+          }
+        },
+        {
+          "id": "sp-build-btn",
+          "text": "建造",
+          "rect": {
+            "x": 218,
+            "y": 518.5,
+            "width": 50,
+            "height": 44,
+            "right": 268,
+            "bottom": 562.5
+          }
+        },
+        {
+          "id": "sp-orders-btn",
+          "text": "更多",
+          "rect": {
+            "x": 271,
+            "y": 518.5,
+            "width": 41,
+            "height": 44,
+            "right": 312,
+            "bottom": 562.5
+          }
+        }
+      ],
+      "headerEnd": 192.3515625
+    },
+    {
+      "viewport": [
+        667,
+        375
+      ],
+      "scrollWidth": 667,
+      "field": {
+        "x": 0,
+        "y": 44,
+        "width": 667,
+        "height": 275,
+        "right": 667,
+        "bottom": 319
+      },
+      "toolbar": {
+        "x": 0,
+        "y": 319,
+        "width": 667,
+        "height": 56,
+        "right": 667,
+        "bottom": 375
+      },
+      "selection": {
+        "x": 8,
+        "y": 276,
+        "width": 264,
+        "height": 35,
+        "right": 272,
+        "bottom": 311
+      },
+      "tutorial": null,
+      "sidebar": null,
+      "commands": [
+        {
+          "id": "move-btn",
+          "text": "移动",
+          "rect": {
+            "x": 8,
+            "y": 325.5,
+            "width": 52,
+            "height": 44,
+            "right": 60,
+            "bottom": 369.5
+          }
+        },
+        {
+          "id": "attack-btn",
+          "text": "攻击",
+          "rect": {
+            "x": 65,
+            "y": 325.5,
+            "width": 52,
+            "height": 44,
+            "right": 117,
+            "bottom": 369.5
+          }
+        },
+        {
+          "id": "same-type-btn",
+          "text": "同型",
+          "rect": {
+            "x": 122,
+            "y": 325.5,
+            "width": 52,
+            "height": 44,
+            "right": 174,
+            "bottom": 369.5
+          }
+        },
+        {
+          "id": "stop-btn",
+          "text": "停止",
+          "rect": {
+            "x": 179,
+            "y": 325.5,
+            "width": 52,
+            "height": 44,
+            "right": 231,
+            "bottom": 369.5
+          }
+        },
+        {
+          "id": "sp-build-btn",
+          "text": "建造",
+          "rect": {
+            "x": 538,
+            "y": 325.5,
+            "width": 64,
+            "height": 44,
+            "right": 602,
+            "bottom": 369.5
+          }
+        },
+        {
+          "id": "sp-orders-btn",
+          "text": "更多",
+          "rect": {
+            "x": 607,
+            "y": 325.5,
+            "width": 52,
+            "height": 44,
+            "right": 659,
+            "bottom": 369.5
+          }
+        }
+      ],
+      "headerEnd": 351.265625
+    },
+    {
+      "viewport": [
+        844,
+        390
+      ],
+      "scrollWidth": 844,
+      "field": {
+        "x": 0,
+        "y": 44,
+        "width": 844,
+        "height": 290,
+        "right": 844,
+        "bottom": 334
+      },
+      "toolbar": {
+        "x": 0,
+        "y": 334,
+        "width": 844,
+        "height": 56,
+        "right": 844,
+        "bottom": 390
+      },
+      "selection": {
+        "x": 8,
+        "y": 291,
+        "width": 264,
+        "height": 35,
+        "right": 272,
+        "bottom": 326
+      },
+      "tutorial": null,
+      "sidebar": null,
+      "commands": [
+        {
+          "id": "move-btn",
+          "text": "移动",
+          "rect": {
+            "x": 8,
+            "y": 340.5,
+            "width": 52,
+            "height": 44,
+            "right": 60,
+            "bottom": 384.5
+          }
+        },
+        {
+          "id": "attack-btn",
+          "text": "攻击",
+          "rect": {
+            "x": 65,
+            "y": 340.5,
+            "width": 52,
+            "height": 44,
+            "right": 117,
+            "bottom": 384.5
+          }
+        },
+        {
+          "id": "same-type-btn",
+          "text": "同型",
+          "rect": {
+            "x": 122,
+            "y": 340.5,
+            "width": 52,
+            "height": 44,
+            "right": 174,
+            "bottom": 384.5
+          }
+        },
+        {
+          "id": "stop-btn",
+          "text": "停止",
+          "rect": {
+            "x": 179,
+            "y": 340.5,
+            "width": 52,
+            "height": 44,
+            "right": 231,
+            "bottom": 384.5
+          }
+        },
+        {
+          "id": "sp-build-btn",
+          "text": "建造",
+          "rect": {
+            "x": 715,
+            "y": 340.5,
+            "width": 64,
+            "height": 44,
+            "right": 779,
+            "bottom": 384.5
+          }
+        },
+        {
+          "id": "sp-orders-btn",
+          "text": "更多",
+          "rect": {
+            "x": 784,
+            "y": 340.5,
+            "width": 52,
+            "height": 44,
+            "right": 836,
+            "bottom": 384.5
+          }
+        }
+      ],
+      "headerEnd": 362.296875
+    }
+  ],
+  "rotated": {
+    "viewport": [
+      390,
+      844
+    ],
+    "scrollWidth": 390,
+    "field": {
+      "x": 0,
+      "y": 44,
+      "width": 390,
+      "height": 744,
+      "right": 390,
+      "bottom": 788
+    },
+    "toolbar": {
+      "x": 0,
+      "y": 788,
+      "width": 390,
+      "height": 56,
+      "right": 390,
+      "bottom": 844
+    },
+    "selection": {
+      "x": 8,
+      "y": 745,
+      "width": 290,
+      "height": 35,
+      "right": 298,
+      "bottom": 780
+    },
+    "tutorial": null,
+    "sidebar": {
+      "x": 6,
+      "y": 293.484375,
+      "width": 378,
+      "height": 489.515625,
+      "right": 384,
+      "bottom": 783
+    },
+    "commands": [
+      {
+        "id": "move-btn",
+        "text": "移动",
+        "rect": {
+          "x": 8,
+          "y": 794.5,
+          "width": 44,
+          "height": 44,
+          "right": 52,
+          "bottom": 838.5
+        }
+      },
+      {
+        "id": "attack-btn",
+        "text": "攻击",
+        "rect": {
+          "x": 57,
+          "y": 794.5,
+          "width": 44,
+          "height": 44,
+          "right": 101,
+          "bottom": 838.5
+        }
+      },
+      {
+        "id": "same-type-btn",
+        "text": "同型",
+        "rect": {
+          "x": 106,
+          "y": 794.5,
+          "width": 44,
+          "height": 44,
+          "right": 150,
+          "bottom": 838.5
+        }
+      },
+      {
+        "id": "stop-btn",
+        "text": "停止",
+        "rect": {
+          "x": 155,
+          "y": 794.5,
+          "width": 44,
+          "height": 44,
+          "right": 199,
+          "bottom": 838.5
+        }
+      },
+      {
+        "id": "sp-build-btn",
+        "text": "建造",
+        "rect": {
+          "x": 279,
+          "y": 794.5,
+          "width": 54,
+          "height": 44,
+          "right": 333,
+          "bottom": 838.5
+        }
+      },
+      {
+        "id": "sp-orders-btn",
+        "text": "更多",
+        "rect": {
+          "x": 338,
+          "y": 794.5,
+          "width": 44,
+          "height": 44,
+          "right": 382,
+          "bottom": 838.5
+        }
+      }
+    ],
+    "headerEnd": 208.984375
+  },
+  "desktop": {
+    "width": 1440,
+    "overflow": 1440,
+    "mobileControls": []
+  }
+}

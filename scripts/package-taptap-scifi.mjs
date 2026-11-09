@@ -8,10 +8,10 @@ import { Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import * as base from '../src/data.js';
-import { scifiDataSource, fictionText, SCIFI_TITLE, SCIFI_BUILD } from '../variants/taptap/config.mjs';
+import { scifiDataSource, fictionText, SCIFI_TITLE, SCIFI_BUILD, SCIFI_VERSION, SCIFI_RELEASE_DIR, SCIFI_ARCHIVE } from '../variants/taptap/config.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url))), variant = join(root, 'variants/taptap');
-const output = join(root, 'releases/taptap-scifi-20261106'), game = join(output, 'Starport');
+const output = join(root, 'releases', SCIFI_RELEASE_DIR), game = join(output, 'Starport');
 await mkdir(join(variant, 'assets'), { recursive: true }); await mkdir(game, { recursive: true });
 globalThis.FileReader = class { readAsArrayBuffer(blob) { blob.arrayBuffer().then(data => { this.result = data; this.onloadend?.(); }); } };
 const bytes = await readFile(join(root, 'assets/models/battle-library.glb'));
@@ -42,8 +42,8 @@ for (const [name, file, section] of [['Three.js', 'three/LICENSE'], ['Lucide', '
 }
 await writeFile(join(game, 'THIRD-PARTY-NOTICES.txt'), notices.join('\n\n'));
 await writeFile(join(game, '版本与隐私说明.txt'), `${SCIFI_TITLE}\n${SCIFI_BUILD}\n独立科幻单机版本；仅包含虚构工程组、无人机体和月表演习。无核武器、现实国家映射、付费和广告。\n战局存档、成绩和声音偏好保存在当前设备，不上传姓名、设备、时长或错误；更新、清理数据或换设备前请导出备份。\n美术：项目原创月表设施、机器人、穿梭机与程序化悬浮机甲；月表地表纹理由AI辅助生成并固定随包分发。游戏不提供在线AI生成服务。配乐：原创器乐《星港启航》《群星航迹》。\n`);
-const zip = join(output, 'Great-Powers-Starport-v3.0.0-TapTap-r3.zip'); await rm(zip, { force: true });
+const zip = join(output, SCIFI_ARCHIVE); await rm(zip, { force: true });
 execFileSync('/usr/bin/tar', ['--format', 'zip', '-cf', zip, 'Starport'], { cwd: output, env: { ...process.env, COPYFILE_DISABLE: '1' } });
 execFileSync('/usr/bin/unzip', ['-t', zip], { stdio: 'ignore' });
-const data = await readFile(zip), report = { title: SCIFI_TITLE, build: SCIFI_BUILD, zip, bytes: (await stat(zip)).size, sha256: createHash('sha256').update(data).digest('hex'), networkRequired: false, originalModels: keep, maps: ['meridian', 'moonsea'], nuclearEnabled: false, realCountryMapping: false };
+const data = await readFile(zip), report = { title: SCIFI_TITLE, version: SCIFI_VERSION, build: SCIFI_BUILD, zip, bytes: (await stat(zip)).size, sha256: createHash('sha256').update(data).digest('hex'), networkRequired: false, originalModels: keep, maps: ['meridian', 'moonsea'], nuclearEnabled: false, realCountryMapping: false };
 await writeFile(join(output, '构建报告.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report, null, 2));

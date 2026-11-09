@@ -4,6 +4,13 @@
   "createdAt": "2026-11-06T11:20:00+08:00",
   "files": [
     {
+      "name": "packages/Great-Powers-Starport-v3.0.1-TapTap-r4.zip",
+      "label": "3.0.1 星港演习 r4 · 手机触屏优化 H5 ZIP",
+      "size": 5997301,
+      "sha256": "6d681b11250739bb5f9e032fa7fa3f859fd4f1acdde07ffbfb794d432cdcc2e5",
+      "status": "重排手机横竖屏界面，建造抽屉、触屏落点预览、精简指令和安全区；包含小格横血条与本机恢复改进。科幻版独立维护，TapTap以平台审核后的版本为准。"
+    },
+    {
       "name": "packages/Great-Powers-Starport-v3.0.0-TapTap-r3.zip",
       "label": "3.0.0 星港演习 r3 · 独立科幻战术 H5 ZIP",
       "size": 5824433,
@@ -519,5 +526,7 @@
   ],
   "offlineFile": "packages/Great-Powers-RTS-v3.0.0.zip",
   "webBuild": "20261106-commanders-journey-r1",
-  "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs"
+  "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs",
+  "starportFile": "packages/Great-Powers-Starport-v3.0.1-TapTap-r4.zip",
+  "starportBuild": "20261109-scifi-mobile-r4"
 }

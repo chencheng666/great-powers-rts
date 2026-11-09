@@ -1,5 +1,7 @@
 import '../../src/main.js';
 import './style.css';
+import './mobile.css';
+import { setupStarportMobileUI } from './mobile-ui.js';
 
 // 本版始终是本地单机，不根据审核时间、平台账号或远程开关改变内容。
 const note = document.querySelector('#offline-telemetry-note');
@@ -15,5 +17,6 @@ if (nicknameNote) nicknameNote.textContent = '呼号只用于本机存档，不�
 // 静态 AI 辅助美术直接在游戏中披露，不接入在线生成接口。
 const art = document.createElement('p');
 art.id = 'scifi-art-disclosure'; art.className = 'scifi-privacy';
-art.textContent = 'AI 辅助美术说明：月表地表纹理由 AI 辅助生成并固定随包分发；机体与设施由程序建模。游戏不提供在线 AI 生成服务。';
+art.textContent = 'AI合成内容说明：月表地表纹理由 AI 辅助生成并固定随包分发；机体与设施由程序建模。游戏不提供在线 AI 生成服务。';
 document.querySelector('.menu-intro')?.append(art);
+setupStarportMobileUI();

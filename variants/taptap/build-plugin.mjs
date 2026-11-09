@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as base from '../../src/data.js';
-import { scifiDataSource, fictionText, SCIFI_TITLE, SCIFI_BUILD } from './config.mjs';
+import { scifiDataSource, fictionText, SCIFI_TITLE, SCIFI_BUILD, SCIFI_VERSION } from './config.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..'), variant = join(root, 'variants/taptap');
 const overrides = {
   'open-assets.js': 'export async function loadOpenAssets(){return {}} export function installOpenModels(){} export function validateOpenModel(){return false} export function openAssetDetail(){return \'far\'} export function syncOpenAssetLOD(){} export function modelShotOrigin(){return null}',
@@ -40,17 +40,18 @@ const plugin = {
     if (id.endsWith('/game.js')) text = text.replace("? options.mapId : 'valley'", "? options.mapId : 'meridian'");
     if (id.endsWith('/audio.js')) text = text.replace(/const assets = import\.meta\.glob\([^;]+;/, "const assets = import.meta.glob(['../assets/audio/iron-tide.m4a','../assets/audio/east-wind.m4a'], { eager: true, query: '?url', import: 'default' });").replace(/const portableVoices = import\.meta\.glob\([^;]+;/, 'const portableVoices = {};').replaceAll("'internationale'", "'iron-tide'");
     if (id.endsWith('/tutorial-ui.js')) text = text.replaceAll("'valleyTraining'", "'meridian'");
-    if (id.endsWith('/version.js')) text = text.replace(/BUILD_ID = '[^']+'/, `BUILD_ID = '${SCIFI_BUILD}'`);
+    if (id.endsWith('/version.js')) text = text.replace(/BUILD_ID = '[^']+'/, `BUILD_ID = '${SCIFI_BUILD}'`).replace(/GAME_VERSION = '[^']+'/, `GAME_VERSION = '${SCIFI_VERSION}'`);
     if (id.endsWith('/catalog-data.js')) text = text.replaceAll("mapId = 'valley'", "mapId = 'meridian'");
     return fictionText(text).replaceAll('入门陆战', '星港入门').replaceAll('首次进入需要下载', '首次进入正在准备内置素材').replaceAll('坦克', '机甲').replaceAll('工程师', '工程机器人').replaceAll('步兵', '机器人');
   },
   transformIndexHtml: { order: 'pre', handler(html) {
     return fictionText(html.replace('/src/main.js', '/variants/taptap/entry.js')
+      .replace('width=device-width, initial-scale=1.0', 'width=device-width, initial-scale=1.0, viewport-fit=cover')
       .replace(/<title>[\s\S]*?<\/title>/, `<title>${SCIFI_TITLE}</title>`)
       .replace(/<video\b[\s\S]*?<\/video>/g, '<div class="scifi-backdrop" aria-hidden="true"></div>')
       .replace(/(<select[^>]*id="map-select"[^>]*>)[\s\S]*?<\/select>/, '$1<option value="meridian">子午星港 · 基地与信标</option><option value="moonsea">月海晶矿区 · 采集与电网</option></select>')
       .replace(/<option value="internationale">[^<]*<\/option>/g, '')
-      .replaceAll('大国崛起 3.0 / 指挥官征途', '大国崛起 · 星港演习 / 科幻战术试玩版')
+      .replace(/大国崛起 3\.[01] \/ [^<]+/, `星港演习 ${SCIFI_VERSION} · 触屏指挥`)
       .replaceAll('建设基地，调配海陆空力量，开启你的征途。', '建设月表基地，调度无人机甲，在虚构星港完成战术演习。')
       .replace(/<blockquote class="peace-motto">[\s\S]*?<\/blockquote>/, '<p class="scifi-privacy">纯虚构的月表机体演习。经营电网与晶矿，协同调度机器人，守住星港信标。</p>')
       .replace(/<details class="mode-guide">[\s\S]*?<\/details>/, '<details class="mode-guide"><summary>第一次怎么开始？</summary><p>选择子午星港和新兵难度，从供电、晶矿精炼和机器人装配开始。工程机器人可接管资源及信标，低电量时返回设施充电。</p><p>另一张地图为月海晶矿区。三种胜利目标与三档难度可自由搭配；战局和成绩只在本机保存。</p></details>')

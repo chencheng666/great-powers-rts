@@ -1,5 +1,8 @@
 export const SCIFI_TITLE = '大国崛起：星港演习';
-export const SCIFI_BUILD = '20261106-scifi-r3';
+export const SCIFI_VERSION = '3.0.1';
+export const SCIFI_BUILD = '20261109-scifi-mobile-r4';
+export const SCIFI_RELEASE_DIR = 'taptap-scifi-20261109';
+export const SCIFI_ARCHIVE = `Great-Powers-Starport-v${SCIFI_VERSION}-TapTap-r4.zip`;
 export const FACTION_IDS = { china: 'aegis', russia: 'forge', nato: 'citadel', asia: 'swarm', middleeast: 'pulse' };
 export const SCIFI_FACTIONS = [
   ['苍穹工程组', '苍穹', '防守与保障'], ['赤炉工程组', '赤炉', '结构拆解'],

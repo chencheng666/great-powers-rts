@@ -1,0 +1,10 @@
+{
+  "source": "r3实际引擎生成的合成测试战局",
+  "oldCommit": "f8118d9",
+  "map": "meridian",
+  "faction": "aegis",
+  "savedTime": 20.00000000000015,
+  "continuedTime": 39.999999999999865,
+  "unitCount": 19,
+  "restored": true
+}
