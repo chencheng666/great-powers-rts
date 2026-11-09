@@ -42,6 +42,8 @@ jobs:
           Path('package/SHA256SUMS.txt').write_text(digest+'  '+deb.name+'\n')
           Path('source.txt').write_text(meta['sourceCommit'])
           PY
+          # GitHub 附件名会清洗中文，使用稳定的构建信息文件名。
+          cp package/构建信息.json package/build-info.json
           tag=uos-v3.1.0
           if gh release view "$tag" >/dev/null 2>&1; then echo '同版本发行已存在，停止，避免覆盖旧附件'; exit 1; fi
           cat > notes.txt <<'TXT'
@@ -51,5 +53,5 @@ jobs:
           升级前请分别导出战局和荣誉备份。官网：https://www.daguojueqi.site/
           TXT
           gh release create "$tag" --draft --prerelease --target "$(cat source.txt)" --title '大国崛起 3.1.0 统信商店更新候选包' --notes-file notes.txt
-          gh release upload "$tag" package/site.daguojueqi.greatpowers_3.1.0_amd64.deb package/SHA256SUMS.txt package/构建信息.json
+          gh release upload "$tag" package/site.daguojueqi.greatpowers_3.1.0_amd64.deb package/SHA256SUMS.txt package/build-info.json
           gh release edit "$tag" --draft=false

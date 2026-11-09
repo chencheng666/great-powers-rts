@@ -1,0 +1,15 @@
+{
+  "appId": 1097443,
+  "title": "大国崛起",
+  "packageId": "site.daguojueqi.greatpowers",
+  "version": "3.1.0",
+  "architecture": "x86",
+  "distribution": "既有专业版V25",
+  "status": "审核中",
+  "submittedAt": "2026-11-09 14:40:07",
+  "rowReadback": "大国崛起\n\t\nsite.daguojueqi.greatpowers\n\t\n1097443\n\t\ndeb\n\t\n3.1.0\n\t\n0\n\t\nlinux\n\t\n2026-11-09 14:40:07\n\t\n审核中\n\t\n审核状态历史版本撤销下架评论",
+  "bytes": 91379222,
+  "sha256": "7efebc54dfd09025e6b448c37b6e74e836de2e8eee58ebaaefc702ff20d2a6cc",
+  "buildRun": "https://github.com/chencheng666/great-powers-rts/actions/runs/42571587831",
+  "community": "https://bbs.chinauos.com/post/24550"
+}

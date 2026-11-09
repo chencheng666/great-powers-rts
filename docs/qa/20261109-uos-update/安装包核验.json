@@ -1,0 +1,22 @@
+{
+  "file": "site.daguojueqi.greatpowers_3.1.0_amd64.deb",
+  "bytes": 91379222,
+  "sha256": "7efebc54dfd09025e6b448c37b6e74e836de2e8eee58ebaaefc702ff20d2a6cc",
+  "version": "3.1.0",
+  "architecture": "amd64",
+  "depends": "libwebkit2gtk-4.1-0, libgtk-3-0",
+  "source": {
+    "version": "3.1.0",
+    "gameVersion": "3.1.0",
+    "build": "20261109-recovery-r2",
+    "sourceCommit": "f153bd02ba957288e35ca24e1f151fb283ed0752",
+    "applicationId": "site.daguojueqi.greatpowers",
+    "nativeIdentifier": "cn.greatpowers.rts"
+  },
+  "files": 9,
+  "gzipArchive": true,
+  "maintenanceScripts": false,
+  "legacyPackageIdPreserved": true,
+  "legacyExecPathPreserved": true,
+  "targetDeviceTested": false
+}
