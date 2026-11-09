@@ -1405,6 +1405,10 @@ export class Renderer {
       ctx.strokeStyle = style.warning ? '#f3c66e' : style.frame; ctx.lineWidth = 1; ctx.strokeRect(x + .5, top + .5, width - 1, track - 1);
       ctx.fillStyle = style.echo; ctx.fillRect(x + 2, top + 1, inner * bar.echo, track - 2);
       ctx.fillStyle = style.fill; ctx.fillRect(x + 2, top + 1, inner * bar.ratio, track - 2);
+      // 用固定屏幕间隔恢复小格，不额外创建对象或改变血条布局预算。
+      ctx.fillStyle = '#081116d9';
+      const cells = entity.kind === 'building' ? 8 : width >= 40 ? 6 : 4;
+      for (let i = 1; i < cells; i++) ctx.fillRect(Math.round(x + 2 + inner * i / cells), top + 1, 1, track - 2);
       if (ammo) for (let i = 0; i < ammo; i++) { ctx.fillStyle = i < bar.charge ? style.frame : '#273a47'; ctx.fillRect(x + 2 + i * inner / ammo, top + track + 2, Math.max(1, inner / ammo - 1), 2); }
       if (bar.status) { const baseline = top + track + (ammo ? 15 : 10); ctx.font = '500 9px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.status, x + width / 2, baseline); ctx.fillStyle = '#f4ce82'; ctx.fillText(bar.status, x + width / 2, baseline); }
     }
