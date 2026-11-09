@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { melody, bass, notes as pitchNames } from './internationale-score.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const output = join(root, 'releases/music-v3');
+const output = join(root, 'releases/music-defense-20261109');
 mkdirSync(output, { recursive: true });
 const parts = [
   { program: 56, volume: .78, pan: -.18, percussion: false }, // 小号主旋律
@@ -18,7 +18,7 @@ const parts = [
 ];
 const report = [];
 for (const id of ['internationale', 'iron-tide', 'east-wind']) {
-  const bpm = id === 'internationale' ? 114 : id === 'iron-tide' ? 140 : 148;
+  const bpm = id === 'internationale' ? 116 : id === 'iron-tide' ? 132 : 138;
   const beat = 60 / bpm, bars = id === 'internationale' ? 36 : 48;
   const score = { seconds: bars * 4 * beat, parts, notes: [] };
   function note(part, pitch, at, duration, velocity) {
@@ -30,7 +30,8 @@ for (const id of ['internationale', 'iron-tide', 'east-wind']) {
       note(6, 36, start + pulse, .25, energy);
       note(5, 38, start + pulse, .6, energy - 12);
     }
-    for (let step = 0; step < 8; step++) note(6, 38, start + step * .5, .14, step % 2 ? energy - 38 : energy - 15);
+    for (let step = 0; step < 8; step++) note(6, 38, start + step * .5, .14, step % 2 ? energy - 42 : step % 4 === 2 ? energy - 4 : energy - 20);
+    if (bar % 8 === 7) for (let step = 0; step < 8; step++) note(6, 38, start + 3 + step * .125, .08, energy - 24 + step * 2);
     if (bar % 4 === 3) for (const pulse of [3.25, 3.5, 3.75]) note(6, 38, start + pulse, .1, energy - 12);
     if (bar % 8 === 0) note(6, 49, start, 1.5, energy - 25);
   }
@@ -62,24 +63,36 @@ for (const id of ['internationale', 'iron-tide', 'east-wind']) {
     }
     score.seconds = (offset / 2 + 2) * beat;
   } else {
-    // 两首战斗曲采用各自的原创动机，保留低潮、推进与全奏段落。
+    // 原创小调进行曲：长乐句铜管、低音齐奏与分层弦乐，避免随机跳音的轻快感。
     const harmony = id === 'iron-tide'
-      ? [[38, 50, 53, 57], [34, 46, 50, 53], [41, 53, 57, 60], [36, 48, 52, 55]]
-      : [[40, 52, 55, 59], [36, 48, 52, 55], [43, 55, 59, 62], [38, 50, 54, 57]];
-    const motif = id === 'iron-tide' ? [0, 2, 1, 2, 0, 1, 2, 1] : [0, 1, 2, 2, 1, 0, 2, 1];
+      ? [[38, 50, 53, 57], [34, 46, 50, 53], [41, 53, 57, 60], [33, 45, 49, 52]]
+      : [[40, 52, 55, 59], [36, 48, 52, 55], [43, 55, 59, 62], [35, 47, 51, 54]];
+    const tonic = id === 'iron-tide' ? 62 : 64;
+    const phrases = [
+      [[0,0,1.5],[0,1.5,.5],[3,2,1],[7,3,1],[5,4,1.5],[3,5.5,.5],[2,6,1],[0,7,1]],
+      [[7,0,2],[10,2,1],[7,3,1],[5,4,1],[3,5,1],[2,6,1.5],[-1,7.5,.5]],
+      [[0,0,1],[3,1,1],[7,2,1.5],[10,3.5,.5],[12,4,2],[10,6,1],[7,7,1]],
+      [[5,0,1.5],[3,1.5,.5],[2,2,1],[0,3,1],[-1,4,2],[0,6,2]]
+    ];
     for (let bar = 0; bar < bars; bar++) {
       const chord = harmony[Math.floor(bar / 2) % harmony.length], start = bar * 4;
-      const intensity = bar < 4 || bar >= 24 && bar < 28 ? 70 : bar >= 32 ? 104 : 90;
+      const quiet = bar < 4 || bar >= 24 && bar < 28;
+      const intensity = quiet ? 76 : bar >= 32 ? 110 : 98;
       for (let step = 0; step < 8; step++) {
-        note(2, chord[1 + motif[step] % 3] + 12, start + step * .5, .38, intensity - 15);
-        if (step % 2 === 0) note(3, chord[0] + (step === 4 ? 7 : 0), start + step * .5, .85, intensity);
+        const tone = chord[1 + [0,2,1,2,0,2,1,2][step] % 3];
+        note(2, tone, start + step * .5, .43, intensity - 25);
       }
-      for (const tone of chord.slice(1)) note(1, tone, start, 3.7, intensity - 18);
-      if (bar >= 4) {
-        for (let step = 0; step < 4; step++) {
-          const at = start + step;
-          note(0, chord[1 + motif[(step + bar) % 8] % 3] + (bar >= 32 ? 12 : 0), at, step === 3 ? .65 : .8, intensity);
-          if (step % 2 === 0) note(4, chord[1], at, .8, intensity - 15);
+      for (const at of [0, 2]) {
+        note(3, chord[0], start + at, 1.65, intensity);
+        note(4, chord[0] + 12, start + at, 1.4, intensity - 12);
+      }
+      for (const tone of chord.slice(1)) note(1, tone, start, 3.7, intensity - 22);
+      if (!quiet && bar % 2 === 0) {
+        const phrase = phrases[Math.floor((bar - 4) / 2 + (id === 'east-wind' ? 1 : 0)) % 4];
+        for (const [pitch, at, duration] of phrase) {
+          note(0, tonic + pitch, start + at, duration * .92, intensity);
+          note(4, tonic + pitch - 12, start + at, duration * .9, intensity - 18);
+          if (bar >= 32) note(2, tonic + pitch + 12, start + at, duration * .88, intensity - 28);
         }
       }
     }

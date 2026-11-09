@@ -33,7 +33,7 @@ let format = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 2)!
 let engine = AVAudioEngine()
 let reverb = AVAudioUnitReverb()
 reverb.loadFactoryPreset(.largeHall)
-reverb.wetDryMix = 17
+reverb.wetDryMix = 12
 let orchestraMixer = AVAudioMixerNode()
 engine.attach(orchestraMixer)
 engine.attach(reverb)

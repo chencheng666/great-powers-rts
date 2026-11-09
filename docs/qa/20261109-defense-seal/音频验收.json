@@ -1,0 +1,32 @@
+[
+  {
+    "track": "internationale",
+    "context": "running",
+    "duration": 75.77583333333334,
+    "channels": 2,
+    "peak": 0.8859058618545532,
+    "rms": 0.1327923879414072,
+    "loop": true
+  },
+  {
+    "track": "iron-tide",
+    "context": "running",
+    "duration": 87.27270833333333,
+    "channels": 2,
+    "peak": 0.8316607475280762,
+    "rms": 0.126719403405529,
+    "loop": true
+  },
+  {
+    "track": "east-wind",
+    "context": "running",
+    "duration": 83.47825,
+    "channels": 2,
+    "peak": 0.7416399717330933,
+    "rms": 0.132228159802807,
+    "loop": true
+  },
+  {
+    "stopped": true
+  }
+]

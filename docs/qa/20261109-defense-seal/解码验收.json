@@ -1,0 +1,23 @@
+[
+  {
+    "id": "internationale",
+    "bytes": 1548423,
+    "peak": 0.8884220123291016,
+    "rms": 0.13252402661359677,
+    "decodedSamples": 6683430
+  },
+  {
+    "id": "iron-tide",
+    "bytes": 1783911,
+    "peak": 0.8926403522491455,
+    "rms": 0.12761417721728888,
+    "decodedSamples": 7697454
+  },
+  {
+    "id": "east-wind",
+    "bytes": 1683146,
+    "peak": 0.9028929471969604,
+    "rms": 0.12762609101313813,
+    "decodedSamples": 7362782
+  }
+]

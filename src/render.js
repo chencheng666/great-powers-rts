@@ -808,7 +808,7 @@ export class Renderer {
     const damageMeshes = [];
     model.traverse(mesh => { if (mesh.isMesh) damageMeshes.push({ mesh, original: mesh.material }); });
     const tracks = []; model.traverse(object => { if (object.isInstancedMesh && object.name.startsWith('track_belt_')) tracks.push(object); });
-    const value = { model, ring, identity, entity, scale, groundClearance, airShadow, wakeStern, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
+    const value = { model, ring, identity, entity, scale, groundClearance, airShadow, wakeStern, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, airDefenseRadar: model.getObjectByName('air_defense_radar'), weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
   }
 
   setDamageStage(entry, stage) {
@@ -1036,6 +1036,7 @@ export class Renderer {
           }
           height = entry.flightHeight;
         }
+        if (entry.airDefenseRadar) entry.airDefenseRadar.rotation.y += dt * .7;
         if (entry.weapon) { entry.weapon.rotation.y = entry.heading - animation.turret; entry.weapon.position.x = 0; }
         if (entry.barrel) animateIdleGun(entry, animation, dt);
         if (entry.upperBody) {

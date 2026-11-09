@@ -34,6 +34,10 @@ export function equipmentProfile(faction, type, future = false) {
   if (!data) return null;
   if (isLunarRobot(future, type)) { const robot = ROBOT_SPECS[type]; return { name: robot.name, description: robot.description, country: '原创月表无人体系', category: '原创／机器人', source: null }; }
   if (future && ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane'].includes(type)) return { name: { fighter: '云隼制空穿梭机', strike: '月弧对地穿梭机', bomber: '月隼轨道轰炸机', airlift: '星舟战术运输机', freightPlane: '月表物资穿梭机' }[type], description: '原创科幻无人平台，推进舱、姿态喷口与功能模块；游戏职责和成本仍遵循双方统一规则。', country: '原创月表无人体系', category: '原创／科幻装备', source: null };
+  if (!future && ['aa', 'abm'].includes(type)) {
+    const prefix = { china: '陆盾', russia: '北境', nato: '西陆', asia: '东亚', middleeast: '新月' }[faction] || '野战';
+    return { name: `${prefix}${type === 'aa' ? '轮式防空车' : '反导拦截车'}`, description: `原创多轴底盘、成组发射筒与搜索雷达；${data.desc} 外形参考通用防空结构，不代表某一现实型号或实际性能。`, country: system?.country || '通用体系', category: '原创／概念装备', source: null };
+  }
   if (type === 'elite' && !future && FACTION_DOCTRINES[faction]) return { name: FACTIONS[faction].elite, description: `${FACTION_DOCTRINES[faction].silhouette}。${FACTION_DOCTRINES[faction].plan} ${FACTION_DOCTRINES[faction].weakness}`, country: system?.country || '阵营装备', category: '原创／概念装备', source: null };
   if (entry) return { name: entry[0], description: entry[1], country: system.country, category: type==='swarmCarrier'?'公开原型／游戏化':'现实原型', source: EQUIPMENT_SOURCES[entry[2]] };
   const concept = ['elite', 'ghost', 'drone', 'jammer', 'laser', 'railgun', 'aegis', 'relay', 'ewPlane'].includes(type);
@@ -51,6 +55,7 @@ export function equipmentModel(faction, type, future = false) {
   if (type === 'navalStrike') return 'strike';
   if (type === 'refinery' && !future) return 'logistics_depot';
   if (type === 'destroyer' && faction === 'china') return 'destroyer_china';
+  if (!future && ['aa', 'abm'].includes(type)) return `${type}_${faction}`;
   if (type === 'tank' || type === 'rocket') return `${type}_${faction}`;
   if (type === 'fighter' && faction === 'china') return 'fighter_china';
   if (type === 'fighter' && faction === 'nato') return 'fighter_nato';
