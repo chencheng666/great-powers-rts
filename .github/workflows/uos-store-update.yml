@@ -1,0 +1,53 @@
+name: 统信商店更新包
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux-x86:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      - name: 安装构建和包检查依赖
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev desktop-file-utils
+      - run: npm ci --registry=https://registry.npmjs.org
+      - name: 验证当前游戏规则
+        run: node --test --test-concurrency=1
+      - name: 构建与整理已上架架构的更新包
+        shell: bash
+        run: |
+          npx tauri build --target x86_64-unknown-linux-gnu --bundles deb -- --locked
+          mapfile -t packages < <(find src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb -maxdepth 1 -name '*.deb' -type f)
+          test "${#packages[@]}" -eq 1
+          scripts/package-uos-store.sh "${packages[0]}" "$RUNNER_TEMP/uos-store"
+      - name: 核对包结构、标识、归档格式与启动项
+        shell: bash
+        run: |
+          file="$RUNNER_TEMP/uos-store/site.daguojueqi.greatpowers_3.1.0_amd64.deb"
+          test "$(dpkg-deb -f "$file" Package)" = site.daguojueqi.greatpowers
+          test "$(dpkg-deb -f "$file" Architecture)" = amd64
+          test "$(dpkg-deb -f "$file" Version)" = 3.1.0
+          ar t "$file" | grep -qx control.tar.gz
+          ar t "$file" | grep -qx data.tar.gz
+          dpkg-deb -c "$file" | awk 'NR > 1 && $6 !~ /^\.\/opt\// {exit 1}'
+          test -z "$(dpkg-deb --ctrl-tarfile "$file" | tar -tf - | grep -E '(^|/)(postinst|preinst|prerm|postrm)$' || true)"
+          dpkg-deb -x "$file" "$RUNNER_TEMP/uos-inspect"
+          desktop-file-validate "$RUNNER_TEMP/uos-inspect/opt/apps/site.daguojueqi.greatpowers/entries/applications/site.daguojueqi.greatpowers.desktop"
+          test -x "$RUNNER_TEMP/uos-inspect/opt/apps/site.daguojueqi.greatpowers/files/bin/great-powers-desktop"
+          cp "$RUNNER_TEMP/uos-inspect/opt/apps/site.daguojueqi.greatpowers/files/share/doc/构建信息.json" "$RUNNER_TEMP/uos-store/构建信息.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uos-store-3.1.0-amd64
+          path: ${{ runner.temp }}/uos-store/
+          if-no-files-found: error
+          retention-days: 14
