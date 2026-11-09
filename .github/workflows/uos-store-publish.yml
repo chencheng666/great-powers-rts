@@ -1,0 +1,55 @@
+name: 发布已验证统信候选附件
+on:
+  workflow_dispatch:
+    inputs:
+      build_run:
+        description: 已通过统信更新构建的运行编号
+        required: true
+        default: '42571587831'
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: uos-store-3.1.0-amd64
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: package
+      - name: 核验原构建与包体再发布附件
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_RUN: ${{ inputs.build_run }}
+        shell: bash
+        run: |
+          case "$BUILD_RUN" in ''|*[!0-9]*) exit 1;; esac
+          gh api "repos/$GH_REPO/actions/runs/$BUILD_RUN" > run.json
+          python3 - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          run=json.loads(Path('run.json').read_text())
+          meta=json.loads(Path('package/构建信息.json').read_text())
+          assert run['conclusion']=='success' and run['name']=='统信商店更新包'
+          assert run['head_sha']==meta['sourceCommit']
+          assert meta['version']=='3.1.0' and meta['applicationId']=='site.daguojueqi.greatpowers'
+          deb=Path('package/site.daguojueqi.greatpowers_3.1.0_amd64.deb')
+          digest=hashlib.sha256(deb.read_bytes()).hexdigest()
+          assert digest==deb.with_suffix('.sha256').read_text().split()[0]
+          Path('package/SHA256SUMS.txt').write_text(digest+'  '+deb.name+'\n')
+          Path('source.txt').write_text(meta['sourceCommit'])
+          PY
+          tag=uos-v3.1.0
+          if gh release view "$tag" >/dev/null 2>&1; then echo '同版本发行已存在，停止，避免覆盖旧附件'; exit 1; fi
+          cat > notes.txt <<'TXT'
+          统信商店 3.1.0 x86 更新候选包，沿用已上架包名 site.daguojueqi.greatpowers。
+
+          已通过完整游戏测试、Linux 构建、DEB 目录及 gzip 归档检查。CI 构建不等于统信目标系统真机验收，商店状态以审核结果为准。
+          升级前请分别导出战局和荣誉备份。官网：https://www.daguojueqi.site/
+          TXT
+          gh release create "$tag" --draft --prerelease --target "$(cat source.txt)" --title '大国崛起 3.1.0 统信商店更新候选包' --notes-file notes.txt
+          gh release upload "$tag" package/site.daguojueqi.greatpowers_3.1.0_amd64.deb package/SHA256SUMS.txt package/构建信息.json
+          gh release edit "$tag" --draft=false
