@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { bodyLoft, craftedMaterial, mergeParts, roundedPart } from './model-craft.js';
+import { PERSONNEL_STYLES } from './personnel-identity.js';
 
 const compact = mergeParts;
 
@@ -8,12 +9,13 @@ export function createPersonnel(type, { distant = false } = {}) {
   const group = new THREE.Group(); group.name = 'upper_body'; root.add(group);
   const weaponPose = new THREE.Group(); weaponPose.name = 'weapon_pose'; group.add(weaponPose);
   const spy = type === 'scout', engineer = type === 'engineer' || type === 'evacuee';
-  const fabric = craftedMaterial(spy ? '黑色西装' : '作战服', spy ? '#11151a' : type === 'evacuee' ? '#d6a56c' : engineer ? '#8b957b' : '#b1b99a', spy ? 'fabric' : 'uniform', .95, 0);
+  const style = PERSONNEL_STYLES[type] || PERSONNEL_STYLES.rifle;
+  const fabric = craftedMaterial(style.material, style.fabric, spy || engineer ? 'fabric' : 'uniform', .95, 0);
   const dark = craftedMaterial('皮革与橡胶', '#252b2d', 'rubber', .87, 0);
-  const armor = craftedMaterial('携行具', '#b4aa87', 'fabric', .9, 0);
+  const armor = craftedMaterial('携行具', style.gear, 'fabric', .9, 0);
   const steel = craftedMaterial('武器金属', '#677176', 'coating', .5, .65);
   const skin = new THREE.MeshStandardMaterial({ name: '皮肤', color: '#bb937c', roughness: .85 });
-  const shirt = craftedMaterial('衬衣与工程护具', engineer ? '#b59d62' : '#f0f2ef', 'fabric', .92, 0);
+  const shirt = craftedMaterial('衬衣与工程护具', engineer ? style.gear : '#dce5ed', 'fabric', .92, 0);
   const team = new THREE.MeshStandardMaterial({ name: '阵营标识', color: '#64d8e4', emissive: '#64d8e4', emissiveIntensity: .12, roughness: .7 });
   const mesh = (parent, geometry, material, position, rotation) => {
     const m = new THREE.Mesh(geometry, material); m.position.set(...position); if (rotation) m.rotation.set(...rotation); parent.add(m); return m;
@@ -80,9 +82,11 @@ export function createPersonnel(type, { distant = false } = {}) {
     for (const z of [.15,.41]) box(group, steel, [.04,.765,z], [.112,.27,.008]);
     limb(group, dark, [.035,.91,.225], [.035,.96,.225], .012); limb(group, dark, [.035,.91,.335], [.035,.96,.335], .012);
     limb(group, dark, [.035,.96,.225], [.035,.96,.335], .012);
+    // 深蓝外套、眼镜与手提箱形成独立轮廓；浅色肩部识别块在俯视镜头也可见。
+    box(group, armor, [-.02,1.49,0], [.12,.035,.34]);
   } else {
     const helmet = mesh(group, new THREE.SphereGeometry(.14,distant ? 6 : 20,distant ? 4 : 12,0,Math.PI*2,0,Math.PI*.59), engineer ? shirt : armor, [0,1.79,0]); helmet.scale.set(1,.82,1.02);
-    const rim = mesh(group, new THREE.TorusGeometry(.137,.009,distant ? 3 : 6,distant ? 8 : 28), dark, [0,1.783,0], [Math.PI/2,0,0]); rim.scale.y=1.02;
+    const rim = mesh(group, new THREE.TorusGeometry(engineer ? .156 : .137,engineer ? .017 : .009,distant ? 3 : 6,distant ? 8 : 28), engineer ? shirt : dark, [0,1.783,0], [Math.PI/2,0,0]); rim.scale.y=1.02;
     // 顶视镜头能看到的识别带与肩章共用材质，合批后不增加人物绘制批次。
     box(group, team, [-.01,1.903,0], [.13,.012,.045]);
     for (const side of [-1,1]) {
@@ -106,6 +110,10 @@ export function createPersonnel(type, { distant = false } = {}) {
     box(group, dark, [-.29,1.36,0], [.012,.02,.23]); box(group, dark, [-.28,1.12,0], [.012,.023,.21]);
     box(group, dark, [-.20,1.42,.14], [.09,.12,.065]); limb(group, dark, [-.2,1.48,.14], [-.23,1.68,.14], .006);
     if (engineer) {
+      // 蓝灰工装配赭黄安全帽和宽背心，工具箱保留原有手部位置。
+      box(group, shirt, [.19,1.34,0], [.045,.24,.29]);
+      box(group, shirt, [-.29,1.34,0], [.025,.23,.26]);
+      box(group, shirt, [0,1.895,0], [.23,.024,.10]);
       box(group, shirt, [.045,.76,.28], [.13,.27,.30]);
       box(group, dark, [.045,.91,.28], [.04,.045,.12]);
       for (const z of [.18,.38]) box(group, steel, [.115,.76,z], [.012,.23,.018]);
@@ -124,7 +132,8 @@ export function createPersonnel(type, { distant = false } = {}) {
       limb(weaponPose, dark, [-.01,1.26,.03], [.36,1.10,.03], .006);
     }
   }
-  root.userData.detailVersion = 3;
+  root.userData.detailVersion = 4;
+  root.userData.personnelRole = type;
   if(distant){
     const removed=[];
     root.traverse(m=>{if(!m.isMesh||m.material===team)return;m.geometry.computeBoundingBox();const size=m.geometry.boundingBox.getSize(new THREE.Vector3());if(Math.max(size.x,size.y,size.z)<.095||Math.min(size.x,size.y,size.z)<.013)removed.push(m);});

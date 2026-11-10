@@ -38,7 +38,13 @@ export function paintTheaterGround(ctx,map,road,image) {
       const edge=Math.max(0,Math.min(1,(height-.08-.07*Math.sin(y*.11+x*.2))*2.8));
       pixels.data[(y*mask.width+x)*4+3]=Math.round(edge*225);
     }
-    m.putImageData(pixels,0,0);paint.globalCompositeOperation='destination-in';paint.drawImage(mask,0,0,w,h);
+    m.putImageData(pixels,0,0);
+    // 对地图已有山脊补西亮东暗的坡面，帮助辨识起伏；不新增战术高地加成。
+    const relief=paint.createLinearGradient(0,0,w,0);
+    relief.addColorStop(0,'rgba(221,211,174,.08)');relief.addColorStop(.32,'rgba(225,212,174,.38)');
+    relief.addColorStop(.52,'rgba(224,214,185,.15)');relief.addColorStop(.75,'rgba(24,37,38,.38)');relief.addColorStop(1,'rgba(24,37,38,0)');
+    paint.fillStyle=relief;paint.fillRect(0,0,w,h);
+    paint.globalCompositeOperation='destination-in';paint.drawImage(mask,0,0,w,h);
     ctx.drawImage(layer,r.x1,r.y1);
   }
   for(const points of map.roads||[])road(points,map.climate==='cold'?42:38);

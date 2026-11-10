@@ -37,6 +37,11 @@ def link(path,target):
     if temporary.exists() or temporary.is_symlink():raise RuntimeError('发现其他待切换链接，停止')
     temporary.symlink_to(target);os.replace(temporary,path)
 
+def inherit_frozen_channel(previous,stage):
+    """原版网页更新时保留独立科幻渠道，不用缺省构建清空其游戏入口。"""
+    source=previous/'dist/starport';target=stage/'dist/starport'
+    if source.is_dir() and not target.exists():shutil.copytree(source,target)
+
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('archive');parser.add_argument('sha256');parser.add_argument('release');parser.add_argument('--domestic',action='store_true');args=parser.parse_args()
     services=['great-powers-domestic','great-powers-domestic-six'] if args.domestic else SERVICES
@@ -65,6 +70,7 @@ def main():
     node=BASE/'runtime/bin/node';env=dict(os.environ,PATH=str(node.parent)+':'+os.environ['PATH'])
     print(run(['npm','ci','--omit=dev','--ignore-scripts','--registry=https://registry.npmjs.org'],cwd=stage,env=env),flush=True)
     for previous in set(links.values()):
+        inherit_frozen_channel(previous,stage)
         for relative in ['assets','official/assets','starport/assets']:
             assets=previous/'dist'/relative
             if assets.is_dir():

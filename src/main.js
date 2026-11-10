@@ -7,6 +7,7 @@ import { setupDesktopUpdates } from './desktop-updates.js';
 import { carrierAirGroupLabel } from './carrier-airgroup.js';
 import { armyComposition, unitRole } from './feedback6-presentation.js';
 import { setupMapDiscovery } from './map-discovery-ui.js';
+import { setupQuickEntry } from './quick-entry.js';
 import { setupTutorial } from './tutorial-ui.js';
 import { operationRoutesHTML, nextOperation } from './operation-routes.js';
 import './growth-ui.js';
@@ -67,6 +68,7 @@ import { OnlineGame } from './online-game.js';
 import './online.css';
 import './commander-sandbox.css';
 import './menu-layout.css';
+import './experience-polish.css';
 import './discovery.css';
 import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
@@ -315,6 +317,7 @@ async function startGame(save = null, onlinePayload = null) {
   try { await deployGame(save, onlinePayload); }
   catch (error) { handleBattleFailure(error, { save, onlinePayload, startup: true }); }
   finally {
+    state.recommendedEntry = false;
     state.loading = false;
     document.dispatchEvent(new CustomEvent('gp-deploying',{detail:false}));
     $('#deployment-status').hidden = true;
@@ -362,7 +365,7 @@ async function deployGame(save = null, onlinePayload = null) {
   state.mapId = $('#map-select').value;
   state.victoryMode = document.querySelector('[data-victory].active')?.dataset.victory || 'quick';
   const events = { notice: toast, shot: beep, voice: key => gameAudio.say(key), selection: updateSelection, end: showResult };
-  state.game = onlinePayload ? new OnlineGame(onlinePayload, events, onlineClient) : save ? Game.fromSave(save, events) : new Game(state.faction, enemy, events, { sandbox: state.launchChallenge ? null : loyalty.settings, challengeId:state.launchChallenge,nuclearEnabled:$('#nuclear-enabled').checked,victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId,battlefieldScale:$('#expanded-map').checked?1.5:1 });
+  state.game = onlinePayload ? new OnlineGame(onlinePayload, events, onlineClient) : save ? Game.fromSave(save, events) : new Game(state.faction, enemy, events, { sandbox: state.launchChallenge || state.recommendedEntry ? null : loyalty.settings, challengeId:state.launchChallenge,nuclearEnabled:$('#nuclear-enabled').checked,victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId,battlefieldScale:$('#expanded-map').checked?1.5:1 });
   state.launchChallenge = null;
   if (state.game.challenge) { state.mapId=state.game.mapId; state.victoryMode=state.game.victoryMode;state.difficulty='standard'; }
   if (onlinePayload) { state.faction=state.game.players[0].faction;state.mapId=state.game.mapId;state.victoryMode=state.game.victoryMode;state.difficulty='standard'; }
@@ -383,6 +386,7 @@ async function deployGame(save = null, onlinePayload = null) {
   button.innerHTML = `${icon('play')} 单机作战`;
   refreshIcons();
   $('#start-screen').style.display = 'none';
+  if (matchMedia('(max-width:700px), (pointer:coarse) and (max-width:1000px)').matches) setSidebarCollapsed(true);
   if (onlinePayload) state.renderer.centerOn(state.game.homeX,state.game.homeY);
   window.scrollTo(0, 0);
   $('#side-faction').textContent = state.game.faction.name;
@@ -547,6 +551,7 @@ function updateUI(force = false) {
   $('#power-meter').style.setProperty('--power-fill', `${Math.max(0, Math.min(100, p.powerIn / Math.max(1, p.powerOut) * 100))}%`);
   $('.resource.power').title = `供电 ${p.powerIn} / 耗电 ${p.powerOut}${g.hasPower(0) ? ' · 供电正常' : ' · 电力不足，建造发电站'}`;
   $('#clock').textContent = seconds(g.time);
+  $('#minimap-shell').classList.toggle('radar-offline', !g.hasRadarIntel(0));
   $('#battle-status').textContent = g.online && onlineClient.socket?.readyState !== WebSocket.OPEN ? '连接中断，正在重连' : g.online && g.paused ? `等待对手重连 ${Math.max(0,Math.ceil(((g.room?.deadline||Date.now())-Date.now())/1000))} 秒` : !g.hasPower(0) ? '电力不足' : g.pendingBuilding ? '等待部署建筑' : g.pendingAbility ? '选择技能目标' : g.paused ? '战斗暂停' : g.online ? '联网对战' : '战斗进行中';
   const q = p.buildQueue;
   const activeProducer = g.ownedBuildings(0).find(b => b.active) || g.ownedBuildings(0).find(b => b.queue.length);
@@ -836,6 +841,7 @@ function availableSaves() {
 function updateContinueControl() {
   const saves = availableSaves(), latest = saves.filter(item => item.save).sort((a, b) => b.save.savedAt - a.save.savedAt)[0]?.save;
   $('#continue-btn').disabled = !latest;
+  $('#quick-continue-btn').hidden = !latest;
   $('#save-summary').textContent = latest ? `${CHALLENGES[latest.config.challengeId]?.name || MAPS[latest.config.mapId].name} · ${seconds(latest.state.time)} · ${new Date(latest.savedAt).toLocaleString('zh-CN')}` : saves.some(item => item.error) ? '本地存档不可读取，可导入备份文件' : '暂无保存的战局';
 }
 
@@ -1258,6 +1264,8 @@ function setupControls() {
   });
   window.addEventListener('keyup', event => state.keys.delete(event.key.toLowerCase()));
   window.addEventListener('resize', () => state.renderer?.resize());
+  const narrowBattle = matchMedia('(max-width:700px), (pointer:coarse) and (max-width:1000px)');
+  narrowBattle.addEventListener('change', () => { if (narrowBattle.matches) setSidebarCollapsed(true); if (state.game) updateSelection(); });
   window.addEventListener('blur', () => state.keys.clear());
   new ResizeObserver(() => state.renderer?.resize()).observe($('#battlefield'));
   document.addEventListener('fullscreenchange', updateFullscreenControl);
@@ -1483,6 +1491,19 @@ $('#map-select').addEventListener('change',updateNuclearOption);updateNuclearOpt
 setupMapDiscovery();
 if (location.protocol === 'file:') $('#desktop-download-link').href = 'https://www.daguojueqi.site/downloads/';
 setupControls();
+setupQuickEntry({
+  candidate: candidateMode,
+  onContinue: () => $('#continue-btn').click(),
+  onStart: preset => {
+    if (state.loading) return;
+    state.faction = 'china'; state.launchChallenge = null; state.recommendedEntry = true;
+    $('#map-select').value = preset.mapId; $('#map-select').dispatchEvent(new Event('change'));
+    $('#difficulty-select').value = preset.difficulty; $('#enemy-select').value = 'random';
+    $('#nuclear-enabled').checked = false; $('#expanded-map').checked = true;
+    document.querySelectorAll('[data-victory]').forEach(button => button.classList.toggle('active', button.dataset.victory === preset.victory));
+    drawFactionPicker(); startGame();
+  },
+});
 try { setSidebarCollapsed(matchMedia('(max-width:700px), (pointer:coarse) and (max-width:1000px)').matches || localStorage.getItem('great-powers-sidebar') === 'collapsed'); } catch { setSidebarCollapsed(matchMedia('(max-width:700px), (pointer:coarse) and (max-width:1000px)').matches); }
 updateAudioControls();
 updateHonorOverview();
@@ -1490,7 +1511,7 @@ restoreRelatedHonors({onRestored:()=>{updateHonorOverview();toast('已恢复本�
 updateContinueControl();
 refreshIcons();
 // 只在玩家明确准备开局时预取，首屏不与视频、模型抢占网络。
-$('#start-btn').addEventListener('pointerenter', () => { if (matchMedia('(hover: hover)').matches) prepareRenderer().catch(() => {}); }, { once: true });
+for (const id of ['start-btn', 'quick-start-btn']) $('#' + id).addEventListener('pointerenter', () => { if (matchMedia('(hover: hover)').matches) prepareRenderer().catch(() => {}); }, { once: true });
 performance.mark('gp-menu-ready');
 
 async function importDesktopOrWeb() {

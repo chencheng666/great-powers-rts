@@ -90,10 +90,10 @@ test('大军团人物精模预算有限，选中单位优先；小规模近景�
   assert.equal(armyDetailPlan(units.slice(0,60),1.8,'high',[],{x:0,y:0}).tracks,true);
   assert.equal(units[0].id,0);
 });
-test('作战服有迷彩、织物凹凸与粗糙度，间谍仍是黑西装且远景不污染近景',()=>{
+test('作战服有迷彩、织物凹凸与粗糙度，间谍采用独立深色外套且远景不污染近景',()=>{
   const maps=surfaceMaps('uniform'),data=maps.map.image.data;assert.equal(maps.map,surfaceMaps('uniform').map);assert.notEqual(maps.map,surfaceMaps('fabric').map);
   assert.ok(data.some((v,i)=>i%4===0&&v!==data[i+1]));assert.ok(maps.normalMap&&maps.roughnessMap);
   const soldier=createPersonnel('rifle'),spy=createPersonnel('scout');let uniform,black;
-  soldier.traverse(m=>{if(m.isMesh&&m.material.name==='作战服')uniform=m.material;});spy.traverse(m=>{if(m.isMesh&&m.material.name==='黑色西装')black=m.material;});
+  soldier.traverse(m=>{if(m.isMesh&&m.material.name==='作战服')uniform=m.material;});spy.traverse(m=>{if(m.isMesh&&m.material.name==='侦察外套')black=m.material;});
   const color=uniform.color.clone();personnelLOD(soldier);assert.ok(uniform.color.equals(color));assert.equal(uniform.map,maps.map);assert.equal(black.map,surfaceMaps('fabric').map);
 });

@@ -68,6 +68,39 @@ const LOOP_PROFILES = {
   rotor: [64, .4, .25, 18], drone: [260, .13, .15, 36], ship: [40, .5, .18, 3], submerged: [32, .55, .015, 2], robot: [180, .18, .15, 8],
 };
 
+export function synthesizeMovement(kind, sampleRate = 44100) {
+  if (!LOOP_PROFILES[kind]) return null;
+  const [frequency, bass, hiss, pulse] = LOOP_PROFILES[kind];
+  const length = Math.round(sampleRate * 2), data = new Float32Array(length);
+  let seed = 721, low = 0, body = 0;
+  for (let i = 0; i < length; i++) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
+    const noise = (seed >>> 0) / 2147483648 - 1, t = i / sampleRate;
+    low += (noise - low) * (1 - Math.exp(-2 * Math.PI * 220 / sampleRate));
+    body += (noise - body) * (1 - Math.exp(-2 * Math.PI * 1600 / sampleRate));
+    const sin = hz => Math.sin(2 * Math.PI * hz * t);
+    let value;
+    if (kind === 'jet') {
+      // 宽带气流为主，弱化固定音调与规律抖动。
+      value = (body * .65 + (noise - low) * .11 + low * .75 + sin(95) * .035 + sin(190) * .015) * (.9 + .1 * sin(.5));
+    } else if (kind === 'submerged') {
+      // 增添手机扬声器可重放的机械谐波，不用高频声呐代替航行声。
+      value = sin(72) * .15 + sin(144) * .075 + sin(216) * .025 + low * .28;
+      value *= .88 + .12 * sin(3);
+    } else if (kind === 'ship') {
+      value = (sin(48) * .13 + sin(96) * .065 + low * .8 + body * .13) * (.9 + .1 * sin(4));
+    } else {
+      const modulation = kind === 'footsteps' ? Math.exp(-((t * pulse) % 1) * 13) : .65 + .35 * sin(pulse);
+      value = (sin(frequency) * bass + low * 3 * hiss + noise * hiss * .2) * modulation;
+    }
+    data[i] = value * .065;
+  }
+  // 两秒缓存首尾平滑，长时间循环不在边界产生点击。
+  const edge = Math.floor(sampleRate * .015), tail = data[length - 1];
+  for (let i = 0; i < edge; i++) { const mix = i / edge; data[i] = tail * (1 - mix) + data[i] * mix; }
+  return data;
+}
+
 export class SoundEffects {
   constructor(context, bus, maxVoices = 16) {
     this.context = context; this.bus = bus; this.maxVoices = maxVoices;
@@ -107,19 +140,8 @@ export class SoundEffects {
   loopBuffer(kind) {
     const key = `loop:${kind}`;
     if (this.buffers.has(key)) return this.buffers.get(key);
-    const [frequency, bass, hiss, pulse] = LOOP_PROFILES[kind];
-    const rate = this.context.sampleRate, buffer = this.context.createBuffer(1, rate, rate), data = buffer.getChannelData(0);
-    let seed = 721, low = 0;
-    for (let i = 0; i < rate; i++) {
-      seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
-      const noise = (seed >>> 0) / 2147483648 - 1; low += (noise - low) * .03;
-      const t = i / rate, modulation = kind === 'footsteps' ? Math.exp(-((t * pulse) % 1) * 13) : .65 + .35 * Math.sin(2 * Math.PI * pulse * t);
-      data[i] = (Math.sin(2 * Math.PI * frequency * t) * bass + low * 3 * hiss + noise * hiss * .2) * modulation * .065;
-    }
-    // 接缝交叉过渡，消除循环边界的点击。
-    const edge = Math.floor(rate * .008);
-    const tail = data[rate - 1];
-    for (let i = 0; i < edge; i++) { const mix = i / edge; data[i] = tail * (1 - mix) + data[i] * mix; }
+    const rate = this.context.sampleRate, data = synthesizeMovement(kind, rate);
+    const buffer = this.context.createBuffer(1, data.length, rate); buffer.getChannelData(0).set(data);
     this.buffers.set(key, buffer); return buffer;
   }
   syncMovement(groups) {

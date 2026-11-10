@@ -25,8 +25,8 @@ test('水底与峡谷凹地分开处理，月表不出现常规裂谷下沉', ()
 test('动能曳光是短段飞行，能量束保持连续，枪口闪光快速衰减', () => {
   const effect = { x: 0, y: 0, toX: 500, toY: 0, sourceType: 'tank', age: .1, duration: .2, style: 'tank' };
   const shot = tracerEndpoints(effect), beam = tracerEndpoints({ ...effect, style: 'laser' });
-  assert.ok(shot.head > shot.tail && (shot.head - shot.tail) * 500 <= 18.001);
-  assert.equal(shot.flash, 0); assert.equal(beam.head, 1); assert.equal(beam.tail, beam.muzzle);
+  assert.ok(shot.head > shot.tail && (shot.head - shot.tail) * 500 <= 24.001);
+  assert.ok(shot.flash > 0 && shot.flash < .1); assert.equal(tracerEndpoints({...effect,age:.12}).flash,0); assert.equal(beam.head, 1); assert.equal(beam.tail, beam.muzzle);
   for (const age of [-1, 0, .1, .3]) {
     const p = tracerEndpoints({ ...effect, age, toX: 5 });
     assert.ok(p.head >= p.tail && p.head <= 1 && p.tail >= 0);

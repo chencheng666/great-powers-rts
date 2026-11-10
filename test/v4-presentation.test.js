@@ -11,12 +11,12 @@ import { unitModelScale } from '../src/model-scale.js';
 
 test('易读比例只增强地面显示，远景补偿有上限，飞机舰船和月表保持原尺度', () => {
   const unit = { kind: 'unit' };
-  assert.equal(groundPresentationFactor(unit, ['infantry'], 1), 1.5);
-  assert.equal(groundPresentationFactor(unit, ['armor'], 1), 1.2);
+  assert.equal(groundPresentationFactor(unit, ['infantry'], 1), 1.7);
+  assert.equal(groundPresentationFactor(unit, ['armor'], 1), 1.35);
   for (let zoom = .45; zoom <= 2.4; zoom += .05) {
     const person = groundPresentationFactor(unit, ['infantry'], zoom);
-    assert.ok(person >= 1.5 && person <= 1.9);
-    assert.ok(groundPresentationFactor(unit, ['armor'], zoom) <= 1.4);
+    assert.ok(person >= 1.7 && person <= 2);
+    assert.ok(groundPresentationFactor(unit, ['armor'], zoom) <= 1.5);
     for (const tags of [['air'], ['ship'], ['submerged']]) assert.equal(groundPresentationFactor(unit, tags, zoom), 1);
     assert.equal(groundPresentationFactor(unit, ['infantry'], zoom, 'reference'), 1);
     assert.equal(groundPresentationFactor(unit, ['infantry'], zoom, 'readable', true), 1);

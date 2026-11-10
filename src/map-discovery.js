@@ -1,5 +1,6 @@
 import { MAPS, WORLD } from './data.js';
-export const MAP_CATEGORIES = { all:'全部', beginner:'入门陆战', land:'地面推进', sea:'海上与登陆', future:'月表科技', strategy:'战略与会战' };
+export const RECOMMENDED_MAPS = ['valleyTraining', 'strait', 'canyon'];
+export const MAP_CATEGORIES = { recommended:'推荐战场', all:'全部', beginner:'入门陆战', land:'地面推进', sea:'海上与登陆', future:'月表科技', strategy:'战略与会战' };
 export function mapCategory(id) {
   const m=MAPS[id];
   if(m?.training) return 'beginner';
@@ -9,7 +10,7 @@ export function mapCategory(id) {
 }
 export function discoverMaps(ids, category='all', query='') {
   const needle=query.trim().toLowerCase();
-  return ids.filter(id=>MAPS[id]&&!MAPS[id].missionOnly&&(category==='all'||mapCategory(id)===category)&&`${MAPS[id].name} ${MAPS[id].sector}`.toLowerCase().includes(needle));
+  return ids.filter(id=>MAPS[id]&&!MAPS[id].missionOnly&&(category==='all'||category==='recommended'&&RECOMMENDED_MAPS.includes(id)||mapCategory(id)===category)&&`${MAPS[id].name} ${MAPS[id].sector}`.toLowerCase().includes(needle));
 }
 export function mapBrief(id) {
   const m=MAPS[id]; if(!m)return null;

@@ -62,10 +62,12 @@ export const realisticEffects = {
     if (origin) effect = { ...effect, ...origin };
     const from = effect.sourceHeight ?? this.effectHeight(effect.sourceType, effect.x, effect.y), to = this.effectHeight(effect.targetType, effect.toX, effect.toY);
     const color = ['laser', 'robotPulse'].includes(effect.style) ? '#85eaff' : effect.style === 'repair' ? '#77dcb7' : effect.style === 'railgun' ? '#b9e9f5' : '#ffcf91';
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([point(effect.x, effect.y, from), point(effect.toX, effect.toY, to)]), new THREE.LineBasicMaterial({ color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const beam = tracerEndpoints(effect).beam;
+    const line = beam ? new THREE.Line(new THREE.BufferGeometry().setFromPoints([point(effect.x, effect.y, from), point(effect.toX, effect.toY, to)]), new THREE.LineBasicMaterial({ color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }))
+      : new THREE.Mesh(new THREE.CylinderGeometry(.9, .65, 1, 5), new THREE.MeshBasicMaterial({ color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     const flash = this.effectSprite('#fff0c5'), flare = this.effectSprite(color);
     group.add(line, flash, flare); group.userData.weapon = { from, to, color, origin };
-    const { muzzle, beam } = tracerEndpoints(effect), x = effect.x + (effect.toX - effect.x) * muzzle, y = effect.y + (effect.toY - effect.y) * muzzle;
+    const { muzzle } = tracerEndpoints(effect), x = effect.x + (effect.toX - effect.x) * muzzle, y = effect.y + (effect.toY - effect.y) * muzzle;
     if (effect.style !== 'repair') this.combatFlash(x, y, from, color, beam ? 1600 : effect.sourceType === 'tank' ? 6500 : 1200, .09);
     if (!beam && this.trails.length < 120) {
       const smoke = this.effectSprite('#7b776c', true); smoke.position.set(x, from, y); smoke.scale.setScalar(effect.sourceType === 'tank' ? 15 : 5); smoke.material.opacity = .24;
@@ -77,11 +79,21 @@ export const realisticEffects = {
     if (group.userData.weapon.origin) effect = { ...effect, ...group.userData.weapon.origin };
     const { from, to, color } = group.userData.weapon, { muzzle, beam, head, tail, flash } = tracerEndpoints(effect), t = effect.age / effect.duration;
     group.position.set(0, 0, 0);
-    const [line, core, flare] = group.children, positions = line.geometry.attributes.position;
-    for (const [i, progress] of [[0, tail], [1, head]]) positions.setXYZ(i, effect.x + (effect.toX - effect.x) * progress, from + (to - from) * progress, effect.y + (effect.toY - effect.y) * progress);
-    positions.needsUpdate = true; line.material.opacity = beam ? (1 - t) * .75 : Math.sin(Math.min(1, t * 2) * Math.PI / 2);
+    const [line, core, flare] = group.children;
+    if (beam) {
+      const positions = line.geometry.attributes.position;
+      for (const [i, progress] of [[0, tail], [1, head]]) positions.setXYZ(i, effect.x + (effect.toX - effect.x) * progress, from + (to - from) * progress, effect.y + (effect.toY - effect.y) * progress);
+      positions.needsUpdate = true;
+    } else {
+      const a = point(effect.x + (effect.toX - effect.x) * tail, effect.y + (effect.toY - effect.y) * tail, from + (to - from) * tail);
+      const b = point(effect.x + (effect.toX - effect.x) * head, effect.y + (effect.toY - effect.y) * head, from + (to - from) * head);
+      const length = a.distanceTo(b), width = Math.max(.85, Math.min(1.6, 1 / this.camera.zoom));
+      line.position.copy(a).add(b).multiplyScalar(.5); line.scale.set(width, Math.max(.01, length), width);
+      if (length > .001) line.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.sub(a).normalize());
+    }
+    line.material.opacity = beam ? (1 - t) * .75 : Math.sin(Math.min(1, t * 2) * Math.PI / 2);
     const x = effect.x + (effect.toX - effect.x) * muzzle, y = effect.y + (effect.toY - effect.y) * muzzle;
-    const size = effect.sourceType === 'tank' ? 20 : beam ? 9 : 6;
+    const size = ['tank', 'elite', 'rocket'].includes(effect.sourceType) ? 26 : beam ? 9 : 8;
     core.position.set(x, from, y); core.scale.set(size * flash, size * .65 * flash, 1); core.material.opacity = flash;
     flare.material.color.set(color); flare.position.copy(core.position); flare.scale.set(size * flash * 1.8, size * flash * .55, 1); flare.material.opacity = flash * .55;
   },

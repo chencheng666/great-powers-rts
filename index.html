@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#171d1b" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/official/official-emblem-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/official/official-emblem-180.png" />
-    <title>大国崛起 3.1 | 迈向4.0</title>
+    <title>大国崛起 3.1.1 | 指挥更清楚</title>
   </head>
   <body>
     <div id="app">
@@ -89,16 +89,16 @@
       <div id="start-screen" class="start-screen">
         <div class="start-backdrop"><video id="menu-background-video" muted loop playsinline preload="none" aria-hidden="true"></video></div>
         <div class="start-shade"></div>
-        <header class="menu-topline"><span>大国崛起 3.1 / 迈向4.0 · 易读战场</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
+        <header class="menu-topline"><span>大国崛起 3.1.1 / 迈向4.0 · 指挥更清楚</span><button id="player-name-btn" class="secondary-btn"><i data-lucide="user-round"></i><span id="player-name">指挥官</span><i data-lucide="pencil"></i></button></header>
         <div class="start-content">
           <section class="menu-intro" aria-label="游戏介绍">
             <div class="start-kicker"><span class="live-dot"></span> 现代即时战略</div>
             <h1>大国<em>崛起</em></h1>
             <p class="start-lede">建设基地，调配海陆空力量，开启你的征途。</p>
-            <button id="mode-guide-jump" data-map-browser type="button" class="secondary-btn mode-guide-jump">浏览战场与玩法 <span aria-hidden="true">↓</span></button>
+            <div class="quick-entry"><div class="quick-presets" role="group" aria-label="推荐玩法"><button type="button" data-quick-preset="land" aria-pressed="true">陆战入门</button><button type="button" data-quick-preset="sea" aria-pressed="false">海陆协同</button><button type="button" data-quick-preset="control" aria-pressed="false">据点争夺</button></div><p id="quick-entry-description">灰谷 · 新兵难度 · 跟着提示熟悉指挥</p><div class="quick-entry-actions"><button id="quick-start-btn" type="button" class="primary-btn"><i data-lucide="play"></i> 开始游戏</button><button id="quick-continue-btn" type="button" class="secondary-btn" hidden><i data-lucide="folder-open"></i> 继续战局</button></div><output id="quick-entry-status" role="status" hidden></output><div class="quick-entry-links"><button id="mode-guide-jump" type="button" class="secondary-btn">自定义对战</button><button id="quick-challenge-btn" type="button" class="secondary-btn">作战任务</button><button id="quick-online-btn" type="button" class="secondary-btn">联网对战</button></div><small class="entry-privacy">单机可直接试玩；联网时会记录匿名游玩时长和版本，用于改进体验。</small></div>
             <blockquote class="peace-motto">故国虽大，好战必亡；<br>天下虽安，忘战必危。<cite>——《司马法·仁本》</cite></blockquote>
           </section>
-          <section class="commander-hub" aria-label="指挥官中心">
+          <details class="commander-hub" aria-label="指挥官中心"><summary>档案与存档 <span>成长 · 装备 · 导入</span></summary>
             <div class="hub-heading"><strong>指挥官中心</strong><span>成长 · 存档 · 装备</span></div>
             <button id="honor-profile-btn" class="commander-profile" title="打开荣誉档案" aria-label="打开荣誉档案"></button>
             <button id="growth-open" type="button" class="secondary-btn growth-home">指挥官征途 <span>奖励 / 外观 / 分享 →</span></button>
@@ -106,9 +106,9 @@
               <div class="menu-save-actions"><button id="continue-btn" class="secondary-btn" disabled><i data-lucide="folder-open"></i> 继续战局</button><button id="import-btn" class="secondary-btn" title="导入存档文件" aria-label="导入存档文件"><i data-lucide="upload"></i> 导入存档</button><button id="menu-catalog-btn" class="secondary-btn"><i data-lucide="book-open"></i> 装备图鉴</button></div>
               <small id="save-summary">暂无保存的战局</small>
             </section>
-          </section>
+          </details>
         </div>
-        <div class="faction-picker">
+        <details id="custom-deployment" class="faction-picker custom-deployment"><summary>自定义对战 <span>选择阵营、战场与规则</span></summary><div class="custom-fields">
           <div class="picker-heading"><strong>作战部署</strong><span>选择你的阵营</span></div>
           <div class="faction-list" id="faction-list"></div><details class="faction-field-guide"><summary id="faction-guide-title"></summary><p id="faction-guide-perk"></p><p id="faction-guide-ability"></p><div id="faction-doctrine" class="faction-doctrine"></div></details>
           <label id="nuclear-option" class="nuclear-option" hidden><input type="checkbox" id="nuclear-enabled"> 核威慑规则 <small>默认关闭 · 双方确认 · 可预警与反制</small></label>
@@ -121,7 +121,7 @@
             <label class="tutorial-setting"><input id="tutorial-enabled" type="checkbox" checked> 灰谷入门启用操作教学（可在战斗中收起）</label><p id="offline-telemetry-note" hidden>单机支持离线游玩；联网时会统计匿名游玩时长和版本。</p><div class="menu-secondary-actions"><button id="feedback-open" class="secondary-btn" type="button">意见反馈</button><button id="menu-music-toggle" class="secondary-btn" aria-pressed="false">开启首页配乐 · 国际歌</button><button id="menu-video-toggle" class="secondary-btn" aria-pressed="true">暂停实机背景</button><button id="sandbox-btn" class="secondary-btn">指挥官沙盘 · 忠实玩家奖励</button><button id="challenge-btn" class="secondary-btn"><i data-lucide="flag"></i> 作战路线 / 挑战</button></div>
             <div class="battle-entry"><output id="deployment-status" class="deployment-status" role="status" hidden></output><button id="start-btn" class="primary-btn"><i data-lucide="play"></i> 单机作战</button><button id="online-btn" class="secondary-btn"><i data-lucide="network"></i> 联网对战</button></div>
           </div>
-        </div>
+        </div></details>
       </div>
 
       <input id="save-file" type="file" accept=".json,application/json" hidden>
@@ -129,7 +129,7 @@
       <dialog id="map-browser" class="online-dialog map-browser" aria-labelledby="map-browser-title"><header><div><h2 id="map-browser-title">战场导航</h2><p>先选喜欢的玩法，再配置阵营和难度。独立任务请从“战术挑战”进入。</p></div><button id="map-browser-close" type="button" class="secondary-btn">关闭</button></header><label class="online-field">搜索战场<input id="map-browser-search" type="search" placeholder="输入地图名称或战区" autocomplete="off"></label><div id="map-browser-filters" class="map-browser-filters" role="group" aria-label="地图分类"></div><p id="map-browser-count" role="status"></p><div id="map-browser-list" class="map-browser-list"></div></dialog>
       <dialog id="growth-dialog" class="online-dialog growth-dialog" aria-labelledby="growth-title"><header><h2 id="growth-title">指挥官征途</h2><button id="growth-close" type="button" class="secondary-btn">关闭</button></header><div id="growth-content"></div><p id="growth-status" role="status"></p></dialog>
       <dialog id="feedback-dialog" class="online-dialog" aria-labelledby="feedback-title"><form id="feedback-form"><header><h2 id="feedback-title">意见反馈</h2><button id="feedback-close" type="button" class="secondary-btn">关闭</button></header><p>欢迎告诉我们遇到的问题或建议。反馈会发送至游戏服务器，供管理员排查，保留期限为 12 个月，系统会定期清理。请勿填写密码、身份证等敏感信息；图片可能包含个人信息，请检查后再提交。</p><label class="online-field">反馈内容（必填，最多 2000 字）<textarea id="feedback-content" required maxlength="2000" rows="5"></textarea></label><label class="online-field">截图（可选，PNG、JPG 或 WebP，最大 512 KB）<input id="feedback-image" type="file" accept="image/png,image/jpeg,image/webp"></label><p id="feedback-status" role="status"></p><button class="primary-btn" type="submit">提交反馈</button></form></dialog>
-      <dialog id="nickname-dialog" class="online-dialog" aria-labelledby="nickname-title"><form><div class="online-kicker">指挥官档案</div><h2 id="nickname-title">你的作战呼号</h2><label class="online-field">昵称<input autocomplete="nickname" maxlength="32" required placeholder="输入昵称" aria-label="昵称"></label><p class="telemetry-note">在线试玩会统计昵称、设备类型和前台游玩时长，用于改进游戏；离线游戏不联网统计。</p><p role="alert" class="online-error"></p><button type="submit" class="primary-btn"><i data-lucide="arrow-right"></i> 进入指挥中心</button></form></dialog>
+      <dialog id="nickname-dialog" class="online-dialog" aria-labelledby="nickname-title"><form><div class="online-kicker">指挥官档案</div><h2 id="nickname-title">你的作战呼号</h2><label class="online-field">昵称<input autocomplete="nickname" maxlength="32" required placeholder="输入昵称" aria-label="昵称"></label><p class="telemetry-note">在线试玩会统计昵称、设备类型和前台游玩时长，用于改进游戏；离线游戏不联网统计。</p><p role="alert" class="online-error"></p><button type="submit" class="primary-btn"><i data-lucide="arrow-right"></i> 保存呼号</button><button type="button" class="secondary-btn" data-name-cancel>暂不填写</button></form></dialog>
       <dialog id="online-dialog" class="online-dialog" aria-labelledby="online-title">
         <header><div><div class="online-kicker">联合作战网络</div><h2 id="online-title">双人对战</h2></div><button class="icon-btn" data-online="close" title="关闭大厅" aria-label="关闭大厅"><i data-lucide="x"></i></button></header>
         <p id="online-welcome"></p><p id="online-status" role="status"></p><p id="online-error" role="alert" class="online-error"></p>

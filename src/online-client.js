@@ -14,11 +14,12 @@ export class OnlineClient {
     this.dialog.querySelector('#join-code').addEventListener('input',()=>this.showError(''));
     this.dialog.addEventListener('change',e=>{if(e.target.id==='online-faction')this.send({type:'faction',faction:e.target.value});});
     this.nameDialog.querySelector('form').addEventListener('submit',e=>{e.preventDefault();this.saveName();});
-    this.nameDialog.addEventListener('cancel',e=>{if(!this.name)e.preventDefault();});
+    this.nameDialog.addEventListener('cancel',()=>{this.pendingOnline=false;});
+    this.nameDialog.querySelector('[data-name-cancel]')?.addEventListener('click',()=>{this.pendingOnline=false;this.nameDialog.close();});
     document.querySelector('#online-btn').addEventListener('click',()=>this.open());
     document.querySelector('#player-name-btn').addEventListener('click',()=>this.editName());
     let name='';try{name=localStorage.getItem(key)||'';}catch{}
-    this.name=name;this.renderName();if(!name)this.editName();
+    this.name=name;this.renderName();
     if(name && !isDesktop() && !isUtools())fetch(this.prefix+'/api/session').then(r=>r.ok?r.json():null).then(data=>{if(data?.user&&data.room?.code){this.user=data.user;this.room=data.room;this.connect().catch(()=>{});}}).catch(()=>{});
   }
   renderName(){document.querySelector('#player-name').textContent=this.name||'指挥官';this.onIdentity?.(this.name);}
@@ -28,6 +29,7 @@ export class OnlineClient {
       const name=nickname(this.nameDialog.querySelector('input').value);
       if(this.user){await this.session(name);this.socket?.close(1000,'昵称已更新');}
       this.name=name;try{localStorage.setItem(key,name);}catch{}this.renderName();this.nameDialog.close();
+      if(this.pendingOnline){this.pendingOnline=false;await this.open();}
     }catch(e){this.nameDialog.querySelector('[role=alert]').textContent=e.message;}
   }
   async session(name=this.name){
@@ -43,7 +45,7 @@ export class OnlineClient {
   async open(){
     if (isUtools()) { try { await openUtoolsLink('online'); } catch (error) { this.onNotice(error.message, true); } return; }
     if (isDesktop()) { await this.openDesktop(); return; }
-    if(!this.name){this.editName();return;}
+    if(!this.name){this.pendingOnline=true;this.editName();return;}
     this.dialog.showModal();this.showError('');this.render();this.dialog.querySelector('#online-status').textContent='正在连接战区…';
     try{const prefix=(candidatePath()||this.config().mapId==='sixfront')?'/candidate':'';if(prefix!==this.prefix){if(this.room)throw new Error('切换战区前请先退出当前房间');this.socket?.close();this.socket=null;this.prefix=prefix;this.expectedProtocol=prefix?SIX_PROTOCOL_VERSION:PROTOCOL_VERSION;}this.candidateControls();await this.session();await this.connect();this.render();}catch(e){this.showError(e.message);this.render();}
   }

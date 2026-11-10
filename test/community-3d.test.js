@@ -40,7 +40,7 @@ test('实际月图坑体避让矿区、据点和固定设施，不改变资源�
   }
 });
 test('损伤分两级，维修恢复；潜艇和步兵不生成燃烧烟柱', () => {
-  const u = { type: 'tank', kind: 'unit', hp: 60, maxHp: 100 };
+  const u = { type: 'tank', kind: 'unit', hp: 59, maxHp: 100 };
   assert.equal(damagePresentation(u).stage, 1); assert.equal(damagePresentation({ ...u, hp: 29 }).stage, 2);
   assert.equal(damagePresentation({ ...u, hp: 100 }).stage, 0); assert.equal(damagePresentation({ ...u, hp: 0 }).stage, 0);
   assert.equal(damagePresentation({ ...u, type: 'rifle' }).smoke, false);

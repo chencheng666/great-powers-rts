@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { craftedMaterial, mergeParts, roundedPart } from './model-craft.js';
+import { createRadarArray } from './radar-models.js';
 
 export const AIR_DEFENSE_FACTIONS = ['china', 'russia', 'nato', 'asia', 'middleeast'];
 // 参考车载防空的结构语言，原创简化轮廓，不以现实系统参数替代游戏平衡。
@@ -61,9 +62,8 @@ export function createAirDefense(faction, type = 'aa') {
   const radar = new THREE.Group(); radar.name = 'air_defense_radar'; radar.position.set(.1, 3.05, 0); weapon.add(radar);
   tube(weapon, steel, [.1, 1.6, 0], [.1, 3.05, 0], .095);
   const arrayWidth = faction === 'nato' ? 2.05 : faction === 'middleeast' ? 1.9 : 1.65;
-  box(radar, armor, [0, .25, 0], [.23, 1.05, arrayWidth], -.15);
-  box(radar, dark, [.14, .25, 0], [.035, .87, arrayWidth - .18], -.15);
-  for (const z of [-.48, 0, .48]) box(radar, steel, [.17, .25, z], [.025, .78, .035], -.15);
+  const array = createRadarArray(arrayWidth, 1.05, 8, 4);
+  array.position.y = .25; array.rotation.z = -.15; radar.add(array);
   mergeParts(root);
   const tip = new THREE.Object3D(); tip.name = 'open_asset_muzzle'; tip.position.set(vertical ? -1.35 : -.7, 4.65, 0); barrel.add(tip);
   root.userData.airDefenseDesign = { faction, type, tubes, vertical, axles: 4 };

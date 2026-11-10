@@ -1,0 +1,13 @@
+{
+  "unitsAtStart": 120,
+  "unitsAtEnd": 108,
+  "frames": 180,
+  "medianWorkMs": 17,
+  "p95WorkMs": 19.799999952316284,
+  "maxEffects": 44,
+  "maxTrails": 120,
+  "width": 1500,
+  "height": 748,
+  "quality": "standard",
+  "version": "3.1.1"
+}

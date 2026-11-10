@@ -1,0 +1,28 @@
+/* 沿用现有配色与控件，把推荐开局留在首屏，完整配置按需展开。 */
+.start-screen .start-content{grid-template-columns:minmax(0,1fr) minmax(280px,340px);align-items:start;min-height:min(690px,calc(100svh - 88px));padding-top:100px}
+.start-screen .commander-hub{padding:18px 22px;margin-top:30px}
+.commander-hub>summary,.custom-deployment>summary{cursor:pointer;font-weight:600;font-size:16px;min-height:32px}
+.commander-hub>summary span,.custom-deployment>summary span{display:block;font-size:12px;font-weight:400;color:#aabfb6;margin:6px 0 0 18px}
+.commander-hub .hub-heading{display:none}
+.quick-entry{margin-top:28px;max-width:560px}
+.quick-presets{display:flex;gap:8px;flex-wrap:wrap}
+.quick-presets button{border:1px solid #8ca89766;background:#122421d9;color:#c7d8cd;border-radius:22px;padding:9px 17px;font:inherit;font-size:13px;min-height:40px;cursor:pointer}
+.quick-presets button[aria-pressed=true]{background:#d8c894;color:#14231f;border-color:#d8c894}
+#quick-entry-description{font-size:13px;color:#d1ddce;line-height:1.6;margin:15px 0}
+.quick-entry-actions{display:flex;gap:10px;flex-wrap:wrap}.quick-entry-actions>button{min-width:180px;min-height:52px;border-radius:7px;font-size:16px}
+.quick-entry-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}.quick-entry-links>button{background:#132522c9;border-color:#6d8a7e66;min-height:40px;padding:8px 14px;font-size:12px;border-radius:6px}
+#quick-entry-status{display:block;font-size:12px;max-width:540px;line-height:1.6;margin-top:12px;color:#ddce98}#quick-entry-status[hidden]{display:none}
+.start-screen .custom-deployment{margin:0 var(--menu-gutter) 28px;padding:18px 22px;background:#102220ed;border:1px solid #69837477;border-radius:10px;scroll-margin-top:18px}
+.custom-fields{padding-top:22px}.start-screen .custom-deployment .faction-list{margin-top:18px}
+.radar-offline canvas{display:none}.radar-offline .minimap-label{position:static;padding:10px 6px;flex-wrap:wrap;gap:5px}.radar-offline .minimap-label:before{content:'雷达未接通';font-size:11px;color:#a8b7b1;margin-right:8px}
+#battle-tutorial .tutorial-next{font-size:11px;color:#a9beb0;margin-top:8px}#battle-tutorial li[aria-current=step]{border-bottom:0}
+@media(max-width:1000px){.start-screen .start-content{grid-template-columns:minmax(0,1fr) minmax(245px,300px);gap:24px}}
+@media(max-width:700px){.start-screen .start-content{grid-template-columns:1fr;min-height:0;padding-top:82px;gap:18px}.start-screen .commander-hub{margin:0;padding:14px 18px}.quick-entry{margin-top:22px}.quick-entry-actions>button{flex:1;min-width:140px}.start-screen .custom-deployment{padding:16px;margin-top:12px}.quick-presets button{min-height:44px}.quick-entry-links{gap:8px}.start-screen .peace-motto{margin-top:20px}}
+@media(max-height:520px) and (min-width:701px){.start-screen .start-content{padding-top:72px;min-height:0}.start-screen .peace-motto{display:none}.quick-entry{margin-top:14px}.start-screen .start-content h1{font-size:44px}.start-screen .commander-hub{margin-top:0}}
+@media(max-width:700px),(pointer:coarse) and (max-width:1000px){
+ #battlefield #selection-panel{width:fit-content;right:auto;max-width:min(320px,calc(100% - 16px));bottom:26px}
+ #selection-panel:has(.selection-actions){min-width:min(300px,calc(100% - 16px));padding-right:100px}
+ #battlefield #battle-tutorial{min-height:0}
+}
+
+.entry-privacy{display:block;margin-top:12px;max-width:480px;font-size:11px;line-height:1.6;color:#b4c5b7}

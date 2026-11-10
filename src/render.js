@@ -1,6 +1,9 @@
 import { ensureBattleCanvas } from './battle-canvas.js';
 import { healthBarPresentation, healthBarBudget } from './health-bar-presentation.js';
 import { readPresentation, groundPresentationFactor, selectionTolerance, nearestScreenSelection, personnelRoleMark } from './unit-presentation.js';
+import { drawPersonnelBadge } from './personnel-identity.js';
+import { weaponMountYaw } from './radar-models.js';
+import { shipWakePose, paintShipWake } from './ship-wake.js';
 import { AIRCRAFT_LENGTHS, airframeScale, flightScaleFactor, unitModelScale, presentationRadius, aircraftCruiseHeight, aircraftGroundFactor, CARRIER_DECK_HEIGHT, CARRIER_MODEL_LENGTH } from './model-scale.js';
 import { carrierAirGroupLabel } from './carrier-airgroup.js';
 import { growthAppearance } from './growth-rewards.js';
@@ -185,7 +188,7 @@ export class Renderer {
     const factor = Math.min(1, (innerWidth < 700 ? 2048 : 4096) / this.world.width);
     const canvas = makeCanvas(Math.round(this.world.width * factor), Math.round(this.world.height * factor)), ctx = canvas.getContext('2d'), image = (this.game.map.future ? visualLibrary().meridian : visualLibrary().ground).image;
     ctx.scale(factor, factor);
-    ctx.filter = this.game.map.future ? BATTLE_READABILITY.lunarFilter : BATTLE_READABILITY.groundFilter;
+    ctx.filter = this.game.map.future ? BATTLE_READABILITY.lunarFilter : `${BATTLE_READABILITY.groundFilter} blur(1.4px)`;
     const tile = this.game.map.future ? 560 : 420;
     for (let y = 0; y < this.world.height; y += tile) for (let x = 0; x < this.world.width; x += tile) ctx.drawImage(image, x, y, tile, tile);
     ctx.filter = 'none';
@@ -590,7 +593,9 @@ export class Renderer {
     const fog = this.fogCanvas.getContext('2d'); fog.clearRect(0, 0, 560, 360); fog.filter = 'blur(9px)'; fog.drawImage(this.fogSmall, -5, -5, 570, 370); fog.filter = 'none'; this.fogTexture.needsUpdate = true;
     const dummy = new THREE.Object3D(), sceneryVisible = new Map();
     const knownBuildings = this.game.buildings.filter(b => b.owner === 0 || this.game.canSeeEntity(0, b)).map(b=>{const harbor=islandHarbor(this.game.map,b);return harbor?{...b,harborAngle:harbor.angle}:b;});
-    const knownGroundUnits = this.game.units.filter(u => !UNITS[u.type].tags.includes('air') && (u.owner === 0 || this.game.canSeeEntity(0, u)));
+    const knownGroundUnits = this.game.units.filter(u => !UNITS[u.type].tags.includes('air') && (u.owner === 0 || this.game.canSeeEntity(0, u))).map(u => ({...u,
+      sceneryRadius: (this.game.map.future ? unitRadius(u) : presentationRadius(u.type, unitRadius(u))) * groundPresentationFactor(u, UNITS[u.type].tags, this.camera.zoom, this.presentation, this.game.map.future)
+    }));
     for (const mesh of this.bridges) mesh.visible = this.game.hasExploredFor(0, mesh.position.x, mesh.position.z);
     for(const entry of this.theaterScenery||[])entry.group.visible=this.game.hasExploredFor(0,entry.x,entry.y)&&(!entry.entityId||this.game.getEntity(entry.entityId)?.hp<=0);
     for (const { mesh, transforms, foliage, angle } of this.environment) {
@@ -790,7 +795,7 @@ export class Renderer {
     const bounds = new THREE.Box3().setFromObject(model), topHeight = bounds.max.y;
     this.modelEffectHeights ||= new Map();
     if (entity.kind === 'unit' && !this.game.map.future) this.modelEffectHeights.set(entity.type, Math.max(2, topHeight * .65));
-    const wakeStern = Math.max(35, -bounds.min.x + 8);
+    const wakeStern = Math.max(35, -bounds.min.x + 8), wakeBeam = bounds.max.z - bounds.min.z;
     const rotors = []; model.traverse(object => { if (/^rotor_\d+_/.test(object.name)) rotors.push(object); });
     let submergedMaterials = null;
     if (entity.type === 'submarine') {
@@ -811,7 +816,7 @@ export class Renderer {
     const damageMeshes = [];
     model.traverse(mesh => { if (mesh.isMesh) damageMeshes.push({ mesh, original: mesh.material }); });
     const tracks = []; model.traverse(object => { if (object.isInstancedMesh && object.name.startsWith('track_belt_')) tracks.push(object); });
-    const value = { model, ring, identity, entity, scale, groundClearance, airShadow, wakeStern, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, airDefenseRadar: model.getObjectByName('air_defense_radar'), weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
+    const value = { model, ring, identity, entity, scale, groundClearance, airShadow, wakeStern, wakeBeam, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, airDefenseRadar: model.getObjectByName('air_defense_radar'), weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
   }
 
   setDamageStage(entry, stage) {
@@ -1040,7 +1045,7 @@ export class Renderer {
           height = entry.flightHeight;
         }
         if (entry.airDefenseRadar) entry.airDefenseRadar.rotation.y += dt * .7;
-        if (entry.weapon) { entry.weapon.rotation.y = entry.heading - animation.turret; entry.weapon.position.x = 0; }
+        if (entry.weapon) { entry.weapon.rotation.y = weaponMountYaw(entity.type, entry.heading, animation.turret); entry.weapon.position.x = 0; }
         if (entry.barrel) animateIdleGun(entry, animation, dt);
         if (entry.upperBody) {
           entry.upperBody.rotation.y = clamp(Math.atan2(Math.sin(entry.heading - animation.turret), Math.cos(entry.heading - animation.turret)), -1.1, 1.1);
@@ -1157,13 +1162,18 @@ export class Renderer {
           let sprite;
           if (ship) {
             this.waterTrailGeometry ||= this.track(new THREE.PlaneGeometry(1, 1));
-            sprite = new THREE.Mesh(this.waterTrailGeometry, new THREE.MeshBasicMaterial({ map: this.smokeTexture, color: '#d4e9e9', transparent: true, depthWrite: false, opacity: .34 }));
-            sprite.rotation.x = -Math.PI / 2; sprite.rotation.z = -entity.angle; sprite.renderOrder = 3;
+            if (!this.shipWakeTexture) {
+              const canvas = makeCanvas(256, 128); paintShipWake(canvas.getContext('2d'));
+              this.shipWakeTexture = this.track(new THREE.CanvasTexture(canvas));
+            }
+            sprite = new THREE.Mesh(this.waterTrailGeometry, new THREE.MeshBasicMaterial({ map: this.shipWakeTexture, color: '#d4e9e9', transparent: true, depthWrite: false, opacity: .34 }));
+            sprite.rotation.x = -Math.PI / 2; sprite.rotation.z = -entry.heading; sprite.renderOrder = 3;
           } else sprite = this.effectSprite('#a89a80', true);
           const offset = ship ? entry.wakeStern : 20;
-          sprite.position.set(entity.x - Math.cos(entity.angle) * offset, ship ? 2.4 : height + 3, entity.y - Math.sin(entity.angle) * offset);
-          sprite.scale.set(ship ? 25 : 13, ship ? 12 : 13, 1); sprite.material.opacity = ship ? .34 : .15;
-          this.scene.add(sprite); this.trails.push({ sprite, baseY: sprite.position.y, start: this.game.time, ship }); entry.trailAt = this.game.time + .14;
+          const wake = ship ? shipWakePose(entity.x, entity.y, entry.heading, offset, entry.wakeBeam) : null;
+          sprite.position.set(wake?.x ?? entity.x - Math.cos(entity.angle) * offset, ship ? 2.4 : height + 3, wake?.y ?? entity.y - Math.sin(entity.angle) * offset);
+          sprite.scale.set(wake?.length ?? 13, wake?.width ?? 13, 1); sprite.material.opacity = ship ? .34 : .15;
+          this.scene.add(sprite); this.trails.push({ sprite, baseY: sprite.position.y, start: this.game.time, ship, wake }); entry.trailAt = this.game.time + (ship ? .28 : .14);
         }
       }
       if (entity.kind === 'unit' && visible && moving && !UNITS[entity.type].tags.some(tag => ['air', 'ship', 'infantry'].includes(tag)) && Math.hypot(entity.x - entry.trackX, entity.y - entry.trackY) >= 13) {
@@ -1172,7 +1182,7 @@ export class Renderer {
       if (visible && damage.smoke && this.game.time >= entry.smokeAt && this.trails.length < 120) {
         const smoke = this.effectSprite('#4d555a', true); smoke.position.set(entity.x, height + (entry.displayTopHeight ?? entry.topHeight) + 4, entity.y); smoke.scale.setScalar(damage.smokeSize); smoke.material.opacity = .4;
         this.scene.add(smoke); this.trails.push({ sprite: smoke, baseY: smoke.position.y, start: this.game.time, damage: true, sourceEntity: entity, damageSize: damage.smokeSize });
-        if (damage.fire) {
+        if (damage.fire && this.trails.length < 120) {
           const fire = this.effectSprite('#ffae61'); fire.position.copy(smoke.position); this.scene.add(fire);
           this.trails.push({ sprite: fire, baseY: fire.position.y, start: this.game.time, damageFire: true, sourceEntity: entity, damageSize: damage.smokeSize * .5 });
         }
@@ -1240,10 +1250,11 @@ export class Renderer {
   updateEffects() {
     this.trails = this.trails.filter(trail => {
       const age = this.game.time - trail.start;
-      const lifetime = trail.damageFire ? .5 : 1.6;
+      const lifetime = trail.damageFire ? .5 : trail.missile ? .95 : 1.6;
       if (age > lifetime || trail.sourceEntity && !damagePresentation(trail.sourceEntity).smoke) { this.scene.remove(trail.sprite); trail.sprite.material.dispose(); return false; }
-      const size = trail.damageSize ? trail.damageSize * (1 + age * .65) : trail.explosionSize ? trail.explosionSize * (.6 + Math.max(0, age) * 1.2) : trail.muzzle ? 7 + age * 9 : trail.ship ? 25 + age * 13 : 13 + age * 12;
-      trail.sprite.scale.set(size, trail.ship ? 8 + age * 4 : size, 1); trail.sprite.material.opacity = Math.max(0, 1 - Math.max(0, age) / 1.6) * (trail.torpedo ? .42 : trail.damage ? .65 : trail.muzzle ? .2 : trail.ship ? .34 : .15);
+      const size = trail.damageSize ? trail.damageSize * (1 + age * .65) : trail.explosionSize ? trail.explosionSize * (.6 + Math.max(0, age) * 1.2) : trail.muzzle ? 7 + age * 9 : trail.ship ? 25 + age * 13 : trail.missile ? 7 + age * 10 : 13 + age * 12;
+      trail.sprite.scale.set(size, trail.ship ? 8 + age * 4 : size, 1); trail.sprite.material.opacity = Math.max(0, 1 - Math.max(0, age) / lifetime) * (trail.torpedo ? .42 : trail.damage ? .65 : trail.muzzle ? .2 : trail.ship ? .34 : trail.missile ? .38 : .15);
+      if (trail.wake) trail.sprite.scale.set(trail.wake.length * (1 + age * .15), trail.wake.width * (1 + age * .2), 1);
       if (trail.damageFire) trail.sprite.material.opacity = Math.max(0, 1 - age / lifetime) * .8;
       if (!trail.ship) trail.sprite.position.y = trail.baseY + age * (trail.damage ? 13 : 3);
       trail.sprite.visible = this.game.isVisibleFor(0, trail.sprite.position.x, trail.sprite.position.z); return true;
@@ -1259,6 +1270,9 @@ export class Renderer {
       if (!visible) continue;
       const t = effect.age / effect.duration; let group = this.effects.get(effect);
       if (!group) {
+        // 装饰特效有全局上限，额外保留摧毁事件名额；不改变模拟中的命中与伤害。
+        const budget = this.viewport.width < 1000 || (this.framedUnits?.size || 0) > 80 ? 40 : 72;
+        if (['shot', 'hit', 'explosion'].includes(effect.type) && this.effects.size >= budget + (effect.destroyed ? 12 : 0)) continue;
         group = new THREE.Group();
         if (effect.type==='nuclearBlast') {
           createDeterrenceBlast(group);
@@ -1337,7 +1351,7 @@ export class Renderer {
       }
       if (model.visible && ['nuclear','ballistic', 'rocket', 'missile'].includes(p.kind) && this.game.time >= (p.trailAt || 0) && this.trails.length < 100) {
         const sprite = this.effectSprite('#a7a9a7', true); sprite.position.set(p.x, height, p.y); sprite.scale.setScalar(8); sprite.material.opacity = .2;
-        this.scene.add(sprite); this.trails.push({ sprite, baseY: height, start: this.game.time }); p.trailAt = this.game.time + .09;
+        this.scene.add(sprite); this.trails.push({ sprite, baseY: height, start: this.game.time, missile: true }); p.trailAt = this.game.time + .09;
       }
     }
     for (const [id, model] of this.projectileModels) if (!active.has(id)) { model.children.at(-1)?.material?.dispose(); this.scene.remove(model); this.projectileModels.delete(id); }
@@ -1558,10 +1572,7 @@ export class Renderer {
         markerCells.add(cell);
         const mark = personnelRoleMark(entity.type);
         if (mark) {
-          ctx.save(); ctx.font = '700 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#0a1b22'; ctx.fillRect(point.x - 7, point.y - 14, 14, 14);
-          ctx.strokeStyle = teamVisual(entity.owner).color; ctx.lineWidth = 1; ctx.strokeRect(point.x - 7, point.y - 14, 14, 14);
-          ctx.fillStyle = '#f2f7f4'; ctx.fillText(mark, point.x, point.y - 7); ctx.restore();
+          drawPersonnelBadge(ctx, point.x, point.y, entity.type, teamVisual(entity.owner).color);
         }
         continue;
       }

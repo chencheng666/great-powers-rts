@@ -12,8 +12,8 @@ test('灰谷入门赠送仅限单机新兵，联机和其他难度开局保持�
   for (const opts of [{multiplayer:true,difficulty:'recruit'},{difficulty:'standard'}]) { const g=new Game('china','nato',{}, {mapId:'valleyTraining',...opts});assert.equal(g.players[0].credits,g.players[1].credits);assert.equal(g.ownedUnits(0).length,g.ownedUnits(1).length); }
   const classic=new Game('china','nato');assert.equal(classic.world.width,2240);assert.equal(classic.players[0].credits,1550);
 });
-test('轻伤载具和建筑冒烟、修复后恢复，步兵不冒烟，炮弹命中有界',()=>{
- for(const type of ['tank','fighter','hq']){const kind=type==='hq'?'building':'unit';assert.equal(damagePresentation({kind,type,hp:90,maxHp:100}).smoke,true);assert.equal(damagePresentation({kind,type,hp:100,maxHp:100}).smoke,false);}
+test('轻伤不冒烟，中重伤分级、修复后恢复，步兵不冒烟，炮弹命中有界',()=>{
+ for(const type of ['tank','fighter','hq']){const kind=type==='hq'?'building':'unit';assert.equal(damagePresentation({kind,type,hp:90,maxHp:100}).smoke,false);assert.equal(damagePresentation({kind,type,hp:60,maxHp:100}).smoke,false);assert.equal(damagePresentation({kind,type,hp:59,maxHp:100}).smoke,true);assert.equal(damagePresentation({kind,type,hp:29,maxHp:100}).fire,true);assert.equal(damagePresentation({kind,type,hp:100,maxHp:100}).smoke,false);}
  assert.equal(damagePresentation({kind:'unit',type:'rifle',hp:50,maxHp:100}).smoke,false);
  assert.ok(impactProfile({type:'hit',targetType:'tank'}).radius>=20);assert.ok(impactProfile({type:'explosion',size:10000}).radius<=170);
 });

@@ -7,7 +7,7 @@ export function readPresentation(storage) {
 export function groundPresentationFactor(entity, tags = [], zoom = 1, mode = 'readable', future = false) {
   if (mode === 'reference' || future || entity.kind !== 'unit' || tags.some(t => ['air', 'ship', 'submerged'].includes(t))) return 1;
   const distant = Math.max(0, Math.min(1, (1 - (Number.isFinite(zoom) ? zoom : 1)) / .55));
-  return tags.includes('infantry') ? 1.5 + distant * .4 : 1.2 + distant * .2;
+  return tags.includes('infantry') ? 1.7 + distant * .3 : 1.35 + distant * .15;
 }
 export function selectionTolerance(touch = false) { return touch ? 26 : 18; }
 export function nearestScreenSelection(entries, x, y, tolerance, project, selectable) {

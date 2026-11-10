@@ -28,7 +28,7 @@ export function sceneryClearance(point, buildings, units = [], foliage = false, 
     return Math.hypot(b.x-point.x,b.y-point.z)<b.size*.95+radius;
   })) return true;
   return units.some(u => u.hp > 0 && !u.embarkedIn && !u.airborne &&
-    Math.hypot(u.x - point.x, u.y - point.z) < unitRadius(u) + radius + 20 + Math.min(40, (UNITS[u.type]?.speed || 0) * .25));
+    Math.hypot(u.x - point.x, u.y - point.z) < Math.max(unitRadius(u), u.sceneryRadius || 0) + radius + 20 + Math.min(40, (UNITS[u.type]?.speed || 0) * .25));
 }
 
 export function shorelineWidth(z) {

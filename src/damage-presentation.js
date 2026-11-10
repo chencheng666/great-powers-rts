@@ -6,9 +6,9 @@ const clamp = v => Math.max(0, Math.min(1, v));
 export function damagePresentation(entity) {
   const tags = UNITS[entity.type]?.tags || [], ratio = clamp(entity.hp / Math.max(1, entity.maxHp));
   const structural = entity.kind === 'building' || !tags.includes('infantry');
-  const stage = structural && entity.hp > 0 ? ratio < .3 ? 2 : ratio < .98 ? 1 : 0 : 0;
+  const stage = structural && entity.hp > 0 ? ratio < .3 ? 2 : ratio < .6 ? 1 : 0 : 0;
   return { stage, smoke: stage > 0 && !tags.includes('submerged'), fire: stage === 2,
-    interval: stage === 2 ? .23 : .45, smokeSize: entity.kind === 'building' ? stage === 2 ? 38 : 25 : tags.includes('ship') ? 30 : 20 };
+    interval: stage === 2 ? .32 : .85, smokeSize: entity.kind === 'building' ? stage === 2 ? 38 : 22 : tags.includes('ship') ? 28 : stage === 2 ? 24 : 14 };
 }
 
 export function damagedMaterial(source, stage) {

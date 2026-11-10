@@ -16,6 +16,7 @@ import { refinePowerFans } from './facility-motion.js';
 import { createModernAircraft, createTandemTransport } from './aircraft-models.js';
 import { createStrategicModel, STRATEGIC_MODELS } from './strategic-models.js';
 import { createNuclearSilo } from './deterrence-models.js';
+import { refineRadarStation } from './radar-models.js';
 import { finishAirframe } from './airframe-finish.js';
 import { loadOpenAssets, installOpenModels } from './open-assets.js';
 
@@ -153,6 +154,7 @@ export function prepareVisualAssets() {
     for(const type of ['cache','salvage','depot'])models.set(`resource_${type}`,createResourceModel(type));
     models.set('dock', createHarbor(weatherMaterial, openAssets));
     for (const type of COMMUNITY_3D_BUILDINGS.filter(type => type !== 'dock')) refineFacility(models.get(type), type, weatherMaterial);
+    refineRadarStation(models.get('radar'));
     const electronic = models.get('strike').clone(); electronic.name = 'ewPlane';
     const podMaterial = new THREE.MeshStandardMaterial({ color: '#687667', roughness: .65, metalness: .5 });
     for (const z of [-2.3, 2.3]) { const pod = new THREE.Mesh(new THREE.CapsuleGeometry(.3, 2.2, 4, 12), podMaterial); pod.rotation.z = Math.PI / 2; pod.position.set(-.5, -.2, z); electronic.add(pod); }
