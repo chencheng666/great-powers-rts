@@ -1,0 +1,36 @@
+{
+  "version": "3.2.1",
+  "build": "20261110-carrier-deck-r1",
+  "tests": {
+    "total": 671,
+    "pass": 671,
+    "fail": 0
+  },
+  "deck": {
+    "meshes": 5,
+    "vertices": 3588,
+    "carrierWorldLength": 288,
+    "displayedParkedGroups": 3,
+    "parking": [
+      [
+        -8.3,
+        1.05
+      ],
+      [
+        -4.8,
+        1.05
+      ],
+      [
+        4.8,
+        1.05
+      ]
+    ],
+    "capacityAndCombatStatsUnchanged": true
+  },
+  "visualChecks": [
+    "实际模型俯视",
+    "实际模型斜视",
+    "100%海面视角",
+    "三显示模型在分离停机位"
+  ]
+}

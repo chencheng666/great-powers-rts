@@ -1,3 +1,4 @@
+import { carrierDeckPose } from './carrier-deck.js';
 import { ensureBattleCanvas } from './battle-canvas.js';
 import { healthBarPresentation, healthBarBudget } from './health-bar-presentation.js';
 import { readPresentation, groundPresentationFactor, selectionTolerance, nearestScreenSelection, personnelRoleMark } from './unit-presentation.js';
@@ -1141,10 +1142,9 @@ export class Renderer {
             mesh.userData.deckClearance = Math.max(0, -bounds.min.y) * mesh.scale.y;
             entry.model.add(mesh); entry.deckModels.set(plane.id, mesh);
           }
-          const parkingX = -8 + i * 4.1, taxi = plane.deckTaxi;
-          const progress = taxi?.phase === 'out' ? taxi.progress : taxi?.phase === 'in' ? 1 - taxi.progress : 0;
-          mesh.position.set(parkingX + (4 - parkingX) * progress, CARRIER_DECK_HEIGHT + mesh.userData.deckClearance, -1.3 * (1 - progress));
-          mesh.rotation.y = -Math.PI / 4 * (1 - progress);
+          const pose = carrierDeckPose(i, plane.deckTaxi);
+          mesh.position.set(pose.x, CARRIER_DECK_HEIGHT + mesh.userData.deckClearance, pose.z);
+          mesh.rotation.y = pose.yaw;
         });
       }
       if(entity.type==='landing'&&entity.owner===0){

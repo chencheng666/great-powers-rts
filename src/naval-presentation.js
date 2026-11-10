@@ -1,3 +1,4 @@
+import { createCarrierDeck } from './carrier-deck.js';
 import * as THREE from 'three';
 import { craftedMaterial, bodyLoft, mergeParts, roundedPart } from './model-craft.js';
 import { UNITS } from './data.js';
@@ -37,8 +38,9 @@ export function refineNavalWeapons(model, type) {
   }
   model.userData.navalWeapons = true; return model;
 }
+const CARRIER_REPLACED=new Set(['斜角飞行甲板','机舱升降机','升降机安全线','弹射滑轨','弹射跑道黄色边线','斜角甲板着舰中线','阻拦索','甲板航行灯','甲板分块接缝']);
 const LANDING_REPLACED=new Set(['平底登陆舰体','车辆甲板','舰艏跳板','跳板液压臂']);
-export const replacedNavalPart = (model, part) => model==='landing'?LANDING_REPLACED.has(part.replace(/\.\d+$/, '')):!!HULLS[model] && OLD_HULLS.has(part.replace(/\.\d+$/, ''));
+export const replacedNavalPart = (model, part) => model==='landing'?LANDING_REPLACED.has(part.replace(/\.\d+$/, '')):!!HULLS[model] && (OLD_HULLS.has(part.replace(/\.\d+$/, '')) || model==='carrier' && CARRIER_REPLACED.has(part.replace(/\.\d+$/, '')));
 
 export function hullOutline(stern, bow, width, inset = 0) {
   const half = width / 2 - inset, back = stern + inset, tip = bow - inset, length = tip - back;
@@ -55,7 +57,12 @@ export function hullOutline(stern, bow, width, inset = 0) {
 
 export function refineNavalHull(model, name) {
   if(name==='landing')return refineLandingCraft(model);
-  if (!HULLS[name]) return model;
+  if (!HULLS[name] || model.userData.navalHullVersion) return model;
+  if(name==='carrier'){
+    // 原GLB导出后的舰岛在-Z侧，统一到新甲板的+Z右舷；用对象变换保留法线与剔面方向。
+    const details=new THREE.Group();details.name='carrier_original_details';
+    for(const child of [...model.children])details.add(child);details.scale.z=-1;model.add(details);
+  }
   const [stern, bow, width, bottom, top, deck] = HULLS[name], group = new THREE.Group(); group.name = '连续曲面舰体';
   const shell = craftedMaterial('海军船壳', '#89979f', 'coating', .65, .34);
   const plate = craftedMaterial('海军甲板', '#58656c', 'coating', .84, .18);
@@ -65,8 +72,9 @@ export function refineNavalHull(model, name) {
     group.add(new THREE.Mesh(g, material));
   };
   add(0, bottom, top, shell);
-  // 航母保留斜角飞行甲板，只有水线船壳采用连续曲面。
+  // 航母使用独立轮廓甲板，其他舰型沿用连续曲面主甲板。
   if (name !== 'carrier') add(.1, top, deck, plate);
+  else model.add(createCarrierDeck());
   model.add(mergeParts(group)); model.userData.navalHullVersion = 1; return model;
 }
 

@@ -113,14 +113,14 @@ test('旧存档积压货船在外海排队，前船返程退出前后船不靠�
   a.hp = 0; g.updateFreight(b, .05); assert.equal(b.freight.holding, false);
 });
 
-test('六类舰体采用连续贝塞尔曲面，保留航母飞行甲板并限制网格数量', () => {
+test('六类舰体采用连续贝塞尔曲面，航母换用专用轮廓甲板并限制网格数量', () => {
   for (const name of ['patrol', 'frigate', 'destroyer', 'destroyer_china', 'containerShip', 'carrier']) {
     const model = refineNavalHull(new THREE.Group(), name), hull = model.getObjectByName('连续曲面舰体');
     assert.ok(hull); assert.ok(hull.children.length <= 2);
     hull.traverse(m => { if (m.isMesh) { assert.ok(m.geometry.attributes.normal); assert.ok([...m.geometry.attributes.position.array].every(Number.isFinite)); assert.ok(m.geometry.attributes.position.count < 20000); } });
   }
   assert.equal(replacedNavalPart('destroyer_china', '驱逐舰船体.001'), true);
-  assert.equal(replacedNavalPart('carrier', '斜角飞行甲板'), false);
+  assert.equal(replacedNavalPart('carrier', '斜角飞行甲板'), true);
   assert.equal(replacedNavalPart('submarine', '流线型潜艇耐压艇体'), false);
 });
 
