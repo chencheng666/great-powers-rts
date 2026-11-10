@@ -1,6 +1,4 @@
-	
-
-	Particle Pack (1.1)
+Particle Pack (1.1)
 
 	by Kenney Vleugels (Kenney.nl)
 
