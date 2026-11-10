@@ -1,0 +1,204 @@
+{
+  "version": "3.2.1",
+  "build": "20261110-carrier-deck-r1",
+  "sourceCommit": "368f4257dc9f2121b0c06b8dddc75fe0032a1bd5",
+  "services": [
+    {
+      "path": "/api/health",
+      "ok": true,
+      "version": "3.2.1",
+      "build": "20261110-carrier-deck-r1",
+      "protocol": 4,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    {
+      "path": "/candidate/api/health",
+      "ok": true,
+      "version": "3.2.1",
+      "build": "20261110-carrier-deck-r1",
+      "protocol": 5,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  ],
+  "resources": [
+    {
+      "path": "/",
+      "status": 200,
+      "bytes": 21705,
+      "sha256": "c7a858e4ec1cceeb2a6417de3d6c741720fb51ba9501a2b4d3f721c364505f61",
+      "matches": true
+    },
+    {
+      "path": "/official/",
+      "status": 200,
+      "bytes": 21705,
+      "sha256": "c7a858e4ec1cceeb2a6417de3d6c741720fb51ba9501a2b4d3f721c364505f61",
+      "matches": true
+    },
+    {
+      "path": "/play/",
+      "status": 200,
+      "bytes": 26202,
+      "sha256": "796cb407f6bd50c9e702e88b9f7584253e8eefe6c7132d23e79a1b123a175572",
+      "matches": true
+    },
+    {
+      "path": "/candidate/",
+      "status": 200,
+      "bytes": 26202,
+      "sha256": "796cb407f6bd50c9e702e88b9f7584253e8eefe6c7132d23e79a1b123a175572",
+      "matches": true
+    },
+    {
+      "path": "/play/release.json",
+      "status": 200,
+      "bytes": 31620,
+      "sha256": "ba35d5d5643c0d0cdab5818f1d4d77f603b10ffa1b0dfaf544cb30350cd13dfa",
+      "matches": true
+    },
+    {
+      "path": "/assets/RoomEnvironment-9_hT7pWB.js",
+      "status": 200,
+      "bytes": 2068,
+      "sha256": "d5855dabca21239d0770429eba8970e4fffc3efbfa070b06081be44f55e5df25",
+      "matches": true
+    },
+    {
+      "path": "/assets/battle-library-compact-dBL0FNYo.glb",
+      "status": 200,
+      "bytes": 3826464,
+      "sha256": "958a7045e630031aac12fea4d5a8a029a0c973c1173da07802896e47a5f4705d",
+      "matches": true
+    },
+    {
+      "path": "/assets/catalog-preview-CnrkyrKl.js",
+      "status": 200,
+      "bytes": 22995,
+      "sha256": "ae492b5c0556262eadab3f3a904d360939ba26837d921ffa9f88d7f90578eb08",
+      "matches": true
+    },
+    {
+      "path": "/assets/final-battle-CeXImLry.m4a",
+      "status": 200,
+      "bytes": 2317438,
+      "sha256": "7a15355fd31d85bc09d2f492f3d55c143195f32ed6dfdb679dd50cfc42eb6c55",
+      "matches": true
+    },
+    {
+      "path": "/assets/fire_01-DENauDFh.png",
+      "status": 200,
+      "bytes": 99891,
+      "sha256": "9727a9743ac6ab8dd4dd79f5fc5b0266290efae45f4d4452279eb5e4bcf3a978",
+      "matches": true
+    },
+    {
+      "path": "/assets/index-CQNu6fpP.js",
+      "status": 200,
+      "bytes": 880536,
+      "sha256": "81a065cf72cb2ae66f95aeb68c35c27ed4c001a4b4c7a9042675e4ec2c2306b8",
+      "matches": true
+    },
+    {
+      "path": "/assets/official-cinematic-YX7Q6EMh.js",
+      "status": 200,
+      "bytes": 14075,
+      "sha256": "3e1addcfcf4dc5ee3807159a646f40627a9c889086ac8227550c5c3c52f602a1",
+      "matches": true
+    },
+    {
+      "path": "/assets/official-official-scene3d-C1SjJNRL.js",
+      "status": 200,
+      "bytes": 642788,
+      "sha256": "37711574b5d4ddc0c4f167994e61d2e2821c1b1f94fc3de8459a3bc326879c7a",
+      "matches": true
+    },
+    {
+      "path": "/assets/render-BEZwjJFh.js",
+      "status": 200,
+      "bytes": 147339,
+      "sha256": "1a9ac34f00093394e8665c071ce66648eca8b9d72f882de86e203a8310b6b59f",
+      "matches": true
+    },
+    {
+      "path": "/assets/smoke_04-BTOfOf7a.png",
+      "status": 200,
+      "bytes": 97568,
+      "sha256": "2db2f69874cdb1e5203f2f86803d5debde30402590cf50a810afaba882184616",
+      "matches": true
+    },
+    {
+      "path": "/assets/spark_05-DBwOKfPR.png",
+      "status": 200,
+      "bytes": 64808,
+      "sha256": "9624ea2017b8b2767a9d3b82e978b7fdf5154d83e6756cd919da51447bb97138",
+      "matches": true
+    },
+    {
+      "path": "/assets/visual-assets-B8kHwamD.js",
+      "status": 200,
+      "bytes": 804288,
+      "sha256": "3aa0b33b34b87c6ebe7f80076a04eb6034edd0da7cf2b982cfef966d43b6e0fc",
+      "matches": true
+    },
+    {
+      "path": "/assets/war-theme-DHxQM1uP.m4a",
+      "status": 200,
+      "bytes": 4569343,
+      "sha256": "e8ee710b386bd6b1d44a85ab885fbd4c97a394fbd6770792722834a4f8c562a7",
+      "matches": true
+    },
+    {
+      "path": "/official/assets/carrier-deck-20261110.webp",
+      "status": 200,
+      "bytes": 10486,
+      "sha256": "c8b75386a0b1b3829c29b45cddb7dd45ea156b79f4bdd469086808ae03c7da95",
+      "matches": true
+    },
+    {
+      "path": "/play/starport/index.html",
+      "status": 200,
+      "bytes": 24908,
+      "sha256": "2fec74515ee3ef5c948ce3641db7c6ffa5b7c906ee6d88bc93631d48dce8aaf1",
+      "matches": true
+    },
+    {
+      "path": "/official/starport/index.html",
+      "status": 200,
+      "bytes": 4304,
+      "sha256": "b7ab721c45e202bc7578390c08f523977cf53675f39a7bb9b45a1fddd8127e42",
+      "matches": true
+    },
+    {
+      "path": "/downloads/manifest.json",
+      "status": 200,
+      "bytes": 34576,
+      "sha256": "653510e525ae7f39bf853f8ae475c9be58e971a81d9c98aaf5254319c989c81f",
+      "matches": true
+    },
+    {
+      "path": "/resume/",
+      "status": 200,
+      "bytes": 8683,
+      "sha256": "fa78dc5a3c3cee90ea248766b15ac6c9c1ea7480c136b0284ab04548788f5dde",
+      "matches": true
+    }
+  ],
+  "resourceChecks": 23,
+  "retention": {
+    "databaseCount": 6,
+    "integrity": "全部ok",
+    "allTableCountsRetained": true,
+    "backup": "/opt/great-powers/backups/20261110-carrier-deck-r1"
+  },
+  "browser": {
+    "productionModelVisible": true,
+    "zoom": "100%",
+    "displayGroups": 3,
+    "saveImport": true,
+    "priorLocalSaveAndAudioSettingsRestored": true
+  }
+}
