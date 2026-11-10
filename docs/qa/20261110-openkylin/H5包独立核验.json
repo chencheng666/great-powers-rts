@@ -1,0 +1,14 @@
+{
+  "file": "great-powers-rts_3.1.0_all.deb",
+  "sha256": "372a7b89e43779a88a7fe0ea7774f2e3fe3a111de9f8c535b58745fc1638d392",
+  "bytes": 57245114,
+  "fileChecksumsVerified": true,
+  "fileCount": 11,
+  "control": "Package: great-powers-rts\nVersion: 3.1.0\nArchitecture: all\nMaintainer: 陈成 <15542389060@163.com>\nDepends: xdg-utils, firefox | chromium | chromium-browser\nSection: games\nPriority: optional\nInstalled-Size: 121410\nHomepage: https://www.daguojueqi.site/\nDescription: 大国崛起原创即时战略游戏离线H5版\n 内置模型、地图、音乐和中文语音，使用系统默认图形浏览器启动。\n",
+  "sourceHtmlUnchanged": true,
+  "headlessGuardTested": true,
+  "x11CommandDispatchTested": true,
+  "waylandCommandDispatchTested": true,
+  "openKylinRuntimeTested": false,
+  "note": "启动脚本测试使用xdg-open替身验证传参，不是麒麟桌面实测。"
+}

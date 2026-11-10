@@ -1,0 +1,48 @@
+{
+  "url": "https://archive.openkylin.top/openkylin/dists/huanghe/main/binary-amd64/Packages.gz",
+  "sha256": "22e7a8b908a1b20250980f4829c07381c97d9e059f33faabec2b48ae101045a0",
+  "target": "openKylin 3.0 huanghe amd64",
+  "packages": [
+    {
+      "package": "libwebkit2gtk-4.1-0",
+      "found": false
+    },
+    {
+      "package": "libgtk-3-0",
+      "found": true,
+      "version": "3.24.30-1ok1~1123.1",
+      "provides": "gtk3-binver-3.0.0",
+      "depends": "adwaita-icon-theme, hicolor-icon-theme, shared-mime-info, libatk-bridge2.0-0 (>= 2.5.3), libatk1.0-0 (>= 2.35.1), libc6 (>= 2.34), libcairo-gobject2 (>= 1.10.0), libcairo2 (>= 1.14.0), libcolord2 (>= 0.1.10), libcups2 (>= 1.7.0), libepoxy0 (>= 1.4.3), libfontconfig1 (>= 2.12.6), libfreetype6 (>= 2.2.1), libfribidi0 (>= 0.19.7), libgdk-pixbuf2.0-0 (>= 2.40.0), libglib2.0-0 (>= 2.59.0), libharfbuzz0b (>= 1.2.6), libpango-1.0-0 (>= 1.45.5), libpangocairo-1.0-0 (>= 1.41.0), libpangoft2-1.0-0 (>= 1.41.0), libwayland-client0 (>= 1.20.0), libwayland-cursor0 (>= 1.14.91), libwayland-egl1 (>= 1.15.0), libx11-6 (>= 2:1.4.99.1), libxcomposite1 (>= 1:0.4.5), libxcursor1 (>> 1.1.2), libxdamage1 (>= 1:1.1), libxext6, libxfixes3, libxi6 (>= 2:1.2.99.4), libxinerama1, libxkbcommon0 (>= 0.5.0), libxrandr2 (>= 2:1.5.0), libgtk-3-common (>= 3.24.30-1ok1~1123.1)"
+    },
+    {
+      "package": "libc6",
+      "found": true,
+      "version": "2.43-ok2",
+      "depends": "libgcc-s1, libc-gconv-modules-extra (= 2.43-ok2)"
+    },
+    {
+      "package": "libjavascriptcoregtk-4.1-0",
+      "found": false
+    },
+    {
+      "package": "libsoup-3.0-0",
+      "found": true,
+      "version": "3.4.4-ok2",
+      "depends": "glib-networking, libsoup-3.0-common, libbrotli1 (>= 0.6.0), libc6 (>= 2.38), libglib2.0-0 (>= 2.75.3), libgssapi-krb5-2 (>= 1.17), libnghttp2-14 (>= 1.50.0), libpsl5t64 (>= 0.16.0), libsqlite3-0 (>= 3.5.9), zlib1g (>= 1:1.2.0)"
+    }
+  ],
+  "runtimeTested": false,
+  "selectedRuntime": "H5 + xdg-utils + Firefox，未使用缺失的WebKitGTK4.1",
+  "selectedPackages": [
+    {
+      "package": "xdg-utils",
+      "version": "1.1.3-ok1",
+      "filename": "pool/main/x/xdg-utils/xdg-utils_1.1.3-ok1_all.deb"
+    },
+    {
+      "package": "firefox",
+      "version": "125.0.3+build1-ok7.1",
+      "filename": "pool/main/f/firefox/firefox_125.0.3+build1-ok7.1_amd64.deb"
+    }
+  ]
+}
