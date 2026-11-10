@@ -1,0 +1,96 @@
+{
+  "version": "3.3.0",
+  "build": "20261110-carrier-nature-r2",
+  "sourceCommit": "ea7c00d12bc04f11abec1006409845c0e7a20834",
+  "health": [
+    {
+      "ok": true,
+      "version": "3.3.0",
+      "build": "20261110-carrier-nature-r2",
+      "protocol": 6,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    {
+      "ok": true,
+      "version": "3.3.0",
+      "build": "20261110-carrier-nature-r2",
+      "protocol": 7,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  ],
+  "files": [
+    {
+      "path": "/assets/licenses/third-party-assets.txt",
+      "sha256": "b90056b9cb192a1f7d2b887f0f87804cea650ce57867f7ea93f0b80168d9ca2f"
+    },
+    {
+      "path": "/official/assets/nature-detail-20261110.png",
+      "sha256": "3d32dbc6a53d45da6853534b65d41f374f4b7790e964f7736acefeea50cc26c2"
+    },
+    {
+      "path": "/official/assets/carrier-airwing-20261110.png",
+      "sha256": "f82324ba41e500596c8dfcaea9d73e9a9df3a595bb95c89fce4ca56587eee148"
+    },
+    {
+      "path": "/",
+      "sha256": "3cd1d88555371ec39503d5d7d7ba3543d5ace432f3399de828407f720f8405a6"
+    },
+    {
+      "path": "/official/",
+      "sha256": "3cd1d88555371ec39503d5d7d7ba3543d5ace432f3399de828407f720f8405a6"
+    },
+    {
+      "path": "/play/",
+      "sha256": "2c2b1508713f7bbc44d0accb38060aaa21801c50433cd38ebebf518e853b5a9c"
+    },
+    {
+      "path": "/candidate/",
+      "sha256": "2c2b1508713f7bbc44d0accb38060aaa21801c50433cd38ebebf518e853b5a9c"
+    },
+    {
+      "path": "/assets/index-DMeYd-Ym.js",
+      "sha256": "6feca28c15da72245a8703b483264fe23ecdacbc2d0cfb69ff4e14e91534b964"
+    },
+    {
+      "path": "/assets/render-DQT2AZvX.js",
+      "sha256": "1215417a981d7b06611b8bcbc2a6618d642a47c0718bed9028d2264260f1f18f"
+    },
+    {
+      "path": "/assets/index-BxTIRxeP.css",
+      "sha256": "ed15587bddc290722ab7101faf4a84864937e0230ab4d19c63f268ddfdc14abe"
+    },
+    {
+      "path": "/assets/official-official-cinematic-DZzzadIY.css",
+      "sha256": "0c1ac10c958a491572fd802c786aa03d97f531e7efb5810dc409ee79495ea347"
+    }
+  ],
+  "manifestEntries": 279,
+  "protectedEntriesUnchanged": [
+    "/play/starport/index.html",
+    "/official/starport/index.html",
+    "/downloads/manifest.json",
+    "/resume/"
+  ],
+  "retention": {
+    "build": "20261110-carrier-nature-r2",
+    "databases": 6,
+    "integrity": "ok",
+    "allTableCountsRetained": true,
+    "backup": "/opt/great-powers/backups/20261110-carrier-nature-r2"
+  },
+  "browser": {
+    "origin": "https://www.daguojueqi.site/play/",
+    "zoom": "100%",
+    "deckBefore": 24,
+    "airborneAfterLaunch": 6,
+    "deckAfterLaunch": 18,
+    "queuedAfterRecall": 0,
+    "recallAcknowledged": true,
+    "localStorageRestored": true,
+    "mode": "受控本地单机存档，不写入玩家联网战绩"
+  }
+}
