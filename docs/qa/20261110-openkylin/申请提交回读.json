@@ -1,0 +1,14 @@
+{
+  "application": "大国崛起",
+  "version": "3.1.0",
+  "status": "待审核",
+  "submittedAt": "2026-11-10 09:13:27 +08:00",
+  "architecture": "X86",
+  "os": "openKylin 3.0",
+  "deb": "https://github.com/chencheng666/great-powers-rts/releases/download/openkylin-v3.1.0-r1/great-powers-rts_3.1.0_all.deb",
+  "reportSha256": "cab032ec21b37fb97b994fb2f001e077fd2cc49f9f137f49650624e98f13029e",
+  "reportMatchesFinal": true,
+  "logoAndScreenshots": 6,
+  "screenshots": 5,
+  "targetRuntimeTested": false
+}
