@@ -1,0 +1,87 @@
+{
+  "version": "3.2.2",
+  "build": "20261110-crisp-orders-r1",
+  "sourceCommit": "75f4757cc5338b12e7e1b2f03b6d4f5cde636efb",
+  "health": [
+    {
+      "ok": true,
+      "version": "3.2.2",
+      "build": "20261110-crisp-orders-r1",
+      "protocol": 4,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    {
+      "ok": true,
+      "version": "3.2.2",
+      "build": "20261110-crisp-orders-r1",
+      "protocol": 5,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  ],
+  "files": [
+    {
+      "path": "/",
+      "sha256": "2aa3b55b40fec0373a46e7ccdeb0313527ffcd023817da84d72f804f4a05faf0"
+    },
+    {
+      "path": "/official/",
+      "sha256": "2aa3b55b40fec0373a46e7ccdeb0313527ffcd023817da84d72f804f4a05faf0"
+    },
+    {
+      "path": "/play/",
+      "sha256": "4782562119b9b9eedb6d4e8eab13bdeb4cf4c25fb6e8fb0ed621c851c9a0e713"
+    },
+    {
+      "path": "/candidate/",
+      "sha256": "4782562119b9b9eedb6d4e8eab13bdeb4cf4c25fb6e8fb0ed621c851c9a0e713"
+    },
+    {
+      "path": "/assets/index-DYE0llJX.js",
+      "sha256": "fa641dde3de45375acbe47aa83c0c42abc7df674dc3ff90f264969aaff5ed41c"
+    },
+    {
+      "path": "/assets/render-OhIj0F4J.js",
+      "sha256": "a31e5922dccd0553bcf34ae2b79fae6da2c18b683f654684c53ef6e95e394d4c"
+    },
+    {
+      "path": "/assets/index-BxTIRxeP.css",
+      "sha256": "ed15587bddc290722ab7101faf4a84864937e0230ab4d19c63f268ddfdc14abe"
+    },
+    {
+      "path": "/assets/official-official-cinematic-DZzzadIY.css",
+      "sha256": "0c1ac10c958a491572fd802c786aa03d97f531e7efb5810dc409ee79495ea347"
+    }
+  ],
+  "manifestEntries": 277,
+  "protectedEntriesUnchanged": [
+    "/play/starport/index.html",
+    "/official/starport/index.html",
+    "/downloads/manifest.json",
+    "/resume/"
+  ],
+  "dataRetention": {
+    "databases": 6,
+    "integrity": "ok",
+    "allTableCountsRetained": true,
+    "backup": "/opt/great-powers/backups/20261110-crisp-orders-r1"
+  },
+  "browserQA": {
+    "zoom": "100%",
+    "canvasCSS": [
+      1512,
+      702
+    ],
+    "canvasBuffer": [
+      2268,
+      1053
+    ],
+    "pixelRatio": 1.5,
+    "antialias": true,
+    "localControlledSave": true,
+    "newMoveRouteVerified": true
+  }
+}
