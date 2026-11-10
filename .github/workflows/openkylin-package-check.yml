@@ -1,0 +1,41 @@
+name: 开放麒麟H5安装包结构验证
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deb-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 下载已发布候选包并核对摘要
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download openkylin-v3.1.0 --repo chencheng666/great-powers-rts --pattern 'great-powers-rts_3.1.0_all.deb' --pattern 'great-powers-rts_3.1.0_all.sha256'
+          sha256sum -c great-powers-rts_3.1.0_all.sha256
+          echo '372a7b89e43779a88a7fe0ea7774f2e3fe3a111de9f8c535b58745fc1638d392  great-powers-rts_3.1.0_all.deb' | sha256sum -c -
+      - name: 用标准dpkg执行隔离目录安装及卸载
+        run: |
+          set -euo pipefail
+          package_path="$PWD/great-powers-rts_3.1.0_all.deb"
+          test "$(dpkg-deb -f "$package_path" Package)" = great-powers-rts
+          test "$(dpkg-deb -f "$package_path" Version)" = 3.1.0
+          test "$(dpkg-deb -f "$package_path" Architecture)" = all
+          dpkg-deb --info "$package_path"
+          dpkg-deb --contents "$package_path"
+          sandbox_root=$(mktemp -d "${RUNNER_TEMP}/openkylin-deb.XXXXXX")
+          case "$sandbox_root" in "${RUNNER_TEMP}"/openkylin-deb.*) ;; *) exit 1;; esac
+          mkdir -p "$sandbox_root/var/lib/dpkg/info" "$sandbox_root/var/lib/dpkg/updates"
+          touch "$sandbox_root/var/lib/dpkg/status"
+          # 依赖由目标桌面提供，本步骤只检查标准安装器的文件部署，不把Ubuntu当作麒麟实测。
+          sudo dpkg --root="$sandbox_root" --force-depends --install "$package_path"
+          test -f "$sandbox_root/opt/great-powers/PLAY.html"
+          test -x "$sandbox_root/usr/bin/great-powers-rts"
+          test -f "$sandbox_root/usr/share/applications/cn.greatpowers.rts.desktop"
+          test "$(sha256sum "$sandbox_root/opt/great-powers/PLAY.html" | cut -d' ' -f1)" = 272c72cdca80dc7a2c19e788ab3e0848206e6674a035b7a6c6a236201a54e9c4
+          sudo dpkg --root="$sandbox_root" --force-depends --remove great-powers-rts
+          test ! -e "$sandbox_root/opt/great-powers/PLAY.html"
+          test ! -e "$sandbox_root/usr/bin/great-powers-rts"
+          test ! -e "$sandbox_root/usr/share/applications/cn.greatpowers.rts.desktop"
+          echo '隔离目录中的标准dpkg安装与卸载检查通过；未执行openKylin图形桌面。' >> "$GITHUB_STEP_SUMMARY"
