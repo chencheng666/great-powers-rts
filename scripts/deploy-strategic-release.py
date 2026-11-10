@@ -66,6 +66,8 @@ def main():
         tar.extractall(stage)
     version=json.loads((stage/'package.json').read_text())['version']
     build=re.search(r"BUILD_ID = '([^']+)'",(stage/'src/version.js').read_text())[1]
+    protocol_text=(stage/'src/network-protocol.js').read_text()
+    protocols=[int(re.search(name+r' = (\d+)',protocol_text)[1]) for name in ['PROTOCOL_VERSION','SIX_PROTOCOL_VERSION']]
     if not re.fullmatch(r'[123]\.\d+\.\d+',version) or not(stage/'dist/official/index.html').is_file():raise RuntimeError('发布版本或官网文件缺失')
     node=BASE/'runtime/bin/node';env=dict(os.environ,PATH=str(node.parent)+':'+os.environ['PATH'])
     print(run(['npm','ci','--omit=dev','--ignore-scripts','--registry=https://registry.npmjs.org'],cwd=stage,env=env),flush=True)
@@ -98,7 +100,7 @@ def main():
         shutil.rmtree(incoming)
     incoming.symlink_to(shared)
     smoke="""import {createBattleServer} from './server/index.mjs';import {GAME_VERSION}from'./src/version.js';import{mkdtemp,rm}from'node:fs/promises';import{tmpdir}from'node:os';import{join}from'node:path';
-for(const count of [2,6]){const d=await mkdtemp(join(tmpdir(),'gp-preflight-')),app=createBattleServer({directory:d,maxPlayers:count,dev:false});try{await new Promise(r=>app.server.listen(0,'127.0.0.1',r));const h=await(await fetch('http://127.0.0.1:'+app.server.address().port+'/api/health')).json();if(h.version!==GAME_VERSION||h.maxPlayers!==count||h.protocol!==(count===6?5:4))throw Error('预检失败');console.log('预检通过',JSON.stringify(h));}finally{await new Promise(r=>app.server.close(r));await rm(d,{recursive:true,force:true});}}"""
+for(const count of [2,6]){const d=await mkdtemp(join(tmpdir(),'gp-preflight-')),app=createBattleServer({directory:d,maxPlayers:count,dev:false});try{await new Promise(r=>app.server.listen(0,'127.0.0.1',r));const h=await(await fetch('http://127.0.0.1:'+app.server.address().port+'/api/health')).json();if(h.version!==GAME_VERSION||h.maxPlayers!==count||h.protocol!==(count===6?SIX_PROTOCOL_VERSION:PROTOCOL_VERSION))throw Error('预检失败');console.log('预检通过',JSON.stringify(h));}finally{await new Promise(r=>app.server.close(r));await rm(d,{recursive:true,force:true});}}"""
     print(run([str(node),'--input-type=module','-e',smoke],cwd=stage),flush=True)
     idle();backup.mkdir(mode=0o700)
     (backup/'previous.json').write_text(json.dumps({str(k):str(v) for k,v in links.items()},indent=2))
@@ -114,7 +116,7 @@ for(const count of [2,6]){const d=await mkdtemp(join(tmpdir(),'gp-preflight-')),
         for attempt in range(25):
             try:
                 values=[health(p) for p in [8088,8089]]
-                if all(h.get('version')==version and h.get('build')==build and h.get('protocol')==protocol for h,protocol in zip(values,[4,5])):break
+                if all(h.get('version')==version and h.get('build')==build and h.get('protocol')==protocol for h,protocol in zip(values,protocols)):break
             except Exception:pass
             time.sleep(1)
         else:raise RuntimeError('新版本健康检查失败')

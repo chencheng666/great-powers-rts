@@ -111,6 +111,9 @@ export function validateSave(save) {
         if (entity.airfieldOps && (!runwayAircraft(entity.type, MAPS[config.mapId]?.future) || !Number.isSafeInteger(entity.airfieldOps.homeId) || !Number.isInteger(entity.airfieldOps.slot) || entity.airfieldOps.slot < 0 || entity.airfieldOps.slot >= 6 || !['approach','taxiIn','parked','taxiOut'].includes(entity.airfieldOps.phase))) invalid();
         if (entity.deployment && (!point(entity.deployment) || !finite(entity.deployment.start) || !finite(entity.deployment.until) || !finite(entity.deployment.fromX) || !finite(entity.deployment.fromY))) invalid();
         if (entity.homeCarrierId !== undefined && entity.homeCarrierId !== null && (!Number.isSafeInteger(entity.homeCarrierId) || !d.tags.includes('deck'))) invalid();
+        if(entity.carrierSlot!==undefined&&(!entity.homeCarrierId||!d.tags.includes('deck')||!Number.isInteger(entity.carrierSlot)||entity.carrierSlot<0||entity.carrierSlot>=UNITS.carrier.capacity))invalid();
+        if(entity.airGroupHold!==undefined&&(entity.type!=='carrier'||typeof entity.airGroupHold!=='boolean'))invalid();
+        if(entity.deckTaxi?.reversing!==undefined&&typeof entity.deckTaxi.reversing!=='boolean')invalid();
         if (entity.deckApproach && (!object(entity.deckApproach) || !Number.isSafeInteger(entity.deckApproach.carrierId) || !finite(entity.deckApproach.start) || !finite(entity.deckApproach.until))) invalid();
         if (entity.deckTaxi && (!object(entity.deckTaxi) || !d.tags.includes('deck') || !entity.embarkedIn || !['in','queued','out'].includes(entity.deckTaxi.phase) || !finite(entity.deckTaxi.progress) || entity.deckTaxi.progress < 0 || entity.deckTaxi.progress > 1 || typeof entity.deckTaxi.launch !== 'boolean')) invalid();
       } else {
@@ -139,6 +142,8 @@ export function validateSave(save) {
   for (const t of s.units.filter(u => u.type === 'carrier')) {
     const planes = s.units.filter(u => u.hp > 0 && u.homeCarrierId === t.id);
     if (planes.length > UNITS.carrier.capacity || planes.some(u => u.owner !== t.owner)) invalid();
+    const slots=planes.filter(p=>p.carrierSlot!==undefined).map(p=>p.carrierSlot);
+    if(new Set(slots).size!==slots.length)invalid();
   }
   for (const key of ['ore', 'oil', 'beacons']) {
     if (!Array.isArray(s[key]) || s[key].length !== (key === 'ore' && config.economyMode === 'convoy' ? 0 : MAPS[config.mapId][key].length)) invalid();

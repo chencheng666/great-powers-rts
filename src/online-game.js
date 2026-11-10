@@ -102,6 +102,7 @@ export class OnlineGame extends Game {
   launchCruiseAt(id,x,y){this.pendingCruise=null;this.pendingAbility=false;return this.issue('cruise',{id,x,y});}
   requestResupply(unit){return this.batch('resupply',unit);}
   unloadTransport(unit){return this.batch('unload',unit);}
+  recallCarrierAircraft(unit){return this.issue('carrier-recall',{id:unit.id});}
   toggleAutoSupply(unit){return this.issue('auto-supply',{id:unit.id});}
   toggleAutoDrone(unit){return this.issue('auto-drone',{id:unit.id});}
   toggleCounterIntel(unit){return this.issue('counter-intel',{id:unit.id});}

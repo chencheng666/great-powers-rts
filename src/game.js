@@ -158,6 +158,7 @@ export class Game {
       if (u.type === 'supply' && u.autoSupply === undefined) u.autoSupply = true;
       if (supportsDroneAutonomy(u) && u.autoDrone === undefined) { u.autoDrone = true; u.droneRole = u.order ? 'manual' : 'guard'; }
     }
+    for(const carrier of game.units.filter(u=>u.type==='carrier'&&u.hp>0))game.assignCarrierSlots(carrier);
     game.fog = game.fogs[0]; game.running = true; game.paused = true; game.winner = null;
     game.effects = []; game.pendingHits = []; game.pendingMoves = []; game.collectingHits = game.collectingMoves = false;
     game.orderMode = null; game.placingBuilding = false; game.noticeQueue = []; game.unitIndex = null;
@@ -1528,7 +1529,7 @@ export class Game {
       const airborne = this.ownedUnits(side).filter(u => UNITS[u.type].tags.some(t=>['jet','rotorcraft'].includes(t)) && !FREIGHT_TYPES.includes(u.type)).length;
       const pending = airfield.queue.length + (airfield.active ? 1 : 0);
       if (airborne + pending < 4) {
-        const carrier = this.ownedUnits(side, 'carrier').find(c => this.carrierAircraft(c).length < 3);
+        const carrier = this.ownedUnits(side, 'carrier').find(c => this.carrierAircraft(c).length < UNITS.carrier.capacity);
         let type = aiCounterUnit(this, side, carrier ? ['navalFighter', 'fighter'] : ['fighter'], 'air') || (this.hasBuilding(side, 'lab') && p.aiAirUnitCount % 6 === 5 ? 'ewPlane' : carrier && this.hasBuilding(side, 'lab') ? p.aiAirUnitCount % 2 ? 'navalFighter' : 'navalStrike' : this.hasBuilding(side, 'lab') && p.aiAirUnitCount % 4 === 2 ? 'bomber' : this.hasBuilding(side, 'radar') && p.aiAirUnitCount % 4 === 3 && !this.ownedUnits(side, 'airlift').length ? 'airlift' : this.map.future && this.hasBuilding(side, 'lab') && p.aiAirUnitCount % 3 === 2 ? 'aegis' : p.aiAirUnitCount % 2 === 0 ? 'strike' : 'fighter');
         if(this.map.strategic&&!aiCounterUnit(this,side,['fighter'],'air')) {
           if(p.aiAirUnitCount%4===1)type='helicopter';

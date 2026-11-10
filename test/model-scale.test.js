@@ -102,6 +102,6 @@ test('航母按真实机体显示停放、出动和损失；抽象打击编组�
   assert.match(carrierAirGroupLabel(game,carrier),/^打击编组/);
   const deck=game.addUnit(0,'navalFighter',1400,1000),flight=game.addUnit(0,'navalStrike',1600,1000);
   deck.homeCarrierId=flight.homeCarrierId=carrier.id;deck.embarkedIn=carrier.id;
-  assert.equal(carrierAirGroupLabel(game,carrier),'舰载机 2/3 · 甲板 1 · 出动 1');
-  flight.hp=0;assert.equal(carrierAirGroupLabel(game,carrier),'舰载机 1/3 · 甲板 1 · 出动 0');
+  assert.equal(carrierAirGroupLabel(game,carrier),'舰载机 2/24 · 甲板 1 · 在外 1/6 · 待飞 0');
+  flight.hp=0;assert.equal(carrierAirGroupLabel(game,carrier),'舰载机 1/24 · 甲板 1 · 在外 0/6 · 待飞 0');
 });

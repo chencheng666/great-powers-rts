@@ -2,6 +2,7 @@ import {sixPlayerMap} from './six-player-map.js';
 import { islandWatchMap } from './island-map.js';
 import { STRATEGIC_UNITS, strategicMap } from './strategic-data.js';
 import { theaterMaps } from './theater-maps.js';
+import { CARRIER_CAPACITY } from './carrier-operations.js';
 export const WORLD = { width: 2240, height: 1440, cell: 40, fog: 80 };
 export const CORE_BUILDINGS = ['hq', 'refinery', 'barracks', 'factory', 'armory', 'airfield', 'dock'];
 export const PRODUCERS = ['barracks', 'factory', 'armory', 'airfield', 'dock'];
@@ -69,7 +70,7 @@ Object.assign(UNITS, {
   evacuee: { name: '待撤离人员', cost: 0, time: 1, hp: 120, speed: 60, range: 0, damage: 0, cooldown: 1, sight: 100, icon: 'user-round', tags: ['infantry', 'civilian'], desc: '归航行动保护目标；在集合点等待登陆舰自动接运，不能作为作战部队下达指令。' },
   ewPlane: { name: '电子压制机', cost: 1350, time: 43, hp: 185, speed: 168, range: 230, damage: 0, cooldown: 1, sight: 410, producer: 'airfield', requires: 'lab', tags: ['air', 'jet', 'support'], icon: 'radio-tower', desc: '原创概念：每 10 秒在 230 范围内压制敌方防空 2.5 秒；自身无武装，制空机与范围外防空可反制。' },
   navalFighter: { ...UNITS.fighter, name: '舰载制空机', cost: 760, time: 29, hp: 225, ammo: 8, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'anti-air', 'deck'], desc: '优先制空，兼顾35%基础伤害对地；可编入本方航母，停航着舰、付费维修补弹。' },
-  navalStrike: { ...UNITS.strike, name: '舰载攻击机', cost: 880, time: 33, hp: 245, ammo: 4, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'bomber', 'deck'], desc: '通用游戏舰载型，对地与对舰；可编入航母，每舰最多三架真实机体，与自带攻击编组互斥。' },
+  navalStrike: { ...UNITS.strike, name: '舰载攻击机', cost: 880, time: 33, hp: 245, ammo: 4, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'bomber', 'deck'], desc: '通用游戏舰载型，对地与对舰；可编入航母，每舰最多24架真实机体、6架同时出动，与自带攻击编组互斥。' },
   freightPlane: { name: '后勤运输机', cost: 0, time: 1, hp: 290, speed: 160, range: 0, damage: 0, cooldown: 1, sight: 90, icon: 'package', tags: ['air', 'jet', 'logistics'], desc: '外部援助航班，按固定航线自动运抵后勤中心；无武装，可被防空和战机拦截，不受战斗指令控制。' },
   containerShip: { name: '集装箱补给船', cost: 0, time: 1, hp: 620, speed: 92, range: 0, damage: 0, cooldown: 1, sight: 240, icon: 'container', tags: ['ship', 'naval', 'logistics'], desc: '沿海运路线自动回港卸货；近距观察避让水面舰艇，无反潜探测。无武装，需要护航，不可载兵或刷补给资金。' },
   landing: { name: '坦克登陆舰', cost: 900, time: 36, hp: 850, speed: 59, range: 0, damage: 0, cooldown: 1, sight: 310, capacity: 12, icon: 'ship', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'transport'], desc: '12 格载重：步兵 1 格、陆地车辆 4 格；靠近海岸装卸，深海无法卸载，需舰队护航。' },
@@ -99,8 +100,8 @@ UNIT_ORDER.push('ewPlane', ...Object.keys(STRATEGIC_UNITS).filter(type => STRATE
 export const supportsModernMap = mapId => !!MAPS[mapId] && !MAPS[mapId].future && !MAPS[mapId].missionOnly;
 export const supportsNuclearMap = mapId => supportsModernMap(mapId) && MAPS[mapId].maxPlayers !== 6;
 export const supportsMap = (required, mapId) => !required || required === mapId || required === 'modern' && supportsModernMap(mapId) || required === 'ocean' && (['archipelago','islandwatch'].includes(mapId)||MAPS[mapId]?.naval) || required === 'meridian' && mapId === 'moonsea' || required === 'strategic' && mapId === 'sentinel';
-UNITS.carrier.capacity = 3;
-UNITS.carrier.desc = '可驻泊三架自行生产的兼容舰载机；停航着舰、维修补弹、弹射起飞。编入真实舰载机后不再同时出动自带攻击编组，需反潜护卫。';
+UNITS.carrier.capacity = CARRIER_CAPACITY;
+UNITS.carrier.desc = '可编入24架自行生产的舰载机，最多6架同时出动；固定机位停放，逐机起降、付费整备，可一键召回。真实机体与自带打击编组互斥，需反潜护卫。';
 
 export const ORE_LAYOUT = [
   [330, 510, 2100, 'gold'], [330, 930, 2100, 'gold'],

@@ -1,4 +1,6 @@
 import { carrierDeckPose } from './carrier-deck.js';
+import { carrierSlots } from './carrier-operations.js';
+import { createCarrierParkedAircraft } from './carrier-deck-aircraft.js';
 import { ensureBattleCanvas } from './battle-canvas.js';
 import { healthBarPresentation, healthBarBudget } from './health-bar-presentation.js';
 import { readPresentation, groundPresentationFactor, selectionTolerance, nearestScreenSelection, personnelRoleMark } from './unit-presentation.js';
@@ -114,6 +116,7 @@ export class Renderer {
     try { this.presentation = readPresentation(localStorage); } catch { /* 禁用存储时使用易读比例。 */ }
     this.growthAppearance=null; try { if(!game.online&&!game.multiplayer&&!game.challenge&&!game.mission)this.growthAppearance=growthAppearance(localStorage); } catch { /* 存储不可用时使用原外观。 */ }
     this.projectileModels = new Map();
+    this.deckTemplates = new Map();
     this.munitionTemplates = new Map();
     this.camera = { x: 0, y: 0, zoom: innerWidth < 700 ? .7 : 1 }; this.center = { x: 450, y: 720 }; this.viewport = { width: 1, height: 1 };
     this.viewMode = 'immersive';
@@ -1131,22 +1134,23 @@ export class Renderer {
       entry.identity.visible = identityVisible(entity, visible, submerged);
       entry.identity.position.set(entity.x, this.elevation(entity.x, entity.y) + (UNITS[entity.type]?.tags.includes('ship') ? 2 : 1.4), entity.y);
       if (entity.type === 'carrier') {
-        const assigned = this.game.carrierAircraft(entity).length;
-        const flights = this.game.projectiles.filter(p => !p.finished && p.kind === 'wing' && p.sourceId === entity.id).length;
-        const parked = assigned ? entity.passengers.map(id => this.game.getEntity(id)).filter(p => p?.hp > 0) : Array.from({ length: Math.max(0, entity.wing - flights) }, (_, i) => ({ id: -i - 1, type: 'navalStrike' }));
-        const ids = new Set(parked.map(p => p.id));
+        const parked = entity.passengers.map(id => this.game.getEntity(id)).filter(p => p?.hp > 0);
+        const display=entity.deckAircraft||parked,slots=carrierSlots(this.game.carrierAircraft(entity));
+        const ids = new Set(display.map(p => p.id));
         for (const [id, plane] of entry.deckModels) if (!ids.has(id)) { entry.model.remove(plane); entry.deckModels.delete(id); }
-        parked.forEach((plane, i) => {
+        display.forEach((plane, i) => {
           let mesh = entry.deckModels.get(plane.id);
           if (!mesh) {
-            mesh = createModel(equipmentModel(this.game.players[entity.owner].faction, plane.type), teamVisual(entity.owner).color);
-            const bounds = new THREE.Box3().setFromObject(mesh);
-            mesh.scale.setScalar(airframeScale(plane.type, bounds.getSize(new THREE.Vector3()).x, 11) * aircraftGroundFactor(plane.type) / entry.scale);
-            mesh.userData.deckClearance = Math.max(0, -bounds.min.y) * mesh.scale.y;
+            const key=`${entity.owner}:${plane.type}`;
+            if(!this.deckTemplates.has(key)){
+              const template=createCarrierParkedAircraft(plane.type,teamVisual(entity.owner).color),resources=new Set();
+              template.traverse(m=>{if(m.isMesh){resources.add(m.geometry);resources.add(m.material);}});resources.forEach(r=>this.track(r));this.deckTemplates.set(key,template);
+            }
+            mesh = this.deckTemplates.get(key).clone(true);
             entry.model.add(mesh); entry.deckModels.set(plane.id, mesh);
           }
-          const pose = carrierDeckPose(i, plane.deckTaxi);
-          mesh.position.set(pose.x, CARRIER_DECK_HEIGHT + mesh.userData.deckClearance, pose.z);
+          const pose = carrierDeckPose(plane.carrierSlot??slots.get(plane.id)??i, plane.deckTaxi);
+          mesh.position.set(pose.x, CARRIER_DECK_HEIGHT, pose.z);
           mesh.rotation.y = pose.yaw;
         });
       }

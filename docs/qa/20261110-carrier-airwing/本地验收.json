@@ -1,0 +1,31 @@
+{
+  "version": "3.3.0",
+  "build": "20261110-carrier-airwing-r1",
+  "tests": {
+    "pass": 682,
+    "fail": 0
+  },
+  "capacity": 24,
+  "sortieLimit": 6,
+  "parkedModels": 24,
+  "parkedAfterSixDepartures": 18,
+  "drawCalls": {
+    "empty": 162,
+    "full": 174
+  },
+  "triangles": {
+    "empty": 261382,
+    "full": 268294
+  },
+  "endToEndRecall": {
+    "airborne": 6,
+    "returned": 24,
+    "seconds": 26.4,
+    "manualTeleport": false
+  },
+  "protocols": [
+    6,
+    7
+  ],
+  "production": "待MFA及发布回读"
+}

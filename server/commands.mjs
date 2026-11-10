@@ -19,6 +19,7 @@ export function executeCommand(game, side, message) {
     case 'cruise': return entity?.kind === 'unit' && point() && game.launchCruiseAt(entity.id,message.x,message.y,side);
     case 'resupply': return entity?.kind === 'unit' && game.requestResupply(entity);
     case 'unload': return entity?.kind === 'unit' && game.unloadTransport(entity);
+    case 'carrier-recall': return entity?.type === 'carrier' && game.recallCarrierAircraft(entity);
     case 'auto-supply': return entity?.kind === 'unit' && game.toggleAutoSupply(entity);
     case 'auto-drone': return entity?.kind === 'unit' && game.toggleAutoDrone(entity);
     case 'counter-intel': return entity?.kind === 'unit' && game.toggleCounterIntel(entity);

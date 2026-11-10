@@ -3,12 +3,17 @@ import { craftedMaterial, mergeParts } from './model-craft.js';
 
 // 游戏化平直甲板：船首沿 +X，舰岛在 +Z 侧；总长保持原有 24 局部单位。
 export const CARRIER_DECK_OUTLINE = Object.freeze([
-  [-11.6,-2.1],[-10.7,-2.9],[-4.5,-3.45],[2.8,-3.95],[4.5,-3.1],
+  [-11.6,-2.5],[-10.7,-4.35],[-4.5,-4.45],[2.8,-4.45],[4.5,-3.1],
   [5.0,-2.4],[10.5,-2.15],[12.4,-1.8],[12.4,1.75],[10.8,2.1],
   [6.2,2.1],[5.6,2.95],[3.2,2.95],[2.6,2.45],[1.7,2.8],
   [-2.5,2.8],[-3.1,2.95],[-6.9,2.95],[-7.5,2.55],[-10.8,2.55],[-11.6,1.8],
 ].map(point=>Object.freeze(point)));
-export const CARRIER_PARKING = Object.freeze([[-8.3,1.05],[-4.8,1.05],[4.8,1.05]].map(p=>Object.freeze(p)));
+// 两舷各12个斜列折翼机位；中央滑行道、舰岛和前部弹射区留空。
+export const CARRIER_PARKING = Object.freeze([
+  ...Array.from({length:12},(_,i)=>[-9.7+i*1.1,-3.35]),
+  ...[-10,-8.8,-7.6,-6.4,-5.2,-4,3.1,4.3,5.5,6.7,7.9,9.1].map(x=>[x,1.15]),
+].map(p=>Object.freeze(p)));
+export const carrierParkingYaw = index => index<12?-Math.PI/2:Math.PI/2;
 export function onCarrierDeck(x,z) {
   let inside=false;
   for(let i=0,j=CARRIER_DECK_OUTLINE.length-1;i<CARRIER_DECK_OUTLINE.length;j=i++){
@@ -19,12 +24,18 @@ export function onCarrierDeck(x,z) {
 }
 export function carrierDeckPose(index, taxi) {
   const [x,z]=CARRIER_PARKING[index%CARRIER_PARKING.length];
+  const yaw=carrierParkingYaw(index);
+  if(taxi?.phase==='in'&&!taxi.reversing){
+    const t=Math.max(0,Math.min(1,taxi.progress));
+    if(t<.25)return{x:-9.6,z:-1.6+1.35*t/.25,yaw:0};
+    if(t<.65)return{x:-9.6+(x+9.6)*(t-.25)/.4,z:-.25,yaw:0};
+    const p=(t-.65)/.35;return{x,z:-.25+(z+.25)*p,yaw:yaw*Math.min(1,p*2)};
+  }
   const progress=taxi?.phase==='out'?taxi.progress:taxi?.phase==='in'?1-taxi.progress:0;
   const t=Math.max(0,Math.min(1,progress));
-  // 先离开停车位，再沿舰岛内侧通道向前，保留原起飞队列终点。
-  if(t<.35)return{x,z:z+(-.1-z)*t/.35,yaw:0};
-  if(t<.9)return{x:x+(4-x)*(t-.35)/.55,z:-.1,yaw:0};
-  return{x:4,z:t===1?0:-.1+(t-.9),yaw:0};
+  if(t<.35)return{x,z:z+(-.25-z)*t/.35,yaw:yaw*(1-Math.max(0,(t-.2)/.15))};
+  if(t<.9)return{x:x+(4-x)*(t-.35)/.55,z:-.25,yaw:0};
+  return{x:4,z:t===1?0:-.25*(1-(t-.9)/.1),yaw:0};
 }
 
 export function createCarrierDeck() {
@@ -47,7 +58,7 @@ export function createCarrierDeck() {
   for(let i=0;i<22;i++){const t=i/22,u=Math.min(1,t+.018);line([aft[0]+(fore[0]-aft[0])*t,aft[1]+(fore[1]-aft[1])*t],[aft[0]+(fore[0]-aft[0])*u,aft[1]+(fore[1]-aft[1])*u],.055,amber);}
   for(const x of [-8.5,-7.7,-6.9,-6.1]){const z=-1.45+(x+10.6)/14.3*-1;line([x-.04,z-.72],[x+.04,z+.72],.025,dark,1.337);}
   for(const z of [-.6,-1.65]){line([2.2,z],[11.7,z],.055,dark);line([2.2,z+.18],[11.4,z+.18],.025,white);for(let x=2.4;x<11.5;x+=.7)line([x,z-.15],[x+.32,z-.15],.028,amber);}
-  for(const[x,z]of CARRIER_PARKING){line([x-1,z],[x+1,z],.035,amber);line([x+.3,z-.52],[x+.3,z+.52],.035,amber);}
+  for(const[x,z]of CARRIER_PARKING){line([x,z-.85],[x,z+.85],.025,amber);line([x-.3,z],[x+.3,z],.025,amber);}
   for(const x of [-5,4.4]){box([2.2,.035,.55],[x,1.318,2.55],edge);for(const z of [2.3,2.8])line([x-1.05,z],[x+1.05,z],.035,amber,1.345);}
   group.userData.deckOutlineVersion=1;return mergeParts(group);
 }

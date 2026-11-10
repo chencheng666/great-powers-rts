@@ -1,6 +1,7 @@
 import { packFog } from '../src/network-protocol.js';
 import { battleReport } from '../src/battle-report.js';
 import { copyLossBreakdown } from '../src/loss-breakdown.js';
+import { carrierSlots } from '../src/carrier-operations.js';
 const copy = value => JSON.parse(JSON.stringify(value));
 export function battleView(game, side, memory = new Map(), {spectator=false}={}) {
   const order=[side,...game.players.map(p=>p.side).filter(s=>s!==side)],mapping=new Map(order.map((s,i)=>[s,i]));
@@ -16,6 +17,11 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
     if (entity.kind === 'unit' && game.aircraftGrounded(entity)) e.airfieldGrounded = true;
     else if (entity.kind === 'unit' && entity.airfieldOps) e.airfieldGrounded = false;
     if (entity.type === 'submarine') e.surfaced = game.submarineSurfaced(entity);
+    // 已看见的甲板只公开停机外观，不公开在外编队、弹药和任务。
+    if(entity.type==='carrier'&&(e.owner!==0||spectator)){
+      const slots=carrierSlots(game.carrierAircraft(entity));
+      e.deckAircraft=entity.passengers.map(id=>game.getEntity(id)).filter(p=>p?.hp>0).map((p,i)=>({id:(slots.get(p.id)??i)+1,type:p.type,carrierSlot:slots.get(p.id)}));
+    }
     if (e.sabotage) e.sabotage.owner = owner(e.sabotage.owner);
     if (entity.type === 'counterIntel' && e.owner === 0 && !spectator) e.counterIntelState = game.counterIntelState(entity);
     if (e.owner !== 0 || spectator) {
@@ -28,6 +34,7 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
       delete e.nuclearEvadeUntil;
       delete e.counterIntelEnabled; delete e.counterIntelState;
       delete e.combatStance; delete e.airfieldOps; delete e.deckTaxi;
+      delete e.carrierSlot;delete e.airGroupHold;delete e.landingId;
     } else if (e.order?.targetId && !ids.has(e.order.targetId) && !game.buildings.some(b => b.id === e.order.targetId && visible(b))) {
       // 指令目标是公开资源点时保留；敌军消失后不发送其最新位置。
       if (typeof e.order.targetId === 'number') { e.order = null; e.targetId = null; }
