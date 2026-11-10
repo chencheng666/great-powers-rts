@@ -1,0 +1,165 @@
+{
+  "checkedAt": "2026-11-10T02:55:22.199Z",
+  "build": "20261110-experience-r1",
+  "sourceCommit": "0810e3dfab232044e75c48b46a68f79392de91cc",
+  "checks": [
+    {
+      "url": "/assets/RoomEnvironment-LN89Qumq.js",
+      "status": 200,
+      "bytes": 2068,
+      "match": true
+    },
+    {
+      "url": "/official/",
+      "status": 200,
+      "bytes": 20198,
+      "match": true
+    },
+    {
+      "url": "/play/",
+      "status": 200,
+      "bytes": 26052,
+      "match": true
+    },
+    {
+      "url": "/candidate/",
+      "status": 200,
+      "bytes": 26052,
+      "match": true,
+      "local": "index.html"
+    },
+    {
+      "url": "/",
+      "status": 200,
+      "bytes": 20198,
+      "match": true
+    },
+    {
+      "url": "/assets/catalog-preview-BjF3i6fT.js",
+      "status": 200,
+      "bytes": 22995,
+      "match": true
+    },
+    {
+      "url": "/assets/index-BMPpJsJA.css",
+      "status": 200,
+      "bytes": 96202,
+      "match": true
+    },
+    {
+      "url": "/assets/official-cinematic-BqVdp9oC.js",
+      "status": 200,
+      "bytes": 14058,
+      "match": true
+    },
+    {
+      "url": "/assets/official-official-cinematic-DZzzadIY.css",
+      "status": 200,
+      "bytes": 11772,
+      "match": true
+    },
+    {
+      "url": "/assets/index-A_w13Y9g.js",
+      "status": 200,
+      "bytes": 878588,
+      "match": true
+    },
+    {
+      "url": "/assets/render-BwPuKXVr.js",
+      "status": 200,
+      "bytes": 145557,
+      "match": true
+    },
+    {
+      "url": "/official/assets/experience-20261110.png",
+      "status": 200,
+      "bytes": 114726,
+      "match": true
+    },
+    {
+      "url": "/assets/official-official-scene3d-BFLBxKUb.js",
+      "status": 200,
+      "bytes": 640416,
+      "match": true
+    },
+    {
+      "url": "/assets/visual-assets-Dkx-Zpl4.js",
+      "status": 200,
+      "bytes": 774464,
+      "match": true
+    },
+    {
+      "url": "/official/assets/radar-20261110.png",
+      "status": 200,
+      "bytes": 236984,
+      "match": true
+    },
+    {
+      "url": "/play/starport/index.html",
+      "status": 200,
+      "protected": true,
+      "match": true
+    },
+    {
+      "url": "/official/starport/index.html",
+      "status": 200,
+      "protected": true,
+      "match": true
+    },
+    {
+      "url": "/downloads/manifest.json",
+      "status": 200,
+      "protected": true,
+      "match": true
+    },
+    {
+      "url": "/resume/",
+      "status": 200,
+      "protected": true,
+      "match": true
+    }
+  ],
+  "health": [
+    {
+      "path": "/api/health",
+      "ok": true,
+      "version": "3.1.1",
+      "build": "20261110-experience-r1",
+      "protocol": 4,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    {
+      "path": "/candidate/api/health",
+      "ok": true,
+      "version": "3.1.1",
+      "build": "20261110-experience-r1",
+      "protocol": 5,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  ],
+  "databaseRetention": {
+    "main": true,
+    "six": true,
+    "integrity": [
+      "ok",
+      "ok"
+    ],
+    "backup": "/opt/great-powers/backups/20261110-experience-r1",
+    "evidence": "已在腾讯云终端只读比较备份与当前库的账户、对局及成员行数，两组均未减少"
+  },
+  "productionInteraction": {
+    "quickStart": true,
+    "zoom": "100%",
+    "landscape": {
+      "width": 844,
+      "scrollWidth": 844,
+      "sidebarCollapsed": true,
+      "tutorialCollapsed": true
+    },
+    "mode": "浏览器模拟，不是真机"
+  }
+}
