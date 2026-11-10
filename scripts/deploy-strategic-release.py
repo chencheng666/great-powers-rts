@@ -99,7 +99,7 @@ def main():
             else:shutil.copy2(file,target)
         shutil.rmtree(incoming)
     incoming.symlink_to(shared)
-    smoke="""import {createBattleServer} from './server/index.mjs';import {GAME_VERSION}from'./src/version.js';import{mkdtemp,rm}from'node:fs/promises';import{tmpdir}from'node:os';import{join}from'node:path';
+    smoke="""import {createBattleServer} from './server/index.mjs';import {GAME_VERSION}from'./src/version.js';import{PROTOCOL_VERSION,SIX_PROTOCOL_VERSION}from'./src/network-protocol.js';import{mkdtemp,rm}from'node:fs/promises';import{tmpdir}from'node:os';import{join}from'node:path';
 for(const count of [2,6]){const d=await mkdtemp(join(tmpdir(),'gp-preflight-')),app=createBattleServer({directory:d,maxPlayers:count,dev:false});try{await new Promise(r=>app.server.listen(0,'127.0.0.1',r));const h=await(await fetch('http://127.0.0.1:'+app.server.address().port+'/api/health')).json();if(h.version!==GAME_VERSION||h.maxPlayers!==count||h.protocol!==(count===6?SIX_PROTOCOL_VERSION:PROTOCOL_VERSION))throw Error('预检失败');console.log('预检通过',JSON.stringify(h));}finally{await new Promise(r=>app.server.close(r));await rm(d,{recursive:true,force:true});}}"""
     print(run([str(node),'--input-type=module','-e',smoke],cwd=stage),flush=True)
     idle();backup.mkdir(mode=0o700)
