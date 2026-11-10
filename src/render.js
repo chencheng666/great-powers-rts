@@ -33,6 +33,7 @@ import { terrainHeight, REALISM_BUILDINGS } from './visual-detail.js';
 import { attachCamouflageCanopy } from './feedback-models.js';
 import { realisticEffects } from './realistic-fx.js';
 import { orderRoutes } from './order-routes.js';
+import { destinationArrow } from './order-marker.js';
 import { RESOURCE_TYPES } from './battlefield-expansion.js';
 import { COMMUNITY_3D_BUILDINGS } from './community-visuals.js';
 import { BATTLE_READABILITY, readableMaterial, identityRadius, identityVisible } from './battle-readability.js';
@@ -120,7 +121,8 @@ export class Renderer {
     this.cameraElevation = battleElevation(this.viewMode); this.cameraAzimuth = battleAzimuth(this.viewMode); this.wrecks = []; this.cosmeticEffects = []; this.damageMaterials = new Map(); this.damageTemplates = new Map();
     this.pointer = null; this.dragBox = null; this.lastMinimap = 0; this.lastFog = -1000;
     this.entities = new Map(); this.effects = new Map(); this.environment = []; this.bridges = []; this.trails = []; this.ownedResources = [];
-    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: this.quality!=='standard', alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false });
+    // 上下文的抗锯齿属性创建后不能切换，流畅与精细均保留轮廓抗锯齿。
+    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false });
     // 返回菜单或读档时复用同一画布，先清理上一渲染器遗留的 WebGL 绑定。
     this.webgl.resetState();
     this.webgl.setPixelRatio(armyRenderBudget(this.quality,0,devicePixelRatio).pixelRatio);
@@ -182,7 +184,7 @@ export class Renderer {
     this.quality = value === 'standard' ? 'standard' : 'high';
     if (this.quality === 'high' && !this.composer) this.createPostprocessing();
     if (this.ambientPass) this.ambientPass.enabled = this.quality === 'high';
-    const budget = armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio);
+    const budget = armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio, this.viewport);
     this.webgl.setPixelRatio(budget.pixelRatio);
     const shadowSize = budget.shadowSize;
     if(this.sun.shadow.mapSize.x!==shadowSize){this.sun.shadow.mapSize.set(shadowSize,shadowSize);this.sun.shadow.map?.dispose();this.sun.shadow.map=null;}
@@ -200,7 +202,7 @@ export class Renderer {
     const factor = Math.min(1, (innerWidth < 700 ? 2048 : 4096) / this.world.width);
     const canvas = makeCanvas(Math.round(this.world.width * factor), Math.round(this.world.height * factor)), ctx = canvas.getContext('2d'), image = (this.game.map.future ? visualLibrary().meridian : visualLibrary().ground).image;
     ctx.scale(factor, factor);
-    ctx.filter = this.game.map.future ? BATTLE_READABILITY.lunarFilter : `${BATTLE_READABILITY.groundFilter} blur(1.4px)`;
+    ctx.filter = this.game.map.future ? BATTLE_READABILITY.lunarFilter : BATTLE_READABILITY.groundFilter;
     const tile = this.game.map.future ? 560 : 420;
     for (let y = 0; y < this.world.height; y += tile) for (let x = 0; x < this.world.width; x += tile) ctx.drawImage(image, x, y, tile, tile);
     ctx.filter = 'none';
@@ -639,6 +641,7 @@ export class Renderer {
     if (this.disposed) return;
     ensureBattleCanvas(this.canvas, document);
     const rect = this.canvas.getBoundingClientRect(); if (rect.width < 1 || rect.height < 1) return;
+    this.webgl.setPixelRatio(armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio, rect).pixelRatio);
     this.viewport = { width: rect.width, height: rect.height }; this.webgl.setSize(rect.width, rect.height, false);
     if (this.composer) {
       this.composer.setPixelRatio(this.webgl.getPixelRatio()); this.composer.setSize(rect.width, rect.height);
@@ -1536,11 +1539,20 @@ export class Renderer {
   }
 
   drawOrderRoutes() {
-    const ctx=this.overlay;this.orderRoutes=orderRoutes(this.game);
+    const ctx=this.overlay, markers=[];this.orderRoutes=orderRoutes(this.game);
     for(const route of this.orderRoutes){
-      const points=route.points.map(p=>this.worldToScreen(p.x,p.y,2));ctx.save();ctx.strokeStyle=route.color;ctx.globalAlpha=.72;ctx.lineWidth=1.3;ctx.setLineDash([6,7]);ctx.lineDashOffset=-this.game.time*9;
-      ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();ctx.setLineDash([]);
-      const end=this.worldToScreen(route.destination.x,route.destination.y,2);ctx.globalAlpha=.95;ctx.beginPath();ctx.arc(end.x,end.y,6,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(end.x,end.y-16);ctx.lineTo(end.x+13,end.y-12);ctx.lineTo(end.x,end.y-8);ctx.stroke();ctx.restore();
+      const points=route.points.map(p=>this.worldToScreen(p.x,p.y,2)), arrow=destinationArrow(points);
+      const line=route.queued.length?points:(arrow?.line||points), end=this.worldToScreen(route.destination.x,route.destination.y,2);
+      ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.setLineDash([5,7]);ctx.lineDashOffset=-this.game.time*9;
+      ctx.beginPath();line.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+      ctx.strokeStyle='#0a191e';ctx.globalAlpha=.5;ctx.lineWidth=3;ctx.stroke();
+      ctx.strokeStyle=route.color;ctx.globalAlpha=.8;ctx.lineWidth=1.3;ctx.stroke();ctx.setLineDash([]);
+      // 重叠的落点只画一次箭头，路径与实际编队目标保持不变。
+      if(arrow&&!route.queued.length&&!markers.some(m=>m.color===route.color&&Math.hypot(m.x-end.x,m.y-end.y)<12)){
+        markers.push({...end,color:route.color});ctx.globalAlpha=1;ctx.fillStyle=route.color;ctx.strokeStyle='#10252b';ctx.lineWidth=2.5;
+        ctx.beginPath();arrow.outline.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.stroke();ctx.fill();
+      }
+      ctx.restore();
       if (route.queued.length) {
         ctx.save(); ctx.lineWidth=1.4; ctx.setLineDash([3,7]); ctx.globalAlpha=.5;
         let previous=end;
@@ -1583,7 +1595,7 @@ export class Renderer {
     if (this.waterNormal) this.waterNormal.offset.set(now * .000004, now * .000007);
     if (this.shoreMaterial) this.shoreMaterial.opacity = .4 + Math.sin(now * .0012) * .05;
     const visibleUnits = this.framedUnits || new Set();
-    const budget = armyRenderBudget(this.quality, visibleUnits.size, devicePixelRatio);
+    const budget = armyRenderBudget(this.quality, visibleUnits.size, devicePixelRatio, this.viewport);
     if (this.webgl.getPixelRatio() !== budget.pixelRatio) { this.webgl.setPixelRatio(budget.pixelRatio); this.resize(); }
     if (this.sun.shadow.mapSize.x !== budget.shadowSize) {
       this.sun.shadow.mapSize.set(budget.shadowSize, budget.shadowSize); this.sun.shadow.map?.dispose(); this.sun.shadow.map = null;

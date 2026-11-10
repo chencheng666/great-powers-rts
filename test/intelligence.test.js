@@ -78,6 +78,7 @@ test('新增尺寸、炸弹、网络排程和回收命令均可保存恢复，�
 
 test('行军虚线跟随己方实际寻路与目的地，不显示敌方命令或未侦察目标现位置',()=>{
   const g=quiet(),tank=g.ownedUnits(0,'tank')[0];g.selected=[tank.id];g.command(800,650);tank.path=[{x:680,y:730},{x:740,y:650}];const routes=orderRoutes(g);assert.equal(routes.length,1);assert.deepEqual(routes[0].points[0],{x:tank.x,y:tank.y});assert.deepEqual(routes[0].destination,{x:800,y:650});
+  tank.path=[{x:799,y:650}];assert.deepEqual(orderRoutes(g)[0].points.at(-1),{x:800,y:650});
   const enemy=g.ownedUnits(1,'tank')[0];tank.order={type:'attack',targetId:enemy.id,x:1100,y:900};g.fogs[0].visible.fill(false);assert.deepEqual(orderRoutes(g)[0].destination,{x:1100,y:900});g.selected=[enemy.id];assert.equal(orderRoutes(g).length,0);
 });
 

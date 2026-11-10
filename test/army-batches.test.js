@@ -51,9 +51,19 @@ test('阵营及损伤材质隔离，不透明部件合批不吞掉玻璃', () =>
   batcher.dispose(); assert.equal(destroyed, 0);
 });
 
-test('流畅画质在双人和单机同样限制像素与阴影预算', () => {
-  assert.equal(armyRenderBudget('standard', 12, 2).pixelRatio, 1);
+test('高分屏补足细节，团战保留流畅像素与阴影预算', () => {
+  assert.equal(armyRenderBudget('standard', 12, 2).pixelRatio, 1.5);
   assert.equal(armyRenderBudget('high', 240, 2).pixelRatio, 1.25);
   assert.equal(armyRenderBudget('high', 120, 1).pixelRatio, 1);
   assert.equal(armyRenderBudget('high', 240, 2).shadowInterval, 50);
+});
+
+
+test('超大视口限制渲染总像素，低 DPI 不强制超采样', () => {
+  for (const quality of ['standard', 'high']) {
+    const budget = armyRenderBudget(quality, 12, 3, { width: 2560, height: 1440 });
+    assert.ok(2560 * 1440 * budget.pixelRatio ** 2 <= Math.max(2560 * 1440, quality === 'high' ? 5_000_000 : 3_000_000) + 1);
+    assert.equal(armyRenderBudget(quality, 12, 1).pixelRatio, 1);
+  }
+  assert.equal(armyRenderBudget('standard', 200, 3).pixelRatio, 1);
 });

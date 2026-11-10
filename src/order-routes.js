@@ -10,6 +10,8 @@ export function orderRoutes(game) {
     if(!destination)continue;
     const points=[{x:u.x,y:u.y},...(u.path||[]).slice(0,64),destination].filter((p,i,all)=>!i||Math.hypot(p.x-all[i-1].x,p.y-all[i-1].y)>3);
     if(points.length<2)continue;
+  // 中间寻路点可以简化，箭尖仍须落在未取整的真实目的地。
+  if(points.at(-1).x!==destination.x||points.at(-1).y!==destination.y)points.push(destination);
     routes.push({id:u.id,points,destination,type:order.type,queued:(u.orderQueue||[]).slice(0,ORDER_QUEUE_LIMIT).map(o=>({x:o.x,y:o.y,type:o.type})),color:['attack','attackMove','infiltrate'].includes(order.type)?'#f1a291':['collect','capture','defuse'].includes(order.type)?'#efd58c':'#91dfdf'});
     if(routes.length>=24)break;
   }
