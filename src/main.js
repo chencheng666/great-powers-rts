@@ -1,3 +1,4 @@
+import { CRUISE, cruiseAvailability } from './submarine-cruise.js';
 import { ensureBattleCanvas } from './battle-canvas.js';
 import { setupUnitPresentation } from './unit-presentation.js';
 import { FACTION_DOCTRINES } from './faction-doctrine.js';
@@ -32,12 +33,12 @@ import { CHALLENGES, challengeStatus, RECON_ACTIVITY_LABELS, BEACHHEAD_ACTIVITY_
 import { CHALLENGE_PROFILE_KEY, CHALLENGE_FILE_LIMIT, emptyChallengeProfile, readChallengeProfile, writeChallengeProfile, challengeRecords, settleChallengeResult, exportChallengeProfile, parseChallengeExport, mergeChallengeProfiles } from './challenge-profile.js';
 import './challenges.css';
 let Renderer, modelThumbnail, rendererModule;
-async function prepareRenderer() {
+async function prepareRenderer(options = null) {
   rendererModule ||= Promise.all([import('./render.js'), import('./visual-assets.js')]).then(([render, assets]) => {
     Renderer = render.Renderer; modelThumbnail = assets.modelThumbnail;
   }).catch(error => { rendererModule = null; throw error; });
   await rendererModule;
-  return Renderer.prepare();
+  return Renderer.prepare(options || {lunar:!!(state.game?.map.future || MAPS[$('#map-select')?.value]?.future)});
 }
 import { gameAudio } from './audio.js';
 import { buildingInformation, placeBuildingPanel, productionDuration } from './battlefield-details.js';
@@ -132,7 +133,7 @@ const selectionStatus = entity => {
 };
 const icon = name => `<i data-lucide="${name}"></i>`;
 const refreshIcons = () => createIcons({ icons });
-const commandSelectionKey = g => g.selected.map(id => { const u = g.getEntity(id); return `${id}:${u?.orderQueue?.length || 0}:${combatStance(u)}:${u?.type === 'counterIntel' && u.owner === 0 ? `${u.counterIntelEnabled !== false}:${g.counterIntelState(u)}` : ''}`; }).join(';');
+const commandSelectionKey = g => `${g.paused}:${g.players[0].credits>=CRUISE.cost}:${g.isControlLocked(0)}:` + g.selected.map(id => { const u = g.getEntity(id); return `${id}:${u?.orderQueue?.length || 0}:${combatStance(u)}:${u?.type==='submarine'?cruiseAvailability(g,u):''}:${u?.cruiseAmmo || 0}:${Math.max(0,Math.ceil((u?.cruiseReadyAt||0)-g.time))}:${u?.type === 'counterIntel' && u.owner === 0 ? `${u.counterIntelEnabled !== false}:${g.counterIntelState(u)}` : ''}`; }).join(';');
 
 const state = {
   game: null,
@@ -341,7 +342,7 @@ async function deployGame(save = null, onlinePayload = null) {
   refreshIcons();
   await new Promise(resolve => setTimeout(resolve, 0));
   try {
-    await prepareRenderer();
+    await prepareRenderer({lunar:!!MAPS[save?.config?.mapId || onlinePayload?.config?.mapId || $('#map-select').value]?.future});
   } catch (error) {
     playerTelemetry.error('resource', errorDetail(error, { stage: 'startup' }));
     toast(`战场素材载入失败：${error.message}`, true);
@@ -677,7 +678,7 @@ function updateSidebar(force = false) {
     root.innerHTML = `<div class="tactic-panel" style="--faction-color:${faction.color}"><div class="tactic-banner"><strong>${faction.role}</strong><p>${faction.summary}<br>${faction.perk}</p></div><div class="ability-card"><div class="ability-card-header"><strong>${faction.ability}</strong>${icon('crosshair')}</div><p>${faction.abilityDesc}</p><div class="ability-charge"><div style="width:${p.abilityCharge}%"></div></div><div class="ability-meta"><span>充能 ${Math.floor(p.abilityCharge)}%</span><span>消耗 ¤ 650</span></div><button class="ability-button" id="ability-button" ${ready ? '' : 'disabled'}>${ready ? p.faction === 'china' ? '启动协同电子防护' : '选择打击区域' : !g.hasBuilding(0, 'super') ? '需要战略武器站' : !g.hasPower(0) ? '电力不足' : p.abilityCooldown > 0 ? `冷却 ${Math.ceil(p.abilityCooldown)} 秒` : p.credits < 650 ? '资金不足' : '正在充能'}</button></div><div class="tactic-details"><div>黄矿：每份 1 资金 · 宝石：每份 2 资金</div><div>中立油井：每座 +11 资金/秒</div><div>雷达信标：占领后获得中央视野与小地图</div><div>断电：炮塔与雷达停用，高级生产减速</div><div>胜利目标：${VICTORY_MODES[g.victoryMode].description}</div></div></div>`;
     $('#ability-button').addEventListener('click', () => {
       if (p.faction === 'china') g.castAbility(0, 0);
-      else { g.pendingAbility = true;g.pendingNuclear=false; toast('左键选择已侦察的技能目标区域'); }
+      else { g.pendingAbility = true;g.pendingNuclear=false;g.pendingCruise=null; toast('左键选择已侦察的技能目标区域'); }
       updateUI(true);
     });
     const cooldown = Math.ceil(Math.max(0, (p.satelliteReadyAt || 0) - g.time));
@@ -691,7 +692,7 @@ function updateSidebar(force = false) {
     if(g.nuclearEnabled){
       const ready=g.nuclearReady(0),pending=p.nuclearPending;
       root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin',`<div class="ability-card nuclear-control"><div class="ability-card-header"><strong>战略核威慑</strong>${icon('radiation')}</div><p>8 秒可中止准备 · 20 秒公开落区预警<br>敌我均受区域伤害；反导多次拦截、疏散和设施突袭可反制。</p><div class="ability-charge"><div style="width:${Math.min(100,(p.nuclearCharge||0)/DETERRENCE.charge*100)}%"></div></div><div class="ability-meta"><span>${p.nuclearSpent?'本局已发射':pending?'发射准备中':`${Math.floor(p.nuclearCharge||0)} / ${DETERRENCE.charge} 秒`}</span><span>¤ 4,500 · 每局一次</span></div><button id="nuclear-button" class="ability-button" ${ready?'':'disabled'}>${icon('crosshair')}${ready?'选择威慑落区':p.nuclearSpent?'本局次数已用尽':pending?'准备中，落区已公开':!g.hasBuilding(0,'nuclearSilo')?'需要战略威慑发射井':!g.hasPower(0)?'电力不足':!g.hasBuilding(0,'radar')||!g.hasBuilding(0,'lab')?'需要雷达站与实验室':p.credits<4500?'资金不足':'战略系统准备中'}</button></div>`);
-      $('#nuclear-button').addEventListener('click',()=>{g.pendingAbility=true;g.pendingNuclear=true;g.placingBuilding=false;toast('选择当前可见区域，投入后不退款；落区将公开，友军也需疏散。');});
+      $('#nuclear-button').addEventListener('click',()=>{g.pendingAbility=true;g.pendingNuclear=true;g.pendingCruise=null;g.placingBuilding=false;toast('选择当前可见区域，投入后不退款；落区将公开，友军也需疏散。');});
     }
     root.querySelector('.tactic-details').insertAdjacentHTML('beforeend','<div>物资箱：陆军回收 300；设备回收场：工程师／矿车／补给车回收 900。</div><div>能源仓：工程师接管，40 电力、有限 1800 库存，可作为扩建前哨。</div>');
   }
@@ -739,6 +740,12 @@ function updateSelection() {
       const enabled = e.counterIntelEnabled !== false;
       panel.querySelector('.selection-actions').insertAdjacentHTML('beforeend', `<button type="button" data-action="counter-intel" class="${enabled ? 'active' : ''}" aria-pressed="${enabled}" title="${enabled ? '关闭反卫星侦察' : '开启反卫星侦察'}" aria-label="反侦察设备开关">${icon('shield-check')}</button>`);
       panel.querySelector('[data-action="counter-intel"]').addEventListener('click', () => { if (!g.paused) g.toggleCounterIntel(e); updateSelection(); });
+    }
+    if (e.type === 'submarine' && e.owner === 0 && !g.map.future) {
+      const reason = g.isControlLocked(e.owner)?'指令链路受干扰':cruiseAvailability(g,e), ammo = e.cruiseAmmo || 0, cooldown = Math.max(0,Math.ceil((e.cruiseReadyAt || 0)-g.time));
+      panel.insertAdjacentHTML('beforeend',`<div class="cruise-control"><span>巡航弹 ${ammo}/${CRUISE.capacity} · ${reason || (cooldown ? '冷却 '+cooldown+'秒' : '对地打击 220–900')}</span><div><button type="button" data-action="buy-cruise" ${g.paused || reason || ammo>=CRUISE.capacity || g.players[0].credits<CRUISE.cost ? 'disabled' : ''}>装填 ¤${CRUISE.cost}</button><button type="button" data-action="cruise" ${g.paused || reason || !ammo || cooldown ? 'disabled' : ''}>选择对地目标</button></div></div>`);
+      panel.querySelector('[data-action="buy-cruise"]').addEventListener('click',()=>{g.buyCruise(e);updateSelection();updateUI(true);});
+      panel.querySelector('[data-action="cruise"]').addEventListener('click',()=>{g.pendingAbility=true;g.pendingNuclear=false;g.pendingCruise=e.id;g.placingBuilding=false;toast('选择已侦察的敌方地面目标；潜艇发射后短暂暴露');});
     }
     panel.querySelector('.selection-actions').insertAdjacentHTML('beforeend', `<button type="button" data-action="catalog" title="查看图鉴" aria-label="查看图鉴">${icon('book-open')}</button>`);
     panel.querySelector('[data-action="catalog"]').addEventListener('click', () => openCatalog(e));
@@ -894,7 +901,7 @@ function returnToMenu() {
   $('#building-info').hidden = true; $('#attack-alert').hidden = true;$('#nuclear-alert').hidden=true; $('#audio-panel').hidden = true;
   $('#toast-container').replaceChildren(); $('#modal').classList.add('hidden'); state.modalMode = null;
   $('#start-screen').style.display = ''; $('#pause-btn').innerHTML = icon('pause');
-  $('#menu-music-toggle').setAttribute('aria-pressed', 'false'); $('#menu-music-toggle').textContent = '开启首页配乐 · 国际歌';
+  $('#menu-music-toggle').setAttribute('aria-pressed', 'false'); $('#menu-music-toggle').textContent = '开启首页配乐 · 战争主题';
   updateContinueControl(); refreshIcons();
   updateHonorOverview();
 }
@@ -1188,7 +1195,7 @@ function setupControls() {
     if (g.paused) return;
     if (event.button === 2) {
       const world = r.pickPoint(p.x, p.y);
-      if (g.pendingAbility) { g.pendingAbility = false;g.pendingNuclear=false; toast('已取消技能定位'); }
+      if (g.pendingAbility) { g.pendingAbility = false;g.pendingNuclear=false;g.pendingCruise=null; toast('已取消技能定位'); }
       else if (g.placingBuilding) { g.placingBuilding = false; toast('已退出部署，建筑仍保留在建造面板'); }
       else {
         g.command(world.x, world.y, g.orderMode === 'attackMove', 0, event.shiftKey && !['patrol', 'rally'].includes(g.orderMode));
@@ -1201,7 +1208,7 @@ function setupControls() {
     state.lastSelectionClick = null;
     const world = g.placingBuilding ? r.screenToWorld(p.x, p.y) : g.pendingAbility || g.orderMode ? r.pickPoint(p.x, p.y) : null;
     if (g.pendingBuilding && g.placingBuilding) { if (!g.placeBuilding(0, g.pendingBuilding, world.x, world.y)) toast('此处无法部署，请靠近己方建筑并避开障碍', true); updateUI(true); }
-    else if (g.pendingAbility) { if (!(g.pendingNuclear?g.launchNuclear(world.x,world.y):g.castAbility(world.x, world.y))) toast('技能未就绪，或目标区域尚未侦察', true);else if(g.pendingNuclear){g.pendingAbility=false;g.pendingNuclear=false;} updateUI(true); }
+    else if (g.pendingAbility) { const cruise=g.pendingCruise; const accepted=cruise?g.launchCruiseAt(cruise,world.x,world.y):g.pendingNuclear?g.launchNuclear(world.x,world.y):g.castAbility(world.x,world.y); if(!accepted)toast(cruise?'请选择射程220–900内已侦察的敌方地面目标':'技能未就绪，或目标区域尚未侦察',true);else if(cruise||g.pendingNuclear){g.pendingAbility=false;g.pendingNuclear=false;g.pendingCruise=null;} updateUI(true); }
     else if (g.orderMode === 'rally') { g.command(world.x, world.y); g.orderMode = null; }
     else if (['attackMove', 'move', 'patrol'].includes(g.orderMode)) { g.command(world.x, world.y, g.orderMode === 'attackMove', 0, event.shiftKey && g.orderMode !== 'patrol'); clearOrderButtons(); }
     else if (state.drag?.moved) r.selectScreenBox(state.drag.start, p, state.drag.additive);
@@ -1247,7 +1254,7 @@ function setupControls() {
     if (key === 'm' && !event.repeat) { event.preventDefault(); state.cameraPanMode = !state.cameraPanMode; updatePanControl(); return; }
     if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' '].includes(key)) event.preventDefault();
     if (key.startsWith('arrow')) state.keys.add(key);
-    if (key === 'escape') { if(g.pendingAbility){g.pendingAbility=false;g.pendingNuclear=false;updateUI(true);}else if (g.placingBuilding) { g.placingBuilding = false; updateUI(true); } else if (g.orderMode) { g.orderMode = null; clearOrderButtons(); } else if (!$('#modal').classList.contains('hidden')) closeModal(); else if (state.cameraPanMode) { state.cameraPanMode = false; updatePanControl(); } else showPause(); return; }
+    if (key === 'escape') { if(g.pendingAbility){g.pendingAbility=false;g.pendingNuclear=false;g.pendingCruise=null;updateUI(true);}else if (g.placingBuilding) { g.placingBuilding = false; updateUI(true); } else if (g.orderMode) { g.orderMode = null; clearOrderButtons(); } else if (!$('#modal').classList.contains('hidden')) closeModal(); else if (state.cameraPanMode) { state.cameraPanMode = false; updatePanControl(); } else showPause(); return; }
     if (!g.running || g.paused || !$('#modal').classList.contains('hidden')) return;
     if(g.isControlLocked(0)&&['a','p','s','u','r'].includes(key))return;
     if (key >= '1' && key <= '9') {
@@ -1277,7 +1284,7 @@ function setupControls() {
   $('#honor-profile-btn').addEventListener('click', openHonors);
   $('#sidebar-btn').addEventListener('click', () => setSidebarCollapsed(!state.sidebarCollapsed));
   $('#mobile-more-btn').addEventListener('click', () => { const open=$('.top-actions').classList.toggle('mobile-expanded');$('#mobile-more-btn').setAttribute('aria-expanded',String(open)); });
-  $('#cancel-order-btn').addEventListener('click', () => { const g=state.game;if(!g)return;g.orderMode=null;g.pendingAbility=false;g.pendingNuclear=false;g.placingBuilding=false;clearOrderButtons();updateUI(true); });
+  $('#cancel-order-btn').addEventListener('click', () => { const g=state.game;if(!g)return;g.orderMode=null;g.pendingAbility=false;g.pendingNuclear=false;g.pendingCruise=null;g.placingBuilding=false;clearOrderButtons();updateUI(true); });
   $('#sidebar-close').addEventListener('click', () => setSidebarCollapsed(true));
   $('#pan-map-btn').addEventListener('click', () => { state.cameraPanMode = !state.cameraPanMode; updatePanControl(); });
   for (const [id, factor] of [['zoom-out-btn', 1 / 1.15], ['zoom-in-btn', 1.15]]) $( `#${id}`).addEventListener('click', () => { const r = state.renderer; if (r) r.zoomAt(factor, r.viewport.width / 2, r.viewport.height / 2); });
@@ -1365,7 +1372,7 @@ function setupControls() {
   $('#menu-music-toggle').addEventListener('click', async () => {
     const button = $('#menu-music-toggle');
     if (gameAudio.scene === 'menu' && gameAudio.active) {
-      gameAudio.stopBattle(); button.setAttribute('aria-pressed', 'false'); button.textContent = '开启首页配乐 · 国际歌';
+      gameAudio.stopBattle(); button.setAttribute('aria-pressed', 'false'); button.textContent = '开启首页配乐 · 战争主题';
       return;
     }
     button.disabled = true;
@@ -1373,7 +1380,7 @@ function setupControls() {
     button.disabled = false;
     if (gameAudio.scene !== 'menu') return;
     button.setAttribute('aria-pressed', String(played === true));
-    button.textContent = played ? '暂停首页配乐 · 国际歌' : '首页配乐未能播放，点击重试';
+    button.textContent = played ? '暂停首页配乐 · 战争主题' : '首页配乐未能播放，点击重试';
   });
   $('#audio-music-track').addEventListener('change', playSelectedMusic);
   $('#audio-music-play').addEventListener('click', playSelectedMusic);
@@ -1451,7 +1458,7 @@ function setupControls() {
 function updateAudioControls() {
   const settings = gameAudio.settings;
   $('#audio-muted').checked = settings.muted;
-  $('#audio-music-track').value = settings.musicTrack || 'iron-tide';
+  $('#audio-music-track').value = settings.musicTrack || 'war-theme';
   document.querySelectorAll('[data-audio]').forEach(slider => { slider.value = Math.round(settings[slider.dataset.audio] * 100); });
   document.querySelectorAll('[data-audio-value]').forEach(output => { output.value = `${Math.round(settings[output.dataset.audioValue] * 100)}%`; });
   $('#sound-btn').innerHTML = icon(settings.muted || !settings.master ? 'volume-x' : 'volume-2'); refreshIcons();

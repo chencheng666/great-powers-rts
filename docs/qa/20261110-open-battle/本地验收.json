@@ -1,0 +1,51 @@
+{
+  "version": "3.2.0",
+  "build": "20261110-open-battle-r1",
+  "tests": {
+    "total": 668,
+    "pass": 668,
+    "fail": 0
+  },
+  "audio": {
+    "warTheme": {
+      "durationSeconds": 283.794286,
+      "mediaReadyState": 4,
+      "playing": true,
+      "analyserRMS": 0.00656418873477104
+    },
+    "finalBattle": {
+      "durationSeconds": 145.890975,
+      "mediaReadyState": 4,
+      "playing": true,
+      "analyserRMS": 0.0030345607767373727
+    },
+    "internationale": {
+      "switchAndPlay": true
+    }
+  },
+  "ui": {
+    "importSave": true,
+    "buyCruiseCost": 350,
+    "creditsBefore": 9000,
+    "creditsAfter": 8650,
+    "cruiseAmmoAfter": 1,
+    "targetSelection": true,
+    "cancelTargetSelection": true,
+    "landscape": {
+      "width": 844,
+      "horizontalOverflow": false,
+      "touchButtonMinHeight": 44
+    }
+  },
+  "loading": {
+    "ordinaryBattleRequestsLunarTexture": false,
+    "localWarmDeploymentMs": 1977.2,
+    "note": "本地开发预览与缓存条件下的部署调用，不作为公网冷加载保证"
+  },
+  "limitations": [
+    "浏览器模拟横屏，不代表手机真机",
+    "受控团战记录CPU调用工作时间，不等同GPU帧时间",
+    "自动化点击会产生短暂visibilitychange并自动暂停；已在稳定前台通过实际DOM按钮处理程序核验装填与取消",
+    "生产仍待MFA后执行部署和只读回读"
+  ]
+}

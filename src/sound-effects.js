@@ -39,7 +39,7 @@ export const SOUND_PROFILES = {
   nuclearLaunch: profile(1.8, .8, .5, 55, 180, .3),
   nuclearImpact: profile(3.4, 1, .3, 65, 22, .4, 2),
 };
-const ALIASES = { fighter: 'missile', strike: 'missile', navalFighter: 'missile', navalStrike: 'missile', aegis: 'missile', abm: 'missile', destroyer: 'missile', helicopter: 'missile' };
+const ALIASES = { cruise: 'missile', fighter: 'missile', strike: 'missile', navalFighter: 'missile', navalStrike: 'missile', aegis: 'missile', abm: 'missile', destroyer: 'missile', helicopter: 'missile' };
 export function soundProfile(style) { return SOUND_PROFILES[ALIASES[style] || style] || null; }
 
 export function synthesizeSound(style, sampleRate = 44100) {

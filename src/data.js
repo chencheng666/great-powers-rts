@@ -62,7 +62,7 @@ export const UNITS = {
   supply: { name: '维修补给车', cost: 300, time: 17, hp: 230, speed: 72, range: 240, damage: 0, cooldown: 1, sight: 300, stock: 360, icon: 'wrench', producer: 'factory', tags: ['vehicle', 'support'], desc: '240 范围光环自动为多支陆军补弹，脱战后分配维修；优先圈内保障，不与缺弹部队相向挤靠。360 库存，缺货回厂，消耗资金。' },
   destroyer: { name: '导弹驱逐舰', cost: 1150, time: 40, hp: 800, speed: 67, range: 470, damage: 72, cooldown: 2.6, sight: 440, sonar: 290, ammo: 8, rearmTime: 10, icon: 'ship', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'anti-air', 'anti-sub', 'artillery'], desc: '远程对舰、防空与反潜；导弹有飞行时间，须返回有电船坞付费补弹。' },
   carrier: { name: '舰队航空母舰', cost: 2900, time: 68, hp: 1400, speed: 43, range: 720, damage: 95, cooldown: 4, sight: 420, ammo: 6, rearmTime: 14, wing: 3, icon: 'plane-takeoff', producer: 'dock', requires: 'lab', map: 'ocean', tags: ['ship', 'naval', 'artillery'], desc: '价格包含3个抽象舰载打击编组及12发近程自卫弹；实体舰载机另造。自动拦截飞机和常规来袭弹药，密集攻击可突破，返港付费整备。' },
-  submarine: { name: '攻击潜艇', cost: 920, time: 35, hp: 420, speed: 64, range: 340, damage: 110, cooldown: 3.5, sight: 360, sonar: 190, ammo: 5, rearmTime: 10, icon: 'waves', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'submerged', 'stealth'], desc: '潜航伏击舰艇；声呐或发射后短暂暴露，可被反潜舰反制，不能攻击陆地。' }
+  submarine: { name: '攻击潜艇', cost: 920, time: 35, hp: 420, speed: 64, range: 340, damage: 110, cooldown: 3.5, sight: 360, sonar: 190, ammo: 5, rearmTime: 10, icon: 'waves', producer: 'dock', requires: 'radar', map: 'ocean', tags: ['ship', 'naval', 'submerged', 'stealth'], desc: '鱼雷伏击舰艇；实验室解锁付费巡航弹对地打击，需雷达和船坞支援，发射后短暂暴露，可被反潜与防空反制。' }
 };
 
 Object.assign(UNITS, {

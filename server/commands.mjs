@@ -15,6 +15,8 @@ export function executeCommand(game, side, message) {
     case 'repair': return entity?.kind === 'building' && game.toggleRepair(side, entity.id);
     case 'sell': return entity && (entity.kind === 'building' ? game.sellBuilding(side, entity.id) : game.sellHarvester(side, entity.id));
     case 'rally': return entity?.kind === 'building' && point() && game.setRallyPoint(side, entity.id, message.x, message.y);
+    case 'buy-cruise': return entity?.kind === 'unit' && game.buyCruise(entity);
+    case 'cruise': return entity?.kind === 'unit' && point() && game.launchCruiseAt(entity.id,message.x,message.y,side);
     case 'resupply': return entity?.kind === 'unit' && game.requestResupply(entity);
     case 'unload': return entity?.kind === 'unit' && game.unloadTransport(entity);
     case 'auto-supply': return entity?.kind === 'unit' && game.toggleAutoSupply(entity);

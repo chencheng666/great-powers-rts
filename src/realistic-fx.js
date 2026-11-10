@@ -106,7 +106,7 @@ export const realisticEffects = {
       puff.material.rotation = noise(i, effect.x) * Math.PI * 2; group.add(puff);
     }
     const positions = new Float32Array(profile.particles * 3);
-    const sparks = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(positions, 3)), new THREE.PointsMaterial({ color: profile.water ? '#e1eeeb' : profile.energy ? '#a5eeff' : '#f0c792', size: profile.explosion ? 2 : 1.2, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    const sparks = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(positions, 3)), new THREE.PointsMaterial({ map:this.sparkTexture || null, alphaTest:.02, color: profile.water ? '#e1eeeb' : profile.energy ? '#a5eeff' : '#f0c792', size: profile.explosion ? 2 : 1.2, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     sparks.frustumCulled = false; group.add(sparks);
     const geometry = new THREE.RingGeometry(.86, 1, 48); geometry.rotateX(-Math.PI / 2);
     const wave = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: profile.water ? '#d8eceb' : '#918c7b', opacity: 0, transparent: true, depthWrite: false, side: THREE.DoubleSide }));

@@ -99,6 +99,7 @@ export function validateSave(save) {
         if (entity.battery !== undefined && (!isLunarRobot(MAPS[config.mapId], entity.type) || !finite(entity.battery) || entity.battery < 0 || entity.battery > ROBOT_ENERGY.capacity)) invalid();
         if (entity.ammo !== null && (!Number.isSafeInteger(entity.ammo) || entity.ammo < 0 || !d.ammo || entity.ammo > d.ammo)) invalid();
         if (d.stock && (!finite(entity.stock) || entity.stock < 0 || entity.stock > d.stock)) invalid();
+        if (entity.cruiseAmmo !== undefined && (entity.type !== 'submarine' || !Number.isSafeInteger(entity.cruiseAmmo) || entity.cruiseAmmo < 0 || entity.cruiseAmmo > 2) || entity.cruiseReadyAt !== undefined && (entity.type !== 'submarine' || !finite(entity.cruiseReadyAt) || entity.cruiseReadyAt < 0)) invalid();
         if (entity.type === 'supply' && entity.autoSupply !== undefined && typeof entity.autoSupply !== 'boolean') invalid();
         if (entity.counterIntelEnabled !== undefined && (entity.type !== 'counterIntel' || typeof entity.counterIntelEnabled !== 'boolean')) invalid();
         if (entity.autoDrone !== undefined && (!supportsDroneAutonomy(entity) || typeof entity.autoDrone !== 'boolean' || !Object.hasOwn(DRONE_ROLES, entity.droneRole))) invalid();
@@ -164,7 +165,8 @@ export function validateSave(save) {
   for (const projectile of s.projectiles) if (!object(projectile) || !['x', 'y', 'startX', 'startY', 'toX', 'toY', 'angle', 'age', 'amount', 'speed', 'hp', 'jam'].every(key => finite(projectile[key])) || projectile.speed <= 0 || !owners.includes(projectile.owner) || !['nuclear','ballistic', 'wing', 'torpedo', 'rocket', 'missile', 'loitering', 'bomb'].includes(projectile.kind)) invalid();
   if(s.projectiles.some(p=>p.kind==='nuclear'&&(!config.nuclearEnabled||p.age<0||p.age>R.flight+.1||p.toX<0||p.toY<0||p.toX>world.width||p.toY>world.height||p.hp>R.projectileHP)))invalid();
   for (const projectile of s.projectiles) for (const key of ['sourceHeight', 'targetHeight', 'fallDuration']) if (projectile[key] !== undefined && (!finite(projectile[key]) || key === 'fallDuration' && (projectile[key] <= 0 || projectile[key] > 10))) invalid();
-  for (const projectile of s.projectiles) if(projectile.flightRole!==undefined&&!['air-to-air','air-to-ground','surface'].includes(projectile.flightRole))invalid();
+  for (const projectile of s.projectiles) if(projectile.flightRole!==undefined&&!['air-to-air','air-to-ground','surface','sub-launched'].includes(projectile.flightRole))invalid();
+  for (const p of s.projectiles) if (p.queued !== undefined && (typeof p.queued !== 'boolean' || p.kind !== 'rocket') || p.launchDelay !== undefined && (!finite(p.launchDelay) || p.launchDelay < 0 || p.launchDelay > .5) || p.queued && !finite(p.launchDelay) || p.tubeOffset !== undefined && (!finite(p.tubeOffset) || Math.abs(p.tubeOffset) > 10)) invalid();
   if (save.view !== undefined && !object(save.view)) invalid();
   if (s.battleStats !== undefined && !validateBattleStats(s.battleStats, s.time,count)) invalid();
   if (!validChallengeState(s.challenge, config, s.time, [...s.units,...s.buildings],[...s.beacons,...(s.resourceSites||[])]) || s.challenge && count !== 2) invalid();

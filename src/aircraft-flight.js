@@ -50,3 +50,12 @@ export function rotorMotion(entry, powered, dt) {
   entry.rotorSpeed += Math.max(-step, Math.min(step, target - entry.rotorSpeed));
   return entry.rotorSpeed;
 }
+
+// 攻击切入和开火后拉起仅影响表现，不改变射程、命中或伤害。
+export function airCombatPose(unit, target, time, future = false) {
+  if (future || !['fighter','strike','navalFighter','navalStrike'].includes(unit.type) || unit.deployment || unit.deckApproach || unit.embarkedIn || unit.order?.type === 'rearm') return {height:0,pitch:0};
+  const elapsed = time - (unit.lastFireAt ?? -100);
+  if (elapsed >= 0 && elapsed < 2.2) { const lift=Math.sin(elapsed/2.2*Math.PI);return {height:lift*16,pitch:lift*.1}; }
+  if (target && target.hp > 0 && Math.hypot(target.x-unit.x,target.y-unit.y)<UNITS[unit.type].range*1.3 && aircraftCanFire(unit,target)) return {height:-7,pitch:-.045};
+  return {height:0,pitch:0};
+}

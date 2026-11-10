@@ -26,3 +26,10 @@
 }
 
 .entry-privacy{display:block;margin-top:12px;max-width:480px;font-size:11px;line-height:1.6;color:#b4c5b7}
+
+.cruise-control{margin-top:8px;display:grid;gap:6px;font-size:11px;color:#b9d1d3}.cruise-control>div{display:flex;gap:6px}.cruise-control button{padding:7px 9px;border:1px solid #668e8b;border-radius:8px;color:#d8eee9;background:#213b3a;font:inherit}.cruise-control button:disabled{opacity:.45}
+.cruise-control{pointer-events:auto}
+@media(max-width:700px),(pointer:coarse) and (max-width:1000px){
+ #selection-panel:has(.cruise-control){padding-right:10px;min-width:min(320px,calc(100% - 16px))}
+ .cruise-control button{min-height:44px;flex:1}.cruise-control>div{flex-wrap:wrap}
+}

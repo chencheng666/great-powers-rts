@@ -1,0 +1,270 @@
+{
+  "modelsChecked": 66,
+  "maxCoordinateError": 0.000141134133332943,
+  "rows": [
+    {
+      "name": "hq",
+      "maxCoordinateError": 0.000048781931445862625
+    },
+    {
+      "name": "power",
+      "maxCoordinateError": 0.000046995822384029995
+    },
+    {
+      "name": "refinery",
+      "maxCoordinateError": 0.000022888882106997244
+    },
+    {
+      "name": "barracks",
+      "maxCoordinateError": 0.000046995822384029995
+    },
+    {
+      "name": "factory",
+      "maxCoordinateError": 0.00004699065334090591
+    },
+    {
+      "name": "radar",
+      "maxCoordinateError": 0.0000182634219698663
+    },
+    {
+      "name": "airfield",
+      "maxCoordinateError": 0.00005676223770445521
+    },
+    {
+      "name": "turret",
+      "maxCoordinateError": 0.000029300451305960817
+    },
+    {
+      "name": "lab",
+      "maxCoordinateError": 0.00005340739158299357
+    },
+    {
+      "name": "super",
+      "maxCoordinateError": 0.00005340739158299357
+    },
+    {
+      "name": "tank",
+      "maxCoordinateError": 0.000004042628937092618
+    },
+    {
+      "name": "harvester",
+      "maxCoordinateError": 0.000006409632143267174
+    },
+    {
+      "name": "aa",
+      "maxCoordinateError": 0.0000026705558435757837
+    },
+    {
+      "name": "fighter",
+      "maxCoordinateError": 0.000012988169428851393
+    },
+    {
+      "name": "strike",
+      "maxCoordinateError": 0.000036022122982926064
+    },
+    {
+      "name": "drone",
+      "maxCoordinateError": 0.000004729143082575493
+    },
+    {
+      "name": "ghost",
+      "maxCoordinateError": 0.0000025033214092751166
+    },
+    {
+      "name": "patrol",
+      "maxCoordinateError": 0.000013627352253131608
+    },
+    {
+      "name": "frigate",
+      "maxCoordinateError": 0.00003268340485468313
+    },
+    {
+      "name": "oil",
+      "maxCoordinateError": 0.0000365268439397326
+    },
+    {
+      "name": "beacon",
+      "maxCoordinateError": 0.000029300451305960817
+    },
+    {
+      "name": "ore_gold",
+      "maxCoordinateError": 0.00000553349798648739
+    },
+    {
+      "name": "ore_gem",
+      "maxCoordinateError": 0.00000553349798648739
+    },
+    {
+      "name": "tree",
+      "maxCoordinateError": 2.1606684441621837e-8
+    },
+    {
+      "name": "rock",
+      "maxCoordinateError": 0.000007155385533197389
+    },
+    {
+      "name": "loiterer",
+      "maxCoordinateError": 0.0000026705558435757837
+    },
+    {
+      "name": "jammer",
+      "maxCoordinateError": 0.0000026705558435757837
+    },
+    {
+      "name": "laser",
+      "maxCoordinateError": 0.0000026705558435757837
+    },
+    {
+      "name": "rocket",
+      "maxCoordinateError": 0.00001529522039334097
+    },
+    {
+      "name": "apc",
+      "maxCoordinateError": 0.0000026705558435757837
+    },
+    {
+      "name": "supply",
+      "maxCoordinateError": 0.000006321720590118929
+    },
+    {
+      "name": "destroyer",
+      "maxCoordinateError": 0.00008673910222689596
+    },
+    {
+      "name": "carrier",
+      "maxCoordinateError": 0.000141134133332943
+    },
+    {
+      "name": "railgun",
+      "maxCoordinateError": 0.000004042628937092618
+    },
+    {
+      "name": "aegis",
+      "maxCoordinateError": 0.000012988169428851393
+    },
+    {
+      "name": "relay",
+      "maxCoordinateError": 0.0000026705558435757837
+    },
+    {
+      "name": "rocket_china",
+      "maxCoordinateError": 0.0000064213114789879455
+    },
+    {
+      "name": "tank_russia",
+      "maxCoordinateError": 0.000004042628937092618
+    },
+    {
+      "name": "rocket_russia",
+      "maxCoordinateError": 0.0000064213114789879455
+    },
+    {
+      "name": "tank_nato",
+      "maxCoordinateError": 0.000004042628937092618
+    },
+    {
+      "name": "rocket_nato",
+      "maxCoordinateError": 0.000006341460698333634
+    },
+    {
+      "name": "tank_asia",
+      "maxCoordinateError": 0.000004042628937092618
+    },
+    {
+      "name": "rocket_asia",
+      "maxCoordinateError": 0.000006341460698333634
+    },
+    {
+      "name": "tank_middleeast",
+      "maxCoordinateError": 0.000004042628937092618
+    },
+    {
+      "name": "rocket_middleeast",
+      "maxCoordinateError": 0.000006341460698333634
+    },
+    {
+      "name": "future_hq",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_power",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_refinery",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_barracks",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_factory",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_radar",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_airfield",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_turret",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_lab",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_super",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_oil",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_armory",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "future_beacon",
+      "maxCoordinateError": 0.000025636043986115853
+    },
+    {
+      "name": "landing",
+      "maxCoordinateError": 0.00006563267676684692
+    },
+    {
+      "name": "bomber",
+      "maxCoordinateError": 0.000010933292065473665
+    },
+    {
+      "name": "logistics_depot",
+      "maxCoordinateError": 0.000024547261700202938
+    },
+    {
+      "name": "containerShip",
+      "maxCoordinateError": 0.000031911595010925
+    },
+    {
+      "name": "robot_rifle",
+      "maxCoordinateError": 0.000002358361725962599
+    },
+    {
+      "name": "robot_engineer",
+      "maxCoordinateError": 0.000002358361725962599
+    },
+    {
+      "name": "robot_scout",
+      "maxCoordinateError": 0.000002358361725962599
+    },
+    {
+      "name": "armory",
+      "maxCoordinateError": 0.000015259254737998162
+    }
+  ]
+}

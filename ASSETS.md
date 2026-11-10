@@ -104,3 +104,10 @@ Three.js、PathFinding.js、ws 使用 MIT 许可；heap.js 保留 PSF 许可文�
 `assets/official/official-emblem.svg` 是按用户印章方向重新绘制的矢量字形，单一「国」字，朱砂红印面、白色刻槽与沿外轮廓的白边，画布实际透明，不使用棋盘格背景。32、180像素PNG用于游戏与官网，保留历史文章图片作为版本记录。
 
 三首音轨由上述离线生成器重新编配：《国际歌》116 BPM；原创《钢铁洪流》132 BPM；原创《东风浩荡》138 BPM。新增连续铜管乐句、低音齐奏、弦乐分层与军鼓滚奏，并减轻混响。不使用阅兵录像、商业军乐录音或歌词；原曲署名沿用上节。FLAC为无损母版，网页使用160kbps AAC有损分发，不称为无损压缩。
+
+
+## 2026-11-10 开源战斗素材
+
+新增 Sketlux / yd 的 CC0 潜艇、Kenney 的 CC0 火焰/烟雾/火星透明粒子；两首CC0社区配乐分别是 Spring Spring 的 War Theme 和 skrjablin 的 The Final Battle。来源、修改、尺寸和SHA256见 `assets/third-party/open-battle-20261110.json` 及 `THIRD-PARTY-ASSETS.txt`。新音乐归一化后采用128kbps AAC有损压缩、流式播放，不宣称无损或实录乐团。现有自有阵营模型及已授权模型仍保留，没有把全库统一替换为同一种外观。
+
+共用模型库移除程序模型的重复几何、焊接顶点，再由Meshoptimizer压缩为 `battle-library-compact.glb`；Three.js自带MIT解码器载入。构建需要设置 `GP_GLTF_TOOLS` 指向装有 glTF Transform 与 meshoptimizer 的临时工具目录，不新增浏览器运行依赖。源版库保留用于重建和尺寸对比。

@@ -25,6 +25,7 @@ for (const style of ['rifle', 'tank', 'fighter', 'navalStrike', 'rocket', 'balli
     const source = game.addUnit(0, style, 900, 900), target = game.addUnit(1, 'tank', 1000, 900);
     if (style === 'carrier') source.wing = 3;
     game.fire(source, target, 10, style);
+    if (style === 'rocket') { for(let i=0;i<8;i++)game.updateProjectiles(.05); }
     const data = payload(game); client.apply(data); client.apply(data);
     assert.equal(local.filter(args => args[2].phase === 'launch').length, style === 'rocket' ? 4 : 1);
     assert.equal(remote.filter(args => args[2].phase === 'launch').length, style === 'rocket' ? 4 : 1);

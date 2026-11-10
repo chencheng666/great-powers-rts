@@ -1,0 +1,9 @@
+{
+  "source": "自有模型库与Sketlux/yd CC0潜艇，Three.js MIT工具链与Meshoptimizer MIT压缩",
+  "originalBytes": 35516276,
+  "compactBytes": 3826464,
+  "beforeVertices": 879979,
+  "afterVertices": 761133,
+  "removedMeshes": 832,
+  "sha256": "958a7045e630031aac12fea4d5a8a029a0c973c1173da07802896e47a5f4705d"
+}

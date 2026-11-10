@@ -1,0 +1,19 @@
+{
+  "unitsAtStart": 120,
+  "unitsAtEnd": 92,
+  "frames": 180,
+  "medianWorkMs": 15.200000047683716,
+  "p95WorkMs": 21.200000047683716,
+  "maxEffects": 64,
+  "maxTrails": 120,
+  "width": 1500,
+  "height": 748,
+  "quality": "standard",
+  "version": "3.2.0",
+  "trailPool": 0,
+  "openVfx": {
+    "fire": true,
+    "smoke": true,
+    "spark": true
+  }
+}

@@ -22,7 +22,7 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
       e.order = null; e.orderQueue = []; e.path = []; e.resumeOrder = null; e.targetId = null;
       e.passengers = []; e.embarkedIn = null; e.homeCarrierId = null;
       e.queue = []; e.active = null; e.rallyPoint = null; delete e.freight;
-      delete e.serviceTargetId; delete e.stock; delete e.ammo; delete e.defenseAmmo; delete e.defenseReadyAt; delete e.defenseReload;
+      delete e.serviceTargetId; delete e.stock; delete e.ammo; delete e.cruiseAmmo; delete e.cruiseReadyAt; delete e.defenseAmmo; delete e.defenseReadyAt; delete e.defenseReload;
       delete e.autoDrone; delete e.droneRole;
       delete e.swarmParentId;
       delete e.nuclearEvadeUntil;
@@ -56,7 +56,7 @@ export function battleView(game, side, memory = new Map(), {spectator=false}={})
     winner: typeof game.winner === 'number' ? owner(game.winner) : game.winner,
     players, units: entities.map(entityView), buildings: [...game.ownedBuildings(side).map(entityView), ...[...memory].filter(([id]) => typeof id === 'number').map(([, b]) => copy(b))],
     ore: sites('ore'), oil: sites('oil'), beacons: sites('beacons'), resourceSites: sites('resourceSites'), fog: packFog(game.fogs[side]),
-    projectiles: game.projectiles.filter(p => p.kind==='nuclear'||game.isVisibleFor(side, p.x, p.y) && game.isVisibleFor(side, p.toX, p.toY)).map(p => ({ ...copy(p), startX:game.isVisibleFor(side,p.startX,p.startY)?p.startX:p.x,startY:game.isVisibleFor(side,p.startX,p.startY)?p.startY:p.y,owner: owner(p.owner), targetId: null, sourceId: null })),
+    projectiles: game.projectiles.filter(p => !p.queued && (p.kind==='nuclear'||game.isVisibleFor(side, p.x, p.y) && game.isVisibleFor(side, p.toX, p.toY))).map(p => ({ ...copy(p), startX:game.isVisibleFor(side,p.startX,p.startY)?p.startX:p.x,startY:game.isVisibleFor(side,p.startX,p.startY)?p.startY:p.y,owner: owner(p.owner), targetId: null, sourceId: null })),
     effects: game.effects.filter(e => e.type==='nuclearBlast'||e.type==='sound'&&e.global||game.isVisibleFor(side, e.x, e.y) && (!Number.isFinite(e.toX) || game.isVisibleFor(side, e.toX, e.toY)) && (e.type!=='sound'||!e.sourceId||!game.getEntity(e.sourceId)||game.canSeeEntity(side,game.getEntity(e.sourceId)))).map(e => ({ ...copy(e), owner: owner(e.owner) }))
   };
 }

@@ -58,3 +58,37 @@ Kenney Nature Kit 2.1 - rock_largeA.stl
 下载镜像（作者上传）：https://opengameart.org/content/nature-kit
 许可：CC0 1.0 Universal https://creativecommons.org/publicdomain/zero/1.0/
 本项目修改：坐标轴转换、归一化、替换岩石着色；仅用于灰谷入门的装饰，不改变碰撞。
+
+2026-11-10 新增开源战场素材
+
+submarine
+作者：Sketlux; yd
+来源：https://opengameart.org/content/ballistic-missile-submarine
+许可：CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/
+修改：重设坐标、尺度、海军材质，增加阵营识别带和独立螺旋桨；不沿用现实武器参数
+文件：assets/third-party/submarine.glb
+
+kenney-particles
+作者：Kenney
+来源：https://kenney.nl/assets/particle-pack
+许可：CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/
+修改：原透明PNG，运行时调色、缩放和生命周期
+文件：assets/third-party/kenney-vfx/fire_01.png, assets/third-party/kenney-vfx/smoke_04.png, assets/third-party/kenney-vfx/spark_05.png
+
+war-theme
+作者：Spring Spring
+来源：https://opengameart.org/content/war-theme
+许可：CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/
+修改：归一化电平，AAC 128kbps有损压缩，浏览器循环播放
+文件：assets/audio/war-theme.m4a
+
+final-battle
+作者：skrjablin
+来源：https://opengameart.org/content/the-final-battle
+许可：CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/
+修改：归一化电平，AAC 128kbps有损压缩，浏览器循环播放
+文件：assets/audio/final-battle.m4a
+
+Kenney PNG 从公开镜像 https://github.com/GeorgeQLe/assets-vfx-particles 取得，许可核对原作者页面。
+Meshoptimizer（MIT）用于模型压缩，Three.js（MIT）用于加载与解码，原模型名称与动态关节保留。
+音乐是社区发布的管弦战斗曲，不宣称实录乐团；AAC 是有损压缩。其许可不扩展到现有其他素材。

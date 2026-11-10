@@ -1,3 +1,4 @@
+import { submarineCruise } from './submarine-cruise.js';
 import { canCrush, crushAlongMove } from './vehicle-crush.js';
 import { updateCarrierDefense } from './carrier-defense.js';
 import { destructionEvent } from './destruction-presentation.js';
@@ -1050,11 +1051,12 @@ export class Game {
     if (style === 'rocket') {
       // 一格弹药表示一轮四发齐射，总伤害预算不叠加，保持原有补给成本。
       for (let index = 0; index < 4; index++) {
-        this.launchProjectile(source, target, amount / 4, style);
+        this.launchProjectile(source, target, amount / 4, style, { delay: index * .12 });
         const p = this.projectiles.at(-1), lateral = (index - 1.5) * 5;
         const angle = Math.atan2(target.y - source.y, target.x - source.x);
         p.x = p.startX = source.x - Math.sin(angle) * lateral;
         p.y = p.startY = source.y + Math.cos(angle) * lateral;
+        p.tubeOffset = lateral;
         p.speed *= 1 - index * .035;
       }
       return;
@@ -1495,6 +1497,7 @@ export class Game {
     const pendingHarvesters = this.ownedBuildings(side, 'factory').reduce((count, b) => count + b.queue.filter(type => type === 'harvester').length + (b.active?.type === 'harvester' ? 1 : 0), 0);
     if (this.economyMode === 'mining' && harvesters + pendingHarvesters < 2 && p.credits > 450) this.queueAIUnit('harvester',side);
     this.updateIntelligenceAI(side);
+    if(!fundingTech)this.updateCruiseAI(side);
     const knownSites = [...this.oil, ...this.beacons, ...(this.resourceSites||[]).filter(s=>s.type==='depot')].filter(site => site.owner !== side && this.hasExploredFor(side, site.x, site.y));
     if (!fundingTech && knownSites.length && this.time >= p.aiEngineerRetryAt && !this.ownedUnits(side, 'engineer').length && p.credits > 380) {
       if (this.queueAIUnit('engineer',side)) p.aiEngineerRetryAt = this.time + 54;
@@ -1648,4 +1651,4 @@ export class Game {
   }
 }
 
-Object.assign(Game.prototype, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat, droneAutonomy, strategicCombat,deterrenceCombat,commandQueue,challengeCombat,combatStanceCommands);
+Object.assign(Game.prototype, submarineCruise, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat, droneAutonomy, strategicCombat,deterrenceCombat,commandQueue,challengeCombat,combatStanceCommands);

@@ -178,7 +178,7 @@ export const modernCombat = {
     if (u.heat >= 95) u.overheated = true;
   },
 
-  launchProjectile(source, target, amount, style) {
+  launchProjectile(source, target, amount, style, { delay = 0 } = {}) {
     if (style === 'carrier') {
       const flights = this.projectiles.filter(p => !p.finished && p.sourceId === source.id && p.kind === 'wing').length;
       if (flights >= source.wing || source.wing <= 0) return false;
@@ -186,6 +186,7 @@ export const modernCombat = {
     const kind = style === 'ballistic' ? 'ballistic' : style === 'bomber' ? 'bomb' : style === 'carrier' ? 'wing' : style === 'rocket' ? 'rocket' : ['submarine', 'antiSub'].includes(style) ? 'torpedo' : style === 'loiterer' ? 'loitering' : 'missile';
     this.projectiles.push({ id: this.nextProjectileId++, kind, owner: source.owner, sourceId: source.id, targetId: target.id, targetType: target.type, x: source.x, y: source.y, startX: source.x, startY: source.y, toX: target.x, toY: target.y, angle: Math.atan2(target.y - source.y, target.x - source.x), age: 0, jam: 0, amount, hp: kind === 'wing' ? 90 : 38, speed: kind === 'wing' ? 185 : kind === 'torpedo' ? 155 : kind === 'rocket' ? 300 : kind === 'missile' ? 360 : 185, returning: false });
     const p = this.projectiles.at(-1);
+    if (kind === 'rocket' && delay > 0) { p.queued = true; p.launchDelay = delay; }
     if(kind==='ballistic'){p.hp=70;p.speed=120;}
     if (kind === 'torpedo') {
       // 艇首沿当前艇身方向发射，然后按原有目标进行有限角速度转弯。
@@ -200,7 +201,7 @@ export const modernCombat = {
     p.flightRole = airborne(source) ? airborne(target) ? 'air-to-air' : 'air-to-ground' : 'surface';
     if (kind === 'bomb') { p.toX = p.x; p.toY = p.y; p.fallDuration = 1.1; }
     if (style === 'submarine') source.exposedUntil = this.time + 4;
-    emitBattleSound(this, weaponSound(style, target), source, 'launch', { sourceId: source.id });
+    if (!p.queued) emitBattleSound(this, weaponSound(style, target), source, 'launch', { sourceId: source.id });
     return true;
   },
 
@@ -211,7 +212,7 @@ export const modernCombat = {
       const d = UNITS[defender.type];
       if (!['abm', 'laser', 'aa', 'frigate', 'destroyer', 'fighter', 'aegis', 'navalFighter'].includes(defender.type) || defender.ewSuppressedUntil > this.time || defender.overheated || d.ammo && defender.ammo <= 0 || defender.order?.type === 'rearm') continue;
       if(defender.type==='abm'&&(!this.hasPower(defender.owner)||!this.hasBuilding(defender.owner,'radar')))continue;
-      const target = list.filter(p => p.hp > 0 && !p.finished && p.owner !== defender.owner && (defender.type==='abm'?['ballistic','nuclear'].includes(p.kind):!['ballistic','nuclear'].includes(p.kind)) && (p.kind!=='nuclear'||p.age>=DETERRENCE.flight*DETERRENCE.terminal) && !['rocket', 'torpedo', 'bomb'].includes(p.kind) && !(defender.type === 'laser' && p.kind === 'wing') && !(['fighter', 'aegis', 'navalFighter'].includes(defender.type) && p.kind !== 'wing') && distance(defender, p) <= d.range && (p.kind==='nuclear'||this.isVisibleFor(defender.owner, p.x, p.y))).sort((a, b) => distance(defender, a) - distance(defender, b))[0];
+      const target = list.filter(p => p.hp > 0 && !p.finished && !p.queued && (p.flightRole !== 'sub-launched' || p.age >= .85) && p.owner !== defender.owner && (defender.type==='abm'?['ballistic','nuclear'].includes(p.kind):!['ballistic','nuclear'].includes(p.kind)) && (p.kind!=='nuclear'||p.age>=DETERRENCE.flight*DETERRENCE.terminal) && !['rocket', 'torpedo', 'bomb'].includes(p.kind) && !(defender.type === 'laser' && p.kind === 'wing') && !(['fighter', 'aegis', 'navalFighter'].includes(defender.type) && p.kind !== 'wing') && distance(defender, p) <= d.range && (p.kind==='nuclear'||this.isVisibleFor(defender.owner, p.x, p.y))).sort((a, b) => distance(defender, a) - distance(defender, b))[0];
       if (!target) continue;
       target.hp -= d.damage * (['laser','abm'].includes(defender.type) ? 1 : 1.8);
       defender.fireTimer = d.cooldown;
@@ -223,7 +224,21 @@ export const modernCombat = {
     }
     for (const p of list) {
       if(p.kind==='nuclear'){this.updateNuclearProjectile(p,dt);continue;}
-      p.age += dt;
+      let flightDt = dt;
+      if (p.queued) {
+        const launcher = this.getEntity(p.sourceId);
+        if (!launcher || !alive(launcher)) { p.finished = true; continue; }
+        const wait = Math.min(dt, p.launchDelay); p.launchDelay = Math.max(0, p.launchDelay - wait);
+        if (p.launchDelay > .000001) continue;
+        flightDt -= wait; p.queued = false;
+        const angle = Math.atan2(p.toY - launcher.y, p.toX - launcher.x), lateral = p.tubeOffset || 0;
+        p.x = p.startX = launcher.x - Math.sin(angle) * lateral;
+        p.y = p.startY = launcher.y + Math.cos(angle) * lateral; p.angle = angle;
+        launcher.lastFireAt = this.time;
+        emitBattleSound(this, 'rocket', launcher, 'launch', { sourceId: launcher.id });
+      }
+      p.age += flightDt;
+      if (p.flightRole === 'sub-launched') { if(p.age < .85)continue; flightDt=Math.min(flightDt,p.age-.85); }
       if (p.hp <= 0) { this.finishProjectile(p, true); continue; }
       const source = this.getEntity(p.sourceId), target = this.getEntity(p.targetId);
       const jammed = ['loitering', 'missile', 'wing'].includes(p.kind) && (weatherState(this.map, this.time).phase === 'storm' && !hasSignalCover(this, p.owner, p) || this.enemyUnits(p.owner, 'jammer').some(u => this.time >= u.stunUntil && distance(u, p) <= UNITS.jammer.range * (this.players[u.owner].faction === 'middleeast' ? 1.15 : 1)));
@@ -236,7 +251,7 @@ export const modernCombat = {
       } else if (!['ballistic', 'rocket', 'bomb'].includes(p.kind) && !jammed && target?.hp > 0 && this.canSeeEntity(p.owner, target)) {
         p.toX = target.x; p.toY = target.y;
       }
-      const remaining = distance(p, { x: p.toX, y: p.toY }), step = p.speed * dt * (jammed ? .5 : 1);
+      const remaining = distance(p, { x: p.toX, y: p.toY }), step = p.speed * flightDt * (jammed ? .5 : 1);
       const heading = Math.atan2(p.toY - p.y, p.toX - p.x);
       p.angle = ['wing', 'missile', 'loitering', 'torpedo'].includes(p.kind) ? turnToward(p.angle, heading, (p.kind === 'torpedo' ? 2 : p.kind === 'wing' ? 2.2 : 5) * dt) : heading;
       if (p.kind === 'bomb' && p.fallDuration && p.age < p.fallDuration) continue;

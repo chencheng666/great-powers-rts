@@ -5,7 +5,7 @@ import { NuclearAlarm, nuclearAlarmAudible, terminalNuclearWarning } from './nuc
 
 const assets = import.meta.glob(['../assets/audio/*.m4a','!../assets/audio/frontline-sequence.m4a'], { eager: true, query: '?url', import: 'default' });
 const portableVoices = import.meta.glob('../assets/audio/portable/*.wav', { eager: true, query: '?url', import: 'default' });
-const musicFiles = new Set(['internationale.m4a', 'iron-tide.m4a', 'east-wind.m4a']);
+const musicFiles = new Set(['internationale.m4a', 'iron-tide.m4a', 'east-wind.m4a', 'war-theme.m4a', 'final-battle.m4a']);
 const SETTINGS_KEY = 'great-powers-audio-v1';
 
 export class GameAudio {
@@ -76,18 +76,21 @@ export class GameAudio {
 
   async startMusic() {
     const session = this.session, request = ++this.musicRequest;
-    const file = (this.scene === 'menu' ? 'internationale' : this.settings.musicTrack || 'iron-tide') + '.m4a';
+    const track = this.scene === 'menu' ? 'war-theme' : this.settings.musicTrack || 'war-theme';
+    const url = assets[`../assets/audio/${track}.m4a`]; if (!url) return false;
+    // 完整曲目使用浏览器流式解码，开局不再等待整首配乐下载和展开。
+    const audio = new Audio(url); audio.loop = true; audio.preload = 'none';
+    const source = this.context.createMediaElementSource(audio), gain = this.context.createGain();
+    gain.gain.value = 0; source.connect(gain); gain.connect(this.musicBus);
+    const music = { stop:()=>{audio.pause();audio.removeAttribute('src');audio.load();}, disconnect:()=>{source.disconnect();gain.disconnect();}, audio };
     try {
-      const buffer = await this.buffer(file);
-      if (!this.active || session !== this.session || request !== this.musicRequest) return null;
-      const source = this.context.createBufferSource();
-      source.buffer = buffer; source.loop = true;
-      source.loopEnd = buffer.duration;
-      source.connect(this.musicBus); source.start();
-      if (this.music) { this.music.stop(); this.music.disconnect(); }
-      this.music = source;
+      await audio.play();
+      if (!this.active || session !== this.session || request !== this.musicRequest) { music.stop();music.disconnect();return null; }
+      const old = this.music; this.music = music;
+      gain.gain.setTargetAtTime(1,this.context.currentTime,.15);
+      if (old) { old.stop();old.disconnect(); }
       this.applySettings(); return true;
-    } catch { return this.active && session === this.session && request === this.musicRequest ? false : null; }
+    } catch { music.stop();music.disconnect();return this.active && session===this.session && request===this.musicRequest ? false : null; }
   }
 
   stopBattle() {

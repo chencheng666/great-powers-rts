@@ -3,6 +3,7 @@ import { createFactionElite } from './faction-models.js';
 import { loadAsset } from './asset-loading.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createChineseTank, createChineseDestroyer } from './domestic-models.js';
 import { createSpaceAircraft } from './feedback-models.js';
@@ -20,7 +21,7 @@ import { refineRadarStation } from './radar-models.js';
 import { finishAirframe } from './airframe-finish.js';
 import { loadOpenAssets, installOpenModels } from './open-assets.js';
 
-const modelURL = new URL('../assets/models/battle-library.glb', import.meta.url).href;
+const modelURL = new URL('../assets/models/battle-library-compact.glb', import.meta.url).href;
 const meridianURL = new URL('../assets/meridian-regolith-v2.webp', import.meta.url).href;
 const groundURL = new URL('../assets/terrain-material-v3.webp', import.meta.url).href;
 const buildingsURL = new URL('../assets/buildings-realistic-v2.webp', import.meta.url).href;
@@ -28,7 +29,7 @@ const foliageURL = new URL('../assets/foliage-realistic-v2.webp', import.meta.ur
 const armoryURL = new URL('../assets/armory-v1.webp', import.meta.url).href;
 import { BATTLE_MODEL_NAMES as names } from './battle-model-manifest.js';
 const buildingNames = ['hq', 'power', 'refinery', 'barracks', 'factory', 'dock', 'radar', 'airfield', 'turret', 'lab', 'super', 'oil', 'armory'];
-let pending;
+let pending, lunarPending;
 let library;
 const variants = new Map();
 const sprites = new Map();
@@ -81,8 +82,9 @@ function fallbackMoonTexture() {
   return texture;
 }
 
-export function prepareVisualAssets() {
-  pending ||= Promise.all([loadAsset(modelURL, () => new GLTFLoader().loadAsync(modelURL)), loadAsset(groundURL, () => new THREE.TextureLoader().loadAsync(groundURL)), loadAsset(buildingsURL, () => new THREE.TextureLoader().loadAsync(buildingsURL)), loadAsset(foliageURL, () => new THREE.TextureLoader().loadAsync(foliageURL)), loadAsset(armoryURL, () => new THREE.TextureLoader().loadAsync(armoryURL)), loadAsset(meridianURL, () => new THREE.TextureLoader().loadAsync(meridianURL)).catch(() => null)]).then(([gltf, ground, buildings, foliage, armory, meridian]) => {
+export async function prepareVisualAssets({ lunar = false } = {}) {
+  pending ||= Promise.all([loadAsset(modelURL, () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(modelURL)), loadAsset(groundURL, () => new THREE.TextureLoader().loadAsync(groundURL)), loadAsset(buildingsURL, () => new THREE.TextureLoader().loadAsync(buildingsURL)), loadAsset(foliageURL, () => new THREE.TextureLoader().loadAsync(foliageURL)), loadAsset(armoryURL, () => new THREE.TextureLoader().loadAsync(armoryURL))]).then(([gltf, ground, buildings, foliage, armory]) => {
+    const meridian = null;
     const openAssets = {};
     const models = new Map();
     gltf.scene.updateMatrixWorld(true);
@@ -96,7 +98,15 @@ export function prepareVisualAssets() {
         if (replacedNavalPart(name, mesh.name) || ['airlift', 'freightPlane'].includes(name) && mesh.name.startsWith('气动机身') || name === 'power' && mesh.name.startsWith('散热顶盖')) return;
         if (hasRefinedTracks(name) && /^(履带|履带板|履带接地板)/.test(mesh.name)) return;
         if (name === 'carrier' && /甲板停放机翼|甲板飞机/.test(mesh.name)) return;
-        const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+        const prepared = mesh.geometry.clone();
+        // 量化数据先展开成浮点再烘焙世界变换，避免整数属性在大尺度变换时截断。
+        for (const [key,attribute] of Object.entries(prepared.attributes)) if (attribute.normalized || !(attribute.array instanceof Float32Array)) {
+          const values = new Float32Array(attribute.count * attribute.itemSize);
+          for (let i=0;i<attribute.count;i++) for(let c=0;c<attribute.itemSize;c++) values[i*attribute.itemSize+c]=attribute.getComponent(i,c);
+          prepared.setAttribute(key,new THREE.BufferAttribute(values,attribute.itemSize));
+        }
+        const geometry = prepared.index ? prepared.toNonIndexed() : prepared;
+        if (geometry !== prepared) prepared.dispose();
         geometry.applyMatrix4(mesh.matrixWorld);
         for (const attr of Object.keys(geometry.attributes)) if (!['position', 'normal', 'uv'].includes(attr)) geometry.deleteAttribute(attr);
         if (!geometry.attributes.uv) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(geometry.attributes.position.count * 2), 2));
@@ -114,6 +124,7 @@ export function prepareVisualAssets() {
         for (let parent = mesh.parent; parent && parent !== source; parent = parent.parent) {
           const leg = parent.name.match(/^robot_leg_(left|right)/);
           if (leg) { limb = `leg_${leg[1]}`; pivot = new THREE.Vector3().setFromMatrixPosition(parent.matrixWorld); break; }
+          if (parent.name === 'naval_propeller') { limb = 'naval_propeller'; pivot = new THREE.Vector3().setFromMatrixPosition(parent.matrixWorld); break; }
           if (/^rotor_\d+_/.test(parent.name)) { limb = parent.name; pivot = new THREE.Vector3().setFromMatrixPosition(parent.matrixWorld); break; }
         }
         if(name==='containerShip'&&/^(标准集装箱|箱壁加强筋|箱门锁杆)/.test(mesh.name))limb='cargo_load';
@@ -179,7 +190,15 @@ export function prepareVisualAssets() {
     }).catch(() => {}), 2000);
     return library;
   }).catch(error => { pending = null; throw error; });
-  return pending;
+  await pending;
+  // 普通陆海战不下载月表贴图；首次选择月表时再补齐，失败仍保留已有备用地面。
+  if (lunar && !library.lunarReady) {
+    lunarPending ||= loadAsset(meridianURL, () => new THREE.TextureLoader().loadAsync(meridianURL)).then(texture => {
+      texture.colorSpace = THREE.SRGBColorSpace; library.meridian = texture; library.lunarReady = true;
+    }).catch(() => { lunarPending = null; });
+    await lunarPending;
+  }
+  return library;
 }
 
 export function spriteTexture(name, teamColor = '#59d7ec') {

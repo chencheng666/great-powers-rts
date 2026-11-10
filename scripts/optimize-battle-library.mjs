@@ -1,0 +1,33 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {pathToFileURL} from 'node:url';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+import {mergeVertices} from 'three/addons/utils/BufferGeometryUtils.js';
+import {STRATEGIC_MODELS} from '../src/strategic-models.js';
+import {BATTLE_MODEL_NAMES} from '../src/battle-model-manifest.js';
+// 处理自有库和注明来源的 CC0 潜艇：移除已由程序模型替换的重复几何，焊接等价顶点；保留名称和关节。
+globalThis.FileReader=class {readAsArrayBuffer(blob){blob.arrayBuffer().then(data=>{this.result=data;this.onloadend?.();});}};
+const input=new URL('../assets/models/battle-library.glb',import.meta.url),output=new URL('../assets/models/battle-library-compact.glb',import.meta.url);
+const bytes=await readFile(input),gltf=await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
+const subBytes=await readFile(new URL('../assets/third-party/submarine.glb',import.meta.url));
+const subScene=await new GLTFLoader().parseAsync(subBytes.buffer.slice(subBytes.byteOffset,subBytes.byteOffset+subBytes.byteLength),'');
+const oldSub=gltf.scene.getObjectByName('submarine'),openSub=subScene.scene.getObjectByName('submarine');
+if(!oldSub||!openSub)throw Error('潜艇模型根节点缺失');
+oldSub.removeFromParent();gltf.scene.add(openSub);
+const replaced=new Set(['rifle','engineer','scout','dock','airlift','freightPlane','destroyer_china','tank_china',...STRATEGIC_MODELS,...['china','russia','nato','asia','middleeast'].map(f=>`elite_${f}`)]);
+let beforeVertices=0,afterVertices=0,removedMeshes=0;
+for(const name of BATTLE_MODEL_NAMES){const root=gltf.scene.getObjectByName(name);if(!root)throw Error('模型名缺失：'+name);const meshes=[];root.traverse(m=>{if(m.isMesh)meshes.push(m)});for(const mesh of meshes){beforeVertices+=mesh.geometry.attributes.position.count;if(replaced.has(name)){mesh.removeFromParent();removedMeshes++;continue;}mesh.geometry=mergeVertices(mesh.geometry,1e-5);afterVertices+=mesh.geometry.attributes.position.count;}}
+const buffer=await new GLTFExporter().parseAsync(gltf.scene,{binary:true,onlyVisible:false});const tooling=process.env.GP_GLTF_TOOLS;
+if(!tooling)throw Error('请用GP_GLTF_TOOLS指定已安装的glTF Transform与Meshoptimizer的node_modules目录');
+const core=await import(pathToFileURL(tooling+'/@gltf-transform/core/dist/index.js'));
+const ext=await import(pathToFileURL(tooling+'/@gltf-transform/extensions/dist/index.js'));
+const transforms=await import(pathToFileURL(tooling+'/@gltf-transform/functions/dist/index.js'));
+const optimizer=await import(pathToFileURL(tooling+'/meshoptimizer/index.js'));
+await optimizer.MeshoptEncoder.ready;
+const io=new core.NodeIO().registerExtensions(ext.ALL_EXTENSIONS).registerDependencies({'meshopt.encoder':optimizer.MeshoptEncoder,'meshopt.decoder':optimizer.MeshoptDecoder});
+const doc=await io.readBinary(new Uint8Array(buffer));
+await doc.transform(transforms.meshopt({encoder:optimizer.MeshoptEncoder,level:'medium',quantizePosition:16,quantizeNormal:12,quantizeTexcoord:14}));
+const compact=await io.writeBinary(doc);await writeFile(output,compact);
+const report={source:'自有模型库与Sketlux/yd CC0潜艇，Three.js MIT工具链与Meshoptimizer MIT压缩',originalBytes:bytes.length,compactBytes:compact.byteLength,beforeVertices,afterVertices,removedMeshes,sha256:createHash('sha256').update(compact).digest('hex')};
+await mkdir(new URL('../docs/qa/20261110-open-battle/',import.meta.url),{recursive:true});await writeFile(new URL('../docs/qa/20261110-open-battle/模型库精简.json',import.meta.url),JSON.stringify(report,null,2)+'\n');console.log(report);

@@ -9,7 +9,7 @@ import { carrierAirGroupLabel } from './carrier-airgroup.js';
 import { growthAppearance } from './growth-rewards.js';
 import { valleyRockPositions } from './kenney-rock-geometry.js';
 import { confirmedAircraftLoss, aircraftCrashPose, aircraftShadowOpacity } from './destruction-presentation.js';
-import { rotorMotion } from './aircraft-flight.js';
+import { rotorMotion, airCombatPose } from './aircraft-flight.js';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -137,6 +137,17 @@ export class Renderer {
     Object.assign(sun.shadow.camera, { left: -this.world.width * .7, right: this.world.width * .7, top: this.world.height * .85, bottom: -this.world.height * .85, near: 10, far: 6000 });
     sun.shadow.bias = -.0001; sun.shadow.normalBias = .16; sun.shadow.radius = 1.5; this.scene.add(sun, sun.target);
     this.fireTexture = particleTexture(); this.smokeTexture = particleTexture(true);
+    this.fallbackParticleTextures = [this.fireTexture, this.smokeTexture]; this.trailPool = []; this.openVfxReady = {};
+    const loader = new THREE.TextureLoader();
+    for (const [kind, url] of Object.entries({
+      fire: new URL('../assets/third-party/kenney-vfx/fire_01.png', import.meta.url).href,
+      smoke: new URL('../assets/third-party/kenney-vfx/smoke_04.png', import.meta.url).href,
+      spark: new URL('../assets/third-party/kenney-vfx/spark_05.png', import.meta.url).href,
+    })) loader.load(url, texture => {
+      if (this.disposed) { texture.dispose(); return; }
+      texture.colorSpace = THREE.SRGBColorSpace; this.track(texture);
+      this[kind + 'Texture'] = texture; this.openVfxReady[kind] = true;
+    }, undefined, () => { /* 社区贴图载入失败时继续使用程序粒子。 */ });
     this.createTerrain(); this.createFoundationDecals(); this.createBridges(); this.createEnvironment(); this.createFutureStructures(); this.createSites(); this.createFog(); this.createOverlays();
     this.createTracks(); this.createCombatAtmosphere();
     if (this.quality === 'high') this.createPostprocessing();
@@ -1034,7 +1045,11 @@ export class Renderer {
           if (flightPose) {
             height = flightPose.height;
             entry.pitch += (flightPose.pitch - entry.pitch) * (1 - Math.exp(-dt * 5)); entry.model.rotation.z = entry.pitch;
-          } else { entry.pitch += (0 - entry.pitch) * (1 - Math.exp(-dt * 5)); entry.model.rotation.z = entry.pitch; }
+          } else {
+            const target=this.game.getEntity(entity.order?.targetId || entity.targetId);
+            const combat=airCombatPose(entity,target,this.game.time,this.game.map.future);
+            height+=combat.height;entry.pitch+=(combat.pitch-entry.pitch)*(1-Math.exp(-dt*5));entry.model.rotation.z=entry.pitch;
+          }
           entry.bank += (clamp(turn * .65, -.4, .4) - entry.bank) * (1 - Math.exp(-dt * 5));
           entry.model.rotation.x = entry.bank;
           if (entity.deckApproach) entry.flightHeight = height;
@@ -1198,6 +1213,7 @@ export class Renderer {
       if (entry.airShadow) { this.scene.remove(entry.airShadow); entry.airShadow.material.dispose(); }
       entry.exhausts.forEach(sprite => sprite.material.dispose()); this.scene.remove(entry.model, entry.ring, entry.identity); this.removeFoundation(id); this.addLossWreck(entry); this.entities.delete(id);
     }
+    for(const entry of this.entities.values()) {const prop=entry.model.getObjectByName('naval_propeller');if(prop)prop.rotation.x=this.game.time*(entry.entity.order?10:1.5);}
     this.updateShipwrecks();
     for (const site of this.sites) {
       site.model.visible = this.game.hasExploredFor(0, site.entity.x, site.entity.y);
@@ -1239,7 +1255,21 @@ export class Renderer {
     this.trackMesh.count = count; this.trackMesh.instanceMatrix.needsUpdate = true;
   }
 
-  effectSprite(color, smoke = false) { return new THREE.Sprite(new THREE.SpriteMaterial({ map: smoke ? this.smokeTexture : this.fireTexture, color, transparent: true, depthWrite: false, blending: smoke ? THREE.NormalBlending : THREE.AdditiveBlending })); }
+  effectSprite(color, smoke = false) {
+    const sprite = this.trailPool.pop() || new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }));
+    const material = sprite.material, map = smoke ? this.smokeTexture : this.fireTexture;
+    if (material.map !== map) { material.map = map; material.needsUpdate = true; }
+    material.color.set(color); material.opacity = 1; material.rotation = 0;
+    material.blending = smoke ? THREE.NormalBlending : THREE.AdditiveBlending;
+    sprite.visible = true; sprite.renderOrder = 3; sprite.position.set(0,0,0); sprite.scale.set(1,1,1); return sprite;
+  }
+
+  releaseTrail(sprite) {
+    this.scene.remove(sprite);
+    // 仅回收烟迹 Sprite；水面网格和爆炸组仍按各自生命周期释放。
+    if (sprite.isSprite && this.trailPool.length < 120) this.trailPool.push(sprite);
+    else sprite.material.dispose();
+  }
 
   effectHeight(type, x, y) {
     const tags = UNITS[type]?.tags || [];
@@ -1251,8 +1281,8 @@ export class Renderer {
     this.trails = this.trails.filter(trail => {
       const age = this.game.time - trail.start;
       const lifetime = trail.damageFire ? .5 : trail.missile ? .95 : 1.6;
-      if (age > lifetime || trail.sourceEntity && !damagePresentation(trail.sourceEntity).smoke) { this.scene.remove(trail.sprite); trail.sprite.material.dispose(); return false; }
-      const size = trail.damageSize ? trail.damageSize * (1 + age * .65) : trail.explosionSize ? trail.explosionSize * (.6 + Math.max(0, age) * 1.2) : trail.muzzle ? 7 + age * 9 : trail.ship ? 25 + age * 13 : trail.missile ? 7 + age * 10 : 13 + age * 12;
+      if (age > lifetime || trail.sourceEntity && !damagePresentation(trail.sourceEntity).smoke) { this.releaseTrail(trail.sprite); return false; }
+      const size = trail.damageSize ? trail.damageSize * (1 + age * .65) : trail.explosionSize ? trail.explosionSize * (.6 + Math.max(0, age) * 1.2) : trail.muzzle ? 7 + age * 9 : trail.ship ? 25 + age * 13 : trail.missile ? 14 + age * 14 : 13 + age * 12;
       trail.sprite.scale.set(size, trail.ship ? 8 + age * 4 : size, 1); trail.sprite.material.opacity = Math.max(0, 1 - Math.max(0, age) / lifetime) * (trail.torpedo ? .42 : trail.damage ? .65 : trail.muzzle ? .2 : trail.ship ? .34 : trail.missile ? .38 : .15);
       if (trail.wake) trail.sprite.scale.set(trail.wake.length * (1 + age * .15), trail.wake.width * (1 + age * .2), 1);
       if (trail.damageFire) trail.sprite.material.opacity = Math.max(0, 1 - age / lifetime) * .8;
@@ -1273,7 +1303,7 @@ export class Renderer {
         // 装饰特效有全局上限，额外保留摧毁事件名额；不改变模拟中的命中与伤害。
         const budget = this.viewport.width < 1000 || (this.framedUnits?.size || 0) > 80 ? 40 : 72;
         if (['shot', 'hit', 'explosion'].includes(effect.type) && this.effects.size >= budget + (effect.destroyed ? 12 : 0)) continue;
-        group = new THREE.Group();
+        group = new THREE.Group(); group.renderOrder = 3;
         if (effect.type==='nuclearBlast') {
           createDeterrenceBlast(group);
           if (!this.game.map.water || this.game.isNavalBlocked(effect.x,effect.y,0)) {
@@ -1283,6 +1313,10 @@ export class Renderer {
         }
         else if (effect.type === 'shot') this.createWeaponEffect(effect, group);
         else if (['hit', 'explosion'].includes(effect.type)) this.createImpactEffect(effect, group);
+        else if (effect.type === 'subLaunch') {
+          for (let i = 0; i < 2; i++) group.add(new THREE.Mesh(this.selectionGeometry, new THREE.MeshBasicMaterial({ color:'#cce7e7', transparent:true, opacity:0, depthWrite:false, side:THREE.DoubleSide })));
+          for (let i = 0; i < 4; i++) group.add(this.effectSprite('#d5eef2', true));
+        }
         else if (effect.type === 'supplyDrop') {
           const crate = new THREE.Mesh(new THREE.BoxGeometry(14, 11, 12), new THREE.MeshStandardMaterial({ color: '#69756a', roughness: .75, metalness: .25 })); crate.castShadow = true; group.add(crate);
           const canopy = new THREE.Mesh(new THREE.SphereGeometry(15, 20, 8, 0, TAU, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#d4ded6', roughness: .85, side: THREE.DoubleSide })); canopy.position.y = 27; group.add(canopy);
@@ -1295,6 +1329,15 @@ export class Renderer {
       if (effect.type==='nuclearBlast')animateDeterrenceBlast(effect,group);
       else if (effect.type === 'shot') this.animateWeaponEffect(effect, group);
       else if (['hit', 'explosion'].includes(effect.type)) this.animateImpactEffect(effect, group);
+      else if (effect.type === 'subLaunch') {
+        for (let i = 0; i < 2; i++) { const ring = group.children[i], a = Math.max(0,t-i*.13), r = 10+a*55;
+          ring.scale.set(r,1,r); ring.position.y=i*.15; ring.material.opacity=Math.max(0,1-a)*.45;
+        }
+        for (let i = 0; i < 4; i++) { const plume=group.children[i+2], a=i*Math.PI/2, height=Math.sin(Math.min(1,t*1.3)*Math.PI)*32;
+          plume.position.set(Math.cos(a)*t*10,height*(.65+i*.1),Math.sin(a)*t*10);
+          plume.scale.set(13+t*22,18+height*.7,1);plume.material.opacity=Math.sin(t*Math.PI)*.6;
+        }
+      }
       else if (effect.type === 'supplyDrop') {
         group.position.y = 7 + (1 - t) * 80; group.rotation.y = Math.sin(t * 4) * .15;
         group.children.forEach(mesh => { mesh.material.transparent = true; mesh.material.opacity = t > .8 ? (1 - t) * 5 : 1; });
@@ -1307,6 +1350,7 @@ export class Renderer {
   updateProjectileModels(now) {
     const active = new Set();
     for (const p of this.game.projectiles) {
+      if (p.queued) continue;
       if (p.finished) continue;
       active.add(p.id);
       let model = this.projectileModels.get(p.id);
@@ -1350,8 +1394,8 @@ export class Renderer {
         this.scene.add(sprite); this.trails.push({ sprite, baseY: 2.4, start: this.game.time, ship: true, torpedo: true }); p.trailAt = this.game.time + .08;
       }
       if (model.visible && ['nuclear','ballistic', 'rocket', 'missile'].includes(p.kind) && this.game.time >= (p.trailAt || 0) && this.trails.length < 100) {
-        const sprite = this.effectSprite('#a7a9a7', true); sprite.position.set(p.x, height, p.y); sprite.scale.setScalar(8); sprite.material.opacity = .2;
-        this.scene.add(sprite); this.trails.push({ sprite, baseY: height, start: this.game.time, missile: true }); p.trailAt = this.game.time + .09;
+        const sprite = this.effectSprite('#a7a9a7', true); sprite.position.set(p.x, height, p.y); sprite.scale.setScalar(14); sprite.material.opacity = .38;
+        this.scene.add(sprite); this.trails.push({ sprite, baseY: height, start: this.game.time, missile: true }); p.trailAt = this.game.time + (p.kind === 'rocket' ? .055 : .075);
       }
     }
     for (const [id, model] of this.projectileModels) if (!active.has(id)) { model.children.at(-1)?.material?.dispose(); this.scene.remove(model); this.projectileModels.delete(id); }
@@ -1654,17 +1698,18 @@ export class Renderer {
   }
 
   dispose() {
+    this.disposed = true;
     if (this.disposed) return;
     this.disposed = true;
     this.armyBatches.dispose();
     this.webgl.setRenderTarget(null); this.webgl.resetState();
     this.composer?.passes.forEach(pass => pass.dispose()); this.composer?.dispose();
     this.projectileModels.forEach(model => model.children.at(-1)?.material?.dispose());
-    this.trails.forEach(trail => trail.sprite.material.dispose());
+    this.trails.forEach(trail => trail.sprite.material.dispose()); this.trailPool.forEach(sprite => sprite.material.dispose());
     this.entities.forEach(entry => entry.exhausts.forEach(sprite => sprite.material.dispose()));
     this.ownedResources.forEach(resource => resource.dispose());
     this.effects.forEach(group => group.traverse(item => { if (item.geometry && item.geometry !== this.selectionGeometry) item.geometry.dispose(); if (item.material) item.material.dispose(); }));
-    this.fireTexture.dispose(); this.smokeTexture.dispose(); this.overlayCanvas.remove(); this.webgl.dispose();
+    this.fallbackParticleTextures.forEach(texture=>texture.dispose()); this.overlayCanvas.remove(); this.webgl.dispose();
   }
 }
 

@@ -1,0 +1,71 @@
+{
+  "verifiedAt": "2026-11-10",
+  "records": [
+    {
+      "id": "submarine",
+      "author": "Sketlux; yd",
+      "license": "CC0-1.0",
+      "source": "https://opengameart.org/content/ballistic-missile-submarine",
+      "changes": "重设坐标、尺度、海军材质，增加阵营识别带和独立螺旋桨；不沿用现实武器参数",
+      "files": [
+        {
+          "file": "assets/third-party/submarine.glb",
+          "bytes": 129668,
+          "sha256": "0fe5b778752c41eff916745e1d15fc36758bdccabb5602254874131bef5c3a7d"
+        }
+      ]
+    },
+    {
+      "id": "kenney-particles",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/particle-pack",
+      "changes": "原透明PNG，运行时调色、缩放和生命周期",
+      "files": [
+        {
+          "file": "assets/third-party/kenney-vfx/fire_01.png",
+          "bytes": 99891,
+          "sha256": "9727a9743ac6ab8dd4dd79f5fc5b0266290efae45f4d4452279eb5e4bcf3a978"
+        },
+        {
+          "file": "assets/third-party/kenney-vfx/smoke_04.png",
+          "bytes": 97568,
+          "sha256": "2db2f69874cdb1e5203f2f86803d5debde30402590cf50a810afaba882184616"
+        },
+        {
+          "file": "assets/third-party/kenney-vfx/spark_05.png",
+          "bytes": 64808,
+          "sha256": "9624ea2017b8b2767a9d3b82e978b7fdf5154d83e6756cd919da51447bb97138"
+        }
+      ]
+    },
+    {
+      "id": "war-theme",
+      "author": "Spring Spring",
+      "license": "CC0-1.0",
+      "source": "https://opengameart.org/content/war-theme",
+      "changes": "归一化电平，AAC 128kbps有损压缩，浏览器循环播放",
+      "files": [
+        {
+          "file": "assets/audio/war-theme.m4a",
+          "bytes": 4569343,
+          "sha256": "e8ee710b386bd6b1d44a85ab885fbd4c97a394fbd6770792722834a4f8c562a7"
+        }
+      ]
+    },
+    {
+      "id": "final-battle",
+      "author": "skrjablin",
+      "license": "CC0-1.0",
+      "source": "https://opengameart.org/content/the-final-battle",
+      "changes": "归一化电平，AAC 128kbps有损压缩，浏览器循环播放",
+      "files": [
+        {
+          "file": "assets/audio/final-battle.m4a",
+          "bytes": 2317438,
+          "sha256": "7a15355fd31d85bc09d2f492f3d55c143195f32ed6dfdb679dd50cfc42eb6c55"
+        }
+      ]
+    }
+  ]
+}
