@@ -80,6 +80,14 @@ files['usr/share/doc/great-powers-rts/构建信息.json'] = (json.dumps(metadata
 def tar_bytes(entries):
     result = io.BytesIO()
     with tarfile.open(fileobj=result, mode='w', format=tarfile.USTAR_FORMAT) as archive:
+        # dpkg不会替缺失的父目录补建路径，必须先写入目录记录。
+        parents = {str(parent) for name in entries for parent in Path(name).parents if str(parent) != '.'}
+        for name in sorted(parents, key=lambda value: (len(Path(value).parts), value)):
+            info = tarfile.TarInfo('./'+name+'/')
+            info.type, info.mode, info.mtime = tarfile.DIRTYPE, 0o755, 0
+            info.uid = info.gid = 0
+            info.uname = info.gname = 'root'
+            archive.addfile(info)
         for name, (content, mode) in sorted(entries.items()):
             info = tarfile.TarInfo('./'+name)
             info.size, info.mode, info.mtime = len(content), mode, 0

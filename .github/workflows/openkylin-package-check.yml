@@ -12,9 +12,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release download openkylin-v3.1.0 --repo chencheng666/great-powers-rts --pattern 'great-powers-rts_3.1.0_all.deb' --pattern 'great-powers-rts_3.1.0_all.sha256'
+          gh release download openkylin-v3.1.0-r1 --repo chencheng666/great-powers-rts --pattern 'great-powers-rts_3.1.0_all.deb' --pattern 'great-powers-rts_3.1.0_all.sha256'
           sha256sum -c great-powers-rts_3.1.0_all.sha256
-          echo '372a7b89e43779a88a7fe0ea7774f2e3fe3a111de9f8c535b58745fc1638d392  great-powers-rts_3.1.0_all.deb' | sha256sum -c -
+          echo '80d1a97b9b092ed0d8c3973c64385efbc2d95b921ed9f17630f5fcd1a07a3e6e  great-powers-rts_3.1.0_all.deb' | sha256sum -c -
       - name: 用标准dpkg执行隔离目录安装及卸载
         run: |
           set -euo pipefail
