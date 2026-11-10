@@ -1,0 +1,44 @@
+{
+  "version": "3.3.0",
+  "build": "20261110-carrier-nature-r1",
+  "tests": {
+    "pass": 684,
+    "fail": 0
+  },
+  "capacity": 24,
+  "sortieLimit": 6,
+  "natureGeometryBytes": 20579,
+  "natureTriangles": {
+    "rock_largeB": 85,
+    "rock_largeD": 80,
+    "log_pineA": 50,
+    "log_pineB": 66
+  },
+  "browserScenery": {
+    "logs": 10,
+    "fogHidden": true,
+    "exploredVisible": true,
+    "unitClearance": true
+  },
+  "mobileEmulation": {
+    "viewport": [
+      390,
+      844
+    ],
+    "documentWidth": 390,
+    "recallButtonSize": [
+      56,
+      56
+    ]
+  },
+  "aigei": "用户取消登录及下载，未采用模型文件",
+  "production": "待回读",
+  "carrierRender": {
+    "emptyCalls": 164,
+    "fullCalls": 176,
+    "emptyTriangles": 208210,
+    "fullTriangles": 221074,
+    "includesShadowPass": true,
+    "deckModels": 24
+  }
+}

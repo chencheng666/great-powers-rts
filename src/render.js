@@ -10,7 +10,7 @@ import { shipWakePose, paintShipWake } from './ship-wake.js';
 import { AIRCRAFT_LENGTHS, airframeScale, flightScaleFactor, unitModelScale, presentationRadius, aircraftCruiseHeight, aircraftGroundFactor, CARRIER_DECK_HEIGHT, CARRIER_MODEL_LENGTH } from './model-scale.js';
 import { carrierAirGroupLabel } from './carrier-airgroup.js';
 import { growthAppearance } from './growth-rewards.js';
-import { valleyRockPositions } from './kenney-rock-geometry.js';
+import { natureGeometry, NATURE_LOGS, NATURE_ROCKS } from './nature-models.js';
 import { confirmedAircraftLoss, aircraftCrashPose, aircraftShadowOpacity } from './destruction-presentation.js';
 import { rotorMotion, airCombatPose } from './aircraft-flight.js';
 import * as THREE from 'three';
@@ -481,19 +481,26 @@ export class Renderer {
     }
     const dummy = new THREE.Object3D();
     this.createFoliage(points.tree);
-    for (const [name, transforms] of [['rock', points.rock]]) for (const child of visualLibrary().models.get(name).children) {
-      if (!child.isMesh) continue;
-      const base = new THREE.MeshStandardMaterial({ color: this.game.map.future ? '#555b63' : '#64665c', roughness: .96 }); base.name = '岩石';
-      const material = this.track(weatherMaterial(base)); base.dispose();
-      const geometry = this.track(this.game.map.training ? new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(valleyRockPositions,3)) : new THREE.IcosahedronGeometry(.7, 3)), vertices = geometry.attributes.position;
-      for (let n = 0; !this.game.map.training && n < vertices.count; n++) {
-        const x = vertices.getX(n), y = vertices.getY(n), z = vertices.getZ(n), shape = .82 + hash(Math.round(x * 25), Math.round(z * 25), Math.round(y * 25)) * .3;
-        vertices.setXYZ(n, x * shape * 1.2, y * shape * .65 + .38, z * shape);
-      }
-      geometry.computeVertexNormals();
-      const mesh = new THREE.InstancedMesh(geometry, material, transforms.length); mesh.castShadow = true; mesh.receiveShadow = true; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      transforms.forEach((point, index) => { dummy.position.set(point.x, point.heightOffset ?? this.elevation(point.x, point.z), point.z); dummy.rotation.set(0, point.angle, 0); dummy.scale.set(point.scale, point.verticalScale || point.scale, point.scale); dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix); });
-      this.scene.add(mesh); this.environment.push({ mesh, transforms });
+    this.createNatureProps(points.tree);
+    const variants=this.game.map.future?[null]:NATURE_ROCKS;
+    for(const [variant,name]of variants.entries()){
+      const transforms=points.rock.filter((p,i)=>i%variants.length===variant);if(!transforms.length)continue;
+      const base=new THREE.MeshStandardMaterial({color:this.game.map.future?'#555b63':'#ffffff',vertexColors:!this.game.map.future,roughness:.96});base.name='岩石';
+      const material=this.track(weatherMaterial(base));base.dispose();
+      const geometry=this.track(name?natureGeometry(name):new THREE.IcosahedronGeometry(.7,3));
+      if(!name){const vertices=geometry.attributes.position;for(let n=0;n<vertices.count;n++){const x=vertices.getX(n),y=vertices.getY(n),z=vertices.getZ(n),shape=.82+hash(Math.round(x*25),Math.round(z*25),Math.round(y*25))*.3;vertices.setXYZ(n,x*shape*1.2,y*shape*.65+.38,z*shape);}geometry.computeVertexNormals();}
+      const mesh=new THREE.InstancedMesh(geometry,material,transforms.length);mesh.castShadow=true;mesh.receiveShadow=true;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      transforms.forEach((point,index)=>{dummy.position.set(point.x,point.heightOffset??this.elevation(point.x,point.z),point.z);dummy.rotation.set(0,point.angle,0);dummy.scale.set(point.scale,point.verticalScale||point.scale,point.scale);dummy.updateMatrix();mesh.setMatrixAt(index,dummy.matrix);});
+      this.scene.add(mesh);this.environment.push({mesh,transforms});
+    }
+  }
+
+  createNatureProps(trees) {
+    const dummy=new THREE.Object3D(),material=this.track(new THREE.MeshStandardMaterial({name:'林地倒木',vertexColors:true,roughness:1}));
+    for(const [variant,name]of NATURE_LOGS.entries()){
+      const transforms=trees.filter((p,i)=>i%9===0&&Math.floor(i/9)%NATURE_LOGS.length===variant).map(p=>({...p,x:p.x+8,z:p.z+8,scale:p.scale*.8,width:p.scale*1.5}));if(!transforms.length)continue;
+      const geometry=this.track(natureGeometry(name)),mesh=new THREE.InstancedMesh(geometry,material,transforms.length);mesh.name='林地倒木';mesh.castShadow=true;mesh.receiveShadow=true;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      transforms.forEach((p,i)=>{this.placeFoliage(dummy,p,'grounded',0,true);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});this.scene.add(mesh);this.environment.push({mesh,transforms,foliage:'grounded',angle:0});
     }
   }
 
@@ -522,7 +529,8 @@ export class Renderer {
 
   placeFoliage(dummy, point, foliage, angle, known) {
     const ground = this.elevation(point.x, point.z);
-    if (foliage === 'shadow') {
+    if(foliage==='grounded'){dummy.position.set(point.x,ground,point.z);dummy.rotation.set(0,point.angle,0);dummy.scale.setScalar(known?point.scale:0);}
+    else if (foliage === 'shadow') {
       const yaw = Math.atan2(this.sun.position.x - this.sun.target.position.x, this.sun.position.z - this.sun.target.position.z);
       dummy.position.set(point.x, ground + point.height / 2, point.z);
       dummy.rotation.set(0, yaw, 0); dummy.scale.set(known ? point.width : 0, known ? point.height : 0, 1);

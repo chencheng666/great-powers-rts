@@ -1,0 +1,68 @@
+{
+  "author": "Kenney",
+  "homepage": "https://kenney.nl/assets/nature-kit",
+  "authorUpload": "https://opengameart.org/content/nature-kit",
+  "archiveName": "Nature Kit (2.1).zip",
+  "license": "CC0 1.0",
+  "files": [
+    {
+      "source": "License.txt",
+      "file": "assets/third-party/kenney-nature/License.txt",
+      "bytes": 611,
+      "sha256": "cb96b75e3560ac78d7a53ce6f083f4cdb5c53faea6141b62d63458dcfe1e4b9d"
+    },
+    {
+      "source": "Models/OBJ format/rock_largeB.mtl",
+      "file": "assets/third-party/kenney-nature/rock_largeB.mtl",
+      "bytes": 169,
+      "sha256": "e866ef7615bf6de9e3ae697d05275cc6bc31145bec66f74af8a44bebd5536fe9"
+    },
+    {
+      "source": "Models/OBJ format/rock_largeB.obj",
+      "file": "assets/third-party/kenney-nature/rock_largeB.obj",
+      "bytes": 8016,
+      "sha256": "928bea598f682d280893da179d6a060a2019c7b4af72d1e1c4af9ef87ca33535"
+    },
+    {
+      "source": "Models/OBJ format/rock_largeD.mtl",
+      "file": "assets/third-party/kenney-nature/rock_largeD.mtl",
+      "bytes": 169,
+      "sha256": "db75535695bc97d26e50a03f55306f04938b123f0fc3622cac4ac15e5ef27ab8"
+    },
+    {
+      "source": "Models/OBJ format/rock_largeD.obj",
+      "file": "assets/third-party/kenney-nature/rock_largeD.obj",
+      "bytes": 7402,
+      "sha256": "7deb3676590e82cf9180ece19666b7a8395b259240937c5b779c80325c576138"
+    },
+    {
+      "source": "Models/OBJ format/tree_pineRoundA.mtl",
+      "file": "assets/third-party/kenney-nature/tree_pineRoundA.mtl",
+      "bytes": 144,
+      "sha256": "933a40d74e752aa7baf489cd76a1ca36c7fffe95f2c16410772c715c4e102ec6"
+    },
+    {
+      "source": "Models/OBJ format/tree_pineRoundA.obj",
+      "file": "assets/third-party/kenney-nature/tree_pineRoundA.obj",
+      "bytes": 14082,
+      "sha256": "00b0a07da08894872f18530086ad582cd9cf93a3da88d9f112e1b022f3ea082a"
+    },
+    {
+      "source": "Models/OBJ format/tree_pineTallA_detailed.mtl",
+      "file": "assets/third-party/kenney-nature/tree_pineTallA_detailed.mtl",
+      "bytes": 144,
+      "sha256": "933a40d74e752aa7baf489cd76a1ca36c7fffe95f2c16410772c715c4e102ec6"
+    },
+    {
+      "source": "Models/OBJ format/tree_pineTallA_detailed.obj",
+      "file": "assets/third-party/kenney-nature/tree_pineTallA_detailed.obj",
+      "bytes": 12295,
+      "sha256": "c92abb1eaf23ac94a09ee5f5f9a1adfc183c561c8c76ae3435ac2bbdf254070e"
+    }
+  ],
+  "modifications": [
+    "OBJ三角化、轴向归一化，岩石复用为常规战区两种轮廓",
+    "仅从两种松树提取木质部分、横置并接地，作为林地倒木",
+    "运行时顶点着色、共享材质、实例绘制；保留既有写实树冠和景物清理规则"
+  ]
+}

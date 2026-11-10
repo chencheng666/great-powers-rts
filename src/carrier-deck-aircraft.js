@@ -16,7 +16,12 @@ export function createCarrierParkedAircraft(type, color) {
     box([.55,.055,.32],[-.2,.34,sign*.27],body,sign*1.1);
     box([.3,.05,.19],[-.65,.22,sign*.18],body);
     box([.32,.2,.045],[-.67,.35,sign*.105],accent);
+    // 双发喷口与折翼分开保留轮廓，满甲板时仍使用共用的三种材质。
+    const exhaust=new THREE.Mesh(new THREE.CylinderGeometry(.065,.075,.16,8),canopy);exhaust.rotation.z=Math.PI/2;exhaust.position.set(-.79,.16,sign*.105);exhaust.castShadow=true;group.add(exhaust);
+    box([.19,.035,.17],[.43,.18,sign*.15],body);
+    box([.13,.08,.045],[-.37,.055,sign*.135],canopy);
   }
+  box([.08,.08,.05],[.53,.055,0],canopy);
   box([.22,.05,.27],[-.35,.27,0],accent);
   return mergeParts(group);
 }

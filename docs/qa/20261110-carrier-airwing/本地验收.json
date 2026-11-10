@@ -27,5 +27,20 @@
     6,
     7
   ],
-  "production": "待MFA及发布回读"
+  "production": "待MFA及发布回读",
+  "browserUI": {
+    "launchQueue": 24,
+    "recallClearsQueue": true,
+    "mobileViewport": [
+      390,
+      844
+    ],
+    "documentWidth": 390,
+    "recallButton": {
+      "x": 260,
+      "y": 777,
+      "width": 56,
+      "height": 56
+    }
+  }
 }

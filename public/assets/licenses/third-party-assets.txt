@@ -92,3 +92,14 @@ final-battle
 Kenney PNG 从公开镜像 https://github.com/GeorgeQLe/assets-vfx-particles 取得，许可核对原作者页面。
 Meshoptimizer（MIT）用于模型压缩，Three.js（MIT）用于加载与解码，原模型名称与动态关节保留。
 音乐是社区发布的管弦战斗曲，不宣称实录乐团；AAC 是有损压缩。其许可不扩展到现有其他素材。
+
+2026-11-10 自然场景模型更新
+Kenney Nature Kit 2.1
+作者：Kenney https://kenney.nl/
+来源：https://kenney.nl/assets/nature-kit
+作者上传：https://opengameart.org/content/nature-kit
+许可：CC0 1.0 Universal https://creativecommons.org/publicdomain/zero/1.0/
+原始文件及许可：assets/third-party/kenney-nature/
+采用 rock_largeB、rock_largeD、tree_pineRoundA、tree_pineTallA_detailed 的木质几何。
+修改：三角化、统一尺度与接地高度；松树木质部分横置为倒木；岩石和倒木转为单材质顶点色、实例绘制，不改变碰撞与寻路。
+舰载机折翼、双发喷口、前翼和起落架为本项目自有程序模型；未复制爱给网模型文件。
