@@ -1,0 +1,18 @@
+[
+  {
+    "path": "play/starport/index.html",
+    "sha256": "2fec74515ee3ef5c948ce3641db7c6ffa5b7c906ee6d88bc93631d48dce8aaf1"
+  },
+  {
+    "path": "official/starport/index.html",
+    "sha256": "b7ab721c45e202bc7578390c08f523977cf53675f39a7bb9b45a1fddd8127e42"
+  },
+  {
+    "path": "downloads/manifest.json",
+    "sha256": "653510e525ae7f39bf853f8ae475c9be58e971a81d9c98aaf5254319c989c81f"
+  },
+  {
+    "path": "resume/",
+    "sha256": "fa78dc5a3c3cee90ea248766b15ac6c9c1ea7480c136b0284ab04548788f5dde"
+  }
+]
