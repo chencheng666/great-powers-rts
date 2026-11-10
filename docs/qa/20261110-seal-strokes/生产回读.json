@@ -1,0 +1,93 @@
+{
+  "build": "20261110-seal-strokes-r1",
+  "sourceCommit": "2f84e87a4b89e5b968b2fb3fde82e9c0125cf341",
+  "version": "3.3.0",
+  "health": [
+    {
+      "ok": true,
+      "version": "3.3.0",
+      "build": "20261110-seal-strokes-r1",
+      "protocol": 6,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    {
+      "ok": true,
+      "version": "3.3.0",
+      "build": "20261110-seal-strokes-r1",
+      "protocol": 7,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  ],
+  "verifiedFiles": [
+    {
+      "path": "/",
+      "sha256": "e6c099ed79cc3f77c7f40a0cbbc71ece5d093723443ff028e4debea7bb6a4b6f"
+    },
+    {
+      "path": "/official/",
+      "sha256": "e6c099ed79cc3f77c7f40a0cbbc71ece5d093723443ff028e4debea7bb6a4b6f"
+    },
+    {
+      "path": "/play/",
+      "sha256": "2e51a83f9c2eac34f7df3f029efc08df43f4faa6002e92fe752d7843b70e6671"
+    },
+    {
+      "path": "/candidate/",
+      "sha256": "2e51a83f9c2eac34f7df3f029efc08df43f4faa6002e92fe752d7843b70e6671"
+    },
+    {
+      "path": "/assets/official-emblem-32-CFH9LW3-.png",
+      "sha256": "b51f7740e19459a488b85d7dace408cb15e7c0a43de7bd4209452b016e16273a"
+    },
+    {
+      "path": "/assets/official-emblem-180-Bq4OjiUm.png",
+      "sha256": "49bf4dccde61957c4d43464a6de0258b69d4f5d29f278ac3ec8ad7179915aef5"
+    },
+    {
+      "path": "/assets/official-official-emblem-32-CFH9LW3-.png",
+      "sha256": "b51f7740e19459a488b85d7dace408cb15e7c0a43de7bd4209452b016e16273a"
+    },
+    {
+      "path": "/assets/official-official-emblem-180-Bq4OjiUm.png",
+      "sha256": "49bf4dccde61957c4d43464a6de0258b69d4f5d29f278ac3ec8ad7179915aef5"
+    },
+    {
+      "path": "/assets/index-B8IyY67T.js",
+      "sha256": "08f18520e7983dc82e256bf36bd4bd89e3530fa5d758ebf5ef14f7eb8b398f5b"
+    },
+    {
+      "path": "/assets/index-BxTIRxeP.css",
+      "sha256": "ed15587bddc290722ab7101faf4a84864937e0230ab4d19c63f268ddfdc14abe"
+    },
+    {
+      "path": "/assets/official-official-cinematic-DZzzadIY.css",
+      "sha256": "0c1ac10c958a491572fd802c786aa03d97f531e7efb5810dc409ee79495ea347"
+    }
+  ],
+  "manifestEntries": 279,
+  "protectedEntriesUnchanged": [
+    "/play/starport/index.html",
+    "/official/starport/index.html",
+    "/downloads/manifest.json",
+    "/resume/"
+  ],
+  "scope": "官网和原版网页图标，历史渠道安装包及科幻版保持原版本",
+  "databases": {
+    "count": 6,
+    "integrity": "ok",
+    "allTableCountsRetained": true
+  },
+  "browser": {
+    "officialTitle": "大国崛起 3.3.0｜迈向4.0",
+    "playTitle": "大国崛起 3.3.0 | 航母编队",
+    "newHashedIconsLoaded": true,
+    "size": [
+      180,
+      180
+    ]
+  }
+}
