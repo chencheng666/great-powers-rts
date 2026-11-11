@@ -1,0 +1,58 @@
+{
+  "build": "20261111-procedural-3d-r1",
+  "version": "3.5.0",
+  "sourceCommit": "323ddf63b5cd10c2f2f990f952342f236e72f696",
+  "archiveSha256": "e7f9ca5862cb5dd5efadd8a4f6e6d5d72f1cda7a4e59829d07508222fe9d3008",
+  "tests": {
+    "passed": 707,
+    "failed": 0
+  },
+  "production": {
+    "manifestFilesCheckedOnServer": 280,
+    "publicFilesHashed": 14,
+    "services": [
+      {
+        "maxPlayers": 2,
+        "protocol": 6,
+        "build": "20261111-procedural-3d-r1",
+        "ok": true
+      },
+      {
+        "maxPlayers": 6,
+        "protocol": 7,
+        "build": "20261111-procedural-3d-r1",
+        "ok": true
+      }
+    ],
+    "protectedEntriesUnchanged": [
+      "/play/starport/index.html",
+      "/official/starport/index.html",
+      "/downloads/manifest.json",
+      "/resume/",
+      "/mist-harbor/",
+      "/jimao-fable/",
+      "/jiuji/"
+    ],
+    "dataRetention": {
+      "databases": 6,
+      "integrity": "ok",
+      "allTableCountsRetained": true,
+      "backup": "/opt/great-powers/backups/20261111-procedural-3d-r1"
+    }
+  },
+  "browser": {
+    "deckBeforeLaunch": 24,
+    "deckAfterLaunch": 18,
+    "airborne": 6,
+    "allModern": true,
+    "errors": [],
+    "quality": "high",
+    "view": "immersive",
+    "waterActive": true,
+    "storageRestored": true,
+    "officialUpdatedCopy": true,
+    "officialNewImageLoaded": true,
+    "officialDesktopOverflow": false
+  },
+  "scope": "官网、原版网页与上海双人/六方服务；历史商店、桌面包与独立科幻版保持原版本"
+}
