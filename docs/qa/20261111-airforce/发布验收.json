@@ -1,0 +1,76 @@
+{
+  "build": "20261111-airforce-r1",
+  "version": "3.5.0",
+  "sourceCommit": "d5475848b64906424b7f92d20107390f739556a0",
+  "archiveSha256": "1f5a60b399e0e5c12a3d97e02d8c21f97deb4d69ea7a2afb4cb4aee622255e6c",
+  "tests": {
+    "passed": 699,
+    "failed": 0
+  },
+  "production": {
+    "manifestFilesCheckedOnServer": 283,
+    "publicFilesHashed": 16,
+    "services": [
+      {
+        "maxPlayers": 2,
+        "protocol": 6,
+        "build": "20261111-airforce-r1",
+        "ok": true
+      },
+      {
+        "maxPlayers": 6,
+        "protocol": 7,
+        "build": "20261111-airforce-r1",
+        "ok": true
+      }
+    ],
+    "protectedEntriesUnchanged": [
+      "/play/starport/index.html",
+      "/official/starport/index.html",
+      "/downloads/manifest.json",
+      "/resume/"
+    ],
+    "dataRetention": {
+      "databases": 6,
+      "integrity": "ok",
+      "allTableCountsRetained": true
+    }
+  },
+  "browser": {
+    "scope": "正式入口启动后的本地受控渲染验收，不提交联网战绩、不保存验收战局",
+    "models": [
+      {
+        "type": "bomber",
+        "name": "bomber",
+        "asset": "free-aircraft",
+        "height": 111.66575584198532
+      },
+      {
+        "type": "ewPlane",
+        "name": "ewPlane",
+        "asset": "free-aircraft",
+        "height": 97.53280974711944
+      },
+      {
+        "type": "navalFighter",
+        "name": "navalFighter_nato",
+        "asset": "free-aircraft",
+        "height": 97.91000082792999
+      },
+      {
+        "type": "navalStrike",
+        "name": "navalStrike_nato",
+        "asset": "free-aircraft",
+        "height": 97.53114595596182
+      }
+    ],
+    "deck": 24,
+    "queued": 24,
+    "aboardAfterLaunch": 18,
+    "airborne": 6,
+    "deckModelsAfterLaunch": 18,
+    "pageErrors": [],
+    "webglError": 0,
+    "contextLost": false
+  }
+}
