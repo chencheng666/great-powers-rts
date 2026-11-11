@@ -1,0 +1,83 @@
+{
+  "build": "20261111-combined-arms-r1",
+  "sourceCommit": "8d7e09bfe5199ed12558e3850dc0f78c9259f452",
+  "version": "3.5.0",
+  "health": [
+    {
+      "ok": true,
+      "version": "3.5.0",
+      "build": "20261111-combined-arms-r1",
+      "protocol": 6,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    {
+      "ok": true,
+      "version": "3.5.0",
+      "build": "20261111-combined-arms-r1",
+      "protocol": 7,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  ],
+  "verifiedFiles": [
+    {
+      "path": "/",
+      "sha256": "18b01b1925b61a6d7b8e57f637ce82470632a86676a87bd59e30bdbc2a111175"
+    },
+    {
+      "path": "/official/",
+      "sha256": "18b01b1925b61a6d7b8e57f637ce82470632a86676a87bd59e30bdbc2a111175"
+    },
+    {
+      "path": "/play/",
+      "sha256": "2bfa1b3d809675a040f94c32f7700b77e3b9b8677d5423579db942028c0a1530"
+    },
+    {
+      "path": "/candidate/",
+      "sha256": "2bfa1b3d809675a040f94c32f7700b77e3b9b8677d5423579db942028c0a1530"
+    },
+    {
+      "path": "/assets/licenses/third-party-assets.txt",
+      "sha256": "613a565d0be9360edd885abb0ff6ddea91c2294bfaab17fee159a441c68fa720"
+    },
+    {
+      "path": "/assets/official-emblem-32-CFH9LW3-.png",
+      "sha256": "b51f7740e19459a488b85d7dace408cb15e7c0a43de7bd4209452b016e16273a"
+    },
+    {
+      "path": "/assets/official-emblem-180-Bq4OjiUm.png",
+      "sha256": "49bf4dccde61957c4d43464a6de0258b69d4f5d29f278ac3ec8ad7179915aef5"
+    },
+    {
+      "path": "/assets/official-official-emblem-32-CFH9LW3-.png",
+      "sha256": "b51f7740e19459a488b85d7dace408cb15e7c0a43de7bd4209452b016e16273a"
+    },
+    {
+      "path": "/assets/official-official-emblem-180-Bq4OjiUm.png",
+      "sha256": "49bf4dccde61957c4d43464a6de0258b69d4f5d29f278ac3ec8ad7179915aef5"
+    },
+    {
+      "path": "/assets/index-Djt6b1qZ.js",
+      "sha256": "e5251cdc2a0b2020985cc276ce9bf1c24a79764381fd54756e73428ca4f81303"
+    },
+    {
+      "path": "/assets/index-BxTIRxeP.css",
+      "sha256": "ed15587bddc290722ab7101faf4a84864937e0230ab4d19c63f268ddfdc14abe"
+    },
+    {
+      "path": "/assets/official-official-cinematic-DZzzadIY.css",
+      "sha256": "0c1ac10c958a491572fd802c786aa03d97f531e7efb5810dc409ee79495ea347"
+    }
+  ],
+  "manifestEntries": 279,
+  "protectedEntriesUnchanged": [
+    "/play/starport/index.html",
+    "/official/starport/index.html",
+    "/downloads/manifest.json",
+    "/resume/"
+  ],
+  "scope": "官网、原版网页和国内对战服务，独立入口和历史包按摘要核对"
+}
