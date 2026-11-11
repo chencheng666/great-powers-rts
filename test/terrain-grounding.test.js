@@ -3,22 +3,17 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { Renderer } from '../src/render.js';
 
-test('近景树木按镜头层级显示，战术与拉远视角保持低开销', () => {
-  const volume = { foliage: 'volume', mesh: { visible: false } };
-  const billboard = { foliage: 'billboard', mesh: { visible: true } };
-  const renderer = { quality: 'high', viewMode: 'immersive', camera: { zoom: 1 }, environment: [volume, billboard] };
+test('精细近景显示立体叶簇，流畅、手机与战术视角复用贴片并避免双影', () => {
+  const entries=['volume','billboard','shadow','mesh_tree'].map(foliage=>({foliage,mesh:{visible:true}}));
+  const renderer={quality:'high',game:{map:{}},mobileBudget:false,viewMode:'immersive',camera:{zoom:1},environment:entries};
+  const visible=()=>Object.fromEntries(entries.map(e=>[e.foliage,e.mesh.visible]));
   Renderer.prototype.updateFoliageLayers.call(renderer);
-  assert.equal(volume.mesh.visible, true);
-  renderer.camera.zoom = .7;
-  Renderer.prototype.updateFoliageLayers.call(renderer);
-  assert.equal(volume.mesh.visible, false);
-  renderer.camera.zoom = 1.2; renderer.viewMode = 'tactical';
-  Renderer.prototype.updateFoliageLayers.call(renderer);
-  assert.equal(volume.mesh.visible, false);
-  renderer.viewMode = 'immersive'; renderer.quality = 'standard';
-  Renderer.prototype.updateFoliageLayers.call(renderer);
-  assert.equal(volume.mesh.visible, false);
-  assert.equal(billboard.mesh.visible, true);
+  assert.deepEqual(visible(),{volume:false,billboard:false,shadow:false,mesh_tree:true});
+  for(const patch of [{camera:{zoom:.7}},{viewMode:'tactical'},{quality:'standard'},{mobileBudget:true},{game:{map:{future:true}}}]){
+    Object.assign(renderer,{quality:'high',game:{map:{}},mobileBudget:false,viewMode:'immersive',camera:{zoom:1}},patch);
+    Renderer.prototype.updateFoliageLayers.call(renderer);
+    assert.deepEqual(visible(),{volume:false,billboard:true,shadow:true,mesh_tree:false});
+  }
 });
 
 test('树木贴地，迷雾隐藏时两种层级都缩为零', () => {

@@ -68,6 +68,8 @@ import { islandHarbor, islandDistance } from './island-map.js';
 import { paintIslandTerrain, createIslandShore, createIslandInfrastructure } from './island-scenery.js';
 import { paintTheaterGround, createTheaterScenery } from './theater-scenery.js';
 import { theaterFacilities } from './theater-operations.js';
+import { finishBattleTerrain, createBattleWaterMaterial, proceduralTreeGeometry } from './battle-surfaces.js';
+import { AdaptiveRender } from './adaptive-render.js';
 
 // 实体与部署预览共用同一名单，避免三维建筑读取不存在的旧贴图。
 const MODEL_ONLY_BUILDINGS = new Set(['nuclearSilo','turret','refinery',...COMMUNITY_3D_BUILDINGS,...REALISM_BUILDINGS]);
@@ -110,6 +112,7 @@ export class Renderer {
   constructor(canvas, minimap, game, options = {}) {
     this.canvas = canvas; this.minimap = minimap; this.mctx = minimap.getContext('2d'); this.game = game;
     this.mobileBudget = matchMedia('(pointer: coarse)').matches || innerWidth <= 700;
+    this.adaptiveRender = new AdaptiveRender();
     this.quality = 'standard';
     this.qualityKey = game.map.maxPlayers === 6 ? 'great-powers-quality-six' : 'great-powers-quality';
     try { const saved=localStorage.getItem(this.qualityKey);if(['standard','high'].includes(saved))this.quality=saved; } catch { /* 无存储时按模式选默认画质。 */ }
@@ -133,14 +136,14 @@ export class Renderer {
     this.webgl.resetState();
     this.webgl.setPixelRatio(armyRenderBudget(this.quality,0,devicePixelRatio).pixelRatio);
     this.webgl.shadowMap.enabled = true; this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = .96;
+    this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = 1.02;
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color('#10181d');
     this.armyBatches = new ArmyBatches(this.scene);
     this.viewCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 8000);
     this.raycaster = new THREE.Raycaster(); this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const pmrem = new THREE.PMREMGenerator(this.webgl), room = new RoomEnvironment();
-    const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .32; room.dispose(); pmrem.dispose();
-    this.scene.add(new THREE.HemisphereLight('#c4d9ee', game.map.future ? '#282d37' : '#26382a', .42));
+    const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .46; room.dispose(); pmrem.dispose();
+    this.scene.add(new THREE.HemisphereLight('#c4d9ee', game.map.future ? '#282d37' : '#394230', .64));
     const sun = new THREE.DirectionalLight(game.map.future ? '#e8f2ff' : '#fff0d7', 2.8); sun.position.set(this.world.width / 2 - 1750, 1850, this.world.height / 2 - 1050); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true; this.sun = sun;
     const shadowSize=this.quality==='standard'?2048:4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
     Object.assign(sun.shadow.camera, { left: -this.world.width * .7, right: this.world.width * .7, top: this.world.height * .85, bottom: -this.world.height * .85, near: 10, far: 6000 });
@@ -159,11 +162,21 @@ export class Renderer {
     }, undefined, () => { /* 社区贴图载入失败时继续使用程序粒子。 */ });
     this.createTerrain(); this.createFoundationDecals(); this.createBridges(); this.createEnvironment(); this.createFutureStructures(); this.createSites(); this.createFog(); this.createOverlays();
     this.createTracks(); this.createCombatAtmosphere();
-    if (this.quality === 'high') this.createPostprocessing();
+    if (this.quality === 'high') this.preparePostprocessing();
     this.resize(); this.centerOn(game.map.maxPlayers===6?(game.homeX??game.map.spawns[0].x):innerWidth<700?400:470,game.map.maxPlayers===6?(game.online?game.homeY:game.map.spawns[0].y):game.homeY);
   }
 
   track(resource) { this.ownedResources.push(resource); return resource; }
+
+  preparePostprocessing() {
+    try { this.createPostprocessing(); }
+    catch(error) {
+      this.postprocessingFailed=true;
+      this.composer?.passes.forEach(pass=>pass.dispose());this.composer?.dispose();this.composer=null;this.ambientPass=null;
+      this.scene.overrideMaterial=null;this.webgl.autoClear=true;this.webgl.setRenderTarget(null);
+      console.warn('高级画面初始化异常，本局继续使用基础渲染。',error);
+    }
+  }
 
   createPostprocessing() {
     const supportsFloat = this.webgl.extensions.has('EXT_color_buffer_float');
@@ -188,7 +201,8 @@ export class Renderer {
 
   setQuality(value) {
     this.quality = value === 'standard' ? 'standard' : 'high';
-    if (this.quality === 'high' && !this.composer) this.createPostprocessing();
+    this.adaptiveRender = new AdaptiveRender();this.postprocessingFailed=false;
+    if (this.quality === 'high' && !this.composer) this.preparePostprocessing();
     if (this.ambientPass) this.ambientPass.enabled = this.quality === 'high';
     const budget = armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio, this.viewport);
     this.webgl.setPixelRatio(budget.pixelRatio);
@@ -320,7 +334,8 @@ export class Renderer {
       const detailMap = this.track(surface[key].clone()); detailMap.repeat.set(this.world.width / 420, this.world.height / 420);
       detailMap.offset.y = 1 - this.world.height / 420; maps[key] = detailMap;
     }
-    const terrain = new THREE.Mesh(geometry, this.track(new THREE.MeshStandardMaterial({ map: texture, vertexColors: true, ...maps, normalScale: new THREE.Vector2(.075, .075), bumpMap: surface ? null : bump, bumpScale: .075, roughness: .96, metalness: 0, envMapIntensity: .3 }))); terrain.receiveShadow = true; this.scene.add(terrain);
+    const material=finishBattleTerrain(new THREE.MeshStandardMaterial({map:texture,vertexColors:true,...maps,normalScale:new THREE.Vector2(.11,.11),bumpMap:surface?null:bump,bumpScale:.11,roughness:.96,metalness:0,envMapIntensity:.3}),{cold:this.game.map.climate==='cold',future:this.game.map.future});
+    const terrain = new THREE.Mesh(geometry, this.track(material)); terrain.receiveShadow = true;this.terrainMesh=terrain;this.scene.add(terrain);
     if (this.game.map.water) { this.createWater(); this.createShoreline(); }
   }
 
@@ -434,7 +449,7 @@ export class Renderer {
     const geometry = this.track(new THREE.PlaneGeometry(water.x2 - water.x1, this.world.height, 64, 48));
     const vertices = geometry.getAttribute('position');
     const middle = (water.x1 + water.x2) / 2;
-    const deep = new THREE.Color('#23535f'), shallow = new THREE.Color('#487d76'), tint = new THREE.Color();
+    const deep = new THREE.Color('#183c50'), shallow = new THREE.Color('#4e8984'), tint = new THREE.Color();
     const colors = [];
     for (let i = 0; i < vertices.count; i++) {
       const x = middle + vertices.getX(i), y = this.world.height / 2 - vertices.getY(i);
@@ -443,7 +458,7 @@ export class Renderer {
       colors.push(tint.r, tint.g, tint.b);
     }
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    const material = this.track(new THREE.MeshStandardMaterial({ vertexColors: true, metalness: .26, roughness: .38, normalMap: normal, normalScale: new THREE.Vector2(.11, .11), transparent: true, opacity: .97, depthWrite: false }));
+    const material = this.track(createBattleWaterMaterial(normal));this.waterMaterial=material;
     const mesh = new THREE.Mesh(geometry, material);
     mesh.renderOrder = 1;
     mesh.rotation.x = -Math.PI / 2; mesh.position.set((water.x1 + water.x2) / 2, .8, this.world.height / 2); mesh.receiveShadow = true; this.scene.add(mesh);
@@ -593,6 +608,14 @@ export class Renderer {
       const face = this.track(new THREE.MeshStandardMaterial({ map: texture, color: '#adb998', alphaTest: .18, side: THREE.DoubleSide, roughness: 1, metalness: 0 }));
       const sides = this.track(new THREE.MeshStandardMaterial({ map: texture, color: '#819078', alphaTest: .18, side: THREE.DoubleSide, roughness: 1, metalness: 0 }));
       transforms.forEach(point => { point.height = point.scale * 6.5; point.width = point.height * texture.image.width / texture.image.height; });
+      if(!this.game.map.future){
+        const tree=proceduralTreeGeometry(variant);
+        for(const part of tree.children){
+          const mesh=new THREE.InstancedMesh(this.track(part.geometry),this.track(part.material),transforms.length);mesh.name='程序化立体树木';mesh.castShadow=mesh.receiveShadow=true;
+          transforms.forEach((point,index)=>{this.placeFoliage(dummy,point,'mesh_tree',0,true);dummy.updateMatrix();mesh.setMatrixAt(index,dummy.matrix);});
+          this.scene.add(mesh);this.environment.push({mesh,transforms,foliage:'mesh_tree',angle:0});
+        }
+      }
       for (const [foliage, angle] of [['billboard', 0], ['volume', -.58], ['volume', .58]]) {
         const mesh = new THREE.InstancedMesh(geometry, foliage === 'billboard' ? face : sides, transforms.length); mesh.castShadow = false; mesh.receiveShadow = true; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         transforms.forEach((point, index) => { this.placeFoliage(dummy, point, foliage, angle, true); dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix); });
@@ -611,7 +634,8 @@ export class Renderer {
 
   placeFoliage(dummy, point, foliage, angle, known) {
     const ground = this.elevation(point.x, point.z);
-    if(foliage==='grounded'){dummy.position.set(point.x,ground,point.z);dummy.rotation.set(0,point.angle,0);dummy.scale.setScalar(known?point.scale:0);}
+    if(foliage==='mesh_tree'){dummy.position.set(point.x,ground,point.z);dummy.rotation.set(0,point.angle,0);dummy.scale.setScalar(known?point.height/1.38:0);}
+    else if(foliage==='grounded'){dummy.position.set(point.x,ground,point.z);dummy.rotation.set(0,point.angle,0);dummy.scale.setScalar(known?point.scale:0);}
     else if (foliage === 'shadow') {
       const yaw = Math.atan2(this.sun.position.x - this.sun.target.position.x, this.sun.position.z - this.sun.target.position.z);
       dummy.position.set(point.x, ground + point.height / 2, point.z);
@@ -629,8 +653,12 @@ export class Renderer {
   }
 
   updateFoliageLayers() {
-    const detailed = this.quality === 'high' && this.viewMode === 'immersive' && this.camera.zoom >= .85;
-    for (const entry of this.environment) if (entry.foliage === 'volume') entry.mesh.visible = detailed;
+    const spatial=this.quality==='high'&&!this.game.map.future&&!this.mobileBudget&&this.viewMode==='immersive'&&this.camera.zoom>=.85;
+    for(const entry of this.environment){
+      if(entry.foliage==='mesh_tree')entry.mesh.visible=spatial;
+      if(['billboard','shadow'].includes(entry.foliage))entry.mesh.visible=!spatial;
+      if(entry.foliage==='volume')entry.mesh.visible=false;
+    }
   }
 
   attachArchitecture(model, name, color, width = 11.6) {
@@ -734,7 +762,7 @@ export class Renderer {
     if (this.disposed) return;
     ensureBattleCanvas(this.canvas, document);
     const rect = this.canvas.getBoundingClientRect(); if (rect.width < 1 || rect.height < 1) return;
-    this.webgl.setPixelRatio(armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio, rect).pixelRatio);
+    this.webgl.setPixelRatio(armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio, rect).pixelRatio*this.adaptiveRender.scale);
     this.viewport = { width: rect.width, height: rect.height }; this.webgl.setSize(rect.width, rect.height, false);
     if (this.composer) {
       this.composer.setPixelRatio(this.webgl.getPixelRatio()); this.composer.setSize(rect.width, rect.height);
@@ -1729,10 +1757,12 @@ export class Renderer {
     this.updateEntities(now); this.updateEffects(); this.updateProjectileModels(now); this.updateTracks(); this.updatePlacement();
     if (now - this.lastFog >= 180) { this.updateFog(); this.lastFog = now; }
     if (this.waterNormal) this.waterNormal.offset.set(now * .000004, now * .000007);
+    if(this.waterMaterial)this.waterMaterial.userData.waterTime.value=now*.001;
     if (this.shoreMaterial) this.shoreMaterial.opacity = .4 + Math.sin(now * .0012) * .05;
     const visibleUnits = this.framedUnits || new Set();
     const budget = armyRenderBudget(this.quality, visibleUnits.size, devicePixelRatio, this.viewport);
-    if (this.webgl.getPixelRatio() !== budget.pixelRatio) { this.webgl.setPixelRatio(budget.pixelRatio); this.resize(); }
+    const resolution=budget.pixelRatio*this.adaptiveRender.update(now,{hidden:document.hidden,paused:this.game.paused});
+    if (Math.abs(this.webgl.getPixelRatio()-resolution)>.001) this.resize();
     if (this.sun.shadow.mapSize.x !== budget.shadowSize) {
       this.sun.shadow.mapSize.set(budget.shadowSize, budget.shadowSize); this.sun.shadow.map?.dispose(); this.sun.shadow.map = null;
     }
@@ -1741,8 +1771,10 @@ export class Renderer {
     this.webgl.shadowMap.needsUpdate = !this.sun.shadow.map || !this.lastShadowFrame || now - this.lastShadowFrame >= budget.shadowInterval;
     if (this.webgl.shadowMap.needsUpdate) this.lastShadowFrame = now;
     this.armyBatches.update(this.entities.values(), visibleUnits);
-    if (this.quality === 'high' && this.composer) this.composer.render();
-    else { this.webgl.setRenderTarget(null); this.webgl.render(this.scene, this.viewCamera); }
+    if(this.ambientPass)this.ambientPass.enabled=this.quality==='high'&&this.adaptiveRender.scale>.82&&visibleUnits.size<=144;
+    if(this.quality==='high'&&this.composer&&!this.postprocessingFailed){
+      try{this.composer.render();}catch(error){this.postprocessingFailed=true;console.warn('高级画面处理异常，本局继续使用基础渲染。',error);this.scene.overrideMaterial=null;this.webgl.autoClear=true;this.webgl.setRenderTarget(null);this.webgl.render(this.scene,this.viewCamera);}
+    }else { this.webgl.setRenderTarget(null); this.webgl.render(this.scene, this.viewCamera); }
     this.drawOverlay();
     if (now - this.lastMinimap >= 180) { this.drawMinimap(); this.lastMinimap = now; }
   }
@@ -1853,7 +1885,6 @@ export class Renderer {
   }
 
   dispose() {
-    this.disposed = true;
     if (this.disposed) return;
     this.disposed = true;
     this.armyBatches.dispose();

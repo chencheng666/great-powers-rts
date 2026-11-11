@@ -52,7 +52,7 @@ test('安装保留各兵种空中尺寸、喷口与远近景互斥，克隆共�
   }
   const old=models.get('bomber');installFreeAircraft(models,new Map());assert.equal(models.get('bomber'),old);
   assert.equal(equipmentModel('nato','navalFighter'),'navalFighter_nato');
-  assert.equal(equipmentModel('china','navalFighter'),'fighter');
+  assert.equal(equipmentModel('china','navalFighter'),'navalFighter_china');
   assert.equal(equipmentModel('nato','navalFighter',true),'fighter');
 });
 

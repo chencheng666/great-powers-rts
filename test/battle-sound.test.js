@@ -107,7 +107,7 @@ test('移动类别合并有上限，镜头距离衰减与声像正确', () => {
 function mockContext() {
   const nodes = [];
   const param = () => ({ value: 0, setTargetAtTime() {}, cancelScheduledValues() {} });
-  const node = () => { const n = { gain: param(), pan: param(), connect() {}, disconnect() { this.disconnected = true; }, start() {}, stop() { this.stopped = true; } }; nodes.push(n); return n; };
+  const node = () => { const n = { gain: param(), pan: param(), playbackRate: param(), connect() {}, disconnect() { this.disconnected = true; }, start() {}, stop() { this.stopped = true; } }; nodes.push(n); return n; };
   return { currentTime: 0, sampleRate: 8000, nodes, createBuffer: (_, length) => { const a = new Float32Array(length); return { getChannelData: () => a }; }, createBufferSource: node, createGain: node, createStereoPanner: node };
 }
 test('同帧不同武器与命中不吞音，同类齐射限频，重要爆炸优先，停止后清理节点', () => {
@@ -178,4 +178,15 @@ test('真实双客户端 WebSocket 收到导弹发射、命中和损毁声音，
     assert.ok(heard[i].some(args => args[0] === 'explosiveImpact'));
     assert.equal(heard[i].filter(args => args[0] === 'vehicleDestroyed').length, 1);
   }
+});
+
+
+test('连续同类射击复用音频缓存，仅做有限音高变化，声部预算和清理保持有效',()=>{
+  const ctx=mockContext(),fx=new SoundEffects(ctx,{},3),rates=[];
+  for(let i=0;i<10;i++){
+    ctx.currentTime=i*.1;assert.equal(fx.play('tank'),true);
+    rates.push(ctx.nodes.at(-3).playbackRate.value);assert.ok(fx.voices.size<=3);
+  }
+  assert.equal(fx.buffers.size,1);assert.ok(rates.every(v=>v>=.975&&v<=1.025));assert.ok(new Set(rates).size>5);
+  fx.stop();assert.equal(fx.voices.size,0);
 });

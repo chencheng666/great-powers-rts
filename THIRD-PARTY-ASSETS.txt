@@ -99,8 +99,15 @@ fighter jets
 作者：Captain_Ahab_62
 来源：https://opengameart.org/content/fighter-jets
 许可：CC0 1.0 Universal https://creativecommons.org/publicdomain/zero/1.0/
-采用：F-111、EA-6B、F-14、A-6E；分别用于轰炸机、电子战机、西陆舰载制空机与舰载攻击机的游戏化外形。
+历史采用：F-111、EA-6B、F-14、A-6E；20261111-airforce-r1用于轰炸机、电子战机、西陆舰载制空机与舰载攻击机的游戏化外形。20261111-procedural-3d-r1起不再载入，改用原创程序曲面；历史文件及授权记录保留。
 修改：坐标、方向与尺度统一；材质合批、蒙皮与队色；远景减面；喷口锚点；F-14收拢后掠翼和A-6外翼折叠停机简模。
 文件：assets/third-party/free-aircraft-20261111/*.glb
 详细来源、原始ZIP摘要和转换后的文件摘要见同目录来源与修改.txt及geometry-report.json。
 保留原有游戏平衡、阵营和角色名称，不宣称对应现实装备参数；没有采用爱给网收费模型或未下载的Sketchfab候选。
+
+
+2026-11-11 程序化三维增强
+原创实现：src/procedural-aircraft.js、src/battle-surfaces.js、src/adaptive-render.js。
+飞机按现代航空的公开通用轮廓原创搭建，不使用或分发厂商工程模型；翼身、座舱、进气口、喷口、折翼停机与近远景由代码生成。
+参考用户提供《几猫》单文件演示的程序几何、材质分层、性能迟滞、故障降级等思路；没有复制或随包分发该演示源码、音乐、纹理或模型。
+三维树木使用本项目生成的叶簇纹理和实例几何；原有第三方素材许可保持各自原条款。

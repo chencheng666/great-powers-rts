@@ -34,6 +34,10 @@ export function equipmentProfile(faction, type, future = false) {
   if (!data) return null;
   if (isLunarRobot(future, type)) { const robot = ROBOT_SPECS[type]; return { name: robot.name, description: robot.description, country: '原创月表无人体系', category: '原创／机器人', source: null }; }
   if (future && ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane'].includes(type)) return { name: { fighter: '云隼制空穿梭机', strike: '月弧对地穿梭机', bomber: '月隼轨道轰炸机', airlift: '星舟战术运输机', freightPlane: '月表物资穿梭机' }[type], description: '原创科幻无人平台，推进舱、姿态喷口与功能模块；游戏职责和成本仍遵循双方统一规则。', country: '原创月表无人体系', category: '原创／科幻装备', source: null };
+  if (!future && (['bomber','ewPlane'].includes(type)||['china','nato'].includes(faction)&&['navalFighter','navalStrike'].includes(type))) {
+    const names={bomber:'飞翼轰炸编组',ewPlane:faction==='china'?'重型舰载电子战编组':'双座舰载电子战编组',navalFighter:faction==='china'?'双发隐身舰载编组':'单发隐身舰载编组',navalStrike:faction==='china'?'重型舰载多用途编组':'双发舰载多用途编组'};
+    return {name:names[type],description:`参考现代航空公开外观的原创程序模型，区分翼身、座舱、进气口与喷口；${data.desc} 尺度、成本及战力均为游戏设定，不代表现实型号性能。`,country:system?.country||'通用体系',category:'原创／公开外观启发',source:null};
+  }
   if (!future && ['aa', 'abm'].includes(type)) {
     const prefix = { china: '陆盾', russia: '北境', nato: '西陆', asia: '东亚', middleeast: '新月' }[faction] || '野战';
     return { name: `${prefix}${type === 'aa' ? '轮式防空车' : '反导拦截车'}`, description: `原创多轴底盘、成组发射筒与搜索雷达；${data.desc} 外形参考通用防空结构，不代表某一现实型号或实际性能。`, country: system?.country || '通用体系', category: '原创／概念装备', source: null };
@@ -47,11 +51,12 @@ export function equipmentProfile(faction, type, future = false) {
 export function equipmentModel(faction, type, future = false) {
   if(type==='nuclearSilo')return 'nuclearSilo';
   if (isLunarRobot(future, type)) return ROBOT_SPECS[type].model;
-  if (type === 'ewPlane') return future ? 'space_ewPlane' : 'ewPlane';
+  if (type === 'ewPlane') return future ? 'space_ewPlane' : faction==='china' ? 'ewPlane_china' : 'ewPlane';
   if (future && ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis'].includes(type)) return `space_${type}`;
   if (faction === 'nato' && ['airlift', 'freightPlane'].includes(type)) return 'nato_tandem';
   if (type === 'freightPlane') return 'airlift';
   if (!future && faction === 'nato' && ['navalFighter','navalStrike'].includes(type)) return `${type}_nato`;
+  if (!future && faction === 'china' && ['navalFighter','navalStrike'].includes(type)) return `${type}_china`;
   if (type === 'navalFighter') return 'fighter';
   if (type === 'navalStrike') return 'strike';
   if (type === 'refinery' && !future) return 'logistics_depot';

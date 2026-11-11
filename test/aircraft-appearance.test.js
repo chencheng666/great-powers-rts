@@ -25,7 +25,7 @@ test('任务机模型轮廓独立、合批受控且保留法线与既定空中�
   assert.equal(equipmentModel('china','strike'),'strike_china');
   assert.equal(equipmentModel('nato','strike'),'strike');
   assert.equal(equipmentModel('china','strike',true),'space_strike');
-  assert.equal(equipmentModel('china','navalStrike'),'strike');
+  assert.equal(equipmentModel('china','navalStrike'),'navalStrike_china');
 });
 
 test('尾焰跟随各模型尾部，运输机不冒加力火焰，接地和甲板停机熄灭',()=>{

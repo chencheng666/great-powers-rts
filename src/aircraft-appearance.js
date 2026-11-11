@@ -3,6 +3,7 @@ import { UNITS } from './data.js';
 // 锚点均在模型局部坐标内，缩放与侧倾后仍跟随喷口；旧模型按机体包围盒回退。
 export function aircraftExhaustLayout(type, bounds, anchors) {
   if (!UNITS[type]?.tags.includes('jet') || ['airlift','freightPlane'].includes(type)) return [];
+  if (anchors === false) return [];
   if (anchors?.length) return anchors.map(([x,y,z,radius])=>({x,y,z,radius}));
   const length = bounds.max.x - bounds.min.x, width = bounds.max.z - bounds.min.z;
   const height = bounds.max.y - bounds.min.y;

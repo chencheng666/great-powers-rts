@@ -20,7 +20,7 @@ import { createNuclearSilo } from './deterrence-models.js';
 import { refineRadarStation } from './radar-models.js';
 import { finishAirframe } from './airframe-finish.js';
 import { loadOpenAssets, installOpenModels } from './open-assets.js';
-import { loadFreeAircraft, installFreeAircraft } from './free-aircraft.js';
+import { installProceduralAircraft } from './procedural-aircraft.js';
 
 const modelURL = new URL('../assets/models/battle-library-compact.glb', import.meta.url).href;
 const meridianURL = new URL('../assets/meridian-regolith-v2.webp', import.meta.url).href;
@@ -176,6 +176,7 @@ export async function prepareVisualAssets({ lunar = false } = {}) {
     for (const name of ['fighter', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'ghost']) refineAircraftCanopy(models.get(name));
     for (const name of ['fighter', 'fighter_china', 'fighter_nato', 'strike', 'strike_china', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'helicopter', 'swarmCarrier', 'swarmScout', 'swarmDecoy', 'drone', 'ghost', 'aegis', ...['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane'].map(type => `space_${type}`)]) finishAirframe(models.get(name));
     installOpenModels(models, openAssets, weatherMaterial);
+    installProceduralAircraft(models);
     for (const faction of ['china','russia','nato','asia','middleeast']) models.set(`elite_${faction}`, createFactionElite(faction));
     for (const faction of AIR_DEFENSE_FACTIONS) for (const type of ['aa', 'abm']) models.set(`${type}_${faction}`, createAirDefense(faction, type));
     models.set('tank_china', createChineseTank(weatherMaterial));
@@ -190,7 +191,6 @@ export async function prepareVisualAssets({ lunar = false } = {}) {
       if (assets.ground) { library.ground = assets.ground.map; library.groundSurface = assets.ground; }
       variants.clear();
     }).catch(() => {}), 2000);
-    setTimeout(()=>loadFreeAircraft().then(aircraft=>{installFreeAircraft(models,aircraft);variants.clear();thumbnails.clear();}).catch(()=>{}),2000);
     return library;
   }).catch(error => { pending = null; throw error; });
   await pending;

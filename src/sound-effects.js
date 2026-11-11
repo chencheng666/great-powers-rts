@@ -104,7 +104,7 @@ export function synthesizeMovement(kind, sampleRate = 44100) {
 export class SoundEffects {
   constructor(context, bus, maxVoices = 16) {
     this.context = context; this.bus = bus; this.maxVoices = maxVoices;
-    this.buffers = new Map(); this.voices = new Set(); this.loops = new Map(); this.cooldowns = new Map();
+    this.buffers = new Map(); this.voices = new Set(); this.loops = new Map(); this.cooldowns = new Map(); this.shotSequence = 0;
   }
   buffer(style) {
     const key = ALIASES[style] || style;
@@ -131,7 +131,10 @@ export class SoundEffects {
     if (!buffer) return false;
     this.cooldowns.set(key, now);
     const source = this.context.createBufferSource(), gain = this.context.createGain(), panner = this.context.createStereoPanner();
-    source.buffer = buffer; gain.gain.value = Math.min(1, level) * (owner ? .65 : 1); panner.pan.value = pan;
+    // 小范围变化减轻连续齐射的机械重复感，不额外生成音频缓存或声部。
+    const variation = ((Math.imul(++this.shotSequence, 16807) >>> 0) % 101) / 100;
+    source.buffer = buffer; source.playbackRate.value = .975 + variation * .05;
+    gain.gain.value = Math.min(1, level) * (owner ? .65 : 1) * (.95 + variation * .05); panner.pan.value = pan;
     source.connect(gain); gain.connect(panner); panner.connect(this.bus);
     const voice = { priority, at: now, stop: () => { source.onended = null; source.stop(); cleanup(); } };
     const cleanup = () => { source.disconnect(); gain.disconnect(); panner.disconnect(); this.voices.delete(voice); };
