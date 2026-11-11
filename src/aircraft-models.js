@@ -47,7 +47,69 @@ export function createModernAircraft(type) {
     const canopy=add(new THREE.SphereGeometry(.44,24,14),glass,[1.85,.88,0]);canopy.scale.set(1.65,.75,.68);
     add(new THREE.BoxGeometry(1.2,.06,.46),dark,[1.85,.72,0]);
   }
-  root.userData.aircraftVersion=1;root.userData.role=transport?'高翼运输机':'鸭翼双垂尾制空机';return mergeParts(root);
+  if (!transport) {
+    // 加宽翼身连接与进气口唇边，保持远景轮廓；不照搬真实工程结构。
+    for (const s of [-1, 1]) {
+      plane([[2.5,s*.35],[.3,s*1.02],[-3.75,s*.86],[-4.1,s*.36]],.57);
+      plane([[.85,s*.66],[.45,s*.95],[-.6,s*.88],[-.45,s*.64]],.43,metal,.035);
+      add(new THREE.BoxGeometry(.9,.025,.028),dark,[-1.5,.98,s*.36]);
+      add(new THREE.BoxGeometry(.7,.02,.025),dark,[-2.75,.69,s*2.1],[0,s*-.7,0]);
+    }
+    root.userData.jetExhausts = [[-4.56,.53,-.35,.3],[-4.56,.53,.35,.3]];
+  }
+  root.userData.aircraftVersion=transport?1:2;root.userData.role=transport?'高翼运输机':'鸭翼双垂尾制空机';return mergeParts(root);
+}
+
+// 对地机与电子战机使用不同的翼形、座舱和任务舱；均为游戏原创简化外形。
+export function createMissionAircraft(type) {
+  if (!['strike_china', 'ewPlane'].includes(type)) throw new Error('未知任务机型');
+  const electronic = type === 'ewPlane', root = new THREE.Group(); root.name = type;
+  const shell = craftedMaterial('航空涂层', electronic ? '#929e9e' : '#7c8b87', 'coating', .65, .28);
+  const dark = craftedMaterial('进气口与任务舱', '#24323a', 'rubber', .86, .12);
+  const metal = craftedMaterial('喷口金属', '#718086', 'coating', .5, .65);
+  const glass = new THREE.MeshPhysicalMaterial({name:'座舱玻璃',color:'#487789',roughness:.13,metalness:.1,clearcoat:1});
+  const team = new THREE.MeshStandardMaterial({name:'阵营标识',color:'#59d7ec',emissive:'#59d7ec',emissiveIntensity:.1});
+  const add = (geometry, material, position, rotation) => {
+    const mesh = new THREE.Mesh(geometry, material); mesh.position.set(...position);
+    if (rotation) mesh.rotation.set(...rotation); root.add(mesh); return mesh;
+  };
+  const wing = (points, y, material = shell) => {
+    const shape = new THREE.Shape(); points.forEach(([x,z],i)=>i?shape.lineTo(x,z):shape.moveTo(x,z));shape.closePath();
+    const geometry = new THREE.ExtrudeGeometry(shape,{depth:.075,bevelEnabled:false});
+    geometry.rotateX(Math.PI/2);geometry.translate(0,y,0);add(geometry,material,[0,0,0]);
+  };
+  const body = bodyLoft([[-4.75,.15,.5],[-3.6,.38,.72],[-1.6,.52,.72],[1.5,.44,.56],[3.4,.26,.28],[4.65,.025,.025]],24);
+  body.rotateZ(-Math.PI/2);body.translate(0,.65,0);add(body,shell,[0,0,0]);
+  for (const s of [-1,1]) {
+    wing(electronic ? [[1.2,s*.55],[-.95,s*4.6],[-2.15,s*4.6],[-2.6,s*.55]] : [[1.15,s*.55],[-1.5,s*3.85],[-3.05,s*3.6],[-3.2,s*.55]],.62);
+    wing([[-2.8,s*.45],[-4.2,s*2.2],[-4.65,s*2.1],[-4.25,s*.45]],.69);
+    add(new THREE.BoxGeometry(1.2,.34,.24),dark,[.8,.46,s*.61]);
+    add(new THREE.BoxGeometry(.08,.42,.34),metal,[1.4,.47,s*.61],[0,0,-.16]);
+    const fin=new THREE.Shape();fin.moveTo(-4.3,.62);fin.lineTo(-3.7,2);fin.lineTo(-2.65,1.9);fin.lineTo(-2.9,.62);fin.closePath();
+    add(new THREE.ExtrudeGeometry(fin,{depth:.07,bevelEnabled:false}),shell,[0,0,s*.72],[s*.2,0,0]);
+    add(new THREE.CylinderGeometry(.25,.29,.65,16),metal,[-4.3,.53,s*.38],[0,0,Math.PI/2]);
+    add(new THREE.CircleGeometry(.2,16),dark,[-4.64,.53,s*.38],[0,-Math.PI/2,0]);
+    if (electronic) {
+      // 翼尖长舱和机背整流罩让电子战机在正常镜头下也能辨认。
+      const pod=add(new THREE.CapsuleGeometry(.2,1.6,4,10),dark,[-1.2,.63,s*4.5],[0,0,Math.PI/2]);pod.name=`电子任务舱_${s}`;
+      add(new THREE.BoxGeometry(.65,.07,.24),team,[-1.2,.85,s*4.5]);
+    } else {
+      for (const z of [1.65,2.6]) {
+        add(new THREE.BoxGeometry(.6,.23,.12),metal,[-1.1,.42,s*z]);
+        add(new THREE.CapsuleGeometry(.115,.9,3,8),dark,[-.9,.24,s*z],[0,0,Math.PI/2]);
+      }
+      add(new THREE.BoxGeometry(.65,.03,.18),team,[-1.7,.67,s*2.8]);
+    }
+  }
+  const canopy=add(new THREE.SphereGeometry(.4,20,12),glass,[1.6,1,0]);canopy.scale.set(electronic?2.15:1.85,.72,.77);
+  add(new THREE.BoxGeometry(1.65,.06,.48),dark,[1.5,.79,0]);
+  if (electronic) {
+    const fairing=add(new THREE.SphereGeometry(.35,16,10),shell,[-1.25,1.17,0]);fairing.scale.set(3.1,.64,1);
+    add(new THREE.BoxGeometry(.15,.52,.08),metal,[-2.4,1.45,0],[0,0,-.24]);
+  }
+  root.userData.jetExhausts=[[-4.65,.53,-.38,.32],[-4.65,.53,.38,.32]];
+  root.userData.aircraftVersion=2;root.userData.role=electronic?'宽翼双座电子战机':'双发对地攻击机';
+  return mergeParts(root);
 }
 
 // 串列双旋翼运输机为原创简化模型，保留前后两个可独立旋转的旋翼。

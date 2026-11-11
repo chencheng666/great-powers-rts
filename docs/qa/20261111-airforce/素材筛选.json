@@ -1,0 +1,34 @@
+{
+  "date": "2026-11-11",
+  "selected": {
+    "name": "fighter jets",
+    "author": "Captain_Ahab_62",
+    "license": "CC0-1.0",
+    "source": "https://opengameart.org/content/fighter-jets",
+    "download": "https://opengameart.org/sites/default/files/basic_replacements.blend.zip",
+    "sourceSha256": "d445e1fcd68e9771df5c646ccd737c2bd259f1f9c1cd584dc4a36a2e6ad42a67",
+    "used": {
+      "F-111": "bomber",
+      "EA-6B": "ewPlane",
+      "F-14": "navalFighter_nato",
+      "A-6E": "navalStrike_nato"
+    },
+    "status": "已公开下载、转换，接入近远景与对应的舰载停机模型"
+  },
+  "notUsed": [
+    {
+      "name": "F-15",
+      "source": "https://opengameart.org/content/f-15",
+      "license": "OGA-BY-3.0",
+      "reason": "已检查，保留候选；不以F-15冒充现有其他明确型号。未分发。"
+    },
+    {
+      "name": "爱给网/Sketchfab EA18G与FA18F",
+      "reason": "未下载；用户已取消需要会员或登录的路线。"
+    },
+    {
+      "name": "免费直升机",
+      "reason": "本轮未找到轮廓、来源和质量更适合的可直接下载模型；保留现有模型。"
+    }
+  ]
+}

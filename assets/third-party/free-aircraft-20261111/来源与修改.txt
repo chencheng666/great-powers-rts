@@ -1,0 +1,18 @@
+素材：fighter jets
+作者：Captain_Ahab_62
+作者发布页：https://opengameart.org/content/fighter-jets
+公开下载：https://opengameart.org/sites/default/files/basic_replacements.blend.zip
+页面许可：CC0 1.0 Universal
+许可说明：https://creativecommons.org/publicdomain/zero/1.0/
+核对日期：2026-11-11
+原始ZIP SHA256：d445e1fcd68e9771df5c646ccd737c2bd259f1f9c1cd584dc4a36a2e6ad42a67
+
+采用：F-111（轰炸机外形）、EA-6B（电子战机外形）、F-14（西陆舰载制空机）、A-6E（西陆舰载攻击机）。
+修改：统一坐标轴与机首方向、归一化长度、重设材质和蒙皮、合并材质、制作远景减面与停机简模、补充喷口锚点和阵营识别条。
+F-14停机版收拢后掠翼；A-6停机版折起外翼。停机版与空中版共享来源，不共享尺寸。
+现实外形只用于美术，不沿用现实射程、编制或战力；其他阵营继续使用原有舰载外形。
+源文件不包含外部贴图，游戏运行时只请求本站GLB，不连接资源站、不需要玩家登录。
+原始文件由scripts/build-free-aircraft.py转换，使用Blender禁用自动脚本模式。输出摘要及面数见geometry-report.json。
+
+另行检查但未采用：MNDV.ecb 的 F-15（OGA-BY 3.0，https://opengameart.org/content/f-15）。
+该F-15模型不是CC0，本轮没有分发该文件，也没有用它替换已有明确型号的战机。

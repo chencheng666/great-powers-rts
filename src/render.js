@@ -13,6 +13,7 @@ import { growthAppearance } from './growth-rewards.js';
 import { natureGeometry, NATURE_LOGS, NATURE_ROCKS } from './nature-models.js';
 import { confirmedAircraftLoss, aircraftCrashPose, aircraftShadowOpacity } from './destruction-presentation.js';
 import { rotorMotion, airCombatPose } from './aircraft-flight.js';
+import { aircraftExhaustLayout, aircraftExhaustState, aircraftBankTarget } from './aircraft-appearance.js';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -905,8 +906,10 @@ export class Renderer {
     const identity = this.createIdentityMarker(entity); this.scene.add(identity);
     const ring = new THREE.Mesh(this.selectionGeometry, entity.owner === 0 ? this.selectionMaterial : this.enemySelectionMaterial); ring.visible = false; this.scene.add(model, ring);
     const exhausts = [];
-    if (entity.kind === 'unit' && UNITS[entity.type].tags.includes('jet')) for (const z of [-.36, .36]) {
-      const exhaust = this.effectSprite('#89c7ff'); exhaust.position.set(-4.2, .42, z); exhaust.scale.set(1.25, .43, 1); model.add(exhaust); exhausts.push(exhaust);
+    if (entity.kind === 'unit') for (const nozzle of aircraftExhaustLayout(entity.type, unscaledBounds, model.userData.jetExhausts)) {
+      const exhaust = this.effectSprite('#89c7ff'); exhaust.position.set(nozzle.x, nozzle.y, nozzle.z);
+      exhaust.userData.nozzleRadius = nozzle.radius; exhaust.scale.set(nozzle.radius*3, nozzle.radius*1.8, 1);
+      exhaust.visible = false; model.add(exhaust); exhausts.push(exhaust);
     }
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model), topHeight = bounds.max.y;
@@ -1066,11 +1069,21 @@ export class Renderer {
     this.cargoDetail=landingDetailPlan(this.game.units.filter(u=>framed.has(u.id)),this.camera.zoom,this.quality,this.game.selected,this.center,this.cargoDetail);
     for (const entity of [...this.game.buildings, ...this.game.units]) {
       if (entity.hp <= 0) continue; active.add(entity.id);
-      const visible=visibility.get(entity.id),cached=this.entities.get(entity.id);
+      const visible=visibility.get(entity.id);let cached=this.entities.get(entity.id);
       if (!visible) {
         if (cached) { cached.entity=entity;cached.model.visible=false;cached.identity.visible=false;cached.ring.visible=false;cached.lastX=entity.x;cached.lastY=entity.y;if (entity.embarkedIn) cached.flightHeight = undefined; }
         if(entity.kind==='building')this.updateFoundation(entity,false);
         continue;
+      }
+      // 异步素材到达后，只替换相应飞机的显示对象，不重置单位、命令或对局状态。
+      if(cached&&!cached.model.userData.openAsset&&['bomber','ewPlane','navalFighter','navalStrike'].includes(entity.type)&&!this.game.map.future){
+        const name=equipmentModel(this.game.players[entity.owner].faction,entity.type);
+        if(visualLibrary().models.get(name)?.userData.openAsset==='free-aircraft'){
+          if(cached.airShadow){this.scene.remove(cached.airShadow);cached.airShadow.material.dispose();}
+          cached.exhausts.forEach(sprite=>sprite.material.dispose());this.scene.remove(cached.model,cached.ring,cached.identity);
+          const old=cached;cached=this.createEntity(entity);
+          for(const field of ['heading','bank','pitch','healthEcho','healthAt','flightHeight'])if(old[field]!==undefined)cached[field]=old[field];
+        }
       }
       const entry = cached || this.createEntity(entity);
       entry.entity = entity; entry.model.userData.entity = entity; entry.model.visible = visible;
@@ -1156,7 +1169,7 @@ export class Renderer {
             const combat=airCombatPose(entity,target,this.game.time,this.game.map.future);
             height+=combat.height;entry.pitch+=(combat.pitch-entry.pitch)*(1-Math.exp(-dt*5));entry.model.rotation.z=entry.pitch;
           }
-          entry.bank += (clamp(turn * .65, -.4, .4) - entry.bank) * (1 - Math.exp(-dt * 5));
+          entry.bank += (aircraftBankTarget(entity, turn, this.game.aircraftGrounded(entity), height - (deckHeight ?? ground)) - entry.bank) * (1 - Math.exp(-dt * 5));
           entry.model.rotation.x = entry.bank;
           if (entity.deckApproach) entry.flightHeight = height;
           else {
@@ -1239,13 +1252,17 @@ export class Renderer {
         for (const [id, plane] of entry.deckModels) if (!ids.has(id)) { entry.model.remove(plane); entry.deckModels.delete(id); }
         display.forEach((plane, i) => {
           let mesh = entry.deckModels.get(plane.id);
+          const parkedName=`parked_${equipmentModel(this.game.players[entity.owner].faction,plane.type,this.game.map.future)}`;
+          const hasOpenTemplate=visualLibrary().models.has(parkedName);
+          const key=`${entity.owner}:${plane.type}:${hasOpenTemplate}`;
+          if(mesh&&mesh.userData.deckTemplateKey!==key){entry.model.remove(mesh);entry.deckModels.delete(plane.id);mesh=null;}
           if (!mesh) {
-            const key=`${entity.owner}:${plane.type}`;
             if(!this.deckTemplates.has(key)){
-              const template=createCarrierParkedAircraft(plane.type,teamVisual(entity.owner).color),resources=new Set();
+              const template=hasOpenTemplate?createModel(parkedName,teamVisual(entity.owner).color):createCarrierParkedAircraft(plane.type,teamVisual(entity.owner).color),resources=new Set();
               template.traverse(m=>{if(m.isMesh){resources.add(m.geometry);resources.add(m.material);}});resources.forEach(r=>this.track(r));this.deckTemplates.set(key,template);
             }
             mesh = this.deckTemplates.get(key).clone(true);
+            mesh.userData.deckTemplateKey=key;
             entry.model.add(mesh); entry.deckModels.set(plane.id, mesh);
           }
           const pose = carrierDeckPose(plane.carrierSlot??slots.get(plane.id)??i, plane.deckTaxi);
@@ -1310,7 +1327,14 @@ export class Renderer {
         entry.smokeAt = this.game.time + damage.interval;
       }
       entry.lastX = entity.x; entry.lastY = entity.y;
-      for (const exhaust of entry.exhausts) exhaust.material.opacity = .7 + Math.sin(now * .02 + entity.id) * .15;
+      if (entry.exhausts.length) {
+        const exhaustState = aircraftExhaustState(entity, this.game.aircraftGrounded(entity), this.game.time);
+        for (const exhaust of entry.exhausts) {
+          exhaust.visible = visible && exhaustState.visible;
+          exhaust.material.opacity = exhaustState.opacity * (.9 + Math.sin(now*.025+entity.id)*.1);
+          exhaust.scale.x = exhaust.userData.nozzleRadius * 3 * exhaustState.length;
+        }
+      }
       entry.ring.visible = visible && (this.game.selected.includes(entity.id) || entity.owner !== 0 && (this.hoveredId === entity.id || targeted.has(entity.id))); entry.ring.position.set(entity.x, this.elevation(entity.x, entity.y) + .65, entity.y);
       if (UNITS[entity.type]?.tags.includes('ship')) entry.ring.position.y = 3;
       const radius = entity.kind === 'building' ? entity.size * .65 : this.game.map.future ? unitRadius(entity) + 4 : presentationRadius(entity.type, unitRadius(entity) + 4); entry.ring.scale.set(radius * groundFactor, 1, radius * groundFactor);

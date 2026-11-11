@@ -92,3 +92,15 @@ final-battle
 Kenney PNG 从公开镜像 https://github.com/GeorgeQLe/assets-vfx-particles 取得，许可核对原作者页面。
 Meshoptimizer（MIT）用于模型压缩，Three.js（MIT）用于加载与解码，原模型名称与动态关节保留。
 音乐是社区发布的管弦战斗曲，不宣称实录乐团；AAC 是有损压缩。其许可不扩展到现有其他素材。
+
+2026-11-11 新增免费战机
+
+fighter jets
+作者：Captain_Ahab_62
+来源：https://opengameart.org/content/fighter-jets
+许可：CC0 1.0 Universal https://creativecommons.org/publicdomain/zero/1.0/
+采用：F-111、EA-6B、F-14、A-6E；分别用于轰炸机、电子战机、西陆舰载制空机与舰载攻击机的游戏化外形。
+修改：坐标、方向与尺度统一；材质合批、蒙皮与队色；远景减面；喷口锚点；F-14收拢后掠翼和A-6外翼折叠停机简模。
+文件：assets/third-party/free-aircraft-20261111/*.glb
+详细来源、原始ZIP摘要和转换后的文件摘要见同目录来源与修改.txt及geometry-report.json。
+保留原有游戏平衡、阵营和角色名称，不宣称对应现实装备参数；没有采用爱给网收费模型或未下载的Sketchfab候选。

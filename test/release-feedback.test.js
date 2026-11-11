@@ -47,6 +47,6 @@ test('原创高翼运输机和鸭翼制空机几何有效、材质有区别、�
   for(const type of ['fighter_china','freightPlane','airlift']){
     const model=createModernAircraft(type),box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());let draws=0;
     model.traverse(m=>{if(m.isMesh){draws++;assert.ok([...m.geometry.attributes.position.array].every(Number.isFinite));}});
-    assert.ok(draws<=6);assert.ok(size.x>9&&size.z>7&&size.y>1);assert.equal(model.userData.aircraftVersion,1);
+    assert.ok(draws<=6);assert.ok(size.x>9&&size.z>7&&size.y>1);assert.equal(model.userData.aircraftVersion,type==='fighter_china'?2:1);
   }
 });

@@ -14,12 +14,13 @@ import { refineEquipment, hasRefinedTracks } from './equipment-finishing.js';
 import { refineAirfieldRunway, refineAircraftCanopy } from './airfield-presentation.js';
 import { replacedNavalPart, refineNavalHull, refineTransportBody, refineNavalWeapons } from './naval-presentation.js';
 import { refinePowerFans } from './facility-motion.js';
-import { createModernAircraft, createTandemTransport } from './aircraft-models.js';
+import { createModernAircraft, createMissionAircraft, createTandemTransport } from './aircraft-models.js';
 import { createStrategicModel, STRATEGIC_MODELS } from './strategic-models.js';
 import { createNuclearSilo } from './deterrence-models.js';
 import { refineRadarStation } from './radar-models.js';
 import { finishAirframe } from './airframe-finish.js';
 import { loadOpenAssets, installOpenModels } from './open-assets.js';
+import { loadFreeAircraft, installFreeAircraft } from './free-aircraft.js';
 
 const modelURL = new URL('../assets/models/battle-library-compact.glb', import.meta.url).href;
 const meridianURL = new URL('../assets/meridian-regolith-v2.webp', import.meta.url).href;
@@ -159,6 +160,11 @@ export async function prepareVisualAssets({ lunar = false } = {}) {
       const model=createPersonnel(type);model.traverse(m=>{if(m.isMesh&&m.material.name==='作战服')m.material=weatherMaterial(m.material);});models.set(type,model);
     }
     for(const type of ['fighter_china','freightPlane','airlift'])models.set(type,createModernAircraft(type));
+    for(const type of ['strike_china','ewPlane'])models.set(type,createMissionAircraft(type));
+    // 免费素材尚未载入时保留可立即使用的舰载机，不阻塞开局。
+    for(const [name,base]of [['navalFighter_nato','fighter'],['navalStrike_nato','strike']]){
+      const model=models.get(base).clone();model.name=name;models.set(name,model);
+    }
     models.set('nato_tandem', createTandemTransport());
     for(const type of STRATEGIC_MODELS)models.set(type,createStrategicModel(type));
     models.set('nuclearSilo',createNuclearSilo());
@@ -166,13 +172,9 @@ export async function prepareVisualAssets({ lunar = false } = {}) {
     models.set('dock', createHarbor(weatherMaterial, openAssets));
     for (const type of COMMUNITY_3D_BUILDINGS.filter(type => type !== 'dock')) refineFacility(models.get(type), type, weatherMaterial);
     refineRadarStation(models.get('radar'));
-    const electronic = models.get('strike').clone(); electronic.name = 'ewPlane';
-    const podMaterial = new THREE.MeshStandardMaterial({ color: '#687667', roughness: .65, metalness: .5 });
-    for (const z of [-2.3, 2.3]) { const pod = new THREE.Mesh(new THREE.CapsuleGeometry(.3, 2.2, 4, 12), podMaterial); pod.rotation.z = Math.PI / 2; pod.position.set(-.5, -.2, z); electronic.add(pod); }
-    models.set('ewPlane', electronic);
     refineAirfieldRunway(models.get('airfield'));
     for (const name of ['fighter', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'ghost']) refineAircraftCanopy(models.get(name));
-    for (const name of ['fighter', 'fighter_china', 'fighter_nato', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'helicopter', 'swarmCarrier', 'swarmScout', 'swarmDecoy', 'drone', 'ghost', 'aegis', ...['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane'].map(type => `space_${type}`)]) finishAirframe(models.get(name));
+    for (const name of ['fighter', 'fighter_china', 'fighter_nato', 'strike', 'strike_china', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'helicopter', 'swarmCarrier', 'swarmScout', 'swarmDecoy', 'drone', 'ghost', 'aegis', ...['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis', 'ewPlane'].map(type => `space_${type}`)]) finishAirframe(models.get(name));
     installOpenModels(models, openAssets, weatherMaterial);
     for (const faction of ['china','russia','nato','asia','middleeast']) models.set(`elite_${faction}`, createFactionElite(faction));
     for (const faction of AIR_DEFENSE_FACTIONS) for (const type of ['aa', 'abm']) models.set(`${type}_${faction}`, createAirDefense(faction, type));
@@ -188,6 +190,7 @@ export async function prepareVisualAssets({ lunar = false } = {}) {
       if (assets.ground) { library.ground = assets.ground.map; library.groundSurface = assets.ground; }
       variants.clear();
     }).catch(() => {}), 2000);
+    setTimeout(()=>loadFreeAircraft().then(aircraft=>{installFreeAircraft(models,aircraft);variants.clear();thumbnails.clear();}).catch(()=>{}),2000);
     return library;
   }).catch(error => { pending = null; throw error; });
   await pending;

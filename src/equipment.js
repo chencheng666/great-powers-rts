@@ -51,6 +51,7 @@ export function equipmentModel(faction, type, future = false) {
   if (future && ['fighter', 'strike', 'bomber', 'airlift', 'freightPlane', 'aegis'].includes(type)) return `space_${type}`;
   if (faction === 'nato' && ['airlift', 'freightPlane'].includes(type)) return 'nato_tandem';
   if (type === 'freightPlane') return 'airlift';
+  if (!future && faction === 'nato' && ['navalFighter','navalStrike'].includes(type)) return `${type}_nato`;
   if (type === 'navalFighter') return 'fighter';
   if (type === 'navalStrike') return 'strike';
   if (type === 'refinery' && !future) return 'logistics_depot';
@@ -58,6 +59,7 @@ export function equipmentModel(faction, type, future = false) {
   if (!future && ['aa', 'abm'].includes(type)) return `${type}_${faction}`;
   if (type === 'tank' || type === 'rocket') return `${type}_${faction}`;
   if (type === 'fighter' && faction === 'china') return 'fighter_china';
+  if (type === 'strike' && faction === 'china') return 'strike_china';
   if (type === 'fighter' && faction === 'nato') return 'fighter_nato';
   if (future && !UNITS[type]) return `future_${type}`;
   return type === 'elite' ? `elite_${faction}` : type;

@@ -1,0 +1,108 @@
+{
+  "bomber": {
+    "sourceObjects": [
+      "f_111_aardvark_fuselage",
+      "f_111_aardvark_wing_l",
+      "f_111_aardvark_wing_r"
+    ],
+    "triangles": {
+      "airframe_near": 2136,
+      "airframe_far": 808
+    },
+    "bytes": 117996,
+    "sha256": "c7ed07a7fab61ec5821e67b6e9b7881d46323c84e6d5bac9ca23b1adb42957e3",
+    "jetExhausts": [
+      [
+        -4.094492702484131,
+        0.4756256639957428,
+        0.2979605793952942,
+        0.21
+      ],
+      [
+        -4.094492702484131,
+        0.4756257236003876,
+        -0.2979584336280823,
+        0.21
+      ]
+    ]
+  },
+  "ewPlane": {
+    "sourceObjects": [
+      "ea6b_prowler"
+    ],
+    "triangles": {
+      "airframe_near": 2665,
+      "airframe_far": 1012
+    },
+    "bytes": 110256,
+    "sha256": "bff23621d3785c993dde2eeb97d57550af11bf9ba6b2b8f9bbb942604471bf09",
+    "jetExhausts": [
+      [
+        -0.8638565826416016,
+        0.8120670914649963,
+        0.4609401524066925,
+        0.21
+      ],
+      [
+        -0.8638568210601807,
+        0.8120670318603516,
+        -0.4609399437904358,
+        0.21
+      ]
+    ]
+  },
+  "navalFighter_nato": {
+    "sourceObjects": [
+      "f14_tomcat",
+      "f14_tomcat_wing_l",
+      "f14_tomcat_wing_r"
+    ],
+    "triangles": {
+      "airframe_near": 2506,
+      "airframe_far": 948
+    },
+    "bytes": 121064,
+    "sha256": "f0440f8e7481505ba653bf75630a040a4be708778c4a04f6160ea38715bc0d37",
+    "jetExhausts": [
+      [
+        -4.00158145904541,
+        0.6526828408241272,
+        0.6597197651863098,
+        0.21
+      ],
+      [
+        -4.00158145904541,
+        0.6526828408241272,
+        -0.6597175598144531,
+        0.21
+      ]
+    ],
+    "parkedTriangles": 800
+  },
+  "navalStrike_nato": {
+    "sourceObjects": [
+      "a6e_intruder"
+    ],
+    "triangles": {
+      "airframe_near": 1781,
+      "airframe_far": 675
+    },
+    "bytes": 96580,
+    "sha256": "430191e948b0fe1a4d70220810eb0edbe6104cd76ac32302d575e9fe3ee2b29d",
+    "jetExhausts": [
+      [
+        -0.6022121000289917,
+        0.5198888182640076,
+        0.48749977350234985,
+        0.21
+      ],
+      [
+        -0.6022123384475708,
+        0.5198888182640076,
+        -0.4874996542930603,
+        0.21
+      ]
+    ],
+    "parkedTriangles": 568
+  }
+}
