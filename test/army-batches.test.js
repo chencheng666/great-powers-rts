@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { ArmyBatches, armyRenderBudget } from '../src/army-batches.js';
+import { Renderer } from '../src/render.js';
 
 function army(count) {
   const scene = new THREE.Scene(), geometry = new THREE.BoxGeometry(), material = new THREE.MeshStandardMaterial();
@@ -69,3 +70,30 @@ test('超大视口限制渲染总像素，低 DPI 不强制超采样', () => {
 });
 
 test('触屏高画质仍限制阴影和像素比例，避免沿用桌面昂贵预算',()=>{const b=armyRenderBudget('high',12,3,{width:844,height:390},true);assert.equal(b.shadowSize,2048);assert.ok(b.pixelRatio<=1.5);});
+
+test('合批后仍按原模型射线点选和屏幕框选，隐藏单位不会被选中', () => {
+  const { scene, entries } = army(3), batcher = new ArmyBatches(scene);
+  entries.forEach((entry, id) => {
+    Object.assign(entry.entity, { owner: 0, hp: 100, type: 'tank', x: id * 5, y: 0 });
+    entry.model.userData.entity = entry.entity; entry.topHeight = 4;
+  });
+  const camera = new THREE.OrthographicCamera(-12, 12, 9, -9, 1, 100);
+  camera.position.set(5, 20, 20); camera.lookAt(5, 0, 0); camera.updateMatrixWorld();
+  const renderer = Object.assign(Object.create(Renderer.prototype), {
+    entities: new Map(entries.map(e => [e.entity.id, e])), sites: [],
+    raycaster: new THREE.Raycaster(), viewCamera: camera, viewport: { width: 800, height: 600 },
+    elevation: () => 0, game: { selected: [], events: {} },
+  });
+  batcher.update(entries, new Set([0, 1, 2]));
+  for (const entry of entries) {
+    const point = renderer.selectionCenter(entry);
+    assert.equal(renderer.pickEntity(point.x, point.y)?.id, entry.entity.id);
+    assert.equal(renderer.pickSelection(point.x, point.y)?.id, entry.entity.id);
+  }
+  entries[1].model.visible = false;
+  renderer.selectScreenBox({ x: 0, y: 0 }, { x: 800, y: 600 }, false);
+  assert.deepEqual(renderer.game.selected, [0, 2]);
+  const point = renderer.selectionCenter(entries[1]);
+  assert.equal(renderer.pickSelection(point.x, point.y), null);
+  batcher.dispose();
+});

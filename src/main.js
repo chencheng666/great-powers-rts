@@ -75,7 +75,8 @@ import { battleReportHTML } from './battle-report.js';
 import './battle-report.css';
 import './mobile-battle.css';
 import './fan-feedback.css';
-import { shouldPanMap, touchTransform, touchDragMode } from './map-gestures.js';
+import { shouldPanMap, panConsumesClick, touchTransform, touchDragMode } from './map-gestures.js';
+import { BackgroundPause } from './background-pause.js';
 import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
 import { COMBAT_STANCES, supportsCombatStance, combatStance } from './combat-stance.js';
 import { isLifeline, LIFELINE, lifelineSummary, harborPlan, freightRules } from './maritime-logistics.js';
@@ -118,6 +119,7 @@ const loyalty = new CommanderLoyalty(localStorage);
 let sandboxNoticePending = false;
 const candidateMode=/^\/candidate(?:\/|$)/.test(location.pathname);
 const $ = selector => document.querySelector(selector);
+const backgroundPause = new BackgroundPause();
 const fmt = amount => Math.floor(amount).toLocaleString('zh-CN');
 const seconds = value => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
 const selectionStatus = entity => {
@@ -554,6 +556,8 @@ function updateUI(force = false) {
   $('#power-meter').style.setProperty('--power-fill', `${Math.max(0, Math.min(100, p.powerIn / Math.max(1, p.powerOut) * 100))}%`);
   $('.resource.power').title = `供电 ${p.powerIn} / 耗电 ${p.powerOut}${g.hasPower(0) ? ' · 供电正常' : ' · 电力不足，建造发电站'}`;
   $('#clock').textContent = seconds(g.time);
+  $('#pause-btn').setAttribute('aria-label', g.paused ? '继续作战' : '暂停游戏');
+  $('#pause-btn').title = g.paused ? '继续作战' : '暂停游戏';
   $('#minimap-shell').classList.toggle('radar-offline', !g.hasRadarIntel(0));
   $('#battle-status').textContent = g.online && onlineClient.socket?.readyState !== WebSocket.OPEN ? '连接中断，正在重连' : g.online && g.paused ? `等待对手重连 ${Math.max(0,Math.ceil(((g.room?.deadline||Date.now())-Date.now())/1000))} 秒` : !g.hasPower(0) ? '电力不足' : g.pendingBuilding ? '等待部署建筑' : g.pendingAbility ? '选择技能目标' : g.paused ? '战斗暂停' : g.online ? '联网对战' : '战斗进行中';
   const q = p.buildQueue;
@@ -781,7 +785,7 @@ function updateSelection() {
 function updatePanControl() {
   const button = $('#pan-map-btn');
   button.setAttribute('aria-pressed', String(state.cameraPanMode));
-  button.title = state.cameraPanMode ? '拖图已开启 · Esc退出 · Shift左拖框选' : '拖拽地图模式（M）';
+  button.title = state.cameraPanMode ? '拖图已开启 · 轻点选取 · Shift左拖框选 · Esc退出' : '拖拽地图模式（M）';
   const canvas = state.renderer?.canvas || $('#game-canvas');
   if (!canvas) return;
   ensureBattleCanvas(canvas, document);
@@ -818,6 +822,7 @@ function updateBuildingInspector(now) {
 }
 
 function showModal(title, body, actions, kicker = '指挥系统') {
+  backgroundPause.cancel();
   state.modalMode = title;
   $('#modal').classList.remove('victory-result');
   $('#modal-content').innerHTML = `<div class="modal-kicker">${kicker}</div><h2>${title}</h2>${body}<div class="modal-actions">${actions}</div>`;
@@ -895,6 +900,7 @@ function requestMainMenu() {
 }
 
 function returnToMenu() {
+  backgroundPause.cancel();
   if(state.game?.online)onlineClient.leave();
   ++state.loopToken; state.keys.clear(); state.game = null;
   state.renderFailure = null; state.lastSelectionClick = null;
@@ -1096,6 +1102,7 @@ function showResult(winner) {
 }
 
 function closeModal() {
+  backgroundPause.cancel();
   state.pendingChallengeImport=null;
   state.challengeImportRequest=null;
   if (state.renderFailure) { returnToMenu(); return; }
@@ -1145,7 +1152,7 @@ function setupControls() {
         return;
       }
     }
-    if (event.pointerType !== 'touch' && shouldPanMap({button:event.button,alt:event.altKey,shift:event.shiftKey,panMode:state.cameraPanMode,targeting:!!(g.placingBuilding||g.pendingAbility||g.orderMode)})) { state.panning = { ...p, start: p, button: event.button, moved: false }; updatePanControl(); return; }
+    if (event.pointerType !== 'touch' && shouldPanMap({button:event.button,alt:event.altKey,shift:event.shiftKey,panMode:state.cameraPanMode,targeting:!!(g.placingBuilding||g.pendingAbility||g.orderMode)})) { state.panning = { ...p, start: p, button: event.button, alt: event.altKey, moved: false }; updatePanControl(); return; }
     if (g.paused) return;
     if (event.button === 0) { state.drag = { start: p, end: p, moved: false, additive: event.shiftKey }; }
   });
@@ -1196,7 +1203,7 @@ function setupControls() {
       }
       state.touchLast = null;
     }
-    if (state.panning) { const pan = state.panning; state.panning = null; updatePanControl(); if (pan.button !== 2 || pan.moved) return; }
+    if (state.panning) { const pan = state.panning; state.panning = null; updatePanControl(); if (panConsumesClick(pan)) return; }
     if (g.paused) return;
     if (event.button === 2) {
       const world = r.pickPoint(p.x, p.y);
@@ -1452,8 +1459,12 @@ function setupControls() {
     loyalty.tick(state.game, !document.hidden);
     gameAudio.setPaused(document.hidden || !!state.game?.paused);
     if (document.hidden && state.game?.running && !state.game.online) {
-      saveProgress('auto', false); state.game.paused = true; gameAudio.setPaused(true);
+      saveProgress('auto', false); backgroundPause.hide(state.game); gameAudio.setPaused(true);
       $('#pause-btn').innerHTML = icon('play'); refreshIcons();
+    } else if (!document.hidden && backgroundPause.resume(state.game, !$('#modal').classList.contains('hidden') || catalog.dialog.open || honorPanel.dialog.open)) {
+      gameAudio.setPaused(false);
+      $('#pause-btn').innerHTML = icon('pause'); refreshIcons();
+      updateUI(true); updateSelection(); playerTelemetry.tick(state.game);
     }
     state.lastFrame = 0; state.keys.clear();
   });
