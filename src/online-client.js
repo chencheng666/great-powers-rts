@@ -1,7 +1,7 @@
 import { isDesktop, desktopInvoke } from './desktop.js';
 import { isUtools, openUtoolsLink } from './utools-runtime.js';
 import { FACTIONS, MAPS, VICTORY_MODES } from './data.js';
-import { nickname, roomCode, PROTOCOL_VERSION,SIX_PROTOCOL_VERSION } from './network-protocol.js';
+import { nickname, roomCode, PROTOCOL_VERSION, SIX_PROTOCOL_VERSION, COMBINED_MAP_CAPABILITY } from './network-protocol.js';
 const key='great-powers-player-name-v1';
 const candidatePath=()=>/^\/candidate(?:\/|$)/.test(location.pathname);
 export class OnlineClient {
@@ -72,7 +72,7 @@ export class OnlineClient {
     if(this.socket?.readyState===WebSocket.OPEN)return Promise.resolve();
     if(this.connecting)return this.connecting;
     this.connecting=new Promise((resolve,reject)=>{
-      const ws=new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}${this.prefix||''}/battle-socket`);this.socket=ws;
+      const ws=new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}${this.prefix||''}/battle-socket`, COMBINED_MAP_CAPABILITY);this.socket=ws;
       let welcomed=false;
       const fail=message=>{clearTimeout(timeout);reject(new Error(message));};
       const timeout=setTimeout(()=>{fail('连接超时，请重新连接');ws.close();},10000);

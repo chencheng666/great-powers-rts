@@ -27,8 +27,8 @@ test('三种人员近远景保留各自服色和轮廓，不以职责色覆盖�
   assert.equal(signatures.size, 3);
 });
 
-test('三个推荐玩法能真实开局和存档恢复，推荐列表不删除原地图', () => {
-  assert.equal(discoverMaps(Object.keys(MAPS), 'recommended').length, 3);
+test('四个推荐玩法能真实开局和存档恢复，推荐列表不删除原地图', () => {
+  assert.equal(discoverMaps(Object.keys(MAPS), 'recommended').length, 4);
   const all = discoverMaps(Object.keys(MAPS));
   assert.ok(all.includes('strategic') && all.includes('sixfront') && all.includes('meridian'));
   for (const preset of Object.values(QUICK_PRESETS)) {

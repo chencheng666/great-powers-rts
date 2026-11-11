@@ -675,8 +675,8 @@ export const modernCombat = {
     for (const t of this.activeUnits(side).filter(u => ['landing', 'airlift'].includes(u.type))) {
       if (t.order?.type === 'rearm' || t.deployment) continue;
       const water = this.map.water;
-      const home = this.playerCount===6?this.map.spawns[side]:{ x: t.type === 'landing' ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 };
-      const shore = this.playerCount===6?this.enemyObjective(side):{ x: t.type === 'landing' ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 };
+      const home = (t.type === 'landing' && this.map.landingApproaches?.[side]) || (this.playerCount===6?this.map.spawns[side]:{ x: t.type === 'landing' ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 });
+      const shore = (t.type === 'landing' && this.map.landingApproaches?.[1-side]) || (this.playerCount===6?this.enemyObjective(side):{ x: t.type === 'landing' ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 });
       t.transportStage ||= 'load';
       const goal = ['load', 'return'].includes(t.transportStage) ? home : shore;
       if (distance(t, goal) > 20) { t.order = { type: 'move', ...goal }; continue; }
@@ -690,10 +690,11 @@ export const modernCombat = {
         }
       } else {
         const carried = [...t.passengers];
-        this.unloadTransport(t);
+        if (this.map.combinedArms && t.type === 'landing') this.unloadTransport(t, false, true);
+        else this.unloadTransport(t);
         for (const id of carried) {
           const u = this.getEntity(id);
-          if (u?.hp > 0 && !u.embarkedIn) u.order = { type: 'attackMove', x: 300, y: this.homeY };
+          if (u?.hp > 0 && !u.embarkedIn) u.order = { type: 'attackMove', ...(this.map.combinedArms ? this.enemyObjective(side) : { x: 300, y: this.homeY }) };
         }
         if (!t.passengers.length) { t.transportStage = 'return'; t.loadStartedAt = null; }
       }

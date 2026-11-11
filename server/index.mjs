@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
 import { Game } from '../src/game.js';
 import { FACTIONS, MAPS, VICTORY_MODES, supportsNuclearMap } from '../src/data.js';
-import { PROTOCOL_VERSION,SIX_PROTOCOL_VERSION, nickname } from '../src/network-protocol.js';
+import { PROTOCOL_VERSION, SIX_PROTOCOL_VERSION, COMBINED_MAP_CAPABILITY, nickname } from '../src/network-protocol.js';
 import { Accounts } from './accounts.mjs';
 import { executeCommand } from './commands.mjs';
 import { battleView } from './battle-view.mjs';
@@ -193,10 +193,15 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
     wss.handleUpgrade(req, socket, head, ws => wss.emit('connection', ws, user));
   });
   wss.on('connection', (ws, user) => {
+    const resumed = userRoom(user.id);
+    const supportsCombinedMap = ws.protocol === COMBINED_MAP_CAPABILITY;
+    if (MAPS[resumed?.config?.mapId]?.combinedArms && !supportsCombinedMap) {
+      ws.close(1008, '山海会战需要刷新网页或更新客户端');
+      return;
+    }
     const old = peers.get(user.id); peers.set(user.id, ws); old?.close(1000, '会话已在另一窗口打开');
     ws.alive = true; ws.on('pong', () => ws.alive = true);
     let seq = 0, tokens = 40, lastRate = Date.now();
-    const resumed = userRoom(user.id);
     send(ws, { type:'hello', protocol, user, room:resumed?publicRoom(resumed):null });
     if (resumed) { roomNotice(resumed); const side=resumed.members.findIndex(m=>m?.user.id===user.id); if(resumed.game)snapshot(resumed,ws,resumed.spectators?.get(user.id)??side,true,resumed.spectators?.has(user.id)); }
     ws.on('message', raw => {
@@ -210,6 +215,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
           if (r) throw new Error('请先退出当前房间');
           if (rooms.size >= 20) throw new Error('房间已满，请稍后重试');
           if (MAPS[msg.mapId]?.missionOnly||MAPS[msg.mapId]?.singleplayerOnly||maxPlayers===6&&msg.mapId!=='sixfront'||maxPlayers===2&&MAPS[msg.mapId]?.maxPlayers===6|| !Object.hasOwn(MAPS,msg.mapId) || !Object.hasOwn(FACTIONS,msg.faction) || !Object.hasOwn(VICTORY_MODES,msg.victoryMode)) throw new Error('作战配置无效');
+          if (MAPS[msg.mapId].combinedArms && !supportsCombinedMap) throw new Error('山海会战需要刷新网页或更新客户端');
           if(msg.nuclearEnabled===true&&(maxPlayers!==2||!supportsNuclearMap(msg.mapId)))throw new Error('核威慑仅限常规双人战区');
           let code; do { code=String(randomInt(100000,1000000)); } while (rooms.has(code));
           r={ code, host:0, config:{ mapId:msg.mapId, victoryMode:msg.victoryMode, battlefieldScale:maxPlayers===6||MAPS[msg.mapId].fixedScale?1:1.5,...(maxPlayers===6?{playerCount:6}: {}) }, members:Array.from({length:maxPlayers},(_,seat)=>seat===0?{user,faction:msg.faction,ready:false,seat,controlType:'human'}:null), expires:now+600000, memory:Array.from({length:maxPlayers},()=>new Map()),spectators:new Map(),allowSpectators:maxPlayers===6&&msg.allowSpectators===true,disconnects:0,deadlines:new Map() };
@@ -218,6 +224,7 @@ export function createBattleServer({ directory = process.env.DATA_DIRECTORY || r
         } else if (msg.type === 'join') {
           if (r) throw new Error('请先退出当前房间'); r=rooms.get(String(msg.code));
           if (!r || r.game || r.members.every(Boolean)) throw new Error('房间不存在、已满或已开战');
+          if (MAPS[r.config.mapId].combinedArms && !supportsCombinedMap) throw new Error('山海会战需要刷新网页或更新客户端');
           if (!Object.hasOwn(FACTIONS,msg.faction)) throw new Error('阵营无效');
           side=r.members.findIndex(m=>!m); r.members[side]={ user,faction:msg.faction,ready:false,seat:side,controlType:'human' }; r.expires=now+600000; roomNotice(r);
         } else if(msg.type==='observe'&&maxPlayers===6){

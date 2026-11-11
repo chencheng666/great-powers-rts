@@ -1,6 +1,7 @@
 export const QUICK_PRESETS = Object.freeze({
   land: { mapId: 'valleyTraining', difficulty: 'recruit', victory: 'quick', description: '灰谷 · 新兵难度 · 跟着提示熟悉指挥' },
   sea: { mapId: 'strait', difficulty: 'recruit', victory: 'quick', description: '海峡前线 · 新兵难度 · 建造船坞，组织海陆协同' },
+  combined: { mapId: 'confluence', difficulty: 'standard', victory: 'control', description: '山海会战 · 山口、港岛与外海 · 据点争夺' },
   control: { mapId: 'canyon', difficulty: 'standard', victory: 'control', description: '双桥裂谷 · 标准难度 · 争夺据点，累计积分获胜' },
 });
 

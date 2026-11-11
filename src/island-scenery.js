@@ -5,37 +5,65 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export function paintIslandTerrain(ctx, map, groundImage) {
   ctx.fillStyle='#273e47';ctx.fillRect(0,0,map.world.width,map.world.height);
+  let tile;
+  if (groundImage) {
+    tile = document.createElement('canvas');
+    tile.width = tile.height = 420;
+    const paint = tile.getContext('2d');
+    paint.filter = 'saturate(1.1) brightness(.72)';
+    paint.drawImage(groundImage, 0, 0, 420, 420);
+  }
   for(const island of map.islands){
     ctx.save();ctx.beginPath();island.points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();
     ctx.fillStyle='#637458';ctx.fill();ctx.strokeStyle='#968c61';ctx.lineWidth=32;ctx.stroke();ctx.clip();
-    if(groundImage){ctx.filter='saturate(1.1) brightness(.72)';for(let y=0;y<map.world.height;y+=420)for(let x=0;x<map.world.width;x+=420)ctx.drawImage(groundImage,x,y,420,420);ctx.filter='none';}
-    for(let i=0;i<120;i++){
-      const x=(i*197.17)%map.world.width,y=(i*353.73)%map.world.height,r=40+i%60,g=ctx.createRadialGradient(x,y,0,x,y,r);
+    const xs = island.points.map(p => p[0]), ys = island.points.map(p => p[1]);
+    const left = Math.min(...xs), top = Math.min(...ys), right = Math.max(...xs), bottom = Math.max(...ys);
+    if (tile) {
+      for (let y = Math.floor(top / 420) * 420; y < bottom; y += 420) {
+        for (let x = Math.floor(left / 420) * 420; x < right; x += 420) ctx.drawImage(tile, x, y);
+      }
+    }
+    const patches = Math.min(120, Math.ceil((right-left)*(bottom-top)/48000));
+    for(let i=0;i<patches;i++){
+      const x=left+(i*197.17)%(right-left),y=top+(i*353.73)%(bottom-top),r=40+i%60,g=ctx.createRadialGradient(x,y,0,x,y,r);
       g.addColorStop(0,i%2?'#25483c55':'#a89d7233');g.addColorStop(1,'#314a3600');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);
     }
     ctx.restore();
-  }
-  ctx.lineCap='round';ctx.lineJoin='round';
-  for(const points of [[[2190,1620],[2320,1470],[2600,1560],[2440,1750],[2260,1790]],[[520,2540],[680,2630],[950,2550],[1180,2520]]]){
-    ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
-    ctx.strokeStyle='#b0a480';ctx.lineWidth=34;ctx.stroke();ctx.strokeStyle='#626b65';ctx.lineWidth=24;ctx.stroke();
-    ctx.setLineDash([8,18]);ctx.strokeStyle='#c8c4a4';ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([]);
   }
 }
 
 export function createIslandShore(map) {
   const root=new THREE.Group();root.name='群岛海岸';
-  const positions=[],colors=[],indices=[];
+  const positions=[],colors=[],indices=[],foam=[];
   for(const island of map.islands){
-    const center=island.points.reduce((p,[x,y])=>({x:p.x+x/island.points.length,y:p.y+y/island.points.length}),{x:0,y:0});
     const count=island.points.length;
+    const orientation = Math.sign(island.points.reduce((sum, [x,y], i) => {
+      const [nextX,nextY] = island.points[(i + 1) % count];
+      return sum + x * nextY - y * nextX;
+    }, 0));
+    const coastNormal = index => {
+      const before = island.points[(index + count - 1) % count], here = island.points[index], after = island.points[(index + 1) % count];
+      const a = new THREE.Vector2(here[1] - before[1], before[0] - here[0]).normalize();
+      const b = new THREE.Vector2(after[1] - here[1], here[0] - after[0]).normalize();
+      const direction = a.clone().add(b).normalize();
+      return direction.multiplyScalar(orientation / Math.max(.5, direction.dot(b)));
+    };
     for(let i=0;i<count;i++){
-      const a=island.points[i],b=island.points[(i+1)%count],steps=Math.ceil(Math.hypot(a[0]-b[0],a[1]-b[1])/18);
+      const a=island.points[i], b=island.points[(i+1)%count];
+      const length = Math.hypot(a[0]-b[0], a[1]-b[1]);
+      if (!length || a[0] === b[0] && (a[0] === 0 || a[0] === map.world.width) ||
+          a[1] === b[1] && (a[1] === 0 || a[1] === map.world.height)) continue;
+      const startNormal = coastNormal(i), endNormal = coastNormal((i + 1) % count);
+      foam.push(new THREE.Vector3(a[0],1.4,a[1]), new THREE.Vector3(b[0],1.4,b[1]));
+      const steps = Math.ceil(length / 18);
       for(let n=0;n<steps;n++){
-        const points=[n/steps,(n+1)/steps].map(t=>({x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t})),start=positions.length/3;
+        const points=[n/steps,(n+1)/steps].map(t=>({
+          x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,
+          dx:startNormal.x+(endNormal.x-startNormal.x)*t,
+          dy:startNormal.y+(endNormal.y-startNormal.y)*t
+        })),start=positions.length/3;
         for(const p of points){
-          const len=Math.hypot(p.x-center.x,p.y-center.y),dx=(p.x-center.x)/len,dy=(p.y-center.y)/len;
-          for(const width of [-34,22]){const x=p.x+dx*width,y=p.y+dy*width;positions.push(x,width>0?1.05:islandHeight(map,x,y)+.25,y);colors.push(...(width>0?[.09,.22,.22]:[.32,.28,.16]));}
+          for(const width of [-34,22]){const x=p.x+p.dx*width,y=p.y+p.dy*width;positions.push(x,width>0?1.05:islandHeight(map,x,y)+.25,y);colors.push(...(width>0?[.09,.22,.22]:[.32,.28,.16]));}
         }
         indices.push(start,start+2,start+1,start+1,start+2,start+3);
       }
@@ -45,7 +73,7 @@ export function createIslandShore(map) {
   const material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.88,side:THREE.DoubleSide});
   const coast=new THREE.Mesh(geometry,material);coast.receiveShadow=true;root.add(coast);
   const foamMaterial=new THREE.LineBasicMaterial({color:'#c0d8cb',transparent:true,opacity:.55});
-  for(const island of map.islands){const line=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(island.points.map(([x,y])=>new THREE.Vector3(x,1.4,y))),foamMaterial);root.add(line);}
+  root.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(foam), foamMaterial));
   return root;
 }
 

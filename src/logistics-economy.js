@@ -28,6 +28,7 @@ export const logisticsEconomy = {
   },
 
   freightEntry(side, sea = false) {
+    if (sea && this.map.seaEntries) return { ...this.map.seaEntries[side] };
     if(sea && this.map.freight)return {...this.map.freight.entry};
     if (sea && isLifeline(this)) return { x: 2160, y: unitRadius({ type: 'containerShip' }) + 12 };
     const margin = sea ? unitRadius({ type: 'containerShip' }) + 12 : 90;

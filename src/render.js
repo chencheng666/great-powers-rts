@@ -204,20 +204,25 @@ export class Renderer {
   }
 
   createTerrain() {
-    const factor = Math.min(1, (innerWidth < 700 ? 2048 : 4096) / this.world.width);
+    const islands = this.game.map.islands;
+    const maxTexture = islands ? (innerWidth < 700 ? 1600 : 2560) : (innerWidth < 700 ? 2048 : 4096);
+    const factor = Math.min(1, maxTexture / this.world.width);
     const canvas = makeCanvas(Math.round(this.world.width * factor), Math.round(this.world.height * factor)), ctx = canvas.getContext('2d'), image = (this.game.map.future ? visualLibrary().meridian : visualLibrary().ground).image;
     ctx.scale(factor, factor);
-    ctx.filter = this.game.map.future ? BATTLE_READABILITY.lunarFilter : BATTLE_READABILITY.groundFilter;
-    const tile = this.game.map.future ? 560 : 420;
-    for (let y = 0; y < this.world.height; y += tile) for (let x = 0; x < this.world.width; x += tile) ctx.drawImage(image, x, y, tile, tile);
-    ctx.filter = 'none';
-    ctx.fillStyle = this.game.map.future ? 'rgba(55,67,88,.08)' : 'rgba(32,46,28,.10)'; ctx.fillRect(0, 0, this.world.width, this.world.height);
-    // 大尺度土壤与植被斑块打破平铺重复，细颗粒仍由原图和凹凸纹理提供。
-    if (!this.game.map.future) for (let i = 0; i < 480; i++) {
-      const x = hash(i, 61) * this.world.width, y = hash(i, 67) * this.world.height, radius = 30 + hash(i, 73) * 130;
-      const patch = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      patch.addColorStop(0, i % 3 ? 'rgba(30,60,21,.17)' : 'rgba(102,70,38,.18)'); patch.addColorStop(1, 'rgba(30,40,20,0)');
-      ctx.fillStyle = patch; ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    if (islands) paintIslandTerrain(ctx, this.game.map, image);
+    else {
+      ctx.filter = this.game.map.future ? BATTLE_READABILITY.lunarFilter : BATTLE_READABILITY.groundFilter;
+      const tile = this.game.map.future ? 560 : 420;
+      for (let y = 0; y < this.world.height; y += tile) for (let x = 0; x < this.world.width; x += tile) ctx.drawImage(image, x, y, tile, tile);
+      ctx.filter = 'none';
+      ctx.fillStyle = this.game.map.future ? 'rgba(55,67,88,.08)' : 'rgba(32,46,28,.10)'; ctx.fillRect(0, 0, this.world.width, this.world.height);
+      // 大尺度土壤与植被斑块打破平铺重复，细颗粒仍由原图和凹凸纹理提供。
+      if (!this.game.map.future) for (let i = 0; i < 480; i++) {
+        const x = hash(i, 61) * this.world.width, y = hash(i, 67) * this.world.height, radius = 30 + hash(i, 73) * 130;
+        const patch = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        patch.addColorStop(0, i % 3 ? 'rgba(30,60,21,.17)' : 'rgba(102,70,38,.18)'); patch.addColorStop(1, 'rgba(30,40,20,0)');
+        ctx.fillStyle = patch; ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+      }
     }
     const road = (points, width) => {
       const trace = () => { ctx.beginPath(); ctx.moveTo(...points[0]); points.slice(1).forEach(point => ctx.lineTo(...point)); };
@@ -258,7 +263,7 @@ export class Renderer {
       if (this.game.map.future || Math.abs(y - cy) > 38) continue;
       ctx.strokeStyle = 'rgba(23,29,29,.23)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 7, y + 3); ctx.lineTo(x + 14, y - 2); ctx.stroke();
     }
-    if (this.game.map.water) {
+    if (!islands && this.game.map.water) {
       const water = this.game.map.water;
       for (const [edge, side] of [[water.x1, -1], [water.x2, 1]]) {
         const shore = ctx.createLinearGradient(edge - 54, 0, edge + 54, 0);
@@ -266,11 +271,10 @@ export class Renderer {
         ctx.fillStyle = shore; ctx.fillRect(edge - 54, 0, 108, this.world.height);
       }
       ctx.fillStyle = '#334044'; ctx.fillRect(water.x1, 0, water.x2 - water.x1, this.world.height);
-    } else if (!this.game.map.future && !this.game.map.ridges && !this.game.map.industrial) for (const rect of this.game.map.barriers) {
+    } else if (!islands && !this.game.map.future && !this.game.map.ridges && !this.game.map.industrial) for (const rect of this.game.map.barriers) {
       ctx.fillStyle = '#242e2c'; ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
       ctx.fillStyle = 'rgba(98,99,84,.55)'; ctx.fillRect(rect.x1 - 12, rect.y1, 22, rect.y2 - rect.y1); ctx.fillRect(rect.x2 - 10, rect.y1, 22, rect.y2 - rect.y1);
     }
-    if(this.game.map.islands)paintIslandTerrain(ctx,this.game.map,image);
     paintTheaterGround(ctx,this.game.map,road,image);
     const texture = this.track(new THREE.CanvasTexture(canvas)); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = Math.min(8, this.webgl.capabilities.getMaxAnisotropy()); this.terrainTexture = texture;
     const geometry = this.track(new THREE.PlaneGeometry(this.world.width, this.world.height, 192, 128)); geometry.rotateX(-Math.PI / 2); geometry.translate(this.world.width / 2, 0, this.world.height / 2);
@@ -375,7 +379,9 @@ export class Renderer {
 
   createShoreline() {
     if(this.game.map.islands){
-      for(const group of [createIslandShore(this.game.map),createIslandInfrastructure(this.game.map)]){
+      const groups = [createIslandShore(this.game.map)];
+      if (this.game.mapId === 'islandwatch') groups.push(createIslandInfrastructure(this.game.map));
+      for(const group of groups){
         group.traverse(part=>{if(part.geometry)this.track(part.geometry);if(part.material)this.track(part.material);});this.scene.add(group);
       }
       return;
@@ -424,9 +430,21 @@ export class Renderer {
     ctx.putImageData(pixels, 0, 0);
     const normal = this.track(new THREE.CanvasTexture(canvas)); normal.wrapS = normal.wrapT = THREE.RepeatWrapping; normal.repeat.set((this.game.map.water.x2 - this.game.map.water.x1) / 100, this.world.height / 120); this.waterNormal = normal;
     const water = this.game.map.water;
-    const mesh = new THREE.Mesh(this.track(new THREE.PlaneGeometry(water.x2 - water.x1, this.world.height)), this.track(new THREE.MeshStandardMaterial({ color: '#32626a', metalness: .45, roughness: .32, normalMap: normal, normalScale: new THREE.Vector2(.19, .19), transparent: true, opacity: .97, depthWrite: false })));
+    const geometry = this.track(new THREE.PlaneGeometry(water.x2 - water.x1, this.world.height, 64, 48));
+    const vertices = geometry.getAttribute('position');
+    const middle = (water.x1 + water.x2) / 2;
+    const deep = new THREE.Color('#23535f'), shallow = new THREE.Color('#487d76'), tint = new THREE.Color();
+    const colors = [];
+    for (let i = 0; i < vertices.count; i++) {
+      const x = middle + vertices.getX(i), y = this.world.height / 2 - vertices.getY(i);
+      const distance = this.game.map.islands ? -islandDistance(this.game.map, x, y) : Math.min(x - water.x1, water.x2 - x);
+      tint.copy(deep).lerp(shallow, 1 - clamp(distance / 265, 0, 1));
+      colors.push(tint.r, tint.g, tint.b);
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    const material = this.track(new THREE.MeshStandardMaterial({ vertexColors: true, metalness: .26, roughness: .38, normalMap: normal, normalScale: new THREE.Vector2(.11, .11), transparent: true, opacity: .97, depthWrite: false }));
+    const mesh = new THREE.Mesh(geometry, material);
     mesh.renderOrder = 1;
-    if(this.game.map.islands){mesh.material.color.set('#29545a');mesh.material.normalScale.set(.065,.065);mesh.material.metalness=.25;mesh.material.roughness=.42;}
     mesh.rotation.x = -Math.PI / 2; mesh.position.set((water.x1 + water.x2) / 2, .8, this.world.height / 2); mesh.receiveShadow = true; this.scene.add(mesh);
   }
 
@@ -1610,6 +1628,14 @@ export class Renderer {
       const p=this.worldToScreen(s.x,s.y,this.elevation(s.x,s.y)+48);if(p.x<0||p.y<0||p.x>this.viewport.width||p.y>this.viewport.height)continue;
       ctx.save();ctx.font='500 10px "Noto Sans SC",sans-serif';ctx.textAlign='center';ctx.strokeStyle='#101b20';ctx.lineWidth=3;const text=`${RESOURCE_TYPES[s.type].name} · ${s.type==='depot'?`${s.owner===0?'我方':s.owner===1?'敌方':'中立'} · `:''}${Math.ceil(s.amount)}`;ctx.strokeText(text,p.x,p.y);ctx.fillStyle=s.owner===1?'#ffa494':s.owner===0?'#8ce0d8':'#e6cd91';ctx.fillText(text,p.x,p.y);ctx.restore();
     }
+    for (const beacon of this.game.beacons) {
+      if (!beacon.name || !this.game.isVisibleFor(0, beacon.x, beacon.y)) continue;
+      const p = this.worldToScreen(beacon.x, beacon.y, this.elevation(beacon.x, beacon.y) + 48);
+      if (p.x < 0 || p.y < 0 || p.x > this.viewport.width || p.y > this.viewport.height) continue;
+      ctx.save(); ctx.textAlign = 'center'; ctx.font = '600 11px sans-serif'; ctx.strokeStyle = '#142326'; ctx.lineWidth = 4;
+      ctx.fillStyle = beacon.owner === null ? '#f0d393' : teamVisual(beacon.owner).color;
+      ctx.strokeText(beacon.name, p.x, p.y); ctx.fillText(beacon.name, p.x, p.y); ctx.restore();
+    }
     this.drawAttackFeedback();
     for(const {entity:e,definition:d} of theaterFacilities(this.game))if(this.game.hasExploredFor(0,e.x,e.y)){
       const p=this.worldToScreen(e.x,e.y,this.elevation(e.x,e.y)+(e.hp>0?65:12));
@@ -1782,6 +1808,12 @@ export class Renderer {
     if (this.game.map.water) { const water = this.game.map.water; ctx.fillStyle = '#315662'; ctx.fillRect(water.x1 * sx, 0, (water.x2 - water.x1) * sx, height); }
     if(this.game.map.islands)for(const island of this.game.map.islands){ctx.beginPath();island.points.forEach(([x,y],i)=>i?ctx.lineTo(x*sx,y*sy):ctx.moveTo(x*sx,y*sy));ctx.closePath();ctx.fillStyle='#778268';ctx.fill();ctx.strokeStyle='#b8ac7f';ctx.lineWidth=1;ctx.stroke();}
     ctx.drawImage(this.minimapRelief, 0, 0, width, height);
+    if (this.game.map.combinedArms) {
+      ctx.strokeStyle = '#e8c882'; ctx.lineWidth = 1;
+      for (const beach of this.game.map.beaches) {
+        ctx.strokeRect(beach.x1 * sx, beach.y1 * sy, (beach.x2 - beach.x1) * sx, (beach.y2 - beach.y1) * sy);
+      }
+    }
     for (const bridge of this.game.map.bridges) { ctx.fillStyle = '#a0a296'; ctx.fillRect((this.game.map.water ? this.game.map.water.x1 - 38 : 1010) * sx, bridge.y1 * sy, (this.game.map.water ? this.game.map.water.x2 - this.game.map.water.x1 + 76 : 220) * sx, (bridge.y2 - bridge.y1) * sy); }
     for (const ore of this.game.ore) if (ore.amount > 0) { ctx.fillStyle = ore.kind === 'gem' ? '#93b9b8' : '#c6ae75'; ctx.fillRect(ore.x * sx - 2, ore.y * sy - 2, 4, 4); }
     for (const site of [...this.game.oil, ...this.game.beacons]) { ctx.fillStyle = teamVisual(site.owner).color; ctx.fillRect(site.x * sx - 2, site.y * sy - 2, 5, 5); }

@@ -1,5 +1,6 @@
 export const PROTOCOL_VERSION = 6;
 export const SIX_PROTOCOL_VERSION = 7;
+export const COMBINED_MAP_CAPABILITY = 'combined-map-v1';
 export function roomCode(value) {
   const code = typeof value === 'string' ? value.normalize('NFKC').replace(/\s/g, '') : '';
   if (!/^[0-9]{6}$/.test(code)) throw new Error('请输入六位数字房间码');

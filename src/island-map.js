@@ -20,6 +20,7 @@ export function islandWatchMap() {
       {x1:900,y1:700,x2:1250,y2:1000},{x1:3460,y1:2530,x2:3750,y2:2810}],
     beacons: [{ id: 'island-signal', x: 2320, y: 1470 }, { id: 'island-port', x: 2260, y: 1790 }],
     resources: [{ id: 'island-power', type: 'depot', x: 2600, y: 1560 }],
+    roads: [[[2190,1620],[2320,1470],[2600,1560],[2440,1750],[2260,1790]],[[520,2540],[680,2630],[950,2550],[1180,2520]]],
     harbors: [{ x: 2200, y: 1720, angle: Math.PI, approach: { x: 1900, y: 1920 } }],
     freight: { goal: 1800, entry: { x: 180, y: 1080 }, lanes: {
       direct: [{ x: 1300, y: 1080 }, { x: 1700, y: 1180 }],
@@ -37,9 +38,9 @@ export function islandDistance(map, x, y) {
       const [ax, ay] = island.points[j], [bx, by] = island.points[i];
       if ((ay > y) !== (by > y) && x < (bx - ax) * (y - ay) / (by - ay) + ax) inside = !inside;
       const dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
-      nearest = Math.min(nearest, Math.hypot(x - ax - t * dx, y - ay - t * dy));
+      nearest = Math.min(nearest, (x - ax - t * dx) ** 2 + (y - ay - t * dy) ** 2);
     }
-    best = Math.max(best, inside ? nearest : -nearest);
+    best = Math.max(best, (inside ? 1 : -1) * Math.sqrt(nearest));
   }
   return best;
 }

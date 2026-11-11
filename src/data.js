@@ -1,3 +1,4 @@
+import { combinedMap } from './combined-map.js';
 import {sixPlayerMap} from './six-player-map.js';
 import { islandWatchMap } from './island-map.js';
 import { STRATEGIC_UNITS, strategicMap } from './strategic-data.js';
@@ -99,7 +100,7 @@ UNIT_ORDER.push('ewPlane', ...Object.keys(STRATEGIC_UNITS).filter(type => STRATE
 // 常规装备按战区能力解锁；保留月面、科幻和固定任务各自的装备规则。
 export const supportsModernMap = mapId => !!MAPS[mapId] && !MAPS[mapId].future && !MAPS[mapId].missionOnly;
 export const supportsNuclearMap = mapId => supportsModernMap(mapId) && MAPS[mapId].maxPlayers !== 6;
-export const supportsMap = (required, mapId) => !required || required === mapId || required === 'modern' && supportsModernMap(mapId) || required === 'ocean' && (['archipelago','islandwatch'].includes(mapId)||MAPS[mapId]?.naval) || required === 'meridian' && mapId === 'moonsea' || required === 'strategic' && mapId === 'sentinel';
+export const supportsMap = (required, mapId) => !required || required === mapId || required === 'modern' && supportsModernMap(mapId) || required === 'ocean' && (['archipelago','islandwatch'].includes(mapId)||MAPS[mapId]?.naval) || required === 'meridian' && mapId === 'moonsea' || required === 'strategic' && (mapId === 'sentinel' || MAPS[mapId]?.combinedArms);
 UNITS.carrier.capacity = CARRIER_CAPACITY;
 UNITS.carrier.desc = '可编入24架自行生产的舰载机，最多6架同时出动；固定机位停放，逐机起降、付费整备，可一键召回。真实机体与自带打击编组互斥，需反潜护卫。';
 
@@ -115,6 +116,7 @@ export const MAPS = {
   ...theaterMaps(),
   islandwatch: islandWatchMap(),
   strategic: strategicMap(),
+  confluence: combinedMap(),
   sixfront: sixPlayerMap(),
   archipelago: {
     name: '跨海登陆战', sector: '战区 07 · 无桥海战', world: { width: 3520, height: 2240, cell: 40, fog: 80 },
