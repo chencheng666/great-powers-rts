@@ -43,7 +43,7 @@ test('四个推荐玩法能真实开局和存档恢复，推荐列表不删除�
 test('加粗动能曳光与连续能量束均能处理零距离和各缩放，不产生无效几何', () => {
   for (const style of ['tank', 'rifle', 'laser', 'repair']) for (const distance of [0, 5, 500]) {
     const effect={x:0,y:0,toX:distance,toY:0,sourceType:'tank',targetType:'tank',style,duration:.2,age:0};
-    const context={entities:new Map(),camera:{zoom:.45},scene:new THREE.Scene(),trails:[],game:{time:0},effectHeight:()=>20,combatFlash:()=>{},effectSprite:()=>new THREE.Sprite(new THREE.SpriteMaterial())};
+    const context={entities:new Map(),camera:{zoom:.45},scene:new THREE.Scene(),trails:[],game:{time:0},elevation:()=>0,smokeField:{emit:()=>{}},effectHeight:()=>20,combatFlash:()=>{},effectSprite:()=>new THREE.Sprite(new THREE.SpriteMaterial())};
     const group=new THREE.Group(); realisticEffects.createWeaponEffect.call(context,effect,group);
     assert.equal(group.children[0].isLine===true,['laser','repair'].includes(style));
     for (const age of [0,.05,.1,.2]) {

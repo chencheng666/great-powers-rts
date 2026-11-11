@@ -15,7 +15,8 @@ import { confirmedAircraftLoss, aircraftCrashPose, aircraftShadowOpacity } from 
 import { rotorMotion, airCombatPose } from './aircraft-flight.js';
 import { aircraftExhaustLayout, aircraftExhaustState, aircraftBankTarget } from './aircraft-appearance.js';
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { releaseBattleResources } from './battle-resource-release.js';
+import { outdoorEnvironment } from './battle-lighting.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BUILDINGS, FACTIONS, UNITS } from './data.js';
 import { createModel, prepareVisualAssets, spriteTexture, visualLibrary, weatherMaterial } from './visual-assets.js';
@@ -68,7 +69,16 @@ import { islandHarbor, islandDistance } from './island-map.js';
 import { paintIslandTerrain, createIslandShore, createIslandInfrastructure } from './island-scenery.js';
 import { paintTheaterGround, createTheaterScenery } from './theater-scenery.js';
 import { theaterFacilities } from './theater-operations.js';
-import { finishBattleTerrain, createBattleWaterMaterial, proceduralTreeGeometry } from './battle-surfaces.js';
+import { proceduralTreeGeometry } from './battle-surfaces.js';
+import { createOceanSurface, updateOceanReflection } from './ocean-surface.js';
+import { IdentityBatches } from './identity-batches.js';
+import { vehicleSuspension } from './vehicle-suspension.js';
+import { createRockLandform, createRockMaterial } from './rock-landforms.js';
+import { BallisticTrails } from './ballistic-trails.js';
+import { VolumetricSmoke } from './volumetric-smoke.js';
+import { finishLunarSurface } from './lunar-surface.js';
+import { oceanWavePose } from './ocean-motion.js';
+import { finishLandscape, coastDistance } from './terrain-materials.js';
 import { AdaptiveRender } from './adaptive-render.js';
 
 // 实体与部署预览共用同一名单，避免三维建筑读取不存在的旧贴图。
@@ -134,18 +144,17 @@ export class Renderer {
     this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false });
     // 返回菜单或读档时复用同一画布，先清理上一渲染器遗留的 WebGL 绑定。
     this.webgl.resetState();
-    this.webgl.setPixelRatio(armyRenderBudget(this.quality,0,devicePixelRatio).pixelRatio);
+    this.webgl.setPixelRatio(armyRenderBudget(this.quality,0,devicePixelRatio,{},this.mobileBudget).pixelRatio);
     this.webgl.shadowMap.enabled = true; this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
     this.webgl.outputColorSpace = THREE.SRGBColorSpace; this.webgl.toneMapping = THREE.ACESFilmicToneMapping; this.webgl.toneMappingExposure = 1.02;
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color('#10181d');
-    this.armyBatches = new ArmyBatches(this.scene);
+    this.armyBatches = new ArmyBatches(this.scene);this.identityBatches=new IdentityBatches(this.scene);
     this.viewCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 8000);
     this.raycaster = new THREE.Raycaster(); this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const pmrem = new THREE.PMREMGenerator(this.webgl), room = new RoomEnvironment();
-    const environment = this.track(pmrem.fromScene(room, .06)); this.scene.environment = environment.texture; this.scene.environmentIntensity = .46; room.dispose(); pmrem.dispose();
+    const environment=this.track(outdoorEnvironment(this.webgl,{future:game.map.future,cold:game.map.climate==='cold'}));this.scene.environment=environment.texture;this.scene.environmentIntensity=.58;
     this.scene.add(new THREE.HemisphereLight('#c4d9ee', game.map.future ? '#282d37' : '#394230', .64));
     const sun = new THREE.DirectionalLight(game.map.future ? '#e8f2ff' : '#fff0d7', 2.8); sun.position.set(this.world.width / 2 - 1750, 1850, this.world.height / 2 - 1050); sun.target.position.set(this.world.width / 2, 0, this.world.height / 2); sun.castShadow = true; this.sun = sun;
-    const shadowSize=this.quality==='standard'?2048:4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
+    const shadowSize=this.quality==='standard'||this.mobileBudget?2048:4096; sun.shadow.mapSize.set(shadowSize, shadowSize);
     Object.assign(sun.shadow.camera, { left: -this.world.width * .7, right: this.world.width * .7, top: this.world.height * .85, bottom: -this.world.height * .85, near: 10, far: 6000 });
     sun.shadow.bias = -.0001; sun.shadow.normalBias = .16; sun.shadow.radius = 1.5; this.scene.add(sun, sun.target);
     this.fireTexture = particleTexture(); this.smokeTexture = particleTexture(true);
@@ -162,7 +171,10 @@ export class Renderer {
     }, undefined, () => { /* 社区贴图载入失败时继续使用程序粒子。 */ });
     this.createTerrain(); this.createFoundationDecals(); this.createBridges(); this.createEnvironment(); this.createFutureStructures(); this.createSites(); this.createFog(); this.createOverlays();
     this.createTracks(); this.createCombatAtmosphere();
-    if (this.quality === 'high') this.preparePostprocessing();
+    this.smokeField=new VolumetricSmoke(this.scene,{capacity:this.mobileBudget?140:320});
+    this.track(this.smokeField.material.uniforms.smokeVolume.value);
+    this.ballisticTrails=new BallisticTrails(this.scene,{capacity:this.mobileBudget?280:720});
+    if (this.quality === 'high'&&!this.mobileBudget) this.preparePostprocessing();
     this.resize(); this.centerOn(game.map.maxPlayers===6?(game.homeX??game.map.spawns[0].x):innerWidth<700?400:470,game.map.maxPlayers===6?(game.online?game.homeY:game.map.spawns[0].y):game.homeY);
   }
 
@@ -202,9 +214,9 @@ export class Renderer {
   setQuality(value) {
     this.quality = value === 'standard' ? 'standard' : 'high';
     this.adaptiveRender = new AdaptiveRender();this.postprocessingFailed=false;
-    if (this.quality === 'high' && !this.composer) this.preparePostprocessing();
+    if (this.quality === 'high' && !this.composer&&!this.mobileBudget) this.preparePostprocessing();
     if (this.ambientPass) this.ambientPass.enabled = this.quality === 'high';
-    const budget = armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio, this.viewport);
+    const budget = armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio, this.viewport,this.mobileBudget);
     this.webgl.setPixelRatio(budget.pixelRatio);
     const shadowSize = budget.shadowSize;
     if(this.sun.shadow.mapSize.x!==shadowSize){this.sun.shadow.mapSize.set(shadowSize,shadowSize);this.sun.shadow.map?.dispose();this.sun.shadow.map=null;}
@@ -220,7 +232,7 @@ export class Renderer {
 
   createTerrain() {
     const islands = this.game.map.islands;
-    const maxTexture = islands ? (innerWidth < 700 ? 1600 : 2560) : (innerWidth < 700 ? 2048 : 4096);
+    const maxTexture=this.game.map.future?(this.mobileBudget?2048:4096):(this.mobileBudget?1600:this.quality==='high'?2560:2048);
     const factor = Math.min(1, maxTexture / this.world.width);
     const canvas = makeCanvas(Math.round(this.world.width * factor), Math.round(this.world.height * factor)), ctx = canvas.getContext('2d'), image = (this.game.map.future ? visualLibrary().meridian : visualLibrary().ground).image;
     ctx.scale(factor, factor);
@@ -239,7 +251,11 @@ export class Renderer {
         ctx.fillStyle = patch; ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
       }
     }
+    const maskSize=1024,maskFactor=maskSize/this.world.width,roadCanvas=makeCanvas(maskSize,Math.ceil(this.world.height*maskFactor)),roadContext=roadCanvas.getContext('2d');
+    roadContext.fillStyle='#000';roadContext.fillRect(0,0,roadCanvas.width,roadCanvas.height);roadContext.scale(maskFactor,maskFactor);
+    if(this.game.map.industrial){roadContext.fillStyle='#fff';roadContext.fillRect(850,300,3200,2300);}
     const road = (points, width) => {
+      roadContext.beginPath();roadContext.moveTo(...points[0]);points.slice(1).forEach(p=>roadContext.lineTo(...p));roadContext.lineCap=roadContext.lineJoin='round';roadContext.strokeStyle='#fff';roadContext.lineWidth=width+13;roadContext.stroke();
       const trace = () => { ctx.beginPath(); ctx.moveTo(...points[0]); points.slice(1).forEach(point => ctx.lineTo(...point)); };
       trace(); ctx.lineJoin = 'round'; ctx.strokeStyle = '#686962'; ctx.lineWidth = width + 11; ctx.stroke();
       trace(); ctx.strokeStyle = '#454a4b'; ctx.lineWidth = width; ctx.stroke();
@@ -292,7 +308,7 @@ export class Renderer {
     }
     paintTheaterGround(ctx,this.game.map,road,image);
     const texture = this.track(new THREE.CanvasTexture(canvas)); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = Math.min(8, this.webgl.capabilities.getMaxAnisotropy()); this.terrainTexture = texture;
-    const geometry = this.track(new THREE.PlaneGeometry(this.world.width, this.world.height, 192, 128)); geometry.rotateX(-Math.PI / 2); geometry.translate(this.world.width / 2, 0, this.world.height / 2);
+    const geometry = this.track(new THREE.PlaneGeometry(this.world.width, this.world.height, Math.min(this.mobileBudget?224:384,Math.ceil(this.world.width/(this.mobileBudget?30:20))), Math.min(this.mobileBudget?160:256,Math.ceil(this.world.height/(this.mobileBudget?30:20))))); geometry.rotateX(-Math.PI / 2); geometry.translate(this.world.width / 2, 0, this.world.height / 2);
     const positions = geometry.attributes.position;
     for (let i = 0; i < positions.count; i++) {
       positions.setY(i, terrainHeight(this.game, positions.getX(i), positions.getZ(i)));
@@ -334,7 +350,9 @@ export class Renderer {
       const detailMap = this.track(surface[key].clone()); detailMap.repeat.set(this.world.width / 420, this.world.height / 420);
       detailMap.offset.y = 1 - this.world.height / 420; maps[key] = detailMap;
     }
-    const material=finishBattleTerrain(new THREE.MeshStandardMaterial({map:texture,vertexColors:true,...maps,normalScale:new THREE.Vector2(.11,.11),bumpMap:surface?null:bump,bumpScale:.11,roughness:.96,metalness:0,envMapIntensity:.3}),{cold:this.game.map.climate==='cold',future:this.game.map.future});
+    const roadMask=this.track(new THREE.CanvasTexture(roadCanvas));roadMask.minFilter=THREE.LinearMipmapLinearFilter;roadMask.needsUpdate=true;
+    const material=new THREE.MeshStandardMaterial({map:texture,vertexColors:true,...maps,normalScale:new THREE.Vector2(.11,.11),bumpMap:surface?null:bump,bumpScale:.11,roughness:.96,metalness:0,envMapIntensity:.3});
+    if(this.game.map.future)finishLunarSurface(material);else finishLandscape(material,{game:this.game,roadMask});
     const terrain = new THREE.Mesh(geometry, this.track(material)); terrain.receiveShadow = true;this.terrainMesh=terrain;this.scene.add(terrain);
     if (this.game.map.water) { this.createWater(); this.createShoreline(); }
   }
@@ -446,7 +464,7 @@ export class Renderer {
     ctx.putImageData(pixels, 0, 0);
     const normal = this.track(new THREE.CanvasTexture(canvas)); normal.wrapS = normal.wrapT = THREE.RepeatWrapping; normal.repeat.set((this.game.map.water.x2 - this.game.map.water.x1) / 100, this.world.height / 120); this.waterNormal = normal;
     const water = this.game.map.water;
-    const geometry = this.track(new THREE.PlaneGeometry(water.x2 - water.x1, this.world.height, 64, 48));
+    const geometry = this.track(new THREE.PlaneGeometry(water.x2 - water.x1, this.world.height, Math.min(224,Math.ceil((water.x2-water.x1)/32)),Math.min(160,Math.ceil(this.world.height/32))));
     const vertices = geometry.getAttribute('position');
     const middle = (water.x1 + water.x2) / 2;
     const deep = new THREE.Color('#183c50'), shallow = new THREE.Color('#4e8984'), tint = new THREE.Color();
@@ -458,9 +476,9 @@ export class Renderer {
       colors.push(tint.r, tint.g, tint.b);
     }
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    const material = this.track(createBattleWaterMaterial(normal));this.waterMaterial=material;
+    this.ocean=createOceanSurface(this.game);this.track(this.ocean.fallback);const material=this.track(this.ocean.material);this.waterMaterial=material;
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.renderOrder = 1;
+    mesh.renderOrder = 1;this.waterMesh=mesh;
     mesh.rotation.x = -Math.PI / 2; mesh.position.set((water.x1 + water.x2) / 2, .8, this.world.height / 2); mesh.receiveShadow = true; this.scene.add(mesh);
   }
 
@@ -547,10 +565,9 @@ export class Renderer {
     const variants=this.game.map.future?[null]:NATURE_ROCKS;
     for(const [variant,name]of variants.entries()){
       const transforms=points.rock.filter((p,i)=>i%variants.length===variant);if(!transforms.length)continue;
-      const base=new THREE.MeshStandardMaterial({color:this.game.map.future?'#555b63':'#ffffff',vertexColors:!this.game.map.future,roughness:.96});base.name='岩石';
-      const material=this.track(weatherMaterial(base));base.dispose();
-      const geometry=this.track(name?natureGeometry(name):new THREE.IcosahedronGeometry(.7,3));
-      if(!name){const vertices=geometry.attributes.position;for(let n=0;n<vertices.count;n++){const x=vertices.getX(n),y=vertices.getY(n),z=vertices.getZ(n),shape=.82+hash(Math.round(x*25),Math.round(z*25),Math.round(y*25))*.3;vertices.setXYZ(n,x*shape*1.2,y*shape*.65+.38,z*shape);}geometry.computeVertexNormals();}
+      const geometry=this.track(this.game.map.future?new THREE.IcosahedronGeometry(.7,3):createRockLandform(variant));
+      const material=this.track(this.game.map.future?new THREE.MeshStandardMaterial({color:'#555b63',roughness:.96}):createRockMaterial(this.game.map.climate==='cold'));
+      if(this.game.map.future){const vertices=geometry.attributes.position;for(let n=0;n<vertices.count;n++){const x=vertices.getX(n),y=vertices.getY(n),z=vertices.getZ(n),shape=.82+hash(Math.round(x*25),Math.round(z*25),Math.round(y*25))*.3;vertices.setXYZ(n,x*shape*1.2,y*shape*.65+.38,z*shape);}geometry.computeVertexNormals();}
       const mesh=new THREE.InstancedMesh(geometry,material,transforms.length);mesh.castShadow=true;mesh.receiveShadow=true;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       transforms.forEach((point,index)=>{dummy.position.set(point.x,point.heightOffset??this.elevation(point.x,point.z),point.z);dummy.rotation.set(0,point.angle,0);dummy.scale.set(point.scale,point.verticalScale||point.scale,point.scale);dummy.updateMatrix();mesh.setMatrixAt(index,dummy.matrix);});
       this.scene.add(mesh);this.environment.push({mesh,transforms});
@@ -653,7 +670,8 @@ export class Renderer {
   }
 
   updateFoliageLayers() {
-    const spatial=this.quality==='high'&&!this.game.map.future&&!this.mobileBudget&&this.viewMode==='immersive'&&this.camera.zoom>=.85;
+    const dense=(this.framedUnits?.size||0)>96,slow=(this.adaptiveRender?.scale??1)<=.8;
+    const spatial=!this.game.map.future&&!this.mobileBudget&&this.viewMode==='immersive'&&this.camera.zoom>=.85&&(this.quality==='high'||!dense&&!slow);
     for(const entry of this.environment){
       if(entry.foliage==='mesh_tree')entry.mesh.visible=spatial;
       if(['billboard','shadow'].includes(entry.foliage))entry.mesh.visible=!spatial;
@@ -712,7 +730,7 @@ export class Renderer {
   createFog() {
     this.fogSmall = makeCanvas(this.game.fog.cols, this.game.fog.rows); this.fogCanvas = makeCanvas(560, 360); this.fogTexture = this.track(new THREE.CanvasTexture(this.fogCanvas)); this.fogTexture.colorSpace = THREE.SRGBColorSpace;
     const material = this.track(new THREE.MeshBasicMaterial({ map: this.fogTexture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }));
-    const geometry = this.track(new THREE.PlaneGeometry(this.world.width, this.world.height, 192, 128)); geometry.rotateX(-Math.PI / 2); geometry.translate(this.world.width / 2, 0, this.world.height / 2);
+    const geometry = this.track(new THREE.PlaneGeometry(this.world.width, this.world.height, Math.min(this.mobileBudget?224:384,Math.ceil(this.world.width/(this.mobileBudget?30:20))), Math.min(this.mobileBudget?160:256,Math.ceil(this.world.height/(this.mobileBudget?30:20))))); geometry.rotateX(-Math.PI / 2); geometry.translate(this.world.width / 2, 0, this.world.height / 2);
     const position = geometry.attributes.position;
     for (let i = 0; i < position.count; i++) position.setY(i, terrainHeight(this.game, position.getX(i), position.getZ(i)) + 2);
     const mesh = new THREE.Mesh(geometry, material); mesh.renderOrder = 5; this.scene.add(mesh);
@@ -762,7 +780,7 @@ export class Renderer {
     if (this.disposed) return;
     ensureBattleCanvas(this.canvas, document);
     const rect = this.canvas.getBoundingClientRect(); if (rect.width < 1 || rect.height < 1) return;
-    this.webgl.setPixelRatio(armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio, rect).pixelRatio*this.adaptiveRender.scale);
+    this.webgl.setPixelRatio(armyRenderBudget(this.quality, this.framedUnits?.size || 0, devicePixelRatio, rect,this.mobileBudget).pixelRatio*this.adaptiveRender.scale);
     this.viewport = { width: rect.width, height: rect.height }; this.webgl.setSize(rect.width, rect.height, false);
     if (this.composer) {
       this.composer.setPixelRatio(this.webgl.getPixelRatio()); this.composer.setSize(rect.width, rect.height);
@@ -913,9 +931,10 @@ export class Renderer {
       if (!mesh.isMesh) return;
       const finish = material => {
         const cosmetic = entity.owner===0 && this.growthAppearance?.theme.id!=='standard' && this.growthAppearance?.theme && ['装甲钢','航空涂层'].includes(material.name);
-        const key = `${material.uuid}:${infantry}:${cosmetic?this.growthAppearance.theme.id:'standard'}`;
+        const domain=infantry?'personnel':entity.kind==='building'?'building':UNITS[entity.type].tags.includes('ship')?'naval':UNITS[entity.type].tags.includes('air')?'air':'land';
+        const key = `${material.uuid}:${infantry}:${domain}:${cosmetic?this.growthAppearance.theme.id:'standard'}`;
         if (!this.readableMaterials.has(key)) {
-          let adjusted = readableMaterial(material, infantry);
+          let adjusted = readableMaterial(material, infantry,domain);
           if(cosmetic){if(adjusted===material)adjusted=material.clone();adjusted.color.lerp(new THREE.Color(this.growthAppearance.theme.color),.35);}
           this.readableMaterials.set(key, adjusted === material ? material : this.track(adjusted));
         }
@@ -1021,9 +1040,7 @@ export class Renderer {
         for (const deck of wreck.decks) { deck.model.position.z = deck.z + sign * Math.min(3, age * age * .1); deck.model.rotation.z = sign * Math.min(.6, age * .12); }
       }
       if (wreck.model.visible && age < (wreck.aircraft ? 3.1 : 4) && this.game.time >= wreck.smokeAt && this.trails.length < 120) {
-        const sprite = this.effectSprite(wreck.aircraft ? '#363e43' : '#445055', true);
-        sprite.position.copy(wreck.model.position); sprite.position.y += wreck.height * .35; this.scene.add(sprite);
-        this.trails.push({ sprite, baseY: sprite.position.y, start: this.game.time, damage: true, damageSize: wreck.aircraft ? 20 : 30 }); wreck.smokeAt = this.game.time + .18;
+        this.smokeField.emit({x:wreck.model.position.x,y:wreck.model.position.y+wreck.height*.35,z:wreck.model.position.z,size:wreck.aircraft?11:18,life:3.8,density:1.2,rise:18,start:this.game.time});wreck.smokeAt=this.game.time+.18;
       }
       return true;
     });
@@ -1160,7 +1177,10 @@ export class Renderer {
         else if (tags.includes('rotorcraft')) height = this.game.aircraftGrounded(entity) ? this.elevation(entity.x,entity.y)+4 : cruiseHeight+Math.sin(this.game.time*2+entity.id);
         if (entity.type === 'airlift' && !moving && this.game.transportGrounded(entity)) height = this.elevation(entity.x, entity.y) + 6;
         if (!this.game.map.future && AIRCRAFT_LENGTHS[entity.type] && !entity.embarkedIn && (this.game.aircraftGrounded(entity) || entity.type === 'airlift' && !moving && this.game.transportGrounded(entity))) height = aircraftGroundHeight(this.game, entity, entry, this.elevation(entity.x, entity.y));
-        else if (tags.includes('ship')) height = 2 + Math.sin(now * .002 + entity.id) * .6;
+        else if (tags.includes('ship')) {
+          const wave=oceanWavePose(entity.x,entity.y,now*.001,Math.max(0,-coastDistance(this.game.map,entity.x,entity.y)));
+          height=2+wave.height;if(!tags.includes('submerged')){entry.model.rotation.x=wave.roll*.65;entry.model.rotation.z=wave.pitch*.65;}
+        }
         if (entry.submergedMaterials) {
           const pose = submarinePose(this.game, entity, now); height = pose.height;
           entry.model.scale.y = entry.scale * pose.verticalScale; entry.displayTopHeight = entry.topHeight * pose.verticalScale;
@@ -1178,9 +1198,8 @@ export class Renderer {
         entry.heading += turn * (1 - Math.exp(-dt * (tags.includes('infantry') ? 18 : 9)));
         entry.model.rotation.y = -entry.heading;
         if (!tags.some(t => ['air', 'ship', 'infantry'].includes(t))) {
-          const h = a => this.elevation(entity.x + Math.cos(a) * 24, entity.y + Math.sin(a) * 24);
-          const targetPitch = Math.atan2(h(entry.heading) - h(entry.heading + Math.PI), 48);
-          entry.pitch += (targetPitch - entry.pitch) * (1 - Math.exp(-dt * 6)); entry.model.rotation.z = entry.pitch;
+          const pose=vehicleSuspension(entry,{x:entity.x,z:entity.y,heading:entry.heading,speed:animation.speed,dt,ground:(x,z)=>this.elevation(x,z)});
+          entry.pitch=pose.pitch;entry.model.rotation.z=pose.pitch;entry.model.rotation.x=pose.roll;height+=pose.lift;
         }
         if (!this.game.map.future && tags.includes('rotorcraft') && !tags.includes('jet')) {
           entry.flightHeight ??= height;
@@ -1334,22 +1353,26 @@ export class Renderer {
             }
             sprite = new THREE.Mesh(this.waterTrailGeometry, new THREE.MeshBasicMaterial({ map: this.shipWakeTexture, color: '#d4e9e9', transparent: true, depthWrite: false, opacity: .34 }));
             sprite.rotation.x = -Math.PI / 2; sprite.rotation.z = -entry.heading; sprite.renderOrder = 3;
-          } else sprite = this.effectSprite('#a89a80', true);
+          } else {
+            this.smokeField.emit({x:entity.x-Math.cos(entity.angle)*16,y:height+2,z:entity.y-Math.sin(entity.angle)*16,size:7,life:1.6,density:.2,rise:2,wind:.6,color:this.game.map.climate==='cold'?[.53,.57,.57]:[.43,.35,.24],start:this.game.time});entry.trailAt=this.game.time+.22;
+          }
+          if(sprite){
           const offset = ship ? entry.wakeStern : 20;
           const wake = ship ? shipWakePose(entity.x, entity.y, entry.heading, offset, entry.wakeBeam) : null;
           sprite.position.set(wake?.x ?? entity.x - Math.cos(entity.angle) * offset, ship ? 2.4 : height + 3, wake?.y ?? entity.y - Math.sin(entity.angle) * offset);
           sprite.scale.set(wake?.length ?? 13, wake?.width ?? 13, 1); sprite.material.opacity = ship ? .34 : .15;
           this.scene.add(sprite); this.trails.push({ sprite, baseY: sprite.position.y, start: this.game.time, ship, wake }); entry.trailAt = this.game.time + (ship ? .28 : .14);
+          }
         }
       }
       if (entity.kind === 'unit' && visible && moving && !UNITS[entity.type].tags.some(tag => ['air', 'ship', 'infantry'].includes(tag)) && Math.hypot(entity.x - entry.trackX, entity.y - entry.trackY) >= 13) {
         this.leaveTracks(entry); entry.trackX = entity.x; entry.trackY = entity.y;
       }
       if (visible && damage.smoke && this.game.time >= entry.smokeAt && this.trails.length < 120) {
-        const smoke = this.effectSprite('#4d555a', true); smoke.position.set(entity.x, height + (entry.displayTopHeight ?? entry.topHeight) + 4, entity.y); smoke.scale.setScalar(damage.smokeSize); smoke.material.opacity = .4;
-        this.scene.add(smoke); this.trails.push({ sprite: smoke, baseY: smoke.position.y, start: this.game.time, damage: true, sourceEntity: entity, damageSize: damage.smokeSize });
+        const smokeHeight=height+(entry.displayTopHeight??entry.topHeight)+2;
+        this.smokeField.emit({x:entity.x,y:smokeHeight,z:entity.y,size:damage.smokeSize*.55,life:damage.fire?3.8:2.7,density:damage.fire?1.4:.7,rise:damage.fire?17:10,source:entity,start:this.game.time});
         if (damage.fire && this.trails.length < 120) {
-          const fire = this.effectSprite('#ffae61'); fire.position.copy(smoke.position); this.scene.add(fire);
+          const fire = this.effectSprite('#ffae61'); fire.position.set(entity.x,smokeHeight,entity.y); this.scene.add(fire);
           this.trails.push({ sprite: fire, baseY: fire.position.y, start: this.game.time, damageFire: true, sourceEntity: entity, damageSize: damage.smokeSize * .5 });
         }
         entry.smokeAt = this.game.time + damage.interval;
@@ -1503,6 +1526,7 @@ export class Renderer {
     }
     for (const [effect, group] of this.effects) if (!current.has(effect)) { group.traverse(item => { if (item.geometry && item.geometry !== this.selectionGeometry) item.geometry.dispose(); if (item.material) item.material.dispose(); }); this.scene.remove(group); this.effects.delete(effect); }
     this.updateCombatAtmosphere();
+    this.smokeField?.update(this.game.time,{visible:(x,z)=>this.game.isVisibleFor(0,x,z),sourceAlive:source=>damagePresentation(source).smoke&&this.game.canSeeEntity(0,source),high:this.quality==='high'&&this.adaptiveRender.scale>.8});
   }
 
   updateProjectileModels(now) {
@@ -1551,11 +1575,9 @@ export class Renderer {
         sprite.position.set(p.x, 2.4, p.y); sprite.scale.set(25, 8, 1);
         this.scene.add(sprite); this.trails.push({ sprite, baseY: 2.4, start: this.game.time, ship: true, torpedo: true }); p.trailAt = this.game.time + .08;
       }
-      if (model.visible && ['nuclear','ballistic', 'rocket', 'missile'].includes(p.kind) && this.game.time >= (p.trailAt || 0) && this.trails.length < 100) {
-        const sprite = this.effectSprite('#a7a9a7', true); sprite.position.set(p.x, height, p.y); sprite.scale.setScalar(14); sprite.material.opacity = .38;
-        this.scene.add(sprite); this.trails.push({ sprite, baseY: height, start: this.game.time, missile: true }); p.trailAt = this.game.time + (p.kind === 'rocket' ? .055 : .075);
-      }
+      if(['nuclear','ballistic','rocket','missile'].includes(p.kind))this.ballisticTrails.sample(p.id,{x:p.x,y:height,z:p.y},this.game.time,{visible:model.visible,heavy:['nuclear','ballistic'].includes(p.kind)});
     }
+    this.ballisticTrails.update(this.game.time,{active,visible:(x,z)=>this.game.isVisibleFor(0,x,z)});
     for (const [id, model] of this.projectileModels) if (!active.has(id)) { model.children.at(-1)?.material?.dispose(); this.scene.remove(model); this.projectileModels.delete(id); }
   }
 
@@ -1750,6 +1772,13 @@ export class Renderer {
     if (this.placement.sprite) this.placement.sprite.material.color.set(valid ? '#ade4cf' : '#f17a72');
   }
 
+  async prepareFrame() {
+    // 并行预编译外景材质，避免首次真实绘制时同步等待一批 GPU 程序。
+    this.updateEntities(performance.now());this.updateEffects();this.updateProjectileModels(performance.now());
+    this.armyBatches.update(this.entities.values(),this.framedUnits||new Set());this.identityBatches.update(this.entities.values(),this.framedUnits||new Set());
+    await this.webgl.compileAsync(this.scene,this.viewCamera);
+  }
+
   render(now = 0) {
     if (this.disposed) return;
     ensureBattleCanvas(this.canvas, document);
@@ -1757,10 +1786,10 @@ export class Renderer {
     this.updateEntities(now); this.updateEffects(); this.updateProjectileModels(now); this.updateTracks(); this.updatePlacement();
     if (now - this.lastFog >= 180) { this.updateFog(); this.lastFog = now; }
     if (this.waterNormal) this.waterNormal.offset.set(now * .000004, now * .000007);
-    if(this.waterMaterial)this.waterMaterial.userData.waterTime.value=now*.001;
+    if(this.ocean)this.ocean.time.value=now*.001;
     if (this.shoreMaterial) this.shoreMaterial.opacity = .4 + Math.sin(now * .0012) * .05;
     const visibleUnits = this.framedUnits || new Set();
-    const budget = armyRenderBudget(this.quality, visibleUnits.size, devicePixelRatio, this.viewport);
+    const budget = armyRenderBudget(this.quality, visibleUnits.size, devicePixelRatio, this.viewport,this.mobileBudget);
     const resolution=budget.pixelRatio*this.adaptiveRender.update(now,{hidden:document.hidden,paused:this.game.paused});
     if (Math.abs(this.webgl.getPixelRatio()-resolution)>.001) this.resize();
     if (this.sun.shadow.mapSize.x !== budget.shadowSize) {
@@ -1771,6 +1800,9 @@ export class Renderer {
     this.webgl.shadowMap.needsUpdate = !this.sun.shadow.map || !this.lastShadowFrame || now - this.lastShadowFrame >= budget.shadowInterval;
     if (this.webgl.shadowMap.needsUpdate) this.lastShadowFrame = now;
     this.armyBatches.update(this.entities.values(), visibleUnits);
+    this.identityBatches.update(this.entities.values(),visibleUnits);
+    this.updateFoliageLayers();
+    updateOceanReflection(this,now,visibleUnits.size);
     if(this.ambientPass)this.ambientPass.enabled=this.quality==='high'&&this.adaptiveRender.scale>.82&&visibleUnits.size<=144;
     if(this.quality==='high'&&this.composer&&!this.postprocessingFailed){
       try{this.composer.render();}catch(error){this.postprocessingFailed=true;console.warn('高级画面处理异常，本局继续使用基础渲染。',error);this.scene.overrideMaterial=null;this.webgl.autoClear=true;this.webgl.setRenderTarget(null);this.webgl.render(this.scene,this.viewCamera);}
@@ -1887,15 +1919,23 @@ export class Renderer {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
-    this.armyBatches.dispose();
+    this.webgl.setRenderTarget(null);this.releasedResources=releaseBattleResources(this.scene);
+    this.armyBatches.dispose();this.identityBatches?.dispose();this.smokeField?.dispose();this.ballisticTrails?.dispose();
     this.webgl.setRenderTarget(null); this.webgl.resetState();
     this.composer?.passes.forEach(pass => pass.dispose()); this.composer?.dispose();
     this.projectileModels.forEach(model => model.children.at(-1)?.material?.dispose());
     this.trails.forEach(trail => trail.sprite.material.dispose()); this.trailPool.forEach(sprite => sprite.material.dispose());
     this.entities.forEach(entry => entry.exhausts.forEach(sprite => sprite.material.dispose()));
-    this.ownedResources.forEach(resource => resource.dispose());
+    this.ownedResources.forEach(resource => {
+      resource.dispose();
+      // 本局生成的画布不再保留大块原生像素；共享图片与数据贴图不在此处改动。
+      if(resource.isCanvasTexture&&resource.image?.getContext&&resource.image!==this.canvas){resource.image.width=resource.image.height=1;}
+    });
     this.effects.forEach(group => group.traverse(item => { if (item.geometry && item.geometry !== this.selectionGeometry) item.geometry.dispose(); if (item.material) item.material.dispose(); }));
     this.fallbackParticleTextures.forEach(texture=>texture.dispose()); this.overlayCanvas.remove(); this.webgl.dispose();
+    // 只在退局时等待已提交的 GPU 清理，避免紧接着重开大地图出现双份峰值。
+    const gl=this.webgl.getContext();if(!gl.isContextLost())gl.finish();
+    this.scene.clear();this.entities.clear();this.effects.clear();this.projectileModels.clear();this.environment.length=0;this.ownedResources.length=0;
   }
 }
 

@@ -379,6 +379,8 @@ async function deployGame(save = null, onlinePayload = null) {
     document.querySelectorAll('[data-victory]').forEach(option => option.classList.toggle('active', option.dataset.victory === state.victoryMode));
   }
   state.renderer = new Renderer($('#game-canvas'), $('#minimap'), state.game);
+  $('#deployment-status').textContent='正在准备光影与地表材质';
+  await state.renderer.prepareFrame();
   state.renderer.render(performance.now());
   performance.mark('gp-battle-ready');
   performance.measure('gp-deploy', 'gp-deploy-start', 'gp-battle-ready');

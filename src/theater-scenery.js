@@ -1,20 +1,29 @@
 import * as THREE from 'three';
 import { mergeParts, craftedMaterial } from './model-craft.js';
+import { landscapeNoise, geologicalNoiseGLSL } from './terrain-materials.js';
 
 const noise=(x,y=1)=>{const v=Math.sin(x*127.1+y*311.7)*43758.5453;return v-Math.floor(v);};
 
+function geologicalRidge(x,y,u,v){
+  const envelope=Math.max(0,Math.sin(u*Math.PI)*Math.sin(v*Math.PI))**.82;
+  const ridge=1-Math.abs(landscapeNoise(x*.008,y*.008)*2-1);
+  const broken=landscapeNoise(x*.021+17,y*.021+9)*.6+landscapeNoise(x*.043+31,y*.043+6)*.4;
+  return 8+envelope*(98+ridge*128+broken*42);
+}
 export function ridgeHeight(map,x,y) {
-  for(const r of map.ridges||[])if(x>=r.x1&&x<=r.x2&&y>=r.y1&&y<=r.y2){
-    const a=Math.sin((x-r.x1)/(r.x2-r.x1)*Math.PI),b=Math.sin((y-r.y1)/(r.y2-r.y1)*Math.PI);
-    return 8 + 230 * a * b * (.75 + .25 * Math.cos(y * .025));
-  }
+  for(const r of map.ridges||[])if(x>=r.x1&&x<=r.x2&&y>=r.y1&&y<=r.y2)return geologicalRidge(x,y,(x-r.x1)/(r.x2-r.x1),(y-r.y1)/(r.y2-r.y1));
   return null;
 }
-
 export function ridgeGLSL(map) {
   const f=v=>Number(v).toFixed(5);
-  return (map.ridges||[]).map(r=>`if(p.x>=${f(r.x1)}&&p.x<=${f(r.x2)}&&p.y>=${f(r.y1)}&&p.y<=${f(r.y2)})return 9.2+230.0*sin((p.x-${f(r.x1)})/${f(r.x2-r.x1)}*3.14159265359)*sin((p.y-${f(r.y1)})/${f(r.y2-r.y1)}*3.14159265359)*(.75+.25*cos(p.y*.025));`).join('\n');
+  return (map.ridges||[]).map(r=>`if(p.x>=${f(r.x1)}&&p.x<=${f(r.x2)}&&p.y>=${f(r.y1)}&&p.y<=${f(r.y2)}){
+float u=(p.x-${f(r.x1)})/${f(r.x2-r.x1)},v=(p.y-${f(r.y1)})/${f(r.y2-r.y1)};
+float env=pow(max(0.0,sin(u*3.14159265359)*sin(v*3.14159265359)),.82);
+float ridge=1.0-abs(geoNoise(p*.008)*2.0-1.0);
+float broken=geoNoise(p*.021+vec2(17.0,9.0))*.6+geoNoise(p*.043+vec2(31.0,6.0))*.4;
+return 9.2+env*(98.0+ridge*128.0+broken*42.0);}`).join('\n');
 }
+export { geologicalNoiseGLSL };
 
 export function paintTheaterGround(ctx,map,road,image) {
   if(map.climate==='cold'){

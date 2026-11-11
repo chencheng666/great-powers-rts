@@ -1,3 +1,5 @@
+import { BattleReverb } from './battle-reverb.js';
+
 // 原创程序合成，不使用第三方录音。短声按武器分类缓存，移动声按类别合并。
 const profile = (duration, low, high, tone, end, level, pulse = 0) => ({ duration, low, high, tone, end, level, pulse });
 export const SOUND_PROFILES = {
@@ -105,6 +107,7 @@ export class SoundEffects {
   constructor(context, bus, maxVoices = 16) {
     this.context = context; this.bus = bus; this.maxVoices = maxVoices;
     this.buffers = new Map(); this.voices = new Set(); this.loops = new Map(); this.cooldowns = new Map(); this.shotSequence = 0;
+    this.reverb=context.createConvolver?new BattleReverb(context,bus):null;
   }
   buffer(style) {
     const key = ALIASES[style] || style;
@@ -135,7 +138,7 @@ export class SoundEffects {
     const variation = ((Math.imul(++this.shotSequence, 16807) >>> 0) % 101) / 100;
     source.buffer = buffer; source.playbackRate.value = .975 + variation * .05;
     gain.gain.value = Math.min(1, level) * (owner ? .65 : 1) * (.95 + variation * .05); panner.pan.value = pan;
-    source.connect(gain); gain.connect(panner); panner.connect(this.bus);
+    source.connect(gain); gain.connect(panner); panner.connect(this.reverb?.output||this.bus);
     const voice = { priority, at: now, stop: () => { source.onended = null; source.stop(); cleanup(); } };
     const cleanup = () => { source.disconnect(); gain.disconnect(); panner.disconnect(); this.voices.delete(voice); };
     source.onended = cleanup; this.voices.add(voice); source.start(); return true;

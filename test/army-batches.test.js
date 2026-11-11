@@ -67,3 +67,5 @@ test('超大视口限制渲染总像素，低 DPI 不强制超采样', () => {
   }
   assert.equal(armyRenderBudget('standard', 200, 3).pixelRatio, 1);
 });
+
+test('触屏高画质仍限制阴影和像素比例，避免沿用桌面昂贵预算',()=>{const b=armyRenderBudget('high',12,3,{width:844,height:390},true);assert.equal(b.shadowSize,2048);assert.ok(b.pixelRatio<=1.5);});

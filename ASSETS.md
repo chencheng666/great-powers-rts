@@ -111,3 +111,11 @@ Three.js、PathFinding.js、ws 使用 MIT 许可；heap.js 保留 PSF 许可文�
 新增 Sketlux / yd 的 CC0 潜艇、Kenney 的 CC0 火焰/烟雾/火星透明粒子；两首CC0社区配乐分别是 Spring Spring 的 War Theme 和 skrjablin 的 The Final Battle。来源、修改、尺寸和SHA256见 `assets/third-party/open-battle-20261110.json` 及 `THIRD-PARTY-ASSETS.txt`。新音乐归一化后采用128kbps AAC有损压缩、流式播放，不宣称无损或实录乐团。现有自有阵营模型及已授权模型仍保留，没有把全库统一替换为同一种外观。
 
 共用模型库移除程序模型的重复几何、焊接顶点，再由Meshoptimizer压缩为 `battle-library-compact.glb`；Three.js自带MIT解码器载入。构建需要设置 `GP_GLTF_TOOLS` 指向装有 glTF Transform 与 meshoptimizer 的临时工具目录，不新增浏览器运行依赖。源版库保留用于重建和尺寸对比。
+
+## 2026-11-11 三维写实重制
+
+- `assets/third-party/polyhaven-terrain-20261111/`：Poly Haven的CC0草地与岩壁摄影材质，四个派生WebP共534,646字节；作者、许可证和修改、原始/派生摘要见同目录JSON。
+- `src/terrain-materials.js`：四层共享数组与失败回退，颜色与打包表面共约2MiB基础显存，另有mipmap；道路掩码独立。
+- `src/rock-landforms.js`：原创连续风化岩体取代陆地旧岩块；Kenney倒木几何继续保留，历史岩块文件及许可证不删除。
+- `src/ocean-surface.js`：512像素、120ms节流的精细档平面反射；海浪与舰体同源。
+- `src/volumetric-smoke.js` / `src/ballistic-trails.js`：固定容量烟团/尾烟，无新增外部录音或特效素材。

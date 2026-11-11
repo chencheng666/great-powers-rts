@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { UNITS } from './data.js';
 import { modelShotOrigin } from './open-assets.js';
 import { impactProfile, tracerEndpoints } from './visual-detail.js';
 import { createCraterDebris, conformGroundMark } from './community-visuals.js';
@@ -70,8 +71,9 @@ export const realisticEffects = {
     const { muzzle } = tracerEndpoints(effect), x = effect.x + (effect.toX - effect.x) * muzzle, y = effect.y + (effect.toY - effect.y) * muzzle;
     if (effect.style !== 'repair') this.combatFlash(x, y, from, color, beam ? 1600 : effect.sourceType === 'tank' ? 6500 : 1200, .09);
     if (!beam && this.trails.length < 120) {
-      const smoke = this.effectSprite('#7b776c', true); smoke.position.set(x, from, y); smoke.scale.setScalar(effect.sourceType === 'tank' ? 15 : 5); smoke.material.opacity = .24;
-      this.scene.add(smoke); this.trails.push({ sprite: smoke, baseY: from, start: this.game.time, muzzle: true });
+      const heavy=['tank','elite','rocket','destroyer'].includes(effect.sourceType);
+      this.smokeField.emit({x,y:from,z:y,size:heavy?9:2.5,life:heavy?1.5:.65,density:heavy?.65:.3,rise:3,spread:5,color:[.43,.38,.29],start:this.game.time});
+      if(heavy&&!UNITS[effect.sourceType]?.tags.includes('air'))this.smokeField.emit({x,y:this.elevation(x,y)+2,z:y,size:16,life:1.8,density:.38,rise:2,color:[.43,.35,.24],start:this.game.time});
     }
   },
 
@@ -105,6 +107,10 @@ export const realisticEffects = {
       const puff = this.effectSprite(profile.water ? '#d9e9e8' : i % 2 ? '#847d70' : '#3a3f3f', true);
       puff.material.rotation = noise(i, effect.x) * Math.PI * 2; group.add(puff);
     }
+    if(!profile.water&&!profile.energy&&this.smokeField){
+      for(let i=0;i<profile.smoke;i++)group.children[i+2].visible=false;
+      this.smokeField.burst(effect.x,effect.y,this.effectHeight(effect.targetType,effect.x,effect.y),profile.radius,this.game.time,profile.explosion?7:2);
+    }
     const positions = new Float32Array(profile.particles * 3);
     const sparks = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(positions, 3)), new THREE.PointsMaterial({ map:this.sparkTexture || null, alphaTest:.02, color: profile.water ? '#e1eeeb' : profile.energy ? '#a5eeff' : '#f0c792', size: profile.explosion ? 2 : 1.2, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     sparks.frustumCulled = false; group.add(sparks);
@@ -126,7 +132,7 @@ export const realisticEffects = {
       this.scorchMarks[this.scorchCursor] = { x: effect.x, y: effect.y, size: Math.min(190, profile.radius * 1.65), angle: noise(effect.x, effect.y) * Math.PI * 2, start: this.game.time };
       this.scorchCursor = (this.scorchCursor + 1) % 80;
     }
-    if (profile.explosion && this.trails.length < 100) for (let i = 0; i < 4; i++) {
+    if (profile.explosion && !this.smokeField && this.trails.length < 100) for (let i = 0; i < 4; i++) {
       const smoke = this.effectSprite(profile.water ? '#bbd3d4' : '#51534f', true), a = i * 2.399;
       smoke.position.set(effect.x + Math.cos(a) * profile.radius * .25, this.elevation(effect.x, effect.y) + profile.radius * .25, effect.y + Math.sin(a) * profile.radius * .25);
       smoke.scale.setScalar(profile.radius * .6); this.scene.add(smoke);

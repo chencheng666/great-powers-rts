@@ -20,6 +20,7 @@ import { createNuclearSilo } from './deterrence-models.js';
 import { refineRadarStation } from './radar-models.js';
 import { finishAirframe } from './airframe-finish.js';
 import { loadOpenAssets, installOpenModels } from './open-assets.js';
+import { prepareLandscapePhotoLayers } from './terrain-materials.js';
 import { installProceduralAircraft } from './procedural-aircraft.js';
 
 const modelURL = new URL('../assets/models/battle-library-compact.glb', import.meta.url).href;
@@ -84,7 +85,7 @@ function fallbackMoonTexture() {
 }
 
 export async function prepareVisualAssets({ lunar = false } = {}) {
-  pending ||= Promise.all([loadAsset(modelURL, () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(modelURL)), loadAsset(groundURL, () => new THREE.TextureLoader().loadAsync(groundURL)), loadAsset(buildingsURL, () => new THREE.TextureLoader().loadAsync(buildingsURL)), loadAsset(foliageURL, () => new THREE.TextureLoader().loadAsync(foliageURL)), loadAsset(armoryURL, () => new THREE.TextureLoader().loadAsync(armoryURL))]).then(([gltf, ground, buildings, foliage, armory]) => {
+  pending ||= Promise.all([loadAsset(modelURL, () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(modelURL)), loadAsset(groundURL, () => new THREE.TextureLoader().loadAsync(groundURL)), loadAsset(buildingsURL, () => new THREE.TextureLoader().loadAsync(buildingsURL)), loadAsset(foliageURL, () => new THREE.TextureLoader().loadAsync(foliageURL)), loadAsset(armoryURL, () => new THREE.TextureLoader().loadAsync(armoryURL)),prepareLandscapePhotoLayers()]).then(([gltf, ground, buildings, foliage, armory]) => {
     const meridian = null;
     const openAssets = {};
     const models = new Map();

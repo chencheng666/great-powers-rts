@@ -8,7 +8,7 @@ test('辨识度材质保留迷彩回调和贴图，不修改共享原材质', ()
   const original = source.color.clone(), texture = new THREE.Texture(); source.map = texture;
   source.onBeforeCompile = shader => { shader.fragmentShader = '// 原迷彩\n' + shader.fragmentShader; };
   source.customProgramCacheKey = () => '原迷彩';
-  const result = readableMaterial(source), shader = { fragmentShader: '#include <opaque_fragment>' };
+  const result = readableMaterial(source), shader = { vertexShader:'#include <begin_vertex>',fragmentShader: '#include <map_fragment>\n#include <roughnessmap_fragment>\n#include <opaque_fragment>' };
   result.onBeforeCompile(shader);
   assert.ok(source.color.equals(original)); assert.notEqual(result, source);
   assert.equal(result.map, texture); assert.equal(result.metalness, .3);

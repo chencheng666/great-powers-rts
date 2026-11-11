@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { lunarReliefGLSL } from './lunar-terrain.js';
 import { surfaceMaps } from './model-craft.js';
 import { islandHeightGLSL } from './island-map.js';
-import { ridgeGLSL } from './theater-scenery.js';
+import { ridgeGLSL, geologicalNoiseGLSL } from './theater-scenery.js';
 import { battlefieldReliefGLSL } from './battlefield-relief.js';
 
 export const COMMUNITY_3D_BUILDINGS = ['dock', 'radar', 'airfield', 'lab', 'super'];
@@ -16,7 +16,8 @@ export function conformGroundMark(material, game) {
     ...barriers.map(b => `if (p.x > ${b.x1.toFixed(1)} && p.x < ${b.x2.toFixed(1)} && p.y > ${b.y1.toFixed(1)} && p.y < ${b.y2.toFixed(1)}) return -26.8;`)
   ].join('\n');
   material.onBeforeCompile = shader => {
-    shader.vertexShader = `${lunarReliefGLSL(game)}
+    shader.vertexShader = `${geologicalNoiseGLSL}
+    ${lunarReliefGLSL(game)}
     ${islandHeightGLSL(game.map)}
     ${battlefieldReliefGLSL(game)}
     float craterElevation(vec2 p) {

@@ -1,0 +1,97 @@
+{
+  "license": "CC0-1.0",
+  "licenseURL": "https://polyhaven.com/license",
+  "provider": "Poly Haven",
+  "credits": "Powered by Poly Haven",
+  "assets": [
+    {
+      "slug": "leafy_grass",
+      "page": "https://polyhaven.com/a/leafy_grass",
+      "authors": {
+        "Charlotte Baglioni": "All"
+      },
+      "modifications": "缩放256像素；法线RG、粗糙度B、遮蔽A打包；运行时草地RGB调色0.68/0.86/0.65，岩壁降低饱和度45%并做灰岩亮度归一；原始资产以CC0发布"
+    },
+    {
+      "slug": "rock_face",
+      "page": "https://polyhaven.com/a/rock_face",
+      "authors": {
+        "Greg Zaal": "Photography",
+        "Dario Barresi": "Processing"
+      },
+      "modifications": "缩放256像素；法线RG、粗糙度B、遮蔽A打包；运行时草地RGB调色0.68/0.86/0.65，岩壁降低饱和度45%并做灰岩亮度归一；原始资产以CC0发布"
+    }
+  ],
+  "originalFiles": [
+    {
+      "asset": "leafy_grass",
+      "role": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_diff_1k.jpg",
+      "bytes": 1195394,
+      "md5": "0dbc071e91d6905edfcfbe8eb785a1ab",
+      "sha256": "cfa40bc9d9417d1852db8753a8d5917f110c40101179f63543c382e39bc05e4a"
+    },
+    {
+      "asset": "leafy_grass",
+      "role": "nor_gl",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_nor_gl_1k.jpg",
+      "bytes": 1466049,
+      "md5": "8279e096e204ea326d57a318869f99df",
+      "sha256": "832328216adc0a7e1f70a31d5ee48c9ab7f2152d83816122736cf42ac4b2ebd6"
+    },
+    {
+      "asset": "leafy_grass",
+      "role": "arm",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_arm_1k.jpg",
+      "bytes": 1010081,
+      "md5": "44fb4e40ef0f3425a7d1a14bc328e4d8",
+      "sha256": "95432451cb2693794459fe7ea339ea9ffdb5959c40373740f80a4aa1703f089d"
+    },
+    {
+      "asset": "rock_face",
+      "role": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_face/rock_face_diff_1k.jpg",
+      "bytes": 732721,
+      "md5": "220c637db6056b45e7c0a17e6ed8514e",
+      "sha256": "cce4b50517161264bdef196f5e247e328ca3739083cd6044ad3cc54d88cb82e2"
+    },
+    {
+      "asset": "rock_face",
+      "role": "nor_gl",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_face/rock_face_nor_gl_1k.jpg",
+      "bytes": 1139857,
+      "md5": "0d244b69a346db78f06c7b76510bb640",
+      "sha256": "e2682e1286c8b6aca7e01ba7b8fe1726cb6606042b9ee70d097aa67470d410ef"
+    },
+    {
+      "asset": "rock_face",
+      "role": "arm",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_face/rock_face_arm_1k.jpg",
+      "bytes": 458661,
+      "md5": "c50427671b20794a93864f0602fbbd32",
+      "sha256": "3a0fce8658ba2bac6690f68e79630c16e004f1676c1588ef4d54906fc3907616"
+    }
+  ],
+  "outputs": [
+    {
+      "file": "leafy_grass-color.webp",
+      "bytes": 139268,
+      "sha256": "d02255c831afb4c473132b26957a0ad16033ccdf07044e131b7426c68e80d6b2"
+    },
+    {
+      "file": "leafy_grass-surface.webp",
+      "bytes": 179644,
+      "sha256": "5aa9859a4d84aeb6e673fedc3847f10babe6cc0de320faffa0bbaf218df2fd2c"
+    },
+    {
+      "file": "rock_face-color.webp",
+      "bytes": 75916,
+      "sha256": "b4a9fd3d505b149379818fec81240acc6c0ee016912d390f8fd6bc84aab63e76"
+    },
+    {
+      "file": "rock_face-surface.webp",
+      "bytes": 139818,
+      "sha256": "cfa2525804bb671b93c568536e91c07a3ee5d8cadf19b8cd6e3f7775bb95a190"
+    }
+  ]
+}

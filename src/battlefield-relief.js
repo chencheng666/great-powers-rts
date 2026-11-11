@@ -1,3 +1,5 @@
+import { landscapeNoise } from './terrain-materials.js';
+
 // 山体位置使用地图比例，普通尺寸和扩展尺寸使用同一套谷地和坡面。
 const PROFILES = {
   valley: [
@@ -50,7 +52,8 @@ export function battlefieldRelief(game, x, y) {
     const dx = (nx - cx) / rx;
     const dy = (ny - cy) / ry;
     const falloff = Math.max(0, 1 - dx * dx - dy * dy);
-    elevation = Math.max(elevation, height * falloff * falloff);
+    const texture=game.map.future?1:.78+(1-Math.abs(landscapeNoise(x*.007,y*.007)*2-1))*.27+landscapeNoise(x*.024,y*.024)*.1;
+    elevation = Math.max(elevation, height * falloff * falloff * texture);
   }
   return elevation;
 }
@@ -68,6 +71,7 @@ float battlefieldRelief(vec2 p) {
   vec2 n = p / vec2(${f(game.world.width)}, ${f(game.world.height)});
   float h = 0.0;
 ${peaks.join('\n')}
+  ${game.map.future?'':'h *= .78+(1.0-abs(geoNoise(p*.007)*2.0-1.0))*.27+geoNoise(p*.024)*.1;'}
   return h;
 }`;
 }

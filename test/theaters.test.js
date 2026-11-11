@@ -128,7 +128,8 @@ test('任务存档拒绝重复设施、虚假资源、伪造乘员和核开关�
 test('山口高度与阻挡一致，主通道保持开放，寒境存在南北两条路线',()=>{
   for(const id of ['passwatch','farshore']){
     const g=create(id),r=g.map.ridges[0],x=(r.x1+r.x2)/2,y=(r.y1+r.y2)/2;
-    assert.ok(ridgeHeight(g.map,x,y)>140);assert.ok(g.isGroundBlocked(x,y,14));assert.ok(ridgeGLSL(g.map).includes('230.0'));
+    assert.ok(ridgeHeight(g.map,x,y)>140);assert.ok(g.isGroundBlocked(x,y,14));assert.ok(ridgeGLSL(g.map).includes('geoNoise'));
+    for(let i=0;i<=10;i++){assert.ok(Math.abs(ridgeHeight(g.map,r.x1,r.y1+(r.y2-r.y1)*i/10)-8)<.001);}
     const paths=id==='passwatch'?[[1700,760],[1700,1830]]:[[1770,1010],[1770,2280]];
     for(const [px,py]of paths){assert.equal(ridgeHeight(g.map,px,py),null);assert.equal(g.isGroundBlocked(px,py,14),false);}
   }

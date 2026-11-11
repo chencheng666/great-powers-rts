@@ -111,3 +111,12 @@ fighter jets
 飞机按现代航空的公开通用轮廓原创搭建，不使用或分发厂商工程模型；翼身、座舱、进气口、喷口、折翼停机与近远景由代码生成。
 参考用户提供《几猫》单文件演示的程序几何、材质分层、性能迟滞、故障降级等思路；没有复制或随包分发该演示源码、音乐、纹理或模型。
 三维树木使用本项目生成的叶簇纹理和实例几何；原有第三方素材许可保持各自原条款。
+
+2026-11-11 三维写实重制：Poly Haven 摄影地表
+来源：https://polyhaven.com/a/leafy_grass （Charlotte Baglioni）
+来源：https://polyhaven.com/a/rock_face （Greg Zaal / Dario Barresi）
+许可：CC0-1.0，https://polyhaven.com/license
+Powered by Poly Haven
+修改：缩放到256像素，法线RG/粗糙度B/遮蔽A打包，草地调色、岩壁灰岩亮度归一；原始与派生文件摘要见 assets/third-party/polyhaven-terrain-20261111/来源与修改.json。
+本站托管四个派生WebP，共534646字节；运行时不访问Poly Haven API或第三方CDN，没有复制其API项目代码。
+新增连续山脊、风化岩体、同源海浪、实例烟团和尾烟、室外天空环境与早反射为本项目原创实现；参考用户附件的技术思路，不分发附件源码或素材。

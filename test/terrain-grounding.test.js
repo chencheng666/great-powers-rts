@@ -3,14 +3,15 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { Renderer } from '../src/render.js';
 
-test('精细近景显示立体叶簇，流畅、手机与战术视角复用贴片并避免双影', () => {
+test('桌面近景显示立体叶簇，团战降档、手机与战术视角复用贴片并避免双影', () => {
   const entries=['volume','billboard','shadow','mesh_tree'].map(foliage=>({foliage,mesh:{visible:true}}));
   const renderer={quality:'high',game:{map:{}},mobileBudget:false,viewMode:'immersive',camera:{zoom:1},environment:entries};
   const visible=()=>Object.fromEntries(entries.map(e=>[e.foliage,e.mesh.visible]));
   Renderer.prototype.updateFoliageLayers.call(renderer);
   assert.deepEqual(visible(),{volume:false,billboard:false,shadow:false,mesh_tree:true});
-  for(const patch of [{camera:{zoom:.7}},{viewMode:'tactical'},{quality:'standard'},{mobileBudget:true},{game:{map:{future:true}}}]){
-    Object.assign(renderer,{quality:'high',game:{map:{}},mobileBudget:false,viewMode:'immersive',camera:{zoom:1}},patch);
+  renderer.quality='standard';Renderer.prototype.updateFoliageLayers.call(renderer);assert.equal(visible().mesh_tree,true);
+  for(const patch of [{camera:{zoom:.7}},{viewMode:'tactical'},{quality:'standard',framedUnits:new Set(Array.from({length:120},(_,i)=>i))},{mobileBudget:true},{game:{map:{future:true}}}]){
+    Object.assign(renderer,{framedUnits:new Set(),quality:'high',game:{map:{}},mobileBudget:false,viewMode:'immersive',camera:{zoom:1}},patch);
     Renderer.prototype.updateFoliageLayers.call(renderer);
     assert.deepEqual(visible(),{volume:false,billboard:true,shadow:true,mesh_tree:false});
   }

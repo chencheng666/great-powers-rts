@@ -65,15 +65,15 @@ export class ArmyBatches {
   }
 }
 
-export function armyRenderBudget(quality, count, pixelRatio = 1, viewport = {}) {
+export function armyRenderBudget(quality, count, pixelRatio = 1, viewport = {}, mobile = false) {
   const dense = count > 144;
   // 高分屏的小规模战斗补足细节；团战和大视口仍受像素总量约束。
-  const limit = quality === 'standard' ? (dense ? 1 : 1.5) : (dense ? 1.25 : 2);
+  const limit = mobile ? 1.5 : quality === 'standard' ? (dense ? 1 : 1.5) : (dense ? 1.25 : 2);
   const pixels = Math.max(1, (viewport.width || 1) * (viewport.height || 1));
   const pixelBudget = quality === 'standard' ? 3_000_000 : 5_000_000;
   return {
     pixelRatio: Math.min(pixelRatio, limit, Math.max(1, Math.sqrt(pixelBudget / pixels))),
-    shadowSize: quality === 'standard' || dense ? 2048 : 4096,
+    shadowSize: quality === 'standard' || dense || mobile ? 2048 : 4096,
     shadowInterval: dense ? 50 : 0,
   };
 }

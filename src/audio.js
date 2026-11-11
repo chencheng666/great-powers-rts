@@ -253,6 +253,7 @@ export class GameAudio {
 
   syncBattle(game, listener, dt) {
     this.listener = listener;
+    if(this.reverbMap!==game.map){this.soundEffects?.reverb?.setTerrain(game.map);this.reverbMap=game.map;}
     if (!this.active || this.paused || !game.running || this.settings.muted || !this.settings.master || !this.settings.effects) {
       this.soundEffects?.syncMovement([]); this.movement.reset(); return;
     }
