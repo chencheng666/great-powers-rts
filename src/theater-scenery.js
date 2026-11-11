@@ -6,14 +6,14 @@ const noise=(x,y=1)=>{const v=Math.sin(x*127.1+y*311.7)*43758.5453;return v-Math
 export function ridgeHeight(map,x,y) {
   for(const r of map.ridges||[])if(x>=r.x1&&x<=r.x2&&y>=r.y1&&y<=r.y2){
     const a=Math.sin((x-r.x1)/(r.x2-r.x1)*Math.PI),b=Math.sin((y-r.y1)/(r.y2-r.y1)*Math.PI);
-    return 8+165*a*b*(.86+.14*Math.cos(y*.025));
+    return 8 + 230 * a * b * (.75 + .25 * Math.cos(y * .025));
   }
   return null;
 }
 
 export function ridgeGLSL(map) {
   const f=v=>Number(v).toFixed(5);
-  return (map.ridges||[]).map(r=>`if(p.x>=${f(r.x1)}&&p.x<=${f(r.x2)}&&p.y>=${f(r.y1)}&&p.y<=${f(r.y2)})return 9.2+165.0*sin((p.x-${f(r.x1)})/${f(r.x2-r.x1)}*3.14159265359)*sin((p.y-${f(r.y1)})/${f(r.y2-r.y1)}*3.14159265359)*(.86+.14*cos(p.y*.025));`).join('\n');
+  return (map.ridges||[]).map(r=>`if(p.x>=${f(r.x1)}&&p.x<=${f(r.x2)}&&p.y>=${f(r.y1)}&&p.y<=${f(r.y2)})return 9.2+230.0*sin((p.x-${f(r.x1)})/${f(r.x2-r.x1)}*3.14159265359)*sin((p.y-${f(r.y1)})/${f(r.y2-r.y1)}*3.14159265359)*(.75+.25*cos(p.y*.025));`).join('\n');
 }
 
 export function paintTheaterGround(ctx,map,road,image) {

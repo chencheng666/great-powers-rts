@@ -103,3 +103,22 @@ Kenney Nature Kit 2.1
 采用 rock_largeB、rock_largeD、tree_pineRoundA、tree_pineTallA_detailed 的木质几何。
 修改：三角化、统一尺度与接地高度；松树木质部分横置为倒木；岩石和倒木转为单材质顶点色、实例绘制，不改变碰撞与寻路。
 舰载机折翼、双发喷口、前翼和起落架为本项目自有程序模型；未复制爱给网模型文件。
+
+2026-11-11 战区道具
+- Majadroid（Maik Hoffmann），Low Poly House Construction Site，CC0 1.0。
+  https://opengameart.org/content/3d-house-construction-site-lowpoly-cc0
+  采用货运集装箱组、办公集装箱组、围栏，重新赋予游戏配色。
+- Ron Kapaun / 3 Tier Digital Studios，3TD Industrial Pack，CC0 1.0。
+  https://opengameart.org/content/3td-industrial-pack
+  采用两种桶、箱子、托盘、路障、锥桶和工业气瓶，只保留一档可见几何。
+- Kenney，City Kit (Industrial) 与 Space Station Kit，CC0 1.0。
+  https://kenney.nl/assets/city-kit-industrial
+  https://kenney.nl/assets/space-station-kit
+  采用两种工业建筑、太阳能板、风机、月面闸门、墙板和地板。
+- Wildfire Games，《0 A.D.》，CC BY-SA 3.0。
+  https://wildfiregames.com/  https://creativecommons.org/licenses/by-sa/3.0/
+  https://github.com/0ad/0ad/tree/master/binaries/data/mods/public/art
+  采用短石墙、石拱桥和木桶组。转换后这三件模型继续按 CC BY-SA 3.0 提供。
+统一修改：三角化、接地、尺度归一、网格索引化及重新配色。游戏内几何与授权来源对应，
+见 assets/third-party/scenery-20261111/source.json 和 scripts/build-map-scenery.py。
+CC0 1.0 原文：https://creativecommons.org/publicdomain/zero/1.0/

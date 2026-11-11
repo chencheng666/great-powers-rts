@@ -1,0 +1,182 @@
+{
+  "cargo": {
+    "file": "construction/Containers-Cargo.fbx",
+    "sourceFile": "LowPoly-House-Construction-Site-By-Majadroid/fbx files/Containers-Cargo.fbx",
+    "source": "https://opengameart.org/content/3d-house-construction-site-lowpoly-cc0",
+    "author": "Majadroid",
+    "license": "CC0-1.0",
+    "color": "#667f74",
+    "sha256": "28493de667069e8fa16407089315e74a7d7cc4e60310cfed6ec5dad8fb819d2d"
+  },
+  "siteOffice": {
+    "file": "construction/Containers-Office.fbx",
+    "sourceFile": "LowPoly-House-Construction-Site-By-Majadroid/fbx files/Containers-Office.fbx",
+    "source": "https://opengameart.org/content/3d-house-construction-site-lowpoly-cc0",
+    "author": "Majadroid",
+    "license": "CC0-1.0",
+    "color": "#9b9c86",
+    "sha256": "b3c4c919eafd995a58815804ff4a734da750683dfdffd93221f03fcec071fe53"
+  },
+  "fence": {
+    "file": "construction/Fence.fbx",
+    "sourceFile": "LowPoly-House-Construction-Site-By-Majadroid/fbx files/Fence.fbx",
+    "source": "https://opengameart.org/content/3d-house-construction-site-lowpoly-cc0",
+    "author": "Majadroid",
+    "license": "CC0-1.0",
+    "color": "#788278",
+    "sha256": "90f01987fa6923efc67351ec6012b39202c0a9916431358ea9e3b8a2c5235026"
+  },
+  "barrelA": {
+    "file": "industrial-props/3td_Barrel01.Dae",
+    "sourceFile": "3TD_IndustrialPack_Ready/3TD_IndustrialPack/game/art/shapes/3TD_Studios/3td_Barrel_01/3td_Barrel01.Dae",
+    "source": "https://opengameart.org/content/3td-industrial-pack",
+    "author": "Ron Kapaun / 3 Tier Digital Studios",
+    "license": "CC0-1.0",
+    "color": "#646e56",
+    "sha256": "aa8142ce775dc26eec44a2284767ef9cb79a8167f7bf92e751a5bca6d589c07d"
+  },
+  "barrelB": {
+    "file": "industrial-props/3td_Barrel02.dae",
+    "sourceFile": "3TD_IndustrialPack_Ready/3TD_IndustrialPack/game/art/shapes/3TD_Studios/3td_Barrel_02/3td_Barrel02.dae",
+    "source": "https://opengameart.org/content/3td-industrial-pack",
+    "author": "Ron Kapaun / 3 Tier Digital Studios",
+    "license": "CC0-1.0",
+    "color": "#867459",
+    "sha256": "e28af29f5de286f19a225e06560158ec592223f10977be8b3fee9dacc12b4c47"
+  },
+  "crate": {
+    "file": "industrial-props/3td_Crate01.dae",
+    "sourceFile": "3TD_IndustrialPack_Ready/3TD_IndustrialPack/game/art/shapes/3TD_Studios/3td_Crate_01/3td_Crate01.dae",
+    "source": "https://opengameart.org/content/3td-industrial-pack",
+    "author": "Ron Kapaun / 3 Tier Digital Studios",
+    "license": "CC0-1.0",
+    "color": "#827557",
+    "sha256": "5ad079fcc208537b49674ef8b865c53c491a763b0f689fdcccec934373ce98c6"
+  },
+  "pallet": {
+    "file": "industrial-props/3td_Pallet01.dae",
+    "sourceFile": "3TD_IndustrialPack_Ready/3TD_IndustrialPack/game/art/shapes/3TD_Studios/3td_Pallet_01/3td_Pallet01.dae",
+    "source": "https://opengameart.org/content/3td-industrial-pack",
+    "author": "Ron Kapaun / 3 Tier Digital Studios",
+    "license": "CC0-1.0",
+    "color": "#817254",
+    "sha256": "3172ee54548e6cfa40712200493ac247a602b2a77aadf3a599405de0df71e03c"
+  },
+  "barrier": {
+    "file": "industrial-props/RoadBarrier_01.dae",
+    "sourceFile": "3TD_IndustrialPack_Ready/3TD_IndustrialPack/game/art/shapes/3TD_Studios/3td_RoadBarrier_01/RoadBarrier_01.dae",
+    "source": "https://opengameart.org/content/3td-industrial-pack",
+    "author": "Ron Kapaun / 3 Tier Digital Studios",
+    "license": "CC0-1.0",
+    "color": "#aaa59a",
+    "sha256": "ca4b999b47d869e479cceb1c49f9e738631cd5b559e67592d03aed328582ab96"
+  },
+  "cone": {
+    "file": "industrial-props/SafetyCone01.dae",
+    "sourceFile": "3TD_IndustrialPack_Ready/3TD_IndustrialPack/game/art/shapes/3TD_Studios/3td_SafetyCone_01/SafetyCone01.dae",
+    "source": "https://opengameart.org/content/3td-industrial-pack",
+    "author": "Ron Kapaun / 3 Tier Digital Studios",
+    "license": "CC0-1.0",
+    "color": "#ab633d",
+    "sha256": "a9593332180b1cc1f0c62e300a423fa3c207e0eb826e03857a4f3bc1a560f117"
+  },
+  "cylinder": {
+    "file": "industrial-props/WeldingTank01.dae",
+    "sourceFile": "3TD_IndustrialPack_Ready/3TD_IndustrialPack/game/art/shapes/3TD_Studios/3td_WeldingTank_01/WeldingTank01.dae",
+    "source": "https://opengameart.org/content/3td-industrial-pack",
+    "author": "Ron Kapaun / 3 Tier Digital Studios",
+    "license": "CC0-1.0",
+    "color": "#667d77",
+    "sha256": "5580ad06ce90cf4d9c48c7ae42384f5909b9ddc75d4a1166e4c97e5b23f20782"
+  },
+  "factory": {
+    "file": "industrial-city/building-b.glb",
+    "sourceFile": "Models/GLB format/building-b.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "color": "#878d82",
+    "sha256": "2ae65bd9166449f0bef438fbefb75d57451cb15c16659d7f22a7d895296a46af"
+  },
+  "warehouse": {
+    "file": "industrial-city/building-d.glb",
+    "sourceFile": "Models/GLB format/building-d.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "color": "#727f7a",
+    "sha256": "72b9e9e29986df0778ffa7c56e2f92fcfadfaa0f89bf167603877db4f38a789e"
+  },
+  "solar": {
+    "file": "industrial-city/solar-panel-landscape.glb",
+    "sourceFile": "Models/GLB format/solar-panel-landscape.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "color": "#566c7a",
+    "sha256": "719ae34e0d312e8b2e94d813da2c4147e7b0fcbc4c4a5304fc32e88b4d97402c"
+  },
+  "wind": {
+    "file": "industrial-city/windmill-low.glb",
+    "sourceFile": "Models/GLB format/windmill-low.glb",
+    "source": "https://kenney.nl/assets/city-kit-industrial",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "color": "#b0b7aa",
+    "sha256": "2e3da40d2f41454bf5af3b07cdad841abd5e06ca77560dc460633bc1f195a528"
+  },
+  "stationGate": {
+    "file": "station/wall-door-wide.glb",
+    "sourceFile": "Models/GLB format/wall-door-wide.glb",
+    "source": "https://kenney.nl/assets/space-station-kit",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "color": "#809299",
+    "sha256": "7a4d64e24032ce0419b751b47c9677222798d22a6efc32973a2c05d2c1b18a56"
+  },
+  "stationWall": {
+    "file": "station/wall-window.glb",
+    "sourceFile": "Models/GLB format/wall-window.glb",
+    "source": "https://kenney.nl/assets/space-station-kit",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "color": "#72828d",
+    "sha256": "55053731040bad9e0a02cd5cbef4d6ce4516f40019d41488eb36a5bdebcda6f3"
+  },
+  "stationFloor": {
+    "file": "station/floor-panel-straight.glb",
+    "sourceFile": "Models/GLB format/floor-panel-straight.glb",
+    "source": "https://kenney.nl/assets/space-station-kit",
+    "author": "Kenney",
+    "license": "CC0-1.0",
+    "color": "#656e78",
+    "sha256": "dd7ebd5d75d4ee396afb91a2fd5d64ff4798549569579d0730b675136f781df0"
+  },
+  "stoneWall": {
+    "file": "wildfire/rock_fence_short.dae",
+    "sourceFile": "meshes/props/rock_fence_short.dae",
+    "source": "https://github.com/0ad/0ad/tree/master/binaries/data/mods/public/art",
+    "author": "Wildfire Games",
+    "license": "CC-BY-SA-3.0",
+    "color": "#89877a",
+    "sha256": "209e402d0e6a8c2295047e2a6b275dc229f4b2c15014d66b612167d617c67ee1"
+  },
+  "stoneBridge": {
+    "file": "wildfire/rome_bridge.dae",
+    "sourceFile": "meshes/props/rome_bridge.dae",
+    "source": "https://github.com/0ad/0ad/tree/master/binaries/data/mods/public/art",
+    "author": "Wildfire Games",
+    "license": "CC-BY-SA-3.0",
+    "color": "#a29b86",
+    "sha256": "fa5444d8097c8536c30587bb2643f0d9e10d5623b06486f5d7bf7e0a9454e042"
+  },
+  "woodBarrels": {
+    "file": "wildfire/brit_workshop_barrels_01.dae",
+    "sourceFile": "meshes/props/brit_workshop_barrels_01.dae",
+    "source": "https://github.com/0ad/0ad/tree/master/binaries/data/mods/public/art",
+    "author": "Wildfire Games",
+    "license": "CC-BY-SA-3.0",
+    "color": "#80684b",
+    "sha256": "7fb8d9a53afa301ad30e9727a39aa912a1b93823c8c9a50ff09e5527aad16006"
+  }
+}

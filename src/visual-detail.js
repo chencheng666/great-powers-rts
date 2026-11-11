@@ -2,22 +2,27 @@ import { BUILDINGS, UNITS } from './data.js';
 import { lunarRelief } from './lunar-terrain.js';
 import { islandHeight } from './island-map.js';
 import { ridgeHeight } from './theater-scenery.js';
+import { battlefieldRelief } from './battlefield-relief.js';
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 export function terrainHeight(game, x, z) {
   const ridge=ridgeHeight(game.map,x,z);if(ridge!==null)return ridge;
-  if(game.map.islands)return islandHeight(game.map,x,z);
+  const relief = battlefieldRelief(game, x, z);
+  if (game.map.islands) {
+    const height = islandHeight(game.map, x, z);
+    return height + relief * clamp(height / 12, 0, 1);
+  }
   const water = game.map.water;
   if (water && x > water.x1 && x < water.x2) return -15;
   if (!game.map.future && !game.map.industrial && game.map.barriers.some(r => x > r.x1 && x < r.x2 && z > r.y1 && z < r.y2)) return -28;
   if(game.map.industrial)return 0;
   const edge = Math.min(x, game.world.width - x), road = clamp((Math.abs(z - game.homeY) - 70) / 150, 0, 1);
   const base = clamp((edge - 650) / 240, 0, 1);
-  if (!road || !base) return 0;
+  if (!road || !base) return relief;
   const rolling = Math.sin(edge * .009) * Math.cos(z * .008) * 2.4 + Math.sin(z * .017 + edge * .006) * 1.1;
-  // 只改变可视地表；不增加碰撞、掩体和伤害修正，基地及主路保持平整。
+  // 通行依据原有地图障碍，缓坡只改变地表高度。
   const plateau = game.map.future ? 0 : (1 + Math.sin(edge * .004)) * (1 + Math.cos(z * .006)) * 6;
-  return (rolling * (game.map.future ? 1.4 : 1) + plateau + (game.map.future ? lunarRelief(game, x, z) : 0)) * road * base;
+  return (rolling * (game.map.future ? 1.4 : 1) + plateau + (game.map.future ? lunarRelief(game, x, z) : 0)) * road * base + relief;
 }
 
 export function tracerEndpoints(effect) {

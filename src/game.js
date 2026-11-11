@@ -676,8 +676,9 @@ export class Game {
         unit.order = { type: 'attackMove', x: this.map.water.x1 + unitRadius(unit) + 40, y: yCenter + random(-290, 290) };
       } else if (this.isAI(b.owner) && unit.type !== 'harvester') unit.order = { type: 'move', ...(this.playerCount===6?sixPoint(b.owner,400+random(-70,70),random(-120,120)):{x:this.world.width-630+random(-70,70),y:yCenter+random(-120,120)}) };
       if (b.rallyPoint && unit.type !== 'harvester') unit.order = { type: 'move', ...this.resolveMoveGoal(unit, b.rallyPoint.x, b.rallyPoint.y) };
+      const carrier = !unit.order && d.tags.includes('deck') ? this.assignNewCarrierAircraft(unit) : null;
       if (unit.order) this.setDroneMission(unit);
-      if (b.owner === 0) this.events.notice?.(`${equipmentProfile(p.faction, unit.type, this.map.future).name}已就绪`);
+      if (b.owner === 0) this.events.notice?.(`${equipmentProfile(p.faction, unit.type, this.map.future).name}已就绪${carrier ? '，正在转场着舰' : ''}`);
       if (b.owner === 0) this.events.voice?.('unitReady');
       b.active = null;
     }

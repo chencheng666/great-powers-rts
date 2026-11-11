@@ -534,6 +534,34 @@ export const modernCombat = {
 
   carrierAircraft(carrier) { return this.ownedUnits(carrier.owner).filter(u => UNITS[u.type].tags.includes('deck') && u.homeCarrierId === carrier.id); },
 
+  carrierArrivals(carrier) {
+    return this.ownedUnits(carrier.owner).filter(plane =>
+      UNITS[plane.type].tags.includes('deck') && !plane.embarkedIn &&
+      plane.homeCarrierId !== carrier.id && plane.order?.type === 'board' && plane.order.targetId === carrier.id);
+  },
+
+  carrierFreeBerths(carrier) {
+    return Math.max(0, UNITS.carrier.capacity - this.carrierAircraft(carrier).length - this.carrierArrivals(carrier).length);
+  },
+
+  idleCarrierAircraft(carrier) {
+    const free = this.carrierFreeBerths(carrier);
+    if (!free) return [];
+    return this.ownedUnits(carrier.owner)
+      .filter(plane => !plane.homeCarrierId && !plane.order && !plane.orderQueue?.length && this.canBoardTransport(plane, carrier))
+      .sort((a, b) => distance(a, carrier) - distance(b, carrier) || a.id - b.id)
+      .slice(0, free);
+  },
+
+  assignNewCarrierAircraft(plane) {
+    const carrier = this.ownedUnits(plane.owner, 'carrier')
+      .filter(ship => this.canBoardTransport(plane, ship) && this.carrierFreeBerths(ship) > 0)
+      .sort((a, b) => distance(a, plane) - distance(b, plane) || a.id - b.id)[0];
+    if (!carrier) return null;
+    plane.order = { type: 'board', targetId: carrier.id };
+    return carrier;
+  },
+
   assignCarrierSlots(carrier) {
     const planes=this.carrierAircraft(carrier),slots=carrierSlots(planes);
     for(const plane of planes)plane.carrierSlot=slots.get(plane.id);
@@ -542,7 +570,11 @@ export const modernCombat = {
 
   recallCarrierAircraft(carrier) {
     if(carrier?.type!=='carrier'||carrier.hp<=0)return false;
-    carrier.airGroupHold=true;
+    carrier.airGroupHold = true;
+    for (const plane of this.idleCarrierAircraft(carrier)) {
+      plane.order = { type: 'board', targetId: carrier.id };
+      plane.path = [];
+    }
     for(const plane of this.carrierAircraft(carrier)){
       if(plane.embarkedIn===carrier.id){
         if(plane.deckTaxi?.phase==='out')plane.deckTaxi={phase:'in',progress:1-plane.deckTaxi.progress,launch:false,reversing:true};

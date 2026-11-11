@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { Game } from '../src/game.js';
+import { intersectBattlefieldSurface } from '../src/battlefield-relief.js';
+import { mapSceneryPoints, SCENERY_MESHES } from '../src/map-scenery.js';
 import { terrainHeight, tracerEndpoints, impactProfile, REALISM_BUILDINGS } from '../src/visual-detail.js';
 
-const game = { world: { width: 4480 }, homeY: 1440, map: { barriers: [], future: false } };
+const game = { world: { width: 4480, height: 2880 }, homeY: 1440, map: { barriers: [], future: false } };
 
 test('地表起伏保持基地和主路平整，双方横向镜像且高度有界', () => {
   assert.equal(terrainHeight(game, 350, 900), 0);
@@ -50,4 +53,36 @@ test('细化 GLB 包含十类设施、五阵营坦克及两类飞机，兵工厂
   assert.ok(gltf.nodes.some(n => n.name.startsWith('兵工电子设备舱')));
   assert.ok(gltf.nodes.some(n => n.name.startsWith('炮塔全景观瞄')));
   assert.ok(gltf.materials.some(m => m.name === '阵营标识'));
+});
+
+test('灰谷有明显的山脊和坡脚，谷底主路与山坡上的点击落点正确', () => {
+  const battle = new Game('china', 'nato', {}, { mapId: 'valleyTraining' });
+  const { width, height } = battle.world;
+  const elevation = (x, y) => terrainHeight(battle, x, y);
+  assert.equal(elevation(width * .48, height * .5), 0);
+  assert.ok(elevation(width * .48, height * .12) > 180);
+  const x = width * .48;
+  const y = height * .22;
+  const slope = elevation(x, y);
+  assert.ok(slope > 35 && slope < 170);
+  const ray = { origin: { x, y: slope + 300, z: y + 200 }, direction: { x: 0, y: -.6, z: -.4 } };
+  const hit = intersectBattlefieldSurface(ray, elevation, battle.world);
+  assert.ok(Math.hypot(hit.x - x, hit.y - y) < .1);
+  assert.equal(battle.isGroundBlocked(width * .48, height * .5, 8), false);
+});
+
+test('授权道具均用于至少一种战区，摆放避开地形障碍和水面', () => {
+  const used = new Set();
+  for (const mapId of ['valley', 'valleyTraining', 'ocean', 'frontier', 'meridian']) {
+    const battle = new Game('china', 'nato', {}, { mapId });
+    const elevation = (x, y) => terrainHeight(battle, x, y);
+    for (const point of mapSceneryPoints(battle, elevation)) {
+      assert.ok(elevation(point.x, point.z) >= 0);
+      assert.equal(battle.isGroundBlocked(point.x, point.z, point.scale * .46), false);
+      const { vertices, indices } = SCENERY_MESHES[point.name];
+      assert.ok(indices.length > 0 && indices.every(index => index * 3 < vertices.length));
+      used.add(point.name);
+    }
+  }
+  assert.deepEqual([...used].sort(), Object.keys(SCENERY_MESHES).sort());
 });

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Game } from '../src/game.js';
 import { UNITS } from '../src/data.js';
 import { OnlineGame } from '../src/online-game.js';
+import { carrierAirGroupLabel } from '../src/carrier-airgroup.js';
 import { CARRIER_SORTIE_LIMIT } from '../src/carrier-operations.js';
 import { executeCommand } from '../server/commands.mjs';
 import { battleView } from '../server/battle-view.mjs';
@@ -186,4 +187,43 @@ const airborne=g.carrierAircraft(c).filter(p=>!p.embarkedIn).length;if(airborne!
 g.recallCarrierAircraft(c);let steps=0;for(;steps<2400;steps++){g.update(.05);if(c.passengers.length===24&&g.carrierAircraft(c).every(p=>!p.deckTaxi))break;}
 if(c.passengers.length!==24)throw Error('未全部返舰:'+JSON.stringify(g.carrierAircraft(c).filter(p=>!p.embarkedIn).map(p=>({x:p.x,y:p.y,order:p.order,deploy:p.deployment}))));
 assert.equal(c.passengers.length,24);assert.equal(c.airGroupHold,true);
+});
+
+test('机场按正常队列生产两种舰载机，完成后进场、着舰并占用真实机位', () => {
+  const g = setup();
+  g.addBuilding(0, 'airfield', 620, 600);
+  g.addBuilding(0, 'lab', 550, 400);
+  g.addBuilding(0, 'power', 400, 400);
+  g.addBuilding(0, 'power', 430, 600);
+  const carrier = g.addUnit(0, 'carrier', 1400, 1000);
+  carrier.airGroupHold = true;
+  assert.equal(g.queueUnit(0, 'navalFighter'), true);
+  assert.equal(g.queueUnit(0, 'navalStrike'), true);
+  let sawArrival = false;
+  for (let i = 0; i < 2100; i++) {
+    g.update(.05);
+    if (g.carrierArrivals(carrier).length) {
+      sawArrival = true;
+      assert.match(carrierAirGroupLabel(g, carrier), /进场 1/);
+    }
+    if (carrier.passengers.length === 2 && g.carrierAircraft(carrier).every(plane => !plane.deckTaxi)) break;
+  }
+  assert.ok(sawArrival);
+  const parked = carrier.passengers.map(id => g.getEntity(id));
+  assert.deepEqual(parked.map(plane => plane.type), ['navalFighter', 'navalStrike']);
+  assert.equal(new Set(parked.map(plane => plane.carrierSlot)).size, 2);
+  assert.match(carrierAirGroupLabel(g, carrier), /甲板 2/);
+});
+
+test('旧档可召回未编队的闲置机，正在执行任务的飞机继续原任务', () => {
+  const g = setup();
+  const carrier = g.addUnit(0, 'carrier', 1400, 1000);
+  const idle = g.addUnit(0, 'navalFighter', 640, 620);
+  const moving = g.addUnit(0, 'navalStrike', 620, 620);
+  const order = { type: 'move', x: 680, y: 720 };
+  moving.order = order;
+  const restored = Game.fromSave(g.toSave());
+  assert.equal(restored.recallCarrierAircraft(restored.getEntity(carrier.id)), true);
+  assert.deepEqual(restored.getEntity(idle.id).order, { type: 'board', targetId: carrier.id });
+  assert.deepEqual(restored.getEntity(moving.id).order, order);
 });

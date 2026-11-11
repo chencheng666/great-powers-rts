@@ -4,11 +4,12 @@ import { lunarReliefGLSL } from './lunar-terrain.js';
 import { surfaceMaps } from './model-craft.js';
 import { islandHeightGLSL } from './island-map.js';
 import { ridgeGLSL } from './theater-scenery.js';
+import { battlefieldReliefGLSL } from './battlefield-relief.js';
 
 export const COMMUNITY_3D_BUILDINGS = ['dock', 'radar', 'airfield', 'lab', 'super'];
 
 export function conformGroundMark(material, game) {
-  const water = game.map.water, barriers = game.map.future ? [] : game.map.barriers;
+  const water = game.map.water, barriers = game.map.future || game.map.industrial ? [] : game.map.barriers;
   const checks = [
     ...game.map.bridges.map(b => `if (p.x >= ${Number(water?.x1 ?? 1010).toFixed(1)} && p.x <= ${Number(water?.x2 ?? 1230).toFixed(1)} && p.y >= ${b.y1.toFixed(1)} && p.y <= ${b.y2.toFixed(1)}) return 28.2;`),
     ...(water ? [`if (p.x > ${water.x1.toFixed(1)} && p.x < ${water.x2.toFixed(1)}) return -13.8;`] : []),
@@ -17,17 +18,18 @@ export function conformGroundMark(material, game) {
   material.onBeforeCompile = shader => {
     shader.vertexShader = `${lunarReliefGLSL(game)}
     ${islandHeightGLSL(game.map)}
+    ${battlefieldReliefGLSL(game)}
     float craterElevation(vec2 p) {
       ${ridgeGLSL(game.map)}
       ${game.map.industrial?'return 1.2;':''}
-      ${game.map.islands?'return islandHeight(p)+1.2;':''}
+      ${game.map.islands?'float land = islandHeight(p); return land + battlefieldRelief(p) * clamp(land / 12.0, 0.0, 1.0) + 1.2;':''}
       ${checks}
       float edge = min(p.x, ${game.world.width.toFixed(1)} - p.x);
       float road = clamp((abs(p.y - ${game.homeY.toFixed(1)}) - 70.0) / 150.0, 0.0, 1.0);
       float base = clamp((edge - 650.0) / 240.0, 0.0, 1.0);
       float rolling = sin(edge * .009) * cos(p.y * .008) * 2.4 + sin(p.y * .017 + edge * .006) * 1.1;
       float plateau = ${game.map.future ? '0.0' : '(1.0 + sin(edge * .004)) * (1.0 + cos(p.y * .006)) * 6.0'};
-      return (rolling * ${game.map.future ? '1.4' : '1.0'} + plateau + ${game.map.future ? 'moonRelief(p)' : '0.0'}) * road * base + 1.2;
+      return (rolling * ${game.map.future ? '1.4' : '1.0'} + plateau + ${game.map.future ? 'moonRelief(p)' : '0.0'}) * road * base + battlefieldRelief(p) + 1.2;
     }\n${shader.vertexShader}`.replace('#include <project_vertex>', `#include <project_vertex>
       vec4 craterWorld = vec4(transformed, 1.0);
       #ifdef USE_INSTANCING

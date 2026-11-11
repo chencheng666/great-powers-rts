@@ -715,7 +715,7 @@ function updateSelection() {
   $('#unload-btn').hidden = !selected.some(e => e.kind === 'unit' && UNITS[e.type].capacity);
   $('#unload-btn span').textContent=selected.length&&selected.every(e=>e.type==='carrier')?'起飞':'卸载';
   $('#carrier-recall-btn').hidden=!selected.some(e=>e.type==='carrier');
-  $('#carrier-recall-btn').disabled=!selected.some(e=>e.type==='carrier'&&g.carrierAircraft(e).length);
+  $('#carrier-recall-btn').disabled=!selected.some(e=>e.type==='carrier'&&(g.carrierAircraft(e).length || g.carrierArrivals(e).length || g.idleCarrierAircraft(e).length));
   $('#resupply-btn').hidden = !selected.some(e => e.kind === 'unit' && !['harvester', 'supply'].includes(e.type) && !UNITS[e.type].tags.includes('logistics'));
   const selectionKey = selected.map(entity => entity.id).join(',');
   if (selectionKey !== state.lastSelection) { state.dismissedInspectorId = null; gameAudio.selection(selected); state.lastSelection = selectionKey; }
@@ -1306,7 +1306,7 @@ function setupControls() {
   $('#attack-btn').addEventListener('click', () => { if (!state.game) return; state.game.placingBuilding = false; state.game.orderMode = 'attackMove'; clearOrderButtons(); $('#attack-btn').classList.add('active'); toast('在战场上左键或右键指定攻击移动目标'); });
   $('#patrol-btn').addEventListener('click', beginPatrol);
   $('#unload-btn').addEventListener('click', () => { const g = state.game; if (!g || g.paused) return; for (const id of [...g.selected]) g.unloadTransport(g.getEntity(id)); updateSelection(); });
-  $('#carrier-recall-btn').addEventListener('click',()=>{const g=state.game;if(!g||g.paused)return;for(const id of g.selected){const carrier=g.getEntity(id);if(carrier?.type==='carrier')g.recallCarrierAircraft(carrier);}updateSelection();toast('舰载机已召回，点击起飞可恢复出动');});
+  $('#carrier-recall-btn').addEventListener('click',()=>{const g=state.game;if(!g||g.paused)return;for(const id of g.selected){const carrier=g.getEntity(id);if(carrier?.type==='carrier')g.recallCarrierAircraft(carrier);}updateSelection();toast('已下达返舰指令，航母停航后逐架着舰');});
   $('#resupply-btn').addEventListener('click', () => { const g = state.game; if (!g || g.paused) return; for (const id of g.selected) g.requestResupply(g.getEntity(id)); updateSelection(); });
   $('#toolbar-toggle').addEventListener('click', () => {
     const collapsed = $('#command-toolbar').classList.toggle('collapsed');
