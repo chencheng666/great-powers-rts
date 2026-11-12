@@ -23,3 +23,5 @@ test('构建根目录和官网目录的SVG均按图片类型返回，避免200�
   const response=await fetch(`http://127.0.0.1:${app.server.address().port}${path}`,{method});assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'image/svg+xml');assert.equal(await response.text(),method==='HEAD'?'':svg);
  }
 });
+
+test('官网只允许同源清单和统计请求，继续禁止外域连接和内联脚本',()=>{const rules=Object.fromEntries(OFFICIAL_CSP.split(';').map(s=>s.trim().split(/\s+/)).map(([key,...values])=>[key,values]));assert.deepEqual(rules['connect-src'],["'self'"]);assert.deepEqual(rules['script-src'],["'self'"]);assert.deepEqual(rules['object-src'],["'none'"]);assert.deepEqual(rules['frame-ancestors'],["'none'"]);});
