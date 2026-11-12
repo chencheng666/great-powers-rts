@@ -43,7 +43,7 @@ import { destinationArrow } from './order-marker.js';
 import { RESOURCE_TYPES } from './battlefield-expansion.js';
 import { COMMUNITY_3D_BUILDINGS } from './community-visuals.js';
 import { BATTLE_READABILITY, readableMaterial, identityRadius, identityVisible } from './battle-readability.js';
-import { fixedWingHeight, aircraftGroundHeight, airfieldSurfaceHeight } from './airfield-presentation.js';
+import { fixedWingHeight, aircraftGroundHeight, airfieldSurfaceHeight, groundAirfieldPavement } from './airfield-presentation.js';
 import { animateIdleGun } from './idle-gun.js';
 import { lunarCraters } from './lunar-terrain.js';
 import { battleElevation, battleAzimuth, groundPan, groundExtents } from './battle-camera.js';
@@ -907,6 +907,7 @@ export class Renderer {
   createEntity(entity) {
     const color = teamVisual(entity.owner).color, name = equipmentModel(this.game.players[entity.owner].faction, entity.type, this.game.map.future);
     const model = createModel(name, color);
+    if (entity.type === 'airfield' && !this.game.map.future) groundAirfieldPavement(model, entity, (x, y) => this.elevation(x, y), resource => this.track(resource));
     const unscaledBounds = new THREE.Box3().setFromObject(model), size = unscaledBounds.getSize(new THREE.Vector3());
     const groundClearance = Math.max(0, -unscaledBounds.min.y);
     const scale = entity.kind === 'building' ? entity.size / 7.2 : unitModelScale(entity.type, size, UNIT_SCALE[entity.type], this.game.map.future);
@@ -1185,7 +1186,9 @@ export class Renderer {
           const pose = submarinePose(this.game, entity, now); height = pose.height;
           entry.model.scale.y = entry.scale * pose.verticalScale; entry.displayTopHeight = entry.topHeight * pose.verticalScale;
           entry.submergedMaterials.forEach(({ mesh, original, hidden }) => {
-            hidden.opacity = pose.detected ? .48 : .28;
+            hidden.opacity = entity.owner === 0 ? .65 : .48;
+            // 已通过迷雾与声呐可见性检查的潜航轮廓，不能再次被不透明海面吞掉。
+            hidden.depthTest = false;
             mesh.material = pose.surfaced ? original : hidden; mesh.castShadow = pose.surfaced; mesh.renderOrder = pose.surfaced ? 0 : 2;
           });
         }
@@ -1291,7 +1294,7 @@ export class Renderer {
       }
       const submerged = entity.type === 'submarine' && entry.submergedMaterials?.[0]?.mesh.material === entry.submergedMaterials?.[0]?.hidden;
       entry.identity.visible = identityVisible(entity, visible, submerged);
-      entry.identity.position.set(entity.x, this.elevation(entity.x, entity.y) + (UNITS[entity.type]?.tags.includes('ship') ? 2 : 1.4), entity.y);
+      entry.identity.position.set(entity.x, UNITS[entity.type]?.tags.includes('ship') ? Math.max(0, this.elevation(entity.x, entity.y)) + 2 : this.elevation(entity.x, entity.y) + 1.4, entity.y);
       if (entity.type === 'carrier') {
         const parked = entity.passengers.map(id => this.game.getEntity(id)).filter(p => p?.hp > 0);
         const display=entity.deckAircraft||parked,slots=carrierSlots(this.game.carrierAircraft(entity));

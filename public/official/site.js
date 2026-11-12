@@ -14,7 +14,7 @@ heroToggle.addEventListener('click',()=>{heroStopped=!heroStopped;syncHero();});
 // 官网入口和下载中心共用计数，统计本站下载跳转，不推测站外下载量。
 fetch('/api/download-counts',{cache:'no-store'}).then(r=>r.json()).then(({counts})=>{for(const a of document.querySelectorAll('a[href*="/downloads/packages/"]')){const u=new URL(a.href), key='packages/'+u.pathname.split('/').pop();a.href='/api/download?file='+encodeURIComponent(key);a.append(document.createTextNode(' · '+(counts[key]||0)+' 次'));}}).catch(()=>{});
 
-const groupExpiresAt = Date.parse('2026-11-13T00:00:00+08:00');
+const groupExpiresAt = Date.parse('2026-11-19T00:00:00+08:00');
 if (Date.now() >= groupExpiresAt) {
   document.querySelector('[data-group-qr]')?.setAttribute('hidden', '');
   document.querySelector('[data-group-expired]')?.removeAttribute('hidden');

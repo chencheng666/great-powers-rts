@@ -43,7 +43,8 @@ test('新增起落架接地不下沉，返场与滑跑高度连续且适配地�
   assert.equal(fixedWingHeight(game,entity,{},0,95).height,4);
   const airport={x:900,y:660,size:140};game.ownedBuildings=()=>[airport];
   const deckPose=fixedWingHeight(game,entity,entry,0,95);model.position.y=deckPose.height;
-  assert.ok(new THREE.Box3().setFromObject(model).min.y>=airport.size/7.2*.5,'跑道铺装不能吞掉起落架');
+  const pavement=airport.size/7.2*.06;
+  assert.ok(new THREE.Box3().setFromObject(model).min.y>=pavement&&new THREE.Box3().setFromObject(model).min.y<pavement+1,'薄铺装上的起落架应接地，不能下沉或悬浮');
 });
 
 test('直升机光电与机炮瞄准分离、后坐仅移动炮管，不影响主旋翼和规则',()=>{

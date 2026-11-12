@@ -1,5 +1,6 @@
 import { UNITS } from './data.js';
 import { unitRadius } from './unit-spacing.js';
+import { AIRFIELD_LAYOUT } from './airfield-rules.js';
 
 export function facilityRotation(building, future = false) {
   if (future || !['barracks', 'factory', 'armory'].includes(building.type)) return 0;
@@ -18,12 +19,14 @@ export function sceneryClearance(point, buildings, units = [], foliage = false, 
     if(b.hp<=0)return false;
     if (b.type === 'airfield') {
       const scale = b.size / 7.2, dx = point.x - b.x, dz = point.z - b.y;
-      if (Math.abs(dx) <= 7.2 * scale + radius && dz >= 1 * scale - radius && dz <= 13.6 * scale + radius) return true;
+      const clearance = foliage ? Math.max(radius, (point.height || 0) * .8) : radius;
+      if (Math.abs(dx) <= AIRFIELD_LAYOUT.apronHalfWidth * scale + clearance && dz >= 1 * scale - clearance && dz <= AIRFIELD_LAYOUT.apronEnd * scale + clearance) return true;
+      if (Math.abs(dx) <= AIRFIELD_LAYOUT.runwayHalfLength * scale + clearance && Math.abs(dz - AIRFIELD_LAYOUT.runwayZ * scale) <= AIRFIELD_LAYOUT.runwayHalfWidth * scale + clearance) return true;
     }
     if(b.type==='dock'){
       const scale=b.size/7.2,angle=b.harborAngle??(worldWidth?(b.x<worldWidth/2?0:Math.PI):(b.owner?Math.PI:0)),dx=point.x-b.x,dz=point.z-b.y;
       const x=dx*Math.cos(angle)+dz*Math.sin(angle),z=-dx*Math.sin(angle)+dz*Math.cos(angle);
-      if(x>=-3.6*scale-radius&&x<=12.4*scale+radius&&Math.abs(z)<=10.3*scale+radius)return true;
+      if(x>=-3.6*scale-radius&&x<=12.4*scale+radius&&Math.abs(z)<=12.3*scale+radius)return true;
     }
     return Math.hypot(b.x-point.x,b.y-point.z)<b.size*.95+radius;
   })) return true;

@@ -60,8 +60,6 @@ export function refineFacility(model, type, weather = material => material) {
       part([.75, .15, .55], [x, 2.65, -1.3], 'dark');
       for (let z = -1.5; z < -1.1; z += .1) part([.72, .035, .025], [x, 2.74, z]);
     }
-    for (let x = -4; x <= 4; x += .8) part([.24, .02, .065], [x, .37, 1.9], 'mark');
-    part([.08, .02, 2.5], [4.1, .37, 2], 'mark');
   } else if (type === 'radar') {
     for (const direction of [-1, 1]) for (let y = 1.8; y < 3.5; y += .55) part([.04, .95, .04], [direction * .3, y, -.5], 'steel', direction * .7);
     for (const x of [-1.6, 1.6]) {
@@ -129,23 +127,23 @@ export function createHarbor(weather = material => material, assets = {}) {
   Object.assign(materials.panel, surfaceMaps('coating'));
   const box = (size, position, kind) => add(new THREE.BoxGeometry(...size), position, kind);
   box([7.2, .35, 8], [0, .2, 0], 'concrete');
-  box([3.6, 2.5, 6], [-1.65, 1.6, 0], 'panel');
-  box([3.85, .2, 6.3], [-1.65, 2.96, 0], 'roof');
-  for (let x = -3.4; x < .2; x += .3) box([.035, .045, 6.1], [x, 3.075, 0], 'steel');
+  box([2.6, 1.7, 4], [-1.65, 1.2, 0], 'panel');
+  box([2.85, .16, 4.3], [-1.65, 2.13, 0], 'roof');
+  for (let x = -2.9; x < -.3; x += .3) box([.035, .045, 4.1], [x, 2.24, 0], 'steel');
   for (const z of [-1.6, 1.6]) {
-    box([.7, .25, 1.15], [-1.6, 3.18, z], 'steel');
-    for (let x = -1.85; x < -1.3; x += .09) box([.035, .035, .95], [x, 3.32, z], 'dark');
+    box([.7, .2, .65], [-1.6, 2.34, z], 'steel');
+    for (let x = -1.85; x < -1.3; x += .09) box([.035, .035, .55], [x, 2.46, z], 'dark');
   }
-  for (let z = -2.5; z <= 2.5; z += 1) {
-    box([.08, 2.35, .09], [.2, 1.6, z], 'steel');
-    box([.1, .58, .62], [.2, 2.15, z], 'glass');
+  for (let z = -1.5; z <= 1.5; z += 1) {
+    box([.08, 1.65, .09], [-.3, 1.2, z], 'steel');
+    box([.1, .48, .62], [-.3, 1.65, z], 'glass');
   }
-  box([.12, 1.75, 2.1], [.25, 1.25, 0], 'dark');
-  box([.12, .12, 2.6], [.27, 2.2, 0], 'team');
+  box([.12, 1.35, 1.6], [-.25, 1.05, 0], 'dark');
+  box([.12, .12, 2.1], [-.23, 1.85, 0], 'team');
   // 长沿岸码头匹配货船长度；设施的战斗碰撞、建造占地和维修范围保持原规则。
-  box([9.5, .35, 2.8], [5.7, .55, 0], 'concrete');
-  box([3.1, .35, 20], [10.2, .55, 0], 'concrete');
-  for (const z of [-8, -4, 0, 4, 8]) {
+  box([9.5, .35, 20], [5.7, .55, 0], 'concrete');
+  box([3.1, .35, 24], [10.2, .55, 0], 'concrete');
+  for (const z of [-10, -6, -2, 2, 6, 10]) {
     box([.45, 2, .45], [10.2, -.6, z], 'concrete');
     box([.22, .45, 1.1], [11.9, .55, z], 'dark');
     add(new THREE.CylinderGeometry(.08, .1, .35, 10), [11.45, .94, z + .75], 'steel');
@@ -153,7 +151,7 @@ export function createHarbor(weather = material => material, assets = {}) {
     box([.25,.08,.7],[11.4,1,z+.75],'steel');
     for(const dy of [-.1,.1])box([.3,.05,.8],[12.05,.52+dy,z],'dark');
   }
-  for (const z of [-5.6, 5.6]) {
+  for (const z of [-7, 0, 7]) {
     if (assets.crane) {
       const crane = assets.crane.clone(); crane.name = '开放资产装卸吊机';
       crane.position.set(10.8, 5.1, z); crane.rotation.y = Math.PI / 2;
@@ -174,17 +172,21 @@ export function createHarbor(weather = material => material, assets = {}) {
     box([1.6, .14, 1.1], [12.25, 3.2, z], 'steel');
     box([.55, .8, .75], [9.15, 5.1, z], 'glass');
   }
-  for (const z of [-8.7, 8.7]) for (const x of [2.4, 4.1]) {
+  let containers = 0;
+  for (const z of [-8.7, -5.3, -1.9, 1.9, 5.3, 8.7]) for (const x of [2.4, 4.1, 5.8]) for (let layer = 0; layer < (x === 4.1 ? 2 : 1); layer++) {
+    containers++;
     const color = (x < 3) === (z < 0) ? 'cargoBlue' : 'cargoRed';
-    box([1.45, 1, 2.3], [x, .88, z], color);
-    for (let i = 0; i < 10; i++) for (const side of [-1, 1]) box([.035, .95, .035], [x + side * .74, .88, z - 1 + i * .22], color);
-    box([1.4, .035, .035], [x, 1.395, z - 1.12], 'steel');
+    const y = 1.25 + layer * 1.04;
+    box([1.45, 1, 2.3], [x, y, z], color);
+    for (let i = 0; i < 4; i++) for (const side of [-1, 1]) box([.035, .95, .035], [x + side * .74, y, z - .84 + i * .56], color);
+    box([1.4, .035, .035], [x, y + .515, z - 1.12], 'steel');
   }
   for (const [kind, geometries] of batches) {
     const mesh = new THREE.Mesh(mergeGeometries(geometries, false), kind === 'concrete' && assets.concrete ? materials[kind] : weather(materials[kind]));
     mesh.castShadow = mesh.receiveShadow = true; group.add(mesh);
     geometries.forEach(geometry => geometry.dispose());
   }
+  group.userData.harborLayout = { cranes: 3, containers };
   return group;
 }
 

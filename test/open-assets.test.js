@@ -77,12 +77,12 @@ test('缩放及军团临界点有迟滞，选中单位仍可查看精模，缺�
   installOpenModels(models, {}); assert.equal(models.get('tank_nato'), old);
 });
 
-test('开放港机复用两组几何与PBR材质，贴图按世界尺度投影而不是逐块拉伸', () => {
+test('三台开放港机复用几何与PBR材质，贴图按世界尺度投影而不是逐块拉伸', () => {
   const crane = new THREE.Group(), piece = new THREE.Mesh(new THREE.BoxGeometry(5, 1, 1), new THREE.MeshStandardMaterial()); crane.add(piece);
   const concrete = { map: new THREE.Texture(), normalMap: new THREE.Texture(), roughnessMap: new THREE.Texture() };
   const harbor = createHarbor(m => m, { crane, concrete });
   const hoists = harbor.children.filter(c => c.name === '开放资产装卸吊机');
-  assert.equal(hoists.length, 2); assert.equal(hoists[0].children[0].geometry, hoists[1].children[0].geometry);
+  assert.equal(hoists.length, 3); assert.ok(hoists.every(h => h.children[0].geometry === hoists[0].children[0].geometry));
   const ground = harbor.children.find(c => c.material?.name === '混凝土');
   assert.equal(ground.material.map, concrete.map);
   const uv = ground.geometry.attributes.uv;

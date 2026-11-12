@@ -29,6 +29,9 @@ test('敌我识别标记遵守战争迷雾、登载、潜航和存活状态', ()
   assert.equal(identityVisible(entity, true), true);
   assert.equal(identityVisible(entity, false), false);
   assert.equal(identityVisible(entity, true, true), false);
+  assert.equal(identityVisible({ ...entity, owner: 0 }, true, true), true);
+  assert.equal(identityVisible({ ...entity, owner: 1 }, true, true), false);
+  assert.equal(identityVisible({ ...entity, owner: 0 }, false, true), false);
   assert.equal(identityVisible({ ...entity, embarkedIn: 7 }, true), false);
   assert.equal(identityVisible({ hp: 0 }, true), false);
   assert.equal(identityRadius({ kind: 'unit' }, ['infantry']), 8);

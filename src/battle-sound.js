@@ -28,7 +28,8 @@ export function destructionSound(target) {
 
 export function soundPosition(point, listener) {
   if (point?.global || !listener || !Number.isFinite(point?.x)) return { level: 1, pan: 0 };
-  const screen = listener.worldToScreen(point.x, point.y), { width, height } = listener.viewport;
+  const source = listener.entities?.get(point.id ?? point.sourceId)?.entity;
+  const screen = source && listener.entityAnchor ? listener.entityAnchor(source) : listener.worldToScreen(point.x, point.y), { width, height } = listener.viewport;
   if (!width || !height) return { level: 0, pan: 0 };
   const dx = (screen.x - width / 2) / (width / 2), dy = (screen.y - height / 2) / (height / 2);
   const distance = Math.hypot(dx, dy);
@@ -76,6 +77,17 @@ export class MovementSounds {
     }
     this.transitions = this.transitions.slice(-16);
     for (const id of this.positions.keys()) if (!seen.has(id)) this.positions.delete(id);
-    return [...groups.values()].sort((a, b) => b.level - a.level).slice(0, 4);
+    return movementMix([...groups.values()]);
   }
+}
+
+export function movementMix(groups) {
+  const sorted = [...groups].sort((a, b) => b.level - a.level), selected = [];
+  // 混合部队保留一条可听见的空军和海军声部，避免被先出现的地面类别永久挤掉。
+  for (const kinds of [['jet', 'rotor', 'drone'], ['ship', 'submerged']]) {
+    const group = sorted.find(g => kinds.includes(g.kind) && g.level >= .12);
+    if (group) selected.push(group);
+  }
+  for (const group of sorted) if (!selected.includes(group) && selected.length < 4) selected.push(group);
+  return selected;
 }

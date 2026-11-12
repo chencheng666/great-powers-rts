@@ -95,7 +95,8 @@ export function synthesizeMovement(kind, sampleRate = 44100) {
       const modulation = kind === 'footsteps' ? Math.exp(-((t * pulse) % 1) * 13) : .65 + .35 * sin(pulse);
       value = (sin(frequency) * bass + low * 3 * hiss + noise * hiss * .2) * modulation;
     }
-    data[i] = value * .065;
+    const level = kind === 'jet' ? .14 : ['ship', 'submerged'].includes(kind) ? .13 : ['tracks', 'wheels', 'rotor'].includes(kind) ? .09 : .065;
+    data[i] = Math.tanh(value * level);
   }
   // 两秒缓存首尾平滑，长时间循环不在边界产生点击。
   const edge = Math.floor(sampleRate * .015), tail = data[length - 1];

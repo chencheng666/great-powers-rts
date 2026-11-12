@@ -96,6 +96,7 @@ export async function prepareVisualAssets({ lunar = false } = {}) {
       const batches = new Map();
       source.traverse(mesh => {
         if (!mesh.isMesh) return;
+        if (name === 'airfield' && /^(停机坪|基础平台|角部警示|跑道导航灯)/.test(mesh.name)) return;
         if (['patrol', 'frigate', 'destroyer', 'carrier', 'submarine', 'landing', 'containerShip'].includes(name) && /栏杆|护栏/.test(mesh.name)) return;
         if (replacedNavalPart(name, mesh.name) || ['airlift', 'freightPlane'].includes(name) && mesh.name.startsWith('气动机身') || name === 'power' && mesh.name.startsWith('散热顶盖')) return;
         if (hasRefinedTracks(name) && /^(履带|履带板|履带接地板)/.test(mesh.name)) return;

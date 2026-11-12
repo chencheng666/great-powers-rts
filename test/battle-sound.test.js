@@ -4,7 +4,7 @@ import { UNITS } from '../src/data.js';
 import { Game } from '../src/game.js';
 import { OnlineGame } from '../src/online-game.js';
 import { battleView } from '../server/battle-view.mjs';
-import { MovementSounds, soundPosition, weaponSound } from '../src/battle-sound.js';
+import { MovementSounds, soundPosition, weaponSound, movementMix } from '../src/battle-sound.js';
 import { SOUND_PROFILES, SoundEffects, synthesizeSound, soundProfile } from '../src/sound-effects.js';
 
 function setup() {
@@ -78,6 +78,20 @@ test('舰艇近距反潜与潜艇鱼雷分开，潜艇命中使用水声', () =>
   assert.deepEqual(heard, ['submarine', 'waterImpact']);
 });
 const listener = { viewport: { width: 1000, height: 800 }, worldToScreen: (x, y) => ({ x, y }) };
+test('混合军种不因四声部上限永久吞掉飞机和舰艇声，远处微弱声不抢占', () => {
+  const groups = ['footsteps', 'tracks', 'wheels', 'robot', 'jet', 'ship'].map((kind, i) => ({ kind, level: 1 - i * .05 }));
+  const mix = movementMix(groups); assert.equal(mix.length, 4);
+  assert.ok(mix.some(g => g.kind === 'jet')); assert.ok(mix.some(g => g.kind === 'ship'));
+  assert.ok(mix.some(g => g.kind === 'footsteps')); assert.ok(mix.some(g => g.kind === 'tracks'));
+  groups.at(-1).level = .01; assert.equal(movementMix(groups).some(g => g.kind === 'ship'), false);
+});
+test('空中音效按实际模型投影定位，不能因地面投影离屏而静音', () => {
+  const entity = { id: 8, x: 5000, y: 5000 };
+  const elevated = { ...listener, entities: new Map([[8, { entity }]]), entityAnchor: () => ({ x: 500, y: 400 }) };
+  assert.equal(soundPosition(entity, elevated).level, 1);
+  assert.equal(soundPosition({ x: 5000, y: 5000, sourceId: 8 }, elevated).level, 1);
+  assert.equal(soundPosition(entity, listener).level, 0);
+});
 test('移动声根据实际位移淡出，迷雾、离屏、登载和停机单位不发声', () => {
   const unit = { id: 1, type: 'tank', hp: 100, x: 500, y: 400, owner: 0, order: { type: 'move' } };
   const game = { units: [unit], map: {}, canSeeEntity: () => true, aircraftGrounded: () => true };

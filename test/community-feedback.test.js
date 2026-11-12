@@ -63,6 +63,9 @@ test('三维码头泊岸长度匹配货船，合批模型不使用图片平面�
   assert.ok(size.y > 5); assert.ok(harbor.children.length <= 8);
   assert.ok(harbor.children.every(mesh => mesh.isMesh && mesh.castShadow));
   assert.ok(harbor.children.some(mesh => mesh.material.name === '阵营标识'));
+  assert.ok(size.z >= 24);
+  assert.equal(harbor.userData.harborLayout.cranes, 3);
+  assert.ok(harbor.userData.harborLayout.containers >= 20);
 });
 
 test('弹坑为有间断的低矮碎石和焦痕，不是连续圆环或高耸圆墙', () => {

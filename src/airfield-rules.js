@@ -1,5 +1,12 @@
 import { UNITS } from './data.js';
 
+export const AIRFIELD_LAYOUT = Object.freeze({ runwayHalfLength: 12.6, runwayZ: 2.1, runwayHalfWidth: 1.2, apronHalfWidth: 7.2, apronEnd: 13.6, pavementTop: .06 });
+export function onAirfieldPavement(x, z) {
+  return Math.abs(x) <= AIRFIELD_LAYOUT.runwayHalfLength && Math.abs(z - AIRFIELD_LAYOUT.runwayZ) <= AIRFIELD_LAYOUT.runwayHalfWidth
+    || Math.abs(x) <= AIRFIELD_LAYOUT.apronHalfWidth && z >= 3.25 && z <= AIRFIELD_LAYOUT.apronEnd
+    || Math.abs(x) <= 4.7 && z >= -4.5 && z <= 1.1;
+}
+
 export function runwayAircraft(type, future = false) {
   const tags = UNITS[type]?.tags || [];
   return !future && tags.includes('jet') && !tags.includes('logistics') && type !== 'airlift';

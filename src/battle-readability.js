@@ -46,5 +46,5 @@ export function identityRadius(entity, tags = []) {
 }
 
 export function identityVisible(entity, visible, submerged = false) {
-  return visible && entity.hp > 0 && !entity.embarkedIn && !submerged;
+  return visible && entity.hp > 0 && !entity.embarkedIn && (!submerged || entity.owner === 0);
 }

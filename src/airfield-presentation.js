@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mergeParts } from './model-craft.js';
-import { runwayAircraft } from './airfield-rules.js';
+import { runwayAircraft, AIRFIELD_LAYOUT, onAirfieldPavement } from './airfield-rules.js';
 import { aircraftGroundFactor } from './model-scale.js';
 
 const clamp = value => Math.max(0, Math.min(1, value));
@@ -11,10 +11,10 @@ export function fixedWingPresentation(type, future = false) {
 
 export function airfieldSurfaceHeight(game, entity, groundHeight) {
   const pavement = game.ownedBuildings?.(entity.owner, 'airfield').find(b => {
-    const scale = b.size / 7.2, z = (entity.y - b.y) / scale;
-    return Math.abs(entity.x - b.x) <= 7.2 * scale && z >= 1 && z <= 13.6;
+    const scale = b.size / 7.2;
+    return onAirfieldPavement((entity.x - b.x) / scale, (entity.y - b.y) / scale);
   });
-  return groundHeight + (pavement ? pavement.size / 7.2 * .5 : 0);
+  return groundHeight + (pavement ? pavement.size / 7.2 * AIRFIELD_LAYOUT.pavementTop : 0);
 }
 
 export function aircraftGroundHeight(game, entity, entry, groundHeight) {
@@ -69,24 +69,47 @@ export function refineAirfieldRunway(model) {
   if (model.userData.runwayVersion) return model;
   const runway = new THREE.Group(); runway.name = '固定翼跑道';
   const pavement = new THREE.MeshStandardMaterial({ name: '跑道沥青', color: '#303b40', roughness: .96 });
+  const apron = new THREE.MeshStandardMaterial({ name: '机坪混凝土', color: '#636c67', roughness: .96 });
   const white = new THREE.MeshStandardMaterial({ name: '跑道标线', color: '#e2e7df', roughness: .85 });
+  const yellow = new THREE.MeshStandardMaterial({ name: '滑行引导线', color: '#d8bb62', roughness: .85 });
   const light = new THREE.MeshStandardMaterial({ name: '跑道边灯', color: '#9cd8eb', emissive: '#9cd8eb', emissiveIntensity: .5 });
   const part = (material, size, position, angle = 0) => {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material); mesh.position.set(...position); mesh.rotation.y = angle;
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size, Math.max(1, Math.ceil(size[0] * 2)), 1, Math.max(1, Math.ceil(size[2] * 2))), material); mesh.position.set(...position); mesh.rotation.y = angle;
     mesh.receiveShadow = true; runway.add(mesh);
   };
-  // 沿原停机坪展开，不增加建造占地或改变飞机补给判定范围。
-  part(pavement, [13.8, .07, 2.2], [0, .43, 2.1]);
-  // 跑道外侧铺设六个斜列机位，位置与实际补给和滑行路径一致。
-  part(pavement, [14.4, .06, 9.4], [0, .42, 8.9]);
-  // 机坪到跑道之间补齐连接铺装，滑行时接地高度保持一致。
-  part(pavement, [14.4, .06, 1.1], [0, .42, 3.7]);
-  for (const x of [-5.625, 0, 5.625]) for (const z of [7.05, 12.4]) part(white, [2.7, .012, .055], [x, .46, z], Math.PI / 4);
-  for (const z of [1.13, 3.07]) part(white, [13.2, .012, .04], [0, .475, z]);
-  for (let x = -5.2; x <= 5.2; x += 1.3) part(white, [.62, .012, .06], [x, .479, 2.1]);
-  for (const x of [-6.2, 6.2]) for (const z of [1.4, 1.68, 2.52, 2.8]) part(white, [.56, .012, .13], [x, .479, z]);
-  for (let x = -6.4; x <= 6.4; x += 1.6) for (const z of [1.04, 3.16]) part(light, [.07, .04, .07], [x, .47, z]);
-  model.add(mergeParts(runway)); model.userData.runwayVersion = 1; return model;
+  // 延长独立跑道，六个机位和滑行连接仍使用原有调度坐标。
+  part(pavement, [25.2, .05, 2.4], [0, .035, 2.1]);
+  part(apron, [14.4, .05, 9.4], [0, .035, 8.9]);
+  part(apron, [14.4, .05, 1.1], [0, .035, 3.7]);
+  part(apron, [9.4, .05, 5.6], [0, .035, -1.7]);
+  for (const x of [-5.625, 0, 5.625]) for (const z of [7.05, 12.4]) {
+    part(yellow, [2.7, .008, .06], [x, .068, z], Math.PI / 4);
+    part(yellow, [.06, .008, 2.7], [x, .068, z], Math.PI / 4);
+  }
+  for (const z of [1.04, 3.16]) part(white, [24.4, .008, .045], [0, .068, z]);
+  for (let x = -10.8; x <= 10.8; x += 1.35) part(white, [.65, .008, .07], [x, .069, 2.1]);
+  for (const x of [-11.6, 11.6]) for (const z of [1.35, 1.65, 2.55, 2.85]) part(white, [.8, .008, .16], [x, .069, z]);
+  part(yellow, [13.4, .008, .055], [0, .068, 4.25]);
+  for (let x = -12; x <= 12; x += 1.6) for (const z of [.86, 3.34]) part(light, [.07, .04, .07], [x, .07, z]);
+  model.add(mergeParts(runway)); model.userData.runwayVersion = 2; return model;
+}
+
+export function groundAirfieldPavement(model, home, elevation, track = () => {}) {
+  const runway = model.getObjectByName('固定翼跑道');
+  if (!runway || runway.userData.grounded) return 0;
+  const scale = home.size / 7.2, base = elevation(home.x, home.y);
+  let vertices = 0;
+  runway.traverse(mesh => {
+    if (!mesh.isMesh) return;
+    const geometry = mesh.geometry.clone(), positions = geometry.attributes.position;
+    for (let i = 0; i < positions.count; i++) {
+      const x = home.x + positions.getX(i) * scale, z = home.y + positions.getZ(i) * scale;
+      positions.setY(i, positions.getY(i) + (elevation(x, z) - base) / scale);
+    }
+    positions.needsUpdate = true; geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+    mesh.geometry = geometry; track(geometry); vertices += positions.count;
+  });
+  runway.userData.grounded = true; return vertices;
 }
 
 export function refineAircraftCanopy(model) {

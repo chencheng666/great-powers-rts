@@ -76,9 +76,9 @@ test('无专用起落架的飞机也在机场铺装上接地，队列离场后�
   const entity={type:'fighter',x:1000,y:1040,owner:0};
   const entry={scale:9,groundClearance:0};
   close(aircraftGroundHeight(game,entity,entry,1),airfieldSurfaceHeight(game,entity,1)+.2);
-  assert.ok(fixedWingHeight(game,entity,entry,1,95).height>8);
+  close(fixedWingHeight(game,entity,entry,1,95).height,airfieldSurfaceHeight(game,entity,1)+.2);
   for (const z of [2.1,3.25,3.7,4.2,7.05]) {
-    entity.y=home.y+z*home.size/7.2;close(airfieldSurfaceHeight(game,entity,1),1+home.size/7.2*.5);
+    entity.y=home.y+z*home.size/7.2;const height=airfieldSurfaceHeight(game,entity,1);assert.ok(height>1&&height<3,'铺装应贴近地面，不再抬高成悬浮平台');
   }
   game.aircraftGrounded=()=>false;entity.deployment={fromX:1000,fromY:1040};entity.x+=200;
   assert.equal(fixedWingHeight(game,entity,entry,1,95).height,95);
