@@ -26,7 +26,7 @@ build = re.search(r"BUILD_ID = '([^']+)'", (root / 'src/version.js').read_text()
 files = {str(p.relative_to(dist)): sha(p) for p in sorted(dist.rglob('*'))
          if p.is_file() and p.name != 'release.json' and 'downloads/packages/' not in str(p.relative_to(dist))}
 manifest = {'sourceCommit': commit, 'build': build, 'files': files,
-            'scope': '官网、网页与国内双人/六方服务；历史ZIP、桌面和商店安装包保留原版本'}
+            'scope': '官网、网页与国内双人/六方服务；ZIP按清单同步，桌面按实际发行版本提供，历史包和商店渠道分别保留'}
 (dist / 'release.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 paths = [root / 'package.json', root / 'package-lock.json', root / 'scripts/deploy-strategic-release.py', dist / 'release.json']
 for folder in ['src', 'server']:

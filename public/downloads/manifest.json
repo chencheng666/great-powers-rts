@@ -1,8 +1,78 @@
 {
-  "version": "3.0.0",
-  "releaseTag": "v3.0.0",
-  "createdAt": "2026-11-06T11:20:00+08:00",
+  "version": "3.6.2",
+  "releaseTag": "v3.6.2",
+  "createdAt": "2026-11-12T01:14:07.598Z",
   "files": [
+    {
+      "name": "packages/Great-Powers-RTS-v3.6.2.zip",
+      "label": "3.6.2 · 程序化战场 · 免安装离线单机 ZIP",
+      "size": 62441627,
+      "sha256": "6d97515d9d896b43160e26ff34e17fa23399501c7267dbc78ced9c1f4c82a39b",
+      "status": "贴地长跑道、三吊机集装箱码头、潜航轮廓及海陆空音效；完整解压后打开PLAY.html，升级前导出战局与荣誉。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.2/Great.Powers_3.6.2_aarch64.app.tar.gz",
+      "label": "3.6.2 · macOS Apple Silicon · Great.Powers_3.6.2_aarch64.app.tar.gz",
+      "size": 100724508,
+      "sha256": "487e4963633a7513dbb7e450a57e3ee168276d7aab9ce71a347258e4fdf0bd39",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.2/Great.Powers_3.6.2_aarch64.AppImage",
+      "label": "3.6.2 · Linux ARM64 · Great.Powers_3.6.2_aarch64.AppImage",
+      "size": 177216008,
+      "sha256": "c494dee6731db3c4653b6f16fde426c08aa8855df86315da116d726b3a998ccb",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.2/Great.Powers_3.6.2_aarch64.dmg",
+      "label": "3.6.2 · macOS Apple Silicon · Great.Powers_3.6.2_aarch64.dmg",
+      "size": 100847763,
+      "sha256": "fd2111c0f6eda60cda9de4b0a5d6af0e4af070dcc875805e668e36e2eba555e8",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.2/Great.Powers_3.6.2_amd64.AppImage",
+      "label": "3.6.2 · Linux x64 · Great.Powers_3.6.2_amd64.AppImage",
+      "size": 179042808,
+      "sha256": "918fb0e0183fff2d88217f941e073dba25825e3437ac54afb6ddd9162aeb5751",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.2/Great.Powers_3.6.2_amd64.deb",
+      "label": "3.6.2 · Linux x64 · Great.Powers_3.6.2_amd64.deb",
+      "size": 100672662,
+      "sha256": "6b513c36dfc8b0412c6a12697e6183ae4b714cf4daba755ed46a49c528895469",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.2/Great.Powers_3.6.2_arm64.deb",
+      "label": "3.6.2 · Linux ARM64 · Great.Powers_3.6.2_arm64.deb",
+      "size": 100721524,
+      "sha256": "4f51dcc06938197bbd85f937419374486bc413246bc5c3fe674cd3e3fdbe131c",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.2/Great.Powers_3.6.2_x64-setup.exe",
+      "label": "3.6.2 · Windows x64 · Great.Powers_3.6.2_x64-setup.exe",
+      "size": 318129198,
+      "sha256": "b0a117f7fab6de62e3fb8c2ca130aee845d93439168f4861526a197d7bac9fa3",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.2/Great.Powers_3.6.2_x64.app.tar.gz",
+      "label": "3.6.2 · macOS Intel · Great.Powers_3.6.2_x64.app.tar.gz",
+      "size": 101498380,
+      "sha256": "1bc52efa7752f92a9e1371512f496a485080991bb4948bc84e9eee735bc50e7d",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.2/Great.Powers_3.6.2_x64.dmg",
+      "label": "3.6.2 · macOS Intel · Great.Powers_3.6.2_x64.dmg",
+      "size": 101619125,
+      "sha256": "dbefc59c661efe5c54d583c653debab00e8d0804e900b3cfed648afe30e5def9",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
     {
       "name": "packages/Great-Powers-Starport-v3.0.1-TapTap-r4.zip",
       "label": "3.0.1 星港演习 r4 · 手机触屏优化 H5 ZIP",
@@ -515,17 +585,18 @@
       "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
     }
   ],
-  "webReleaseTag": "v3.0.0",
-  "updatedAt": "2026-11-06T11:16:00+08:00",
+  "webReleaseTag": "v3.6.2",
+  "updatedAt": "2026-11-12T01:14:07.598Z",
   "archiveTags": [
+    "v3.0.0",
     "v2.0.3",
     "v2.0.2",
     "v2.0.1",
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v3.0.0.zip",
-  "webBuild": "20261106-commanders-journey-r1",
+  "offlineFile": "packages/Great-Powers-RTS-v3.6.2.zip",
+  "webBuild": "20261112-procedural-facilities-r1",
   "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs",
   "starportFile": "packages/Great-Powers-Starport-v3.0.1-TapTap-r4.zip",
   "starportBuild": "20261109-scifi-mobile-r4"
