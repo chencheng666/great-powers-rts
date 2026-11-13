@@ -11,6 +11,69 @@
       "status": "分层装甲、收窄舰体、舰载机近景细节与索引合批；完整解压后打开PLAY.html，升级前导出战局与荣誉。"
     },
     {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.3/Great.Powers_3.6.3_x64-setup.exe",
+      "label": "3.6.3 · Windows x64 · Great.Powers_3.6.3_x64-setup.exe",
+      "size": 318369527,
+      "sha256": "c3eb6ca8450324136ce1baa8836647833bc1000cee0b0509fde754955015409d",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.3/Great.Powers_3.6.3_amd64.AppImage",
+      "label": "3.6.3 · Linux x64 · Great.Powers_3.6.3_amd64.AppImage",
+      "size": 179046904,
+      "sha256": "9b0a6e1f980ce3bc2eff22ce91d276775d86dde99511a84c2accd1077174c4dc",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.3/Great.Powers_3.6.3_amd64.deb",
+      "label": "3.6.3 · Linux x64 · Great.Powers_3.6.3_amd64.deb",
+      "size": 100663116,
+      "sha256": "fa47b1d92572753358186349a7a7cf6c69172a2b4177e3f2c8049e07ab3f3030",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.3/Great.Powers_3.6.3_aarch64.AppImage",
+      "label": "3.6.3 · Linux ARM64 · Great.Powers_3.6.3_aarch64.AppImage",
+      "size": 177203720,
+      "sha256": "94fb5761f3c4ae72e93cbf8ff59ba8df32af66946f7959f158ab30ac29256162",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.3/Great.Powers_3.6.3_arm64.deb",
+      "label": "3.6.3 · Linux ARM64 · Great.Powers_3.6.3_arm64.deb",
+      "size": 100716706,
+      "sha256": "3f503f193896d81e81694de370a784d8e12ecbef3cfffc9b4a17c0f9da53fd57",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.3/Great.Powers_3.6.3_x64.app.tar.gz",
+      "label": "3.6.3 · macOS Intel · Great.Powers_3.6.3_x64.app.tar.gz",
+      "size": 101500875,
+      "sha256": "9adf8349ba1f3b0cfe33c33d9eafd6bf16c876f07c48316681f03129d567b42e",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.3/Great.Powers_3.6.3_x64.dmg",
+      "label": "3.6.3 · macOS Intel · Great.Powers_3.6.3_x64.dmg",
+      "size": 101625141,
+      "sha256": "b1a0ce83ff92d1b9970928f493c5d14f9e7c358fe267ee163953737c48d733ae",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.3/Great.Powers_3.6.3_aarch64.app.tar.gz",
+      "label": "3.6.3 · macOS Apple Silicon · Great.Powers_3.6.3_aarch64.app.tar.gz",
+      "size": 100720392,
+      "sha256": "9e5c6ea4dc13ccaf3f40e5033475af2c2a52bee64481d49c562033b5b18b1526",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.6.3/Great.Powers_3.6.3_aarch64.dmg",
+      "label": "3.6.3 · macOS Apple Silicon · Great.Powers_3.6.3_aarch64.dmg",
+      "size": 100842034,
+      "sha256": "d71ab4d3eaf6625dd62b2a584920db9a748382ba3eec757bc8a4f802e6b23016",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v3.6.2.zip",
       "label": "3.6.2 · 程序化战场 · 免安装离线单机 ZIP",
       "size": 62441627,
