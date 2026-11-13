@@ -124,6 +124,20 @@ test('六类舰体采用连续贝塞尔曲面，航母换用专用轮廓甲板�
   assert.equal(replacedNavalPart('submarine', '流线型潜艇耐压艇体'), false);
 });
 
+test('程序舰体水线以下收窄、舷侧法线向外，顶盖保持向上且生成不依赖随机数',()=>{
+  const a=refineNavalHull(new THREE.Group(),'destroyer_china'),b=refineNavalHull(new THREE.Group(),'destroyer_china');
+  const hull=a.getObjectByName('连续曲面舰体'),shell=hull.children[0].geometry;
+  assert.deepEqual(shell.attributes.position.array,b.getObjectByName('连续曲面舰体').children[0].geometry.attributes.position.array);
+  const p=shell.attributes.position,n=shell.attributes.normal;let lower=0,upper=0,sideNormals=0,capNormals=0;
+  for(let i=0;i<p.count;i++){
+    if(p.getY(i)<-.3)lower=Math.max(lower,Math.abs(p.getZ(i)));
+    if(p.getY(i)>.85)upper=Math.max(upper,Math.abs(p.getZ(i)));
+    if(Math.abs(p.getZ(i))>1.7&&p.getY(i)<.8){assert.ok(n.getZ(i)*p.getZ(i)>0);sideNormals++;}
+    if(n.getY(i)>.99)capNormals++;
+  }
+  assert.ok(lower<upper*.65);assert.ok(sideNormals>0&&capNormals>0);
+});
+
 test('运输机宽体流线机身有体积，不放大翼展或其他武器模型', () => {
   const model = new THREE.Group(); model.name = 'freightPlane'; refineTransportBody(model);
   const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());

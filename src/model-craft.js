@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const surfaces = new Map();
 const noise = (x, y) => { const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return n - Math.floor(n); };
@@ -87,7 +87,10 @@ export function mergeParts(group) {
     group.remove(mesh); mesh.geometry.dispose();
   }
   for (const [material, geometries] of batches) {
-    const mesh = new THREE.Mesh(mergeGeometries(geometries, false), material); mesh.castShadow = mesh.receiveShadow = true; group.add(mesh);
+    const merged = mergeGeometries(geometries, false);
+    // 只有位置、法线和 UV 同时一致才共用顶点，保留硬边、贴图接缝与关节分组。
+    const indexed = mergeVertices(merged, 1e-5); merged.dispose();
+    const mesh = new THREE.Mesh(indexed, material); mesh.castShadow = mesh.receiveShadow = true; group.add(mesh);
     geometries.forEach(g => g.dispose());
   }
   return group;

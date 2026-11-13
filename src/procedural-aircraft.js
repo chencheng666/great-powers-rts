@@ -71,9 +71,16 @@ function airframe(name, detail, parked = false) {
       if(detail){
         for(let i=0;i<3;i++)panel([.33,.018,.025],[-.75-i*.57,.91-i*.055,side*.39]);
         panel([1.15,.022,.025],[-2.2,.73,side*1.4],dark,[0,side*-.55,0]);
+        // 翼面舵缝与喷口加强环只在近景生成，远景保留清楚的机型轮廓。
+        panel([.9,.018,.035],[-2.15,.66,side*2.25],dark,[0,side*-.25,0]);
+        panel([.045,.018,.5],[-1.48,.66,side*2.6],dark);
+        if(!single){
+          const ring=add(new THREE.TorusGeometry(.215,.025,4,12),paint,[-4.48,.5,side*.34],[0,Math.PI/2,0]);
+          ring.name='喷口加强环';
+        }
       }
     }
-    if(single){tube(.3,.72,[-4.2,.52,0],paint);tube(.25,.14,[-4.61,.52,0]);}
+    if(single){tube(.3,.72,[-4.2,.52,0],paint);tube(.25,.14,[-4.61,.52,0]);if(detail)add(new THREE.TorusGeometry(.28,.025,4,12),paint,[-4.49,.52,0],[0,Math.PI/2,0]);}
     const canopy=add(new THREE.SphereGeometry(.37,detail?24:12,detail?14:7),glass,[1.7,.93,0]);canopy.scale.set(electronic?2.3:1.7,.75,.82);
     if(electronic)panel([.07,.58,.05],[-1.5,1.1,0],paint,[0,0,-.18]);
     root.userData.jetExhausts=single?[[-4.69,.52,0,.28]]:[[-4.65,.5,-.34,.22],[-4.65,.5,.34,.22]];

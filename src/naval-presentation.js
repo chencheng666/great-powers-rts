@@ -55,6 +55,26 @@ export function hullOutline(stern, bow, width, inset = 0) {
   return s;
 }
 
+export function navalHullShell(stern, bow, width, bottom, top) {
+  const shape=hullOutline(stern,bow,width), outline=shape.getPoints(12);
+  outline.pop();
+  const count=outline.length, positions=[], uv=[], indices=[];
+  const center=(stern+bow)/2, length=bow-stern;
+  // 舷侧上缘、折角水线与收窄舰底分层放样，避免直上直下的挤出盒体。
+  const rings=[[top,1,1],[top-.09,1,1],[bottom+(top-bottom)*.32,.97,.88],[bottom,.9,.54]];
+  for(const[y,longitudinal,lateral]of rings)for(const p of outline){
+    const x=center+(p.x-center)*longitudinal,z=p.y*lateral;
+    positions.push(x,y,z);uv.push((x-stern)/length,(y-bottom)/(top-bottom));
+  }
+  for(let row=0;row<rings.length-1;row++)for(let i=0;i<count;i++){
+    const a=row*count+i,b=row*count+(i+1)%count,c=a+count,d=b+count;
+    indices.push(a,b,c,b,d,c);
+  }
+  const sides=new THREE.BufferGeometry();sides.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  sides.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));sides.setIndex(indices);sides.computeVertexNormals();
+  return sides;
+}
+
 export function refineNavalHull(model, name) {
   if(name==='landing')return refineLandingCraft(model);
   if (!HULLS[name] || model.userData.navalHullVersion) return model;
@@ -71,11 +91,17 @@ export function refineNavalHull(model, name) {
     g.rotateX(-Math.PI / 2); g.translate(0, low, 0);
     group.add(new THREE.Mesh(g, material));
   };
-  add(0, bottom, top, shell);
+  group.add(new THREE.Mesh(navalHullShell(stern,bow,width,bottom,top),shell));
+  // 顶盖单独保留平面法线，圆滑舷侧不会把甲板边缘抹成鼓包。
+  const cap=new THREE.ShapeGeometry(hullOutline(stern,bow,width),12);cap.rotateX(-Math.PI/2);cap.translate(0,top,0);
+  group.add(new THREE.Mesh(cap,shell));
+  const keel=new THREE.ShapeGeometry(hullOutline(stern,bow,width),12),center=(stern+bow)/2;
+  keel.rotateX(Math.PI/2);keel.translate(-center,0,0);keel.scale(.9,1,.54);keel.translate(center,bottom,0);
+  group.add(new THREE.Mesh(keel,shell));
   // 航母使用独立轮廓甲板，其他舰型沿用连续曲面主甲板。
   if (name !== 'carrier') add(.1, top, deck, plate);
   else model.add(createCarrierDeck());
-  model.add(mergeParts(group)); model.userData.navalHullVersion = 1; return model;
+  model.add(mergeParts(group)); model.userData.navalHullVersion = 2; return model;
 }
 
 export function refineLandingCraft(model) {

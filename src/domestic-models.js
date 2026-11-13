@@ -29,7 +29,7 @@ function tools(root) {
 }
 
 export function createChineseTank(weather = material => material) {
-  const root = new THREE.Group(); root.name = 'tank_china'; root.userData.domesticDetail = 3;
+  const root = new THREE.Group(); root.name = 'tank_china'; root.userData.domesticDetail = 4;
   const { mesh, box, beam, shell, group } = tools(root);
   const armor = weather(craftedMaterial('装甲钢', '#91a285', 'armor', .76, .24));
   const rubber = craftedMaterial('橡胶', '#20292a', 'rubber', .96, 0);
@@ -59,6 +59,13 @@ export function createChineseTank(weather = material => material) {
     beam(weapon,steel,[-1.4,2.55,side*.72],[-1.5,3.55,side*.72],.014);
   }
   for (let i=0;i<13;i++) box(body,rubber,[-2.7+i*.09,1.596,0],[.035,.018,1.75]);
+  // 大块分层装甲与维修盖板提供俯视识别，复用既有材质并合入车体。
+  for(const side of [-1,1]) {
+    for(let i=0;i<3;i++)box(body,armor,[1.05+i*.43,1.63-i*.075,side*.72],[.4,.09,1.12],[0,0,-.16]);
+    box(body,steel,[-1.4,1.603,side*.95],[.9,.025,.36]);
+    for(const x of [-1.72,-1.08])box(body,rubber,[x,1.622,side*.95],[.045,.018,.3]);
+    box(body,rubber,[2.52,1.41,side*1.13],[.12,.23,.36]);
+  }
   box(body,armor,[1.1,1.61,0],[.7,.1,.75]);
   box(body,glass,[1.3,1.68,0],[.12,.04,.23]);
   shell(weapon,armor,[[1.65,[[-1.8,-1.32],[1.8,-1.2],[2.0,0],[1.8,1.2],[-1.8,1.32]]],
@@ -69,6 +76,10 @@ export function createChineseTank(weather = material => material) {
     box(weapon,team,[-.7,2.27,side*1.25],[.7,.15,.02]);
     for(let i=0;i<5;i++) beam(weapon,rubber,[-.8+i*.16,2.31,side*1.22],[-.75+i*.16,2.53,side*1.43],.065);
     mesh(weapon,new THREE.CylinderGeometry(.29,.29,.07,16),armor,[-.6,2.68,side*.55]);
+    // 炮塔后部储物架和舱盖铰链随炮塔整体旋转，不增加动画节点。
+    box(weapon,rubber,[-1.68,2.26,side*.7],[.3,.48,.62]);
+    box(weapon,steel,[-1.86,2.27,side*.7],[.055,.32,.52]);
+    for(const z of [-.14,.14])box(weapon,steel,[-.84,2.724,side*.55+z],[.18,.045,.05]);
   }
   box(weapon,armor,[.15,2.78,-.49],[.39,.29,.32]); box(weapon,glass,[.35,2.8,-.49],[.012,.12,.25]);
   beam(weapon,steel,[-.7,2.73,.55],[-.7,3.05,.55],.045);

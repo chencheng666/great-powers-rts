@@ -35,7 +35,20 @@ test('人体截面法线向外，合批保留纹理且不混合同名的不同�
   assert.ok(loft.attributes.normal.getX(0)>.9);
   const group = new THREE.Group(), a = new THREE.MeshStandardMaterial({name:'同名',color:'red'}), b = new THREE.MeshStandardMaterial({name:'同名',color:'blue'});
   for (const material of [a,a,b]) group.add(new THREE.Mesh(new THREE.BoxGeometry(),material));
-  mergeParts(group); assert.equal(group.children.length,2); assert.equal(group.children[0].geometry.attributes.uv.count,72);
+  mergeParts(group); assert.equal(group.children.length,2); assert.equal(group.children[0].geometry.index.count,72);
+});
+
+test('程序合批通过索引减少缓冲，逐三角形保留硬边法线、UV和局部位置',()=>{
+  const root=new THREE.Group(),joint=new THREE.Group();joint.name='weapon';root.add(joint);
+  const material=new THREE.MeshStandardMaterial();
+  const source=new THREE.Mesh(new THREE.BoxGeometry(2,1,3),material);source.position.set(1,2,3);joint.add(source);
+  source.updateMatrix();const expected=source.geometry.toNonIndexed().applyMatrix4(source.matrix);
+  mergeParts(root);assert.equal(root.getObjectByName('weapon'),joint);
+  const actual=joint.children[0].geometry,expanded=actual.toNonIndexed();
+  for(const key of ['position','normal','uv'])assert.deepEqual(expanded.attributes[key].array,expected.attributes[key].array,key);
+  const bytes=g=>Object.values(g.attributes).reduce((sum,a)=>sum+a.array.byteLength,0)+(g.index?.array.byteLength??0);
+  assert.ok(bytes(actual)<bytes(expected)*.8);
+  assert.equal(actual.attributes.position.count,24,'立方体硬边不能错误焊为八个顶点');
 });
 
 test('装备工艺细节幂等、随原炮塔转动，独立履带后新增网格不超过九个且面数受控', () => {
