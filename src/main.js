@@ -1,3 +1,4 @@
+import { unitAllowedInRoster } from './unit-roster.js';
 import { CRUISE, cruiseAvailability } from './submarine-cruise.js';
 import { ensureBattleCanvas } from './battle-canvas.js';
 import { setupUnitPresentation } from './unit-presentation.js';
@@ -662,7 +663,7 @@ function updateSidebar(force = false) {
     }));
   } else if (state.tab === 'units') {
     root.innerHTML = PRODUCERS.map(producer => {
-      const types = UNIT_ORDER.filter(type => (type !== 'harvester' || g.economyMode === 'mining') && UNITS[type].producer === producer && (!UNITS[type].faction || UNITS[type].faction === p.faction) && (!UNITS[type].naval || g.map.water) && supportsMap(UNITS[type].map, g.mapId));
+      const types = UNIT_ORDER.filter(type => unitAllowedInRoster(type,g.map) && (type !== 'harvester' || g.economyMode === 'mining') && UNITS[type].producer === producer && (!UNITS[type].faction || UNITS[type].faction === p.faction) && (!UNITS[type].naval || g.map.water) && supportsMap(UNITS[type].map, g.mapId));
       if (!types.length) return '';
       const facilities = g.ownedBuildings(0, producer), count = facilities.reduce((sum,b) => sum + b.queue.length + (b.active ? 1 : 0),0);
       const producerName = lunarBuildingProfile(g.map.future, producer, BUILDINGS[producer]).name;
@@ -912,7 +913,7 @@ function returnToMenu() {
   $('#building-info').hidden = true; $('#attack-alert').hidden = true;$('#nuclear-alert').hidden=true; $('#audio-panel').hidden = true;
   $('#toast-container').replaceChildren(); $('#modal').classList.add('hidden'); state.modalMode = null;
   $('#start-screen').style.display = ''; $('#pause-btn').innerHTML = icon('pause');
-  $('#menu-music-toggle').setAttribute('aria-pressed', 'false'); $('#menu-music-toggle').textContent = '开启首页配乐 · 战争主题';
+  $('#menu-music-toggle').setAttribute('aria-pressed', 'false'); $('#menu-music-toggle').textContent = '开启首页配乐 · 山海进行曲';
   updateContinueControl(); refreshIcons();
   updateHonorOverview();
 }
@@ -1385,7 +1386,7 @@ function setupControls() {
   $('#menu-music-toggle').addEventListener('click', async () => {
     const button = $('#menu-music-toggle');
     if (gameAudio.scene === 'menu' && gameAudio.active) {
-      gameAudio.stopBattle(); button.setAttribute('aria-pressed', 'false'); button.textContent = '开启首页配乐 · 战争主题';
+      gameAudio.stopBattle(); button.setAttribute('aria-pressed', 'false'); button.textContent = '开启首页配乐 · 山海进行曲';
       return;
     }
     button.disabled = true;
@@ -1393,7 +1394,7 @@ function setupControls() {
     button.disabled = false;
     if (gameAudio.scene !== 'menu') return;
     button.setAttribute('aria-pressed', String(played === true));
-    button.textContent = played ? '暂停首页配乐 · 战争主题' : '首页配乐未能播放，点击重试';
+    button.textContent = played ? '暂停首页配乐 · 山海进行曲' : '首页配乐未能播放，点击重试';
   });
   $('#audio-music-track').addEventListener('change', playSelectedMusic);
   $('#audio-music-play').addEventListener('click', playSelectedMusic);
@@ -1475,7 +1476,7 @@ function setupControls() {
 function updateAudioControls() {
   const settings = gameAudio.settings;
   $('#audio-muted').checked = settings.muted;
-  $('#audio-music-track').value = settings.musicTrack || 'war-theme';
+  $('#audio-music-track').value = settings.musicTrack || 'mountain-sea';
   document.querySelectorAll('[data-audio]').forEach(slider => { slider.value = Math.round(settings[slider.dataset.audio] * 100); });
   document.querySelectorAll('[data-audio-value]').forEach(output => { output.value = `${Math.round(settings[output.dataset.audioValue] * 100)}%`; });
   $('#sound-btn').innerHTML = icon(settings.muted || !settings.master ? 'volume-x' : 'volume-2'); refreshIcons();

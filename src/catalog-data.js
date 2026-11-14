@@ -1,3 +1,4 @@
+import { unitAllowedInRoster } from './unit-roster.js';
 import { BUILDINGS, FACTIONS, MAPS, UNITS, supportsMap, supportsNuclearMap } from './data.js';
 import { equipmentModel, equipmentProfile } from './equipment.js';
 import { isLunarRobot, lunarBuildingProfile, ROBOT_ENERGY } from './lunar-robots.js';
@@ -77,6 +78,7 @@ const BUILDING_GUIDES = {
 const buildingName = (type, future) => lunarBuildingProfile(future, type, BUILDINGS[type]).name;
 export function catalogAvailability(kind, type, faction, mapId) {
   const map = MAPS[mapId], d = kind === 'unit' ? UNITS[type] : BUILDINGS[type];
+  if (kind==='unit'&&!unitAllowedInRoster(type,map))return {available:false,reason:'已移出原版现代编制，科幻演习保留'};
   if (d.nuclear && !supportsNuclearMap(mapId)) return { available: false, reason: '仅常规双人战区可选择开启核威慑规则' };
   if (d.faction && d.faction !== faction) return { available: false, reason: `仅 ${FACTIONS[d.faction].name} 可生产` };
   if(d.tags?.includes('swarm'))return {available:false,reason:'异构母机释放的临时子机，不可独立生产'};
@@ -137,12 +139,12 @@ export function catalogEntry(kind, type, faction = 'china', mapId = 'valley') {
     for (const [t, b] of Object.entries(BUILDINGS)) if (b.requires === type) add('building', t);
   }
   const model = equipmentModel(d.faction || faction, type, future && type !== 'dock');
-  return { id: `${kind}:${type}`, kind, type, category, name: profile.name, description: profile.description, classification: profile.category, source: profile.source, model, icon: d.icon, role: guide[0], stats, tactics, attention, service, related, availability: catalogAvailability(kind, type, faction, mapId), searchText: [profile.name, d.name, type, guide.join(' '), profile.description, profile.country, profile.category].join(' ').toLowerCase() };
+  return { id: `${kind}:${type}`, kind, type, category, name: profile.name, description: profile.description, classification: profile.category, source: profile.source, model, icon: d.icon, role: guide[0], stats, tactics, attention, service, related:related.filter(e=>e.kind!=='unit'||unitAllowedInRoster(e.type,MAPS[mapId])), availability: catalogAvailability(kind, type, faction, mapId), searchText: [profile.name, d.name, type, guide.join(' '), profile.description, profile.country, profile.category].join(' ').toLowerCase() };
 }
 
 export function catalogEntries({ faction = 'china', mapId = 'valley', category = 'all', query = '', currentOnly = false } = {}) {
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  return [...Object.keys(UNITS).map(t => catalogEntry('unit', t, faction, mapId)), ...Object.keys(BUILDINGS).map(t => catalogEntry('building', t, faction, mapId))].filter(e => e && (category === 'all' || e.category === category) && (!currentOnly || e.availability.available) && words.every(word => e.searchText.includes(word)));
+  return [...Object.keys(UNITS).map(t => catalogEntry('unit', t, faction, mapId)), ...Object.keys(BUILDINGS).map(t => catalogEntry('building', t, faction, mapId))].filter(e => e && (e.kind!=='unit'||unitAllowedInRoster(e.type,MAPS[mapId])) && (category === 'all' || e.category === category) && (!currentOnly || e.availability.available) && words.every(word => e.searchText.includes(word)));
 }
 
 export class CatalogSession {

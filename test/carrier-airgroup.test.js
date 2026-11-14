@@ -80,7 +80,7 @@ test('甲板滑行逐机排队，航母移动时暂停，存档恢复后继续�
 
 test('编入真实舰载机后航母自带攻击组停用；移动、断电和受击不允许免费着舰整备', () => {
   const g = setup(), carrier = g.addUnit(0, 'carrier', 1400, 1000), plane = g.addUnit(0, 'navalStrike', 1400, 1000), enemy = g.addUnit(1, 'patrol', 1700, 1000);
-  assert.equal(g.canAttack(carrier, enemy), true);
+  assert.equal(g.canAttack(carrier, enemy), false);
   carrier.lastMovedAt = g.time;plane.order={type:'board',targetId:carrier.id};g.boardTransport(plane,.05);
   assert.equal(plane.embarkedIn, null);
   g.time += 4; board(g, plane, carrier);
@@ -103,7 +103,7 @@ test('航母沉没后甲板飞机紧急撤离受损，空中飞机可改回机�
 test('舰载机遵守空地克制，飞弹实际飞行后命中，不是瞬间扣血', () => {
   const g = setup(), fighter = g.addUnit(0, 'navalFighter', 1400, 1000), strike = g.addUnit(0, 'navalStrike', 1400, 1200), enemyAir = g.addUnit(1, 'fighter', 1640, 1000), enemyShip = g.addUnit(1, 'patrol', 1640, 1200);
   g.fogs[0].visible.fill(true);
-  assert.equal(g.canAttack(fighter, enemyShip), true); assert.equal(g.canAttack(strike, enemyAir), true);
+  assert.equal(g.canAttack(fighter, enemyShip), false); assert.equal(g.canAttack(strike, enemyAir), true);
   assert.ok(g.unitDamage(fighter, enemyShip) < g.unitDamage(fighter, enemyAir));
   assert.ok(g.unitDamage(strike, enemyAir) < g.unitDamage(strike, enemyShip));
   assert.equal(g.canAttack(fighter, enemyAir), true); assert.equal(g.canAttack(strike, enemyShip), true);
@@ -189,7 +189,7 @@ if(c.passengers.length!==24)throw Error('未全部返舰:'+JSON.stringify(g.carr
 assert.equal(c.passengers.length,24);assert.equal(c.airGroupHold,true);
 });
 
-test('机场按正常队列生产两种舰载机，完成后进场、着舰并占用真实机位', () => {
+test('机场按正常队列生产两架制空舰载机，攻击机拒绝生产，完成后进场、着舰并占用真实机位', () => {
   const g = setup();
   g.addBuilding(0, 'airfield', 620, 600);
   g.addBuilding(0, 'lab', 550, 400);
@@ -198,7 +198,8 @@ test('机场按正常队列生产两种舰载机，完成后进场、着舰并�
   const carrier = g.addUnit(0, 'carrier', 1400, 1000);
   carrier.airGroupHold = true;
   assert.equal(g.queueUnit(0, 'navalFighter'), true);
-  assert.equal(g.queueUnit(0, 'navalStrike'), true);
+  assert.equal(g.queueUnit(0, 'navalStrike'), false);
+  assert.equal(g.queueUnit(0, 'navalFighter'), true);
   let sawArrival = false;
   for (let i = 0; i < 2100; i++) {
     g.update(.05);
@@ -210,7 +211,7 @@ test('机场按正常队列生产两种舰载机，完成后进场、着舰并�
   }
   assert.ok(sawArrival);
   const parked = carrier.passengers.map(id => g.getEntity(id));
-  assert.deepEqual(parked.map(plane => plane.type), ['navalFighter', 'navalStrike']);
+  assert.deepEqual(parked.map(plane => plane.type), ['navalFighter', 'navalFighter']);
   assert.equal(new Set(parked.map(plane => plane.carrierSlot)).size, 2);
   assert.match(carrierAirGroupLabel(g, carrier), /甲板 2/);
 });

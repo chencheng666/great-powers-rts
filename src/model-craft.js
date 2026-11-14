@@ -7,7 +7,7 @@ const noise = (x, y) => { const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
 
 export function surfaceMaps(kind = 'coating') {
   if (surfaces.has(kind)) return surfaces.get(kind);
-  const aircraft = kind === 'aircraft', armor = kind === 'armor', size = aircraft || armor ? 256 : 128, color = new Uint8Array(size * size * 4), normal = new Uint8Array(color.length), rough = new Uint8Array(color.length);
+  const aircraft = kind === 'aircraft', armor = kind === 'armor' || kind === 'armorCamo', size = aircraft || armor ? 256 : 128, color = new Uint8Array(size * size * 4), normal = new Uint8Array(color.length), rough = new Uint8Array(color.length);
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const i = (y * size + x) * 4, grain = noise(x, y), fabric = ['fabric','uniform'].includes(kind), rubber = kind === 'rubber';
     const weave = fabric ? ((x % 4 < 2) === (y % 4 < 2) ? 1 : -1) : 0;
@@ -36,6 +36,11 @@ export function surfaceMaps(kind = 'coating') {
       normal[i] = 128 + (grain - .5) * 20 + (chip ? 22 : 0);
       normal[i + 1] = 128 + (noise(x + 1, y) - .5) * 20 - streak * 8;
       rough[i] = rough[i + 1] = rough[i + 2] = chip ? 95 : 205 + grain * 29 - streak * 36;
+      if(kind==='armorCamo'){
+        const field=Math.sin(x*.045+Math.sin(y*.039)*1.9)+Math.cos(y*.051+x*.021)+noise(Math.floor(x/26),Math.floor(y/22))*.5;
+        const palette=field>.72?[.83,.87,.67]:field<-.55?[.39,.46,.35]:[.62,.7,.48];
+        color[i]*=palette[0];color[i+1]*=palette[1];color[i+2]*=palette[2];
+      }
     }
     if(kind==='deck'){
       const rib=((x+y)%16<2||(x-y+size)%16<2),seam=x%64<1||y%64<1;

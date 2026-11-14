@@ -120,3 +120,11 @@ Powered by Poly Haven
 修改：缩放到256像素，法线RG/粗糙度B/遮蔽A打包，草地调色、岩壁灰岩亮度归一；原始与派生文件摘要见 assets/third-party/polyhaven-terrain-20261111/来源与修改.json。
 本站托管四个派生WebP，共534646字节；运行时不访问Poly Haven API或第三方CDN，没有复制其API项目代码。
 新增连续山脊、风化岩体、同源海浪、实例烟团和尾烟、室外天空环境与早反射为本项目原创实现；参考用户附件的技术思路，不分发附件源码或素材。
+
+VSCO 2 Community Edition 选定管弦乐采样
+作者：Sam Gossner、Simon Dalzell；Elan Hickler / Soundemote 整理
+来源：https://github.com/sgossner/VSCO-2-CE
+固定提交：440300901dfe9275fd84e0b7763af1f8443ae62e
+许可：CC0 1.0 Universal，全文见assets/third-party/vsco2-selected/LICENSE
+修改：选用24段采样，WAV无损转FLAC（PCM逐样本一致）；项目原创乐谱驱动重采样、配器与混音，输出两首AAC配器。
+文件与原始/派生SHA256见assets/third-party/vsco2-selected/source.json。原采样仅用于构建，游戏分发合成混音。非真人乐团整曲实录。

@@ -4,7 +4,7 @@ import { Game } from '../src/game.js';
 import { UNITS, WORLD } from '../src/data.js';
 import { separateUnits, unitLayer, unitRadius } from '../src/unit-spacing.js';
 
-const modernTypes = ['loiterer', 'jammer', 'laser', 'rocket', 'apc', 'supply', 'destroyer', 'carrier', 'submarine'];
+const modernTypes = ['loiterer', 'jammer', 'rocket', 'apc', 'supply', 'destroyer', 'carrier', 'submarine'];
 const setup = (mapId = 'valley') => {
   const g = new Game('china', 'china', {}, { mapId, victoryMode: 'annihilation' });
   g.units = []; g.aiTimer = Infinity; g.aiWaveTimer = Infinity;
@@ -27,7 +27,7 @@ test('大型海图独立尺寸、资源、桥头、岸位与开局严格镜像�
   assert.equal(g.isGroundBlocked(1760, 1760), false);
 });
 
-test('九类新单位按同等设施、解锁、资金和独立生产线生产', () => {
+test('常规编制按同等设施、解锁、资金和独立生产线生产', () => {
   const g = setup('ocean'); g.updateUnit = () => {};
   for (const side of [0, 1]) {
     g.players[side].credits = 100000;

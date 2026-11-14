@@ -1,3 +1,4 @@
+import { unitAllowedInRoster, rosterSpawnType, migrateRetiredRoster } from './unit-roster.js';
 import { submarineCruise } from './submarine-cruise.js';
 import { canCrush, crushAlongMove } from './vehicle-crush.js';
 import { updateCarrierDefense } from './carrier-defense.js';
@@ -166,7 +167,9 @@ export class Game {
     game.orderMode = null; game.placingBuilding = false; game.noticeQueue = []; game.unitIndex = null;
     game.selected = game.selected.filter(id => game.getEntity(id)?.owner === 0 && !game.getEntity(id).embarkedIn);
     nextId = Math.max(nextId, ...[...game.units, ...game.buildings].map(entity => entity.id + 1));
+    const retired=migrateRetiredRoster(game);
     game.recalculatePower();
+    if(retired)game.events.notice?.(`旧战局已适配现代编制：${retired}项；保留单位编号和生命比例，取消的生产返还已付资金。`);
     return game;
   }
   get enemyFaction() { return FACTIONS[this.players[1].faction]; }
@@ -200,25 +203,25 @@ export class Game {
         ['rifle', 575, 630], ['rifle', 575, 680], ['rifle', 575, 730],
         ['tank', 605, 790]
       ]) {
-        const [ux, uy] = mirror(x, y); this.addUnit(side, type, ux, uy);
+        const [ux, uy] = mirror(x, y); this.spawnUnit(side, type, ux, uy);
       }
       if (this.map.combinedArms) {
         const harbor = this.map.harbors[side];
         const [engineerX, engineerY] = mirror(505, 540);
-        this.addUnit(side, 'engineer', engineerX, engineerY);
+        this.spawnUnit(side, 'engineer', engineerX, engineerY);
         this.addBuilding(side, 'dock', harbor.x, harbor.y);
         const patrol = this.findNavalSpawn(harbor);
-        if (patrol) this.addUnit(side, 'patrol', patrol.x, patrol.y);
+        if (patrol) this.spawnUnit(side, 'patrol', patrol.x, patrol.y);
       }
       if (['ocean', 'archipelago'].includes(this.mapId)) {
         const [x, y] = this.battlefieldScale!==1 ? [side?this.map.water.x2-120:this.map.water.x1+120,this.homeY] : mirror(1160, 720);
-        this.addUnit(side, 'patrol', x, y);
+        this.spawnUnit(side, 'patrol', x, y);
         this.players[side].credits += 800;
       }
     }
     if (this.beginnerSupport) {
       this.players[0].credits = 5000;
-      for (const [type,x,dy] of [['tank',680,-80],['aa',660,30],['supply',560,160],['engineer',500,-150],['rocket',530,230]]) this.addUnit(0,type,x,this.homeY+dy);
+      for (const [type,x,dy] of [['tank',680,-80],['aa',660,30],['supply',560,160],['engineer',500,-150],['rocket',530,230]]) this.spawnUnit(0,type,x,this.homeY+dy);
     }
     this.recalculatePower();
     this.events.notice?.(this.economyMode === 'mining' ? '月表基地已部署，采矿车开始就地取材。' : '战场已部署，外部后勤运输航线已建立。');
@@ -230,6 +233,10 @@ export class Game {
     this.buildings.push(building);
     this.recalculatePower();
     return building;
+  }
+
+  spawnUnit(owner, type, x, y, temporary = false) {
+    return this.addUnit(owner,rosterSpawnType(type,this.map),x,y,temporary);
   }
 
   addUnit(owner, type, x, y, temporary = false) {
@@ -398,7 +405,7 @@ export class Game {
     if(this.isControlLocked(side)||this.players[side]?.eliminated)return false;
     if(this.playerCount===6&&this.unitCapacityUsed(side)>=40)return false;
     const d = UNITS[type];
-    if (!d || FREIGHT_TYPES.includes(type) || type === 'harvester' && this.economyMode !== 'mining' || (d.naval && !this.map.water) || !supportsMap(d.map, this.mapId) || (d.faction && this.players[side].faction !== d.faction) || (d.requires && !this.hasBuilding(side, d.requires))) return false;
+    if (!d || !unitAllowedInRoster(type,this.map) || FREIGHT_TYPES.includes(type) || type === 'harvester' && this.economyMode !== 'mining' || (d.naval && !this.map.water) || !supportsMap(d.map, this.mapId) || (d.faction && this.players[side].faction !== d.faction) || (d.requires && !this.hasBuilding(side, d.requires))) return false;
     if (!d.producer || d.limit && this.ownedUnits(side,type).length + this.ownedBuildings(side).reduce((n,b)=>n+b.queue.filter(t=>t===type).length+Number(b.active?.type===type),0)>=d.limit) return false;
     const producer = this.ownedBuildings(side, d.producer).sort((a, b) => a.queue.length - b.queue.length)[0];
     if (!producer || producer.queue.length >= 5) return false;
@@ -537,7 +544,7 @@ export class Game {
       if (side === 0) this.events.notice?.('区域脉冲命中，敌方电子装备已瘫痪');
     } else if (faction === 'asia') {
       for (let i = 0; i < 5 && (this.playerCount!==6 || this.ownedUnits(side).length<40); i++) {
-        const u = this.addUnit(side, 'drone', clamp(x + random(-110, 110), 50, this.world.width - 50), clamp(y + random(-110, 110), 50, this.world.height - 50), true);
+        const u = this.spawnUnit(side, 'drone', clamp(x + random(-110, 110), 50, this.world.width - 50), clamp(y + random(-110, 110), 50, this.world.height - 50), true);
         u.order = { type: 'attackMove', ...(this.playerCount===6?this.enemyObjective(side):{x:side===0?this.world.width-205:205,y:this.homeY}) };
       }
       if (side === 0) this.events.notice?.('蜂群已抵达目标区域');
@@ -663,7 +670,7 @@ export class Game {
       if(this.time<(b.spawnRetryAt||0))return;
       const spawn = d.tags.includes('ship') ? this.findNavalSpawn(b, b.active.type) : this.findSpawn(exit.x, exit.y, b.active.type);
       if(!spawn){b.spawnRetryAt=this.time+.3;return;}
-      const unit = this.addUnit(b.owner, b.active.type, spawn.x, spawn.y);
+      const unit = this.spawnUnit(b.owner, b.active.type, spawn.x, spawn.y);
       battleMetric(this, b.owner, 'unitsProduced', 1);
       const goal = d.tags.includes('ship') ? this.navalGoal(spawn.x + exit.side * exit.distance, spawn.y, unitRadius(unit)) : this.findSpawn(spawn.x + (exit.forwardX??exit.side)*exit.distance,spawn.y+(exit.forwardY||0)*exit.distance,unit.type)||spawn;
       unit.deployment = { buildingId: b.id, start: this.time, until: this.time + 2.6, fromX: spawn.x, fromY: spawn.y, ...goal };
@@ -945,7 +952,7 @@ export class Game {
     if (!UNITS[type]?.damage) return false;
     if (type === 'abm') return false;
     if (bridgeBlocksDirectShot(this.map, source, target, UNITS)) return false;
-    if (type === 'carrier' && this.carrierAircraft(source).length) return false;
+    if (type === 'carrier' && (!this.map.future || this.carrierAircraft(source).length)) return false;
     const tags = target.kind === 'unit' ? UNITS[target.type].tags.filter(t => !this.aircraftGrounded(target) || !['air', 'jet', 'drone','rotorcraft'].includes(t)) : [];
     if (type === 'aa') return tags.includes('air');
     if (type === 'laser') return tags.includes('drone');
@@ -953,7 +960,7 @@ export class Game {
     if (['rocket', 'ballistic', 'helicopter', 'loiterer', 'carrier', 'bomber'].includes(type) && tags.includes('air')) return false;
     if (tags.includes('rotorcraft') && !UNITS[type].tags.includes('air') && !UNITS[type].tags.includes('anti-air')) return false;
     if (type === 'aegis') return tags.includes('air');
-    if (['fighter', 'navalFighter'].includes(type)) return true;
+    if (['fighter', 'navalFighter'].includes(type)) return this.map.future || tags.includes('air');
     if (type === 'railgun' && tags.includes('air')) return false;
     if (['strike', 'navalStrike'].includes(type)) return true;
     if (UNITS[type].tags.includes('ship')) {
@@ -1500,7 +1507,7 @@ export class Game {
       const escort = this.activeUnits(side).find(u => ['strike', 'bomber'].includes(u.type) && ['attack', 'attackMove'].includes(u.order?.type));
       if (escort) plane.order = { type: 'move', x: Math.min(this.world.width - 20, escort.x + 90), y: escort.y };
     }
-    const prioritizingFirstStrike = airfield && this.time >= this.difficulty.waveStart && !p.aiFirstStrikeProduced;
+    const prioritizingFirstStrike = unitAllowedInRoster('strike',this.map) && airfield && this.time >= this.difficulty.waveStart && !p.aiFirstStrikeProduced;
     const plan = ['power', 'radar', 'power', 'airfield', 'turret', 'lab', 'super', 'turret', 'power', ...(this.nuclearEnabled?['power','nuclearSilo']:[]),'factory', 'refinery'];
     if (this.map.water && !dock && !p.buildQueue && p.credits > 600 && this.canBuild(side, 'dock')) this.startBuild(side, 'dock');
     else if (!this.hasBuilding(side, 'armory') && !p.buildQueue && !prioritizingFirstStrike && this.time >= 18 && p.credits > 600 && this.canBuild(side, 'armory')) this.startBuild(side, 'armory');
@@ -1605,6 +1612,7 @@ export class Game {
   }
 
   queueAIUnit(type,side=1) {
+    type=rosterSpawnType(type,this.map);
     if (type === 'engineer') return this.queueUnit(side, type);
     const facilities = this.ownedBuildings(side, UNITS[type].producer);
     if (!facilities.some(b => b.queue.length + (b.active ? 1 : 0) < 2)) return false;

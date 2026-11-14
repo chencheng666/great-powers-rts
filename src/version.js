@@ -1,2 +1,2 @@
-export const GAME_VERSION = '3.6.3';
-export const BUILD_ID = '20261113-procedural-polish-r1';
+export const GAME_VERSION = '3.7.0';
+export const BUILD_ID = '20261114-orchestral-modern-r1';

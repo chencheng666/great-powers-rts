@@ -1,5 +1,5 @@
-export const PROTOCOL_VERSION = 6;
-export const SIX_PROTOCOL_VERSION = 7;
+export const PROTOCOL_VERSION = 7;
+export const SIX_PROTOCOL_VERSION = 8;
 export const COMBINED_MAP_CAPABILITY = 'combined-map-v1';
 export function roomCode(value) {
   const code = typeof value === 'string' ? value.normalize('NFKC').replace(/\s/g, '') : '';

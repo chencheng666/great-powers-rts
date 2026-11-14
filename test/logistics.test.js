@@ -121,10 +121,10 @@ test('新海空单位两方按正常队列生产，地图、科研与设施条�
   for (const side of [0, 1]) {
     assert.equal(g.queueUnit(side, 'bomber'), false);
     for (const type of ['radar', 'lab', 'airfield', 'power', 'power', 'power']) g.addBuilding(side, type, side ? 3000 : 600, 1500);
-    for (const type of ['landing', 'bomber', 'airlift']) assert.equal(g.queueUnit(side, type), true);
+    for (const type of ['landing', 'fighter', 'airlift']) assert.equal(g.queueUnit(side, type), true);
   }
   advance(g, 100);
-  for (const type of ['landing', 'bomber', 'airlift']) {
+  for (const type of ['landing', 'fighter', 'airlift']) {
     assert.equal(g.ownedUnits(0, type).length, 1); assert.equal(g.ownedUnits(1, type).length, 1);
     assert.equal(g.ownedUnits(0, type)[0].maxHp, g.ownedUnits(1, type)[0].maxHp);
     assert.ok(g.ownedUnits(0, type).every(u => Number.isFinite(u.x) && Number.isFinite(u.y)));
@@ -163,10 +163,10 @@ test('损坏存档中的负弹药、无限库存、重复乘员和假装载关�
   }
 });
 
-test('电脑按相同生产条件制造轰炸机与运输机，登陆行动装载和卸载真实单位', () => {
+test('电脑按相同生产条件制造制空机与运输机，登陆行动装载和卸载真实单位', () => {
   const g = setup(); g.time = 300; g.players[1].aiFirstStrikeProduced = true; g.players[1].aiPlanIndex = 11;
   for (const type of ['airfield', 'radar', 'lab', 'power', 'power', 'power']) g.addBuilding(1, type, 3000, 1500);
-  g.players[1].aiAirUnitCount = 2; g.updateAI(); assert.ok(g.ownedBuildings(1, 'airfield')[0].queue.includes('bomber'));
+  g.players[1].aiAirUnitCount = 2; g.updateAI(); assert.ok(g.ownedBuildings(1, 'airfield')[0].queue.includes('fighter'));
   g.ownedBuildings(1, 'airfield')[0].queue = []; g.players[1].aiAirUnitCount = 3; g.updateAI(); assert.ok(g.ownedBuildings(1, 'airfield')[0].queue.includes('airlift'));
   const ship = g.addUnit(1, 'landing', g.map.water.x2 - 74, g.homeY + 190), tank = g.addUnit(1, 'tank', g.map.water.x2 + 55, g.homeY + 190);
   g.updateAITransports(); assert.equal(tank.order.type, 'board'); g.boardTransport(tank, .05); assert.equal(g.transportLoad(ship), 4);

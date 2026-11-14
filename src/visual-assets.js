@@ -1,3 +1,4 @@
+import { createProceduralAirfield } from './procedural-facilities.js';
 import { createAirDefense, AIR_DEFENSE_FACTIONS } from './air-defense-models.js';
 import { createFactionElite } from './faction-models.js';
 import { loadAsset } from './asset-loading.js';
@@ -171,8 +172,9 @@ export async function prepareVisualAssets({ lunar = false } = {}) {
     for(const type of STRATEGIC_MODELS)models.set(type,createStrategicModel(type));
     models.set('nuclearSilo',createNuclearSilo());
     for(const type of ['cache','salvage','depot'])models.set(`resource_${type}`,createResourceModel(type));
-    models.set('dock', createHarbor(weatherMaterial, openAssets));
-    for (const type of COMMUNITY_3D_BUILDINGS.filter(type => type !== 'dock')) refineFacility(models.get(type), type, weatherMaterial);
+    models.set('dock', createHarbor(weatherMaterial, {...openAssets,crane:null}));
+    models.set('airfield',createProceduralAirfield());
+    for (const type of COMMUNITY_3D_BUILDINGS.filter(type => !['dock','airfield'].includes(type))) refineFacility(models.get(type), type, weatherMaterial);
     refineRadarStation(models.get('radar'));
     refineAirfieldRunway(models.get('airfield'));
     for (const name of ['fighter', 'strike', 'bomber', 'ewPlane', 'airlift', 'freightPlane', 'ghost']) refineAircraftCanopy(models.get(name));
@@ -189,7 +191,7 @@ export async function prepareVisualAssets({ lunar = false } = {}) {
     // 非必需的高精度开源模型和贴图在首帧之后加载；断网或损坏时保留原有模型。
     setTimeout(() => loadOpenAssets().then(assets => {
       installOpenModels(models, assets, weatherMaterial);
-      if (assets.crane) models.set('dock', createHarbor(weatherMaterial, assets));
+      if (assets.crane) models.set('dock', createHarbor(weatherMaterial, {...assets,crane:null}));
       if (assets.ground) { library.ground = assets.ground.map; library.groundSurface = assets.ground; }
       variants.clear();
     }).catch(() => {}), 2000);

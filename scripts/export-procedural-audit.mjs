@@ -1,3 +1,5 @@
+import { createProceduralAirfield } from '../src/procedural-facilities.js';
+import { createHarbor } from '../src/community-visuals.js';
 // 导出游戏实际生成的几何供 Blender 检查；验收文件只写入忽略目录。
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -6,7 +8,7 @@ import { PROCEDURAL_AIRCRAFT, createProceduralAircraft } from '../src/procedural
 import * as THREE from 'three';
 
 const folder=resolve(process.argv[2]??'qa/procedural-audit');await mkdir(folder,{recursive:true});
-const models=new Map([['tank_china',createChineseTank()],['destroyer_china',createChineseDestroyer()],...Object.keys(PROCEDURAL_AIRCRAFT).map(name=>[name,createProceduralAircraft(name)])]);
+const models=new Map([['airfield',createProceduralAirfield()],['dock',createHarbor()],['tank_china',createChineseTank()],['destroyer_china',createChineseDestroyer()],...Object.keys(PROCEDURAL_AIRCRAFT).map(name=>[name,createProceduralAircraft(name)])]);
 const report={};
 for(const[name,model]of models){
   const stats={meshes:0,triangles:0,vertices:0,bytes:0,visibleCalls:0,visibleTriangles:0};

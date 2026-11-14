@@ -119,3 +119,11 @@ Three.js、PathFinding.js、ws 使用 MIT 许可；heap.js 保留 PSF 许可文�
 - `src/rock-landforms.js`：原创连续风化岩体取代陆地旧岩块；Kenney倒木几何继续保留，历史岩块文件及许可证不删除。
 - `src/ocean-surface.js`：512像素、120ms节流的精细档平面反射；海浪与舰体同源。
 - `src/volumetric-smoke.js` / `src/ballistic-trails.js`：固定容量烟团/尾烟，无新增外部录音或特效素材。
+
+## 3.7.0 程序采样配乐与设施（2026-11-14）
+
+新增原创乐谱《山海进行曲》，116 BPM、56小节、约115.86秒。`scripts/generate-sampled-orchestra.py`使用VSCO 2 Community Edition的24段CC0管弦乐采样，合成探索、交战两套同步配器。采样来源为Sam Gossner与Simon Dalzell录制、Elan Hickler/Soundemote整理；固定上游提交、作者、原始文件摘要及FLAC派生摘要见`assets/third-party/vsco2-selected/source.json`，同目录保留CC0全文。WAV转FLAC经逐样本PCM比较一致，采样库只供离线生成，不进入游戏运行包。
+
+成品为`assets/audio/mountain-sea-calm.m4a`与`mountain-sea-battle.m4a`，约160kbps AAC有损分发；两曲解码帧数相同、无数字削波。音乐属于原创程序编曲与采样合成，不宣称真人乐团整曲实录。运行时以两条流式媒体交叉混合，暂停、音量、静音和语音避让仍走原总线。旧配乐与原许可保留，默认曲改为新配乐，用户明确选择的其他曲目不强制覆盖。
+
+机场、桁架门式港机、停机引导线、坦克迷彩均为原创规则生成。新港机不依赖开放吊机网格；既有模型及其许可继续保留。Blender仅用于独立检查同一份程序几何，不是玩家运行依赖。

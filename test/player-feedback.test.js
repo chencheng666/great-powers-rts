@@ -93,7 +93,7 @@ test('电子压制机有限周期短距压制防空，制空机及范围外防�
 test('无桥海图两岸完全隔离且镜像，双方可正常生产重型海军和运输单位，旧海图仍保留桥', () => {
   const g = setup('archipelago'); assert.equal(g.map.bridges.length, 0); assert.equal(g.isGroundBlocked(1760, 480), true); assert.equal(new Game('china', 'china', {}, { mapId: 'ocean' }).isGroundBlocked(1760, 480), false);
   for (const side of [0, 1]) { for (const type of ['radar', 'lab', 'airfield']) g.addBuilding(side, type, side ? 2800 : 720, 1300);
-    for (const type of ['landing', 'destroyer', 'carrier', 'submarine', 'navalFighter', 'navalStrike', 'ewPlane']) assert.equal(g.queueUnit(side, type), true, type);
+    for (const type of ['landing', 'destroyer', 'carrier', 'submarine', 'navalFighter', 'ewPlane']) assert.equal(g.queueUnit(side, type), true, type);
   }
   assert.equal(g.players[0].credits, g.players[1].credits); assert.equal(g.toSave().config.mapId, 'archipelago');
 });

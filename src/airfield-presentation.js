@@ -83,8 +83,10 @@ export function refineAirfieldRunway(model) {
   part(apron, [14.4, .05, 1.1], [0, .035, 3.7]);
   part(apron, [9.4, .05, 5.6], [0, .035, -1.7]);
   for (const x of [-5.625, 0, 5.625]) for (const z of [7.05, 12.4]) {
-    part(yellow, [2.7, .008, .06], [x, .068, z], Math.PI / 4);
-    part(yellow, [.06, .008, 2.7], [x, .068, z], Math.PI / 4);
+    const angle=Math.PI/4,c=Math.cos(angle),sn=Math.sin(angle);
+    const mark=(lx,lz,size)=>part(yellow,size,[x+lx*c-lz*sn,.068,z+lx*sn+lz*c],-angle);
+    for(const side of [-1,1])mark(0,side*.95,[2.8,.008,.045]);
+    mark(.95,0,[.045,.008,1.9]);mark(-.6,0,[1.9,.008,.045]);
   }
   for (const z of [1.04, 3.16]) part(white, [24.4, .008, .045], [0, .068, z]);
   for (let x = -10.8; x <= 10.8; x += 1.35) part(white, [.65, .008, .07], [x, .069, 2.1]);

@@ -55,6 +55,14 @@ def read_model(name):
                 multiply = nodes.new('ShaderNodeMixRGB'); multiply.blend_type = 'MULTIPLY'
                 multiply.inputs[0].default_value = 1; multiply.inputs[2].default_value = color
                 links.new(tex.outputs['Color'], multiply.inputs[1]); links.new(multiply.outputs[0], shader.inputs['Base Color'])
+            if spec.get('vertexColors'):
+                vertex = nodes.new('ShaderNodeVertexColor'); vertex.layer_name = 'Color'
+                multiply = nodes.new('ShaderNodeMixRGB'); multiply.blend_type = 'MULTIPLY'; multiply.inputs[0].default_value = 1
+                target = shader.inputs['Base Color']
+                if target.is_linked:
+                    old = target.links[0].from_socket; links.remove(target.links[0]); links.new(old, multiply.inputs[1])
+                else: multiply.inputs[1].default_value = color
+                links.new(vertex.outputs['Color'], multiply.inputs[2]); links.new(multiply.outputs[0], target)
             if spec.get('normalMap'):
                 tex = nodes.new('ShaderNodeTexImage'); tex.image = texture(spec['normalMap'])
                 normal = nodes.new('ShaderNodeNormalMap'); normal.inputs['Strength'].default_value = spec.get('normalScale', [.22])[0]
@@ -82,6 +90,9 @@ def read_model(name):
         if 'uv' in attrs:
             uv = attrs['uv']['array']; layer = mesh.uv_layers.new(name='UVMap')
             for loop in mesh.loops: layer.data[loop.index].uv = uv[loop.vertex_index * 2:loop.vertex_index * 2 + 2]
+        if 'color' in attrs:
+            values = attrs['color']['array']; colors = mesh.color_attributes.new(name='Color', type='FLOAT_COLOR', domain='CORNER')
+            for loop in mesh.loops: colors.data[loop.index].color = tuple(values[loop.vertex_index * 3:loop.vertex_index * 3 + 3]) + (1,)
         if 'normal' in attrs:
             normals = attrs['normal']['array']; mesh.normals_split_custom_set_from_vertices([normals[i:i + 3] for i in range(0, len(normals), 3)])
             for face in mesh.polygons: face.use_smooth = True
@@ -113,7 +124,8 @@ def read_model(name):
     return root
 
 
-roots = [read_model(name) for name in ['tank_china', 'destroyer_china', 'navalFighter_china']]
+model_names=sys.argv[sys.argv.index('--')+2:] or ['tank_china', 'destroyer_china', 'navalFighter_china']
+roots = [read_model(name) for name in model_names]
 scene = bpy.context.scene
 # 检查实际可用引擎，旧版本没有该枚举时保留默认引擎。
 try:

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BUILDINGS, FACTIONS, MAPS, UNITS } from '../src/data.js';
 import { catalogEntries, catalogEntry, catalogAvailability, CatalogSession, CATALOG_CATEGORIES } from '../src/catalog-data.js';
+import { unitAllowedInRoster } from '../src/unit-roster.js';
 import { Game } from '../src/game.js';
 import { productionDuration } from '../src/battlefield-details.js';
 import { equipmentModel, equipmentProfile } from '../src/equipment.js';
@@ -9,8 +10,9 @@ import * as THREE from 'three';
 import { modelFitDistance } from '../src/catalog-preview.js';
 
 test('图鉴覆盖全部单位与设施，五阵营七战区均有完整且不重复的资料', () => {
-  const count = Object.keys(UNITS).length + Object.keys(BUILDINGS).length;
+
   for (const faction of Object.keys(FACTIONS)) for (const mapId of Object.keys(MAPS)) {
+    const count=Object.keys(UNITS).filter(type=>unitAllowedInRoster(type,MAPS[mapId])).length+Object.keys(BUILDINGS).length;
     const entries = catalogEntries({ faction, mapId });
     assert.equal(entries.length, count);
     assert.equal(new Set(entries.map(e => e.id)).size, count);
@@ -39,7 +41,7 @@ test('图鉴造价、生命与满电生产时间使用实际游戏规则，不�
 test('图鉴按阵营、海域及月表条件筛选，仍能查看不可生产的资料', () => {
   assert.equal(catalogAvailability('unit', 'ghost', 'china', 'valley').available, false);
   assert.equal(catalogAvailability('unit', 'ghost', 'middleeast', 'valley').available, true);
-  for (const mapId of ['ocean', 'archipelago']) for (const type of ['carrier','destroyer','submarine','landing','navalFighter','navalStrike']) {
+  for (const mapId of ['ocean', 'archipelago']) for (const type of ['carrier','destroyer','submarine','landing','navalFighter']) {
     assert.equal(catalogAvailability('unit', type, 'china', mapId).available, true);
   }
   assert.equal(catalogAvailability('unit', 'carrier', 'china', 'strait').available, false);

@@ -37,7 +37,7 @@ test('现代飞机与直升机按有限角速度转向，固定翼不会抵达�
 });
 
 test('机鼻前方才能发射战机导弹，不能朝机尾开火，垂直落弹与地面炮塔不受限', () => {
-  const g=setup(),u=g.addUnit(0,'fighter',1000,900),enemy=g.addUnit(1,'tank',900,900);u.angle=0;u.fireTimer=0;
+  const g=setup(),u=g.addUnit(0,'fighter',1000,900),enemy=g.addUnit(1,'fighter',900,900);u.angle=0;u.fireTimer=0;
   tick(g,u);assert.equal(g.projectiles.length,0);
   u.angle=Math.PI;tick(g,u);assert.equal(g.projectiles.length,1);
   assert.equal(aircraftCanFire({...u,type:'bomber'},enemy),true);
@@ -101,7 +101,8 @@ test('间谍定时破坏有爆炸事件及音效，存活或摧毁建筑都只�
 
 test('战机前向射界仍可持续多轮攻击，目标落在机后时先拉开再转回，不绕切线圆而永久停火', () => {
   for(const type of ['fighter','strike'])for(const explicit of [false,true]){
-    const g=setup(),u=g.addUnit(0,type,800,1000),target=g.addBuilding(1,'factory',1200,1000);
+    const g=setup(),u=g.addUnit(0,type,800,1000),target=type==='fighter'?g.addUnit(1,'fighter',1200,1000):g.addBuilding(1,'factory',1200,1000);
+    if(type==='fighter'){target.order=null;target.stunUntil=1e9;}
     u.angle=0;u.fireTimer=0;u.order=explicit?{type:'attack',targetId:target.id,x:target.x,y:target.y}:null;
     for(let i=0;i<2400 && u.ammo>0;i++){
       const before={x:u.x,y:u.y};tick(g,u);assert.ok(Math.hypot(u.x-before.x,u.y-before.y)>5,type+' 攻击期间不能悬停');

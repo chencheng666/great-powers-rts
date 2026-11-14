@@ -61,7 +61,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: '大国崛起 v__VERSION__ 程序化战场'
-          releaseBody: '程序化分层装甲、收窄舰体、舰载机舵缝与喷口细节；索引合批减少几何缓冲，保留炮塔、炮口与履带动画。官网 https://www.daguojueqi.site/ 。升级前导出战局与荣誉，网页与桌面按实际构建版本核验；商店审核及目标系统实测另行说明。'
+          releaseBody: '程序化机场、桁架码头与装甲迷彩；原创管弦乐采样合成配乐随战况变化。现代编制移除概念战车和对地固定翼，旧档自动适配并退还取消生产实付款，科幻演习保留。官网 https://www.daguojueqi.site/ 。升级前导出战局与荣誉，网页与桌面按实际构建版本核验；商店审核及目标系统实测另行说明。'
           # 复用同标签公开发行，避免已有网页包时额外生成同标签草稿。
           releaseDraft: false
           prerelease: false

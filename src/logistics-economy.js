@@ -44,7 +44,7 @@ export const logisticsEconomy = {
     const home = this.freightDestination(side, sea);
     if (!home) return null;
     const entry = this.freightEntry(side, sea), type = sea ? 'containerShip' : 'freightPlane';
-    const u = this.addUnit(side, type, entry.x, entry.y);
+    const u = this.spawnUnit(side, type, entry.x, entry.y);
     u.freight = { homeId: home.id, phase: 'inbound', progress: 0, entry,
       value: home.type === 'hq' ? 180 : SUPPLY_ROUTES[sea ? 'sea' : 'air'].value };
     if (control) {

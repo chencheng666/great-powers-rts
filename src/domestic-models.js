@@ -31,7 +31,7 @@ function tools(root) {
 export function createChineseTank(weather = material => material) {
   const root = new THREE.Group(); root.name = 'tank_china'; root.userData.domesticDetail = 4;
   const { mesh, box, beam, shell, group } = tools(root);
-  const armor = weather(craftedMaterial('装甲钢', '#91a285', 'armor', .76, .24));
+  const armor = weather(craftedMaterial('装甲钢', '#d0d5c2', 'armorCamo', .76, .24));
   const rubber = craftedMaterial('橡胶', '#20292a', 'rubber', .96, 0);
   const steel = craftedMaterial('机加工金属', '#788386', 'coating', .5, .65);
   const glass = new THREE.MeshStandardMaterial({ name:'观瞄镀膜', color:'#476c79', roughness:.15, metalness:.55 });

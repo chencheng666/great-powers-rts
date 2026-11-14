@@ -56,9 +56,9 @@ test('五阵营特色模型有独立轮廓、有限面数和有效关节，图�
   assert.equal(signatures.size, 5);
 });
 
-test('新表现保留五阵营生产、数值、存档和特色克制规则', () => {
+test('科幻战区的新表现保留五阵营数值、存档和特色单位', () => {
   for (const faction of Object.keys(FACTIONS)) {
-    const game = new Game(faction, 'china', {}, { mapId: 'valley' });
+    const game = new Game(faction, 'china', {}, { mapId: 'meridian' });
     const unit = game.addUnit(0, 'elite', 300, 300), before = JSON.stringify(unit);
     for (const mode of ['readable', 'reference']) groundPresentationFactor(unit, UNITS.elite.tags, .5, mode);
     assert.equal(JSON.stringify(unit), before);

@@ -48,7 +48,7 @@ test('旧存档不凭空获得巡航弹，新增弹药与火箭排程拒绝非�
 });
 
 test('新配乐默认迁移一次，音量静音保留，之后允许用户选择旧曲',()=>{
- const first=normalizeAudioSettings({musicTrack:'iron-tide',master:.3,music:.25,muted:true});assert.equal(first.musicTrack,'war-theme');assert.equal(first.master,.3);assert.equal(first.music,.25);assert.equal(first.muted,true);
+ const first=normalizeAudioSettings({musicTrack:'iron-tide',master:.3,music:.25,muted:true});assert.equal(first.musicTrack,'iron-tide');assert.equal(first.master,.3);assert.equal(first.music,.25);assert.equal(first.muted,true);
  const chosen=normalizeAudioSettings({...first,musicTrack:'internationale'});assert.equal(chosen.musicTrack,'internationale');
  assert.equal(normalizeAudioSettings({...first,musicTrack:'final-battle'}).musicTrack,'final-battle');
 });

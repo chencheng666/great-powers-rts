@@ -39,7 +39,7 @@ export function fictionText(text) {
   return String(text).replaceAll('great-powers-', 'great-powers-scifi-')
     .replace(/\b(china|russia|nato|asia|middleeast)\b/g, id => FACTION_IDS[id])
     .replaceAll('核威慑', '未开放规则').replaceAll('核武器', '未开放设施').replaceAll('核弹', '未开放装置')
-    .replaceAll('国际歌', '星港启航').replaceAll('钢铁洪流', '星港启航').replaceAll('东风浩荡', '群星航迹')
+    .replaceAll('国际歌', '星港启航').replaceAll('钢铁洪流', '星港启航').replaceAll('山海进行曲', '星港启航').replaceAll('东风浩荡', '群星航迹')
     .replaceAll('现代即时战略', '科幻即时战术').replaceAll('现实原型', '原创科幻').replaceAll('国别', '工程组');
 }
 

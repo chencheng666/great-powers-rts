@@ -1,3 +1,4 @@
+import { AdaptiveBattleMusic, battleMusicIntensity } from './adaptive-music.js';
 import { SoundEffects } from './sound-effects.js';
 import { MovementSounds, soundPosition } from './battle-sound.js';
 import { COMMAND_LINES, normalizeAudioSettings, speechOptions, VOICE_COOLDOWN, VOICE_LINES, VOICE_PRIORITY, voiceFile } from './audio-data.js';
@@ -5,7 +6,7 @@ import { NuclearAlarm, nuclearAlarmAudible, terminalNuclearWarning } from './nuc
 
 const assets = import.meta.glob(['../assets/audio/*.m4a','!../assets/audio/frontline-sequence.m4a'], { eager: true, query: '?url', import: 'default' });
 const portableVoices = import.meta.glob('../assets/audio/portable/*.wav', { eager: true, query: '?url', import: 'default' });
-const musicFiles = new Set(['internationale.m4a', 'iron-tide.m4a', 'east-wind.m4a', 'war-theme.m4a', 'final-battle.m4a']);
+const musicFiles = new Set(['internationale.m4a', 'iron-tide.m4a', 'east-wind.m4a', 'war-theme.m4a', 'final-battle.m4a','mountain-sea-calm.m4a','mountain-sea-battle.m4a']);
 const SETTINGS_KEY = 'great-powers-audio-v1';
 
 export class GameAudio {
@@ -76,7 +77,15 @@ export class GameAudio {
 
   async startMusic() {
     const session = this.session, request = ++this.musicRequest;
-    const track = this.scene === 'menu' ? 'war-theme' : this.settings.musicTrack || 'war-theme';
+    const track = this.scene === 'menu' ? 'mountain-sea' : this.settings.musicTrack || 'mountain-sea';
+    if(track==='mountain-sea'&&assets['../assets/audio/mountain-sea-calm.m4a']&&assets['../assets/audio/mountain-sea-battle.m4a']){
+      const urls=['calm','battle'].map(mode=>assets[`../assets/audio/mountain-sea-${mode}.m4a`]);
+      if(urls.some(url=>!url))return false;
+      const music=new AdaptiveBattleMusic(this.context,this.musicBus,urls);
+      if(!await music.play()){music.stop();music.disconnect();return false;}
+      if(!this.active||session!==this.session||request!==this.musicRequest){music.stop();music.disconnect();return null;}
+      const old=this.music;this.music=music;old?.stop();old?.disconnect();this.applySettings();return true;
+    }
     const url = assets[`../assets/audio/${track}.m4a`]; if (!url) return false;
     // 完整曲目使用浏览器流式解码，开局不再等待整首配乐下载和展开。
     const audio = new Audio(url); audio.loop = true; audio.preload = 'none';
@@ -253,6 +262,7 @@ export class GameAudio {
 
   syncBattle(game, listener, dt) {
     this.listener = listener;
+    if(this.music instanceof AdaptiveBattleMusic)this.music.update(battleMusicIntensity(game));
     if(this.reverbMap!==game.map){this.soundEffects?.reverb?.setTerrain(game.map);this.reverbMap=game.map;}
     if (!this.active || this.paused || !game.running || this.settings.muted || !this.settings.master || !this.settings.effects) {
       this.soundEffects?.syncMovement([]); this.movement.reset(); return;

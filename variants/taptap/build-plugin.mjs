@@ -39,6 +39,7 @@ const plugin = {
       }`);
     }
     if (id.endsWith('/game.js')) text = text.replace("? options.mapId : 'valley'", "? options.mapId : 'meridian'");
+    if (id.endsWith('/audio.js')||id.endsWith('/audio-data.js')||id.endsWith('/main.js'))text=text.replaceAll("'mountain-sea'","'iron-tide'");
     if (id.endsWith('/audio.js')) text = text.replace(/const assets = import\.meta\.glob\([^;]+;/, "const assets = import.meta.glob(['../assets/audio/iron-tide.m4a','../assets/audio/east-wind.m4a'], { eager: true, query: '?url', import: 'default' });").replace(/const portableVoices = import\.meta\.glob\([^;]+;/, 'const portableVoices = {};').replaceAll("'internationale'", "'iron-tide'");
     if (id.endsWith('/tutorial-ui.js')) text = text.replaceAll("'valleyTraining'", "'meridian'");
     if (id.endsWith('/version.js')) text = text.replace(/BUILD_ID = '[^']+'/, `BUILD_ID = '${SCIFI_BUILD}'`).replace(/GAME_VERSION = '[^']+'/, `GAME_VERSION = '${SCIFI_VERSION}'`);
@@ -51,7 +52,7 @@ const plugin = {
       .replace(/<title>[\s\S]*?<\/title>/, `<title>${SCIFI_TITLE}</title>`)
       .replace(/<video\b[\s\S]*?<\/video>/g, '<div class="scifi-backdrop" aria-hidden="true"></div>')
       .replace(/(<select[^>]*id="map-select"[^>]*>)[\s\S]*?<\/select>/, '$1<option value="meridian">子午星港 · 基地与信标</option><option value="moonsea">月海晶矿区 · 采集与电网</option></select>')
-      .replace(/<option value="internationale">[^<]*<\/option>/g, '')
+      .replace(/<option value="(?:internationale|mountain-sea|war-theme|final-battle)">[^<]*<\/option>/g, '')
       .replace(/大国崛起 3\.[01] \/ [^<]+/, `星港演习 ${SCIFI_VERSION} · 触屏指挥`)
       .replaceAll('建设基地，调配海陆空力量，开启你的征途。', '建设月表基地，调度无人机甲，在虚构星港完成战术演习。')
       .replace(/<blockquote class="peace-motto">[\s\S]*?<\/blockquote>/, '<p class="scifi-privacy">纯虚构的月表机体演习。经营电网与晶矿，协同调度机器人，守住星港信标。</p>')

@@ -108,7 +108,7 @@ export const challengeCombat = {
     if(d.dock)this.addBuilding(0,'dock',d.dock.x,d.dock.y);
     if(d.docks)for(const point of d.docks)this.addBuilding(0,'dock',point.x,point.y);
     let target;
-    for (const [type,x,y] of d.force) { const u = this.addUnit(0,type,x,y); if (type === d.targetType && !target) target = u; }
+    for (const [type,x,y] of d.force) { const u = this.spawnUnit(0,type,x,y); if (type === d.targetType && !target) target = u; }
     if (d.targetType === 'radar') target = this.addBuilding(0,'radar',d.objective.x,d.objective.y);
     if (d.targetType === 'hq') target = this.ownedBuildings(0, 'hq')[0];
     if(d.cargo)for(const type of d.cargo){
@@ -159,7 +159,7 @@ export const challengeCombat = {
     while (this.challenge.wave < d.waves.length && this.time >= d.waves[this.challenge.wave].at) {
       const index = this.challenge.wave++, wave = d.waves[index];
       wave.units.forEach((type,i) => {
-        const u=this.addUnit(1,type,wave.x+(i%3)*55,wave.y+Math.floor(i/3)*60);
+        const u=this.spawnUnit(1,type,wave.x+(i%3)*55,wave.y+Math.floor(i/3)*60);
         if(supportsDroneAutonomy(u))u.autoDrone=false;
         u.order=wave.patrol?{type:'patrol',x:wave.patrol.x+(i%3)*55,y:wave.patrol.y+Math.floor(i/3)*60,originX:u.x,originY:u.y,destinationX:wave.patrol.x+(i%3)*55,destinationY:wave.patrol.y+Math.floor(i/3)*60}:{type:'attackMove',x:wave.goal?.x??target.x,y:wave.goal?.y??target.y};
       });

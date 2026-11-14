@@ -17,7 +17,7 @@ test('建筑贴图从地表前缘向上展开，保留原投影位置且不会�
 });
 
 test('音量设置防止越界与无效数值，静音是独立开关', () => {
-  assert.deepEqual(normalizeAudioSettings({master:9,music:-1,voice:NaN,effects:'错误',muted:true}), {master:1,music:0,voice:.95,effects:.5,muted:true,musicTrack:'war-theme',musicRevision:2});
+  assert.deepEqual(normalizeAudioSettings({master:9,music:-1,voice:NaN,effects:'错误',muted:true}), {master:1,music:0,voice:.95,effects:.5,muted:true,musicTrack:'mountain-sea',musicRevision:3});
   assert.equal(normalizeAudioSettings().music,.35);
   assert.equal(normalizeAudioSettings({muted:false}).muted,false);
 });

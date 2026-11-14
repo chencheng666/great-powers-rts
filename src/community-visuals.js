@@ -126,10 +126,15 @@ export function createHarbor(weather = material => material, assets = {}) {
   Object.assign(materials.dark,surfaceMaps('rubber'));
   Object.assign(materials.panel, surfaceMaps('coating'));
   const box = (size, position, kind) => add(new THREE.BoxGeometry(...size), position, kind);
+  const girder = (from,to,width=.1,kind='steel') => {
+    const a=new THREE.Vector3(...from),b=new THREE.Vector3(...to),center=a.clone().add(b).multiplyScalar(.5);
+    const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());
+    const g=new THREE.BoxGeometry(width,a.distanceTo(b),width);g.applyMatrix4(new THREE.Matrix4().compose(center,rotation,new THREE.Vector3(1,1,1)));add(g,[0,0,0],kind);
+  };
   box([7.2, .35, 8], [0, .2, 0], 'concrete');
   box([2.6, 1.7, 4], [-1.65, 1.2, 0], 'panel');
-  box([2.85, .16, 4.3], [-1.65, 2.13, 0], 'roof');
-  for (let x = -2.9; x < -.3; x += .3) box([.035, .045, 4.1], [x, 2.24, 0], 'steel');
+  for(const side of [-1,1])add(new THREE.BoxGeometry(1.55,.12,4.3).rotateZ(-side*.22),[-1.65+side*.72,2.35,0],'roof');
+  for (let x = -2.9; x < -.3; x += .3) box([.035, .045, 4.1], [x, 2.58-Math.abs(x+1.65)*.22, 0], 'steel');
   for (const z of [-1.6, 1.6]) {
     box([.7, .2, .65], [-1.6, 2.34, z], 'steel');
     for (let x = -1.85; x < -1.3; x += .09) box([.035, .035, .55], [x, 2.46, z], 'dark');
@@ -167,10 +172,23 @@ export function createHarbor(weather = material => material, assets = {}) {
       continue;
     }
     for (const x of [8.9, 11.1]) box([.2, 4.7, .2], [x, 3.1, z], 'steel');
-    box([5.1, .3, .4], [10.2, 5.5, z], 'amber');
-    box([.04, 2.2, .04], [12.25, 4.3, z], 'dark');
-    box([1.6, .14, 1.1], [12.25, 3.2, z], 'steel');
-    box([.55, .8, .75], [9.15, 5.1, z], 'glass');
+    // 四腿门架、双轨悬臂、斜撑与双吊索组成完整港机，所有静态结构按材质合批。
+    for(const x of [8.9,11.1])for(const side of [-1,1]){
+      box([.18,4.5,.18],[x,3.0,z+side*1.1],'amber');
+      box([.48,.24,.72],[x,.88,z+side*1.1],'dark');
+      girder([x,1.1,z+side*1.1],[x,5.18,z-side*1.1],.095);
+    }
+    for(const side of [-1,1]){
+      box([7.4,.18,.14],[10.5,5.6,z+side*.35],'amber');
+      box([7.4,.12,.12],[10.5,6.12,z+side*.35],'steel');
+      for(let x=7;x<14;x+=.8)girder([x,5.7,z+side*.35],[x+.8,6.1,z+side*.35],.065);
+      girder([8.9,5.6,z+side*.35],[9.6,7.1,z],.08);
+      girder([9.6,7.1,z],[14.1,6.1,z+side*.35],.055);
+      box([.028,2.25,.028],[13,4.4,z+side*.32],'dark');
+    }
+    box([1.8,.14,1.1],[13,3.23,z],'amber');
+    box([.65,.7,.85],[10.9,5.12,z],'glass');
+    for(const side of [-1,1])box([.08,.025,22],[10+side*.8,.735,0],'steel');
   }
   let containers = 0;
   for (const z of [-8.7, -5.3, -1.9, 1.9, 5.3, 8.7]) for (const x of [2.4, 4.1, 5.8]) for (let layer = 0; layer < (x === 4.1 ? 2 : 1); layer++) {
@@ -186,7 +204,7 @@ export function createHarbor(weather = material => material, assets = {}) {
     mesh.castShadow = mesh.receiveShadow = true; group.add(mesh);
     geometries.forEach(geometry => geometry.dispose());
   }
-  group.userData.harborLayout = { cranes: 3, containers };
+  group.userData.harborLayout = { cranes: 3, containers, procedural: !assets.crane, trussGantry: true };
   return group;
 }
 

@@ -36,7 +36,7 @@ export const BUILDINGS = {
   armory: { name: '兵工厂', cost: 780, time: 25, hp: 760, power: -25, size: 82, icon: 'warehouse', desc: '生产防空、无人机、电子战、远程火力与阵营装备，独立生产队列。', requires: 'factory' },
   dock: { name: '海军港口', cost: 850, time: 27, hp: 800, power: -25, size: 92, icon: 'anchor', desc: '生产舰艇、接收集装箱物资；有电且脱战后维修舰艇和潜艇、补弹及补充舰载机。', requires: 'factory', naval: true },
   radar: { name: '雷达站', cost: 550, time: 22, hp: 580, power: -30, size: 68, icon: 'radar', desc: '扩大视野并解锁防空、特色单位。', requires: 'factory' },
-  airfield: { name: '空军基地', cost: 980, time: 31, hp: 760, power: -45, size: 128, icon: 'plane', desc: '生产制空与对地战机；有电时可补充弹药。', requires: 'radar' },
+  airfield: { name: '空军基地', cost: 980, time: 31, hp: 760, power: -45, size: 128, icon: 'plane', desc: '生产制空、运输和电子支援飞机；原版移除对地固定翼，有电时可补充弹药。', requires: 'radar' },
   turret: { name: '防御炮塔', cost: 440, time: 16, hp: 600, power: -20, size: 56, icon: 'crosshair', desc: '自动攻击地面目标；高空战机需要防空车拦截。', requires: 'barracks' },
   lab: { name: '作战实验室', cost: 950, time: 33, hp: 680, power: -45, size: 70, icon: 'flask-conical', desc: '解锁阵营特色单位和终极技能。', requires: 'radar' },
   super: { name: '战略武器站', cost: 1200, time: 38, hp: 700, power: -70, size: 74, icon: 'orbit', desc: '蓄能后释放阵营终极技能；另有网络战：120 秒充能、500 资金，预警 12 秒后干扰敌方新指令 4 秒。摧毁源站或断电可解除。', requires: 'lab' }
@@ -50,7 +50,7 @@ export const UNITS = {
   drone: { name: '攻击无人机', cost: 260, time: 13, hp: 130, speed: 116, range: 180, damage: 20, cooldown: 0.85, sight: 330, icon: 'scan', producer: 'armory', tags: ['drone', 'air'], desc: '自主基地警戒、任务结束返航，低血低弹提前整备；手动移动与停止优先。对装甲额外伤害，兵工厂或机场付费补给。' },
   ghost: { name: '隐形侦察无人机', cost: 340, time: 18, hp: 85, speed: 124, range: 0, damage: 0, cooldown: 1, sight: 450, icon: 'eye-off', producer: 'armory', requires: 'radar', faction: 'middleeast', tags: ['drone', 'air', 'scout', 'stealth'], desc: '新月专属；深入敌后提供视野，接近侦察兵、防空车或雷达信标会暴露。' },
   aa: { name: '防空车', cost: 360, time: 17, hp: 230, speed: 72, range: 250, damage: 22, cooldown: 0.8, sight: 320, icon: 'radar', producer: 'armory', requires: 'radar', tags: ['vehicle', 'anti-air'], desc: '防空与弹药拦截，不能对地；需要装甲或步兵护卫。' },
-  fighter: { name: '制空战机', cost: 620, time: 24, hp: 215, speed: 210, range: 275, damage: 37, cooldown: 0.85, sight: 470, ammo: 9, rearmTime: 8, icon: 'plane', producer: 'airfield', tags: ['air', 'jet', 'anti-air'], desc: '优先制空；可对地对舰，但伤害仅基础的35%；各任务共用有限弹药，返场整备。' },
+  fighter: { name: '制空战机', cost: 620, time: 24, hp: 215, speed: 210, range: 275, damage: 37, cooldown: 0.85, sight: 470, ammo: 9, rearmTime: 8, icon: 'plane', producer: 'airfield', tags: ['air', 'jet', 'anti-air'], desc: '原版仅制空与护航，不攻击地面、舰艇或停机目标；有限弹药，返场整备。' },
   strike: { name: '对地攻击机', cost: 760, time: 29, hp: 235, speed: 170, range: 245, damage: 62, cooldown: 1.55, sight: 420, ammo: 3, rearmTime: 10, icon: 'plane-takeoff', producer: 'airfield', tags: ['air', 'jet', 'bomber'], desc: '优先对地对舰；具备基础伤害35%的空战自卫能力，各任务共用有限弹药，返场整备。' },
   patrol: { name: '近海巡逻艇', cost: 380, time: 18, hp: 270, speed: 110, range: 235, damage: 26, cooldown: 0.9, sight: 355, sonar: 150, icon: 'ship', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-sub'], desc: '高速夺取海面优势，舰炮对水面，声呐发现潜艇后发射反潜鱼雷；对建筑伤害较低。' },
   frigate: { name: '防空护卫舰', cost: 760, time: 29, hp: 470, speed: 72, range: 335, damage: 38, cooldown: 1.55, sight: 435, sonar: 230, icon: 'sailboat', producer: 'dock', naval: true, tags: ['ship', 'naval', 'anti-air', 'anti-sub'], desc: '区域防空与反潜护航；舰炮对水面、鱼雷对潜艇，可拦截巡飞弹和舰载机。' },
@@ -70,7 +70,7 @@ export const UNITS = {
 Object.assign(UNITS, {
   evacuee: { name: '待撤离人员', cost: 0, time: 1, hp: 120, speed: 60, range: 0, damage: 0, cooldown: 1, sight: 100, icon: 'user-round', tags: ['infantry', 'civilian'], desc: '归航行动保护目标；在集合点等待登陆舰自动接运，不能作为作战部队下达指令。' },
   ewPlane: { name: '电子压制机', cost: 1350, time: 43, hp: 185, speed: 168, range: 230, damage: 0, cooldown: 1, sight: 410, producer: 'airfield', requires: 'lab', tags: ['air', 'jet', 'support'], icon: 'radio-tower', desc: '原创概念：每 10 秒在 230 范围内压制敌方防空 2.5 秒；自身无武装，制空机与范围外防空可反制。' },
-  navalFighter: { ...UNITS.fighter, name: '舰载制空机', cost: 760, time: 29, hp: 225, ammo: 8, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'anti-air', 'deck'], desc: '优先制空，兼顾35%基础伤害对地；机场完工后优先转场至有空位的本方航母，停航着舰、付费维修补弹。' },
+  navalFighter: { ...UNITS.fighter, name: '舰载制空机', cost: 760, time: 29, hp: 225, ammo: 8, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'anti-air', 'deck'], desc: '原版仅制空与舰队护航，不再对地攻击；机场完工后优先转场至有空位的本方航母，停航着舰、付费维修补弹。' },
   navalStrike: { ...UNITS.strike, name: '舰载攻击机', cost: 880, time: 33, hp: 245, ammo: 4, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'bomber', 'deck'], desc: '通用游戏舰载型，对地与对舰；机场完工后优先转场着舰，每舰最多24架真实机体、6架同时出动，与自带攻击编组互斥。' },
   freightPlane: { name: '后勤运输机', cost: 0, time: 1, hp: 290, speed: 160, range: 0, damage: 0, cooldown: 1, sight: 90, icon: 'package', tags: ['air', 'jet', 'logistics'], desc: '外部援助航班，按固定航线自动运抵后勤中心；无武装，可被防空和战机拦截，不受战斗指令控制。' },
   containerShip: { name: '集装箱补给船', cost: 0, time: 1, hp: 620, speed: 92, range: 0, damage: 0, cooldown: 1, sight: 240, icon: 'container', tags: ['ship', 'naval', 'logistics'], desc: '沿海运路线自动回港卸货；近距观察避让水面舰艇，无反潜探测。无武装，需要护航，不可载兵或刷补给资金。' },
@@ -102,7 +102,7 @@ export const supportsModernMap = mapId => !!MAPS[mapId] && !MAPS[mapId].future &
 export const supportsNuclearMap = mapId => supportsModernMap(mapId) && MAPS[mapId].maxPlayers !== 6;
 export const supportsMap = (required, mapId) => !required || required === mapId || required === 'modern' && supportsModernMap(mapId) || required === 'ocean' && (['archipelago','islandwatch'].includes(mapId)||MAPS[mapId]?.naval) || required === 'meridian' && mapId === 'moonsea' || required === 'strategic' && (mapId === 'sentinel' || MAPS[mapId]?.combinedArms);
 UNITS.carrier.capacity = CARRIER_CAPACITY;
-UNITS.carrier.desc = '可编入24架自行生产的舰载机，最多6架同时出动；固定机位停放，逐机起降、付费整备，可一键召回。真实机体与自带打击编组互斥，需反潜护卫。';
+UNITS.carrier.desc = '可编入24架自行生产的舰载制空机，最多6架同时出动；固定机位停放，逐机起降、付费整备，可一键召回。原版移除抽象对地打击编组，保留近程自卫，需反潜护卫。';
 
 export const ORE_LAYOUT = [
   [330, 510, 2100, 'gold'], [330, 930, 2100, 'gold'],

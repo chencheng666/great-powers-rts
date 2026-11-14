@@ -19,7 +19,7 @@ export function initTheater(game,definition) {
   const facilities=definition.facilities.map(n=>{const b=game.addBuilding(n.owner,n.type,n.x,n.y);b.hp=b.maxHp*n.health;return b.id;});
   game.challenge.operation={version:1,facilities,phase:0,hold:0,value:0,mined:0,energy:180,reinforced:false,produced:facilities.map(()=>0),evacuation:[]};
   if(definition.operation==='evacuation')for(let i=0;i<4;i++){
-    const ids=Array.from({length:3},(_,j)=>game.addUnit(0,'evacuee',2240-(i%2)*55,1840+Math.floor(i/2)*70+j*16).id);
+    const ids=Array.from({length:3},(_,j)=>game.spawnUnit(0,'evacuee',2240-(i%2)*55,1840+Math.floor(i/2)*70+j*16).id);
     game.challenge.operation.evacuation.push({ids,status:'waiting',shipId:null,progress:0});
   }
   game.recalculatePower();
@@ -126,7 +126,7 @@ export function updateTheater(game,dt) {
   const d=theaterDefinition(game),s=game.challenge?.operation;if(!d?.operation||!s)return null;
   const nodes=theaterFacilities(game),network=theaterNetwork(game),target=game.getEntity(game.challenge.targetId);
   if(d.reinforcement&&!s.reinforced&&game.time>=d.reinforcement.at){
-    s.reinforced=true;d.reinforcement.units.forEach((type,i)=>game.addUnit(0,type,d.reinforcement.x+i*55,d.reinforcement.y));
+    s.reinforced=true;d.reinforcement.units.forEach((type,i)=>game.spawnUnit(0,type,d.reinforcement.x+i*55,d.reinforcement.y));
     recordBattleEvent(game,{kind:'theaterReinforced',owner:0,type:game.challenge.id,value:d.reinforcement.units.length});
     game.events.notice?.('最后一批预定增援已抵达后方。');
   }
@@ -134,7 +134,7 @@ export function updateTheater(game,dt) {
   if(d.operation==='island-support'){
     if(usable(game,nodes[0])&&network.powered&&!s.produced[0]){
       s.produced[0]=1;
-      const home=nodes[0].entity;game.addUnit(0,'fighter',home.x,home.y);
+      const home=nodes[0].entity;game.spawnUnit(0,'fighter',home.x,home.y);
       recordBattleEvent(game,{kind:'theaterReinforced',owner:0,type:'islandwatch',value:1});
       game.events.notice?.('北岛机场已恢复，一架战斗机加入编队；机场可持续维修补弹。');
     }

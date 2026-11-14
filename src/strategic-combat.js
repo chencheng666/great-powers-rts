@@ -35,7 +35,7 @@ export const strategicCombat = {
       const children=this.units.filter(c=>c.hp>0&&c.swarmParentId===u.id).length;
       if(target && children<=3 && this.unitCapacityUsed(u.owner)+3<=120) {
         for(const [i,type] of ['swarmScout','swarmDecoy','drone'].entries()) {
-          const child=this.addUnit(u.owner,type,Math.max(20,Math.min(this.world.width-20,u.x-36+i*36)),Math.max(20,Math.min(this.world.height-20,u.y+55)),true);
+          const child=this.spawnUnit(u.owner,type,Math.max(20,Math.min(this.world.width-20,u.x-36+i*36)),Math.max(20,Math.min(this.world.height-20,u.y+55)),true);
           child.temporaryUntil=this.time+24;child.swarmParentId=u.id;
           child.order={type:'attackMove',x:target.x,y:target.y};
         }

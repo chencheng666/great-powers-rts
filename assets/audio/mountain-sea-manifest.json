@@ -1,0 +1,29 @@
+{
+  "title": "山海进行曲",
+  "originalScore": true,
+  "sampledPerformance": true,
+  "liveOrchestraRecording": false,
+  "source": "https://github.com/sgossner/VSCO-2-CE",
+  "license": "CC0-1.0",
+  "samples": 24,
+  "tracks": [
+    {
+      "mode": "calm",
+      "seconds": 115.86206896551725,
+      "decodedFrames": 5109517,
+      "peak": 0.8825640678405762,
+      "rms": 0.1324125484774382,
+      "bytes": 2167915,
+      "sha256": "ff803125c05bbd5c466e8d9a8886f4429bb13cf8c4ebf31ba1b46f493111945d"
+    },
+    {
+      "mode": "battle",
+      "seconds": 115.86206896551725,
+      "decodedFrames": 5109517,
+      "peak": 0.8670030236244202,
+      "rms": 0.12961617780924947,
+      "bytes": 2148082,
+      "sha256": "3dc074e267c74191f355721897f423a62f0e138f53328a4014afafe5df8449cb"
+    }
+  ]
+}

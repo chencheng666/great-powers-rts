@@ -205,7 +205,7 @@ test('舰艇有明确的海岸射界、制空短板和对舰克制', () => {
   assert.equal(game.canAttack(frigate, hostileJet), true);
   assert.equal(game.canAttack(patrol, dock), true);
   assert.equal(game.canAttack(patrol, hq), false);
-  assert.equal(game.canAttack(fighter, hostileShip), true);
+  assert.equal(game.canAttack(fighter, hostileShip), false);
   assert.equal(game.canAttack(strike, hostileShip), true);
   assert.equal(game.canAttack(tank, hostileShip), true);
   assert.equal(game.hasLineOfFire(tank, hostileShip), true);
@@ -584,23 +584,10 @@ test('空军基地在雷达后解锁，双方按相同规则生产战机', () =>
   assert.ok(CORE_BUILDINGS.includes('airfield'));
 });
 
-test('AI 优先完成首架攻击机，再继续扩建基地', () => {
-  const game = new Game('china', 'russia', {}, { difficulty: 'standard' });
-  game.addBuilding(1, 'radar', 1540, 890);
-  game.addBuilding(1, 'airfield', 1490, 680);
-  game.time = game.difficulty.waveStart;
-  game.players[1].aiPlanIndex = 4;
-  game.players[1].credits = 2000;
-  game.updateAI();
-  assert.equal(game.players[1].buildQueue, null);
-  assert.equal(game.ownedBuildings(1, 'airfield')[0].active?.type || game.ownedBuildings(1, 'airfield')[0].queue[0], 'strike');
-  game.addUnit(1, 'strike', 1450, 680);
-  game.updateAI();
-  assert.equal(game.players[1].buildQueue?.type, 'armory');
-  game.players[1].buildQueue = null;
-  game.addBuilding(1, 'armory', 1550, 500);
-  game.updateAI();
-  assert.equal(game.players[1].buildQueue?.type, 'turret');
+test('现代AI不再为已移除的攻击机冻结科技扩建，继续生产制空机', () => {
+ const game=new Game('china','russia',{}, {difficulty:'standard'});game.addBuilding(1,'radar',1540,890);game.addBuilding(1,'airfield',1490,680);game.time=game.difficulty.waveStart;game.players[1].aiPlanIndex=4;game.players[1].credits=2000;game.updateAI();
+ assert.equal(game.players[1].buildQueue?.type,'armory');assert.equal(game.ownedBuildings(1,'airfield')[0].queue[0],'fighter');
+ assert.equal(game.queueUnit(1,'strike'),false);
 });
 
 test('战车工厂与兵工厂分工明确，缺少兵工厂时不能借用战车工厂', () => {
@@ -680,7 +667,7 @@ test('高空战机跨越建筑，制空、对地和防空形成明确克制', ()
   assert.equal(game.canAttack(chinaElite, enemyJet), true);
   assert.equal(game.canAttack(fighter, enemyJet), true);
   assert.equal(game.canAttack(fighter, enemyDrone), true);
-  assert.equal(game.canAttack(fighter, enemyTank), true);
+  assert.equal(game.canAttack(fighter, enemyTank), false);
   assert.equal(game.canAttack(strike, enemyJet), true);
   assert.equal(game.canAttack(strike, enemyDrone), true);
   assert.ok(game.unitDamage(fighter, enemyTank) < game.unitDamage(fighter, enemyJet));
