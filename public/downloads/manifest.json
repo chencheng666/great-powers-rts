@@ -11,6 +11,69 @@
       "status": "程序化拱形机场、桁架码头、原创采样管弦配乐；原版现代编制移除概念战车和对地固定翼，科幻演习保留。升级前导出战局和荣誉。"
     },
     {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.0/Great.Powers_3.7.0_aarch64.app.tar.gz",
+      "label": "3.7.0 · macOS Apple Silicon · Great.Powers_3.7.0_aarch64.app.tar.gz",
+      "size": 104952497,
+      "sha256": "7309a92ba9b51bd806c90f45664212bc5ada1ad8bbb4265bf5633f032d5eeec4",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.0/Great.Powers_3.7.0_aarch64.AppImage",
+      "label": "3.7.0 · Linux ARM64 · Great.Powers_3.7.0_aarch64.AppImage",
+      "size": 181426696,
+      "sha256": "59759c90e586956995195e9b78e84ad4ba371d79cada0cde04e570a14e1aba04",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.0/Great.Powers_3.7.0_aarch64.dmg",
+      "label": "3.7.0 · macOS Apple Silicon · Great.Powers_3.7.0_aarch64.dmg",
+      "size": 105073530,
+      "sha256": "7d0ec65b461032365a06550bfa96d4e309d03aea77fc8f8ec0ee6bce6ffddf52",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.0/Great.Powers_3.7.0_amd64.AppImage",
+      "label": "3.7.0 · Linux x64 · Great.Powers_3.7.0_amd64.AppImage",
+      "size": 183273976,
+      "sha256": "befab36c03babd47412d1b21e584028476127ead07f2384757cdbffc3ed78b7e",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.0/Great.Powers_3.7.0_amd64.deb",
+      "label": "3.7.0 · Linux x64 · Great.Powers_3.7.0_amd64.deb",
+      "size": 104888292,
+      "sha256": "1bb615cf0cc6b5de2bdd5b73b73923709a0ff847931448df36b38b59dab280df",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.0/Great.Powers_3.7.0_arm64.deb",
+      "label": "3.7.0 · Linux ARM64 · Great.Powers_3.7.0_arm64.deb",
+      "size": 104943322,
+      "sha256": "9b43853cd3da12e9b8846f2f1063ad6a77484f9218957f7ad72f5f5d7d967e21",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.0/Great.Powers_3.7.0_x64-setup.exe",
+      "label": "3.7.0 · Windows x64 · Great.Powers_3.7.0_x64-setup.exe",
+      "size": 322511196,
+      "sha256": "de3e9a4b9ed52b435ea2ac5568c5fb8e6fe2393943f0a52882243096c309c887",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.0/Great.Powers_3.7.0_x64.app.tar.gz",
+      "label": "3.7.0 · macOS Intel · Great.Powers_3.7.0_x64.app.tar.gz",
+      "size": 105758662,
+      "sha256": "54aa4f8c8b87fe760bac26cfb8f7a1982ed7049560d6a8c7a82648da5f8c3ecb",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.0/Great.Powers_3.7.0_x64.dmg",
+      "label": "3.7.0 · macOS Intel · Great.Powers_3.7.0_x64.dmg",
+      "size": 105881924,
+      "sha256": "c265ce319980264dbb8ec64f509633b37a709f6c75b0702a298326f0ff04bfc3",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v3.6.3.zip",
       "label": "3.6.3 · 程序化模型 · 免安装离线单机 ZIP",
       "size": 62443781,
@@ -663,7 +726,7 @@
     }
   ],
   "webReleaseTag": "v3.7.0",
-  "updatedAt": "2026-11-12T01:14:07.598Z",
+  "updatedAt": "2026-11-14T05:28:29.253571+00:00",
   "archiveTags": [
     "v3.6.3",
     "v3.6.2",
