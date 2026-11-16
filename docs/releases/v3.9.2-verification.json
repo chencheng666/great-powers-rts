@@ -122,7 +122,7 @@
     "status": "新单机启用独立动力与弹药、实际耗油、预警返场、加油机和补给舰，电脑适配；旧存档保留原规则。"
   },
   "旧存档": "缺少fuelVersion的旧档保持原规则，旧地图、科幻与联机规则不变。",
-  "正式发布": "官网与上海双服务已发布并验收，九件桌面包CI构建通过，最终下载清单正在同步。",
+  "正式发布": "官网与上海双服务已发布并验收；九件桌面包全部构建通过，153件下载清单已在官网回读。",
   "正式站实测": {
     "开局": {
       "version": "大国崛起 3.9.2 | 雪岭入海",
@@ -261,5 +261,42 @@
     "总数": 153,
     "新增桌面包": 9,
     "新增离线包": 1
-  }
+  },
+  "最终清单回读": {
+    "version": "3.9.2",
+    "webBuild": "20261116-fuel-r1",
+    "downloads": 153,
+    "desktop": 9,
+    "sourceCommit": "07e0ad1b390f7e54abca24368ac822dee2d16fb7",
+    "catalogCommit": "dee6be57beaca3d717ad7c9de23a65ff08bbeacd",
+    "options": [
+      {
+        "label": "全部平台",
+        "value": "all"
+      },
+      {
+        "label": "免安装离线单机",
+        "value": "offline"
+      },
+      {
+        "label": "uTools 插件应用",
+        "value": "utools"
+      },
+      {
+        "label": "Windows",
+        "value": "windows"
+      },
+      {
+        "label": "macOS",
+        "value": "macos"
+      },
+      {
+        "label": "Linux / 麒麟 / UOS",
+        "value": "linux"
+      }
+    ],
+    "errors": []
+  },
+  "代码提交": "07e0ad1b390f7e54abca24368ac822dee2d16fb7",
+  "清单提交": "dee6be57beaca3d717ad7c9de23a65ff08bbeacd"
 }
