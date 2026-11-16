@@ -1,8 +1,15 @@
 {
-  "version": "3.7.0",
-  "releaseTag": "v3.7.0",
+  "version": "3.7.1",
+  "releaseTag": "v3.7.1",
   "createdAt": "2026-11-14T05:00:53.017653+00:00",
   "files": [
+    {
+      "name": "packages/Great-Powers-RTS-v3.7.1.zip",
+      "label": "3.7.1 · 树木光照与海面视野修复 · 免安装离线单机 ZIP",
+      "size": 66731258,
+      "sha256": "f832f565ca9ba292c5786984d79e20d27c3442b80ecfda92f745a73d6a868505",
+      "status": "树冠与远景树木补上散射光，海上迷雾高于波峰；主画面与小地图共用视野遮罩，不改作战规则。升级前导出战局与荣誉。"
+    },
     {
       "name": "packages/Great-Powers-RTS-v3.7.0.zip",
       "label": "3.7.0 · 管弦配乐与现代编制 · 免安装离线单机 ZIP",
@@ -725,9 +732,10 @@
       "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
     }
   ],
-  "webReleaseTag": "v3.7.0",
-  "updatedAt": "2026-11-14T05:28:29.253571+00:00",
+  "webReleaseTag": "v3.7.1",
+  "updatedAt": "2026-11-16T00:53:11.284768+00:00",
   "archiveTags": [
+    "v3.7.0",
     "v3.6.3",
     "v3.6.2",
     "v3.0.0",
@@ -737,8 +745,8 @@
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v3.7.0.zip",
-  "webBuild": "20261114-orchestral-modern-r1",
+  "offlineFile": "packages/Great-Powers-RTS-v3.7.1.zip",
+  "webBuild": "20261116-foliage-fog-r1",
   "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs",
   "starportFile": "packages/Great-Powers-Starport-v3.0.1-TapTap-r4.zip",
   "starportBuild": "20261109-scifi-mobile-r4"

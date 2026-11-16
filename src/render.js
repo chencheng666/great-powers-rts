@@ -69,7 +69,9 @@ import { islandHarbor, islandDistance } from './island-map.js';
 import { paintIslandTerrain, createIslandShore, createIslandInfrastructure } from './island-scenery.js';
 import { paintTheaterGround, createTheaterScenery } from './theater-scenery.js';
 import { theaterFacilities } from './theater-operations.js';
-import { proceduralTreeGeometry } from './battle-surfaces.js';
+import { proceduralTreeGeometry, foliageMaterial } from './battle-surfaces.js';
+import { createBattleFogGeometry } from './battle-fog.js';
+import { OCEAN_LEVEL } from './ocean-motion.js';
 import { createOceanSurface, updateOceanReflection } from './ocean-surface.js';
 import { IdentityBatches } from './identity-batches.js';
 import { vehicleSuspension } from './vehicle-suspension.js';
@@ -479,7 +481,7 @@ export class Renderer {
     this.ocean=createOceanSurface(this.game);this.track(this.ocean.fallback);const material=this.track(this.ocean.material);this.waterMaterial=material;
     const mesh = new THREE.Mesh(geometry, material);
     mesh.renderOrder = 1;this.waterMesh=mesh;
-    mesh.rotation.x = -Math.PI / 2; mesh.position.set((water.x1 + water.x2) / 2, .8, this.world.height / 2); mesh.receiveShadow = true; this.scene.add(mesh);
+    mesh.rotation.x = -Math.PI / 2; mesh.position.set((water.x1 + water.x2) / 2, OCEAN_LEVEL, this.world.height / 2); mesh.receiveShadow = true; this.scene.add(mesh);
   }
 
   createBridges() {
@@ -622,8 +624,8 @@ export class Renderer {
     const geometry = this.track(new THREE.PlaneGeometry(1, 1)), dummy = new THREE.Object3D();
     for (let variant = 0; variant < 4; variant++) {
       const texture = spriteTexture(`tree_${variant}`), transforms = points.filter((point, i) => i % 4 === variant);
-      const face = this.track(new THREE.MeshStandardMaterial({ map: texture, color: '#adb998', alphaTest: .18, side: THREE.DoubleSide, roughness: 1, metalness: 0 }));
-      const sides = this.track(new THREE.MeshStandardMaterial({ map: texture, color: '#819078', alphaTest: .18, side: THREE.DoubleSide, roughness: 1, metalness: 0 }));
+      const face = this.track(foliageMaterial(texture));
+      const sides = this.track(foliageMaterial(texture, { color: '#c6d0b5' }));
       transforms.forEach(point => { point.height = point.scale * 6.5; point.width = point.height * texture.image.width / texture.image.height; });
       if(!this.game.map.future){
         const tree=proceduralTreeGeometry(variant);
@@ -730,10 +732,8 @@ export class Renderer {
   createFog() {
     this.fogSmall = makeCanvas(this.game.fog.cols, this.game.fog.rows); this.fogCanvas = makeCanvas(560, 360); this.fogTexture = this.track(new THREE.CanvasTexture(this.fogCanvas)); this.fogTexture.colorSpace = THREE.SRGBColorSpace;
     const material = this.track(new THREE.MeshBasicMaterial({ map: this.fogTexture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }));
-    const geometry = this.track(new THREE.PlaneGeometry(this.world.width, this.world.height, Math.min(this.mobileBudget?224:384,Math.ceil(this.world.width/(this.mobileBudget?30:20))), Math.min(this.mobileBudget?160:256,Math.ceil(this.world.height/(this.mobileBudget?30:20))))); geometry.rotateX(-Math.PI / 2); geometry.translate(this.world.width / 2, 0, this.world.height / 2);
-    const position = geometry.attributes.position;
-    for (let i = 0; i < position.count; i++) position.setY(i, terrainHeight(this.game, position.getX(i), position.getZ(i)) + 2);
-    const mesh = new THREE.Mesh(geometry, material); mesh.renderOrder = 5; this.scene.add(mesh);
+    const geometry = this.track(createBattleFogGeometry(this.world, (x, z) => this.elevation(x, z), { water: !!this.waterMesh, mobile: this.mobileBudget }));
+    const mesh = new THREE.Mesh(geometry, material); mesh.name='战场迷雾';mesh.renderOrder = 5; this.fogMesh=mesh;this.scene.add(mesh);
   }
 
   updateFog() {

@@ -81,9 +81,17 @@ function leafClusterTexture() {
   return leafTexture;
 }
 
+export function foliageMaterial(texture, { color = '#ffffff', alphaTest = .18, vertexColors = false } = {}) {
+  // 叶片用贴图调制少量散射补光，保留背光下的绿色和纹理，不改变太阳及地面树影。
+  return new THREE.MeshStandardMaterial({ map: texture, color, roughness: .93, metalness: 0,
+    emissive: color, emissiveMap: texture, emissiveIntensity: .5,
+    alphaTest, side: THREE.DoubleSide, vertexColors });
+}
+
 export function proceduralTreeGeometry(variant) {
   const group=new THREE.Group();
-  const canopyMaterial=new THREE.MeshStandardMaterial({name:'程序树冠',map:leafClusterTexture(),color:variant%2?'#597346':'#34533e',roughness:.93,vertexColors:true,alphaTest:.45,side:THREE.DoubleSide});
+  const canopyMaterial=foliageMaterial(leafClusterTexture(),{color:variant%2?'#789b55':'#5f8250',vertexColors:true,alphaTest:.45});
+  canopyMaterial.name='程序树冠';
   const trunkMaterial=new THREE.MeshStandardMaterial({name:'树皮',color:'#655442',roughness:1});
   const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.045,.085,1,7),trunkMaterial);trunk.position.y=.5;group.add(trunk);
   const parts=[];

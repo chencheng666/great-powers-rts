@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { coastalField, geologicalNoiseGLSL } from './terrain-materials.js';
-import { oceanWaveGLSL } from './ocean-motion.js';
+import { oceanWaveGLSL, OCEAN_LEVEL } from './ocean-motion.js';
 
 export function createOceanSurface(game){
   const coast=coastalField(game),time={value:0},strength={value:0},matrix={value:new THREE.Matrix4()},reflection={value:null};
@@ -49,7 +49,7 @@ outgoingLight=mix(outgoingLight,mix(sky,mirror,oceanReflectStrength),oceanFresne
 
 export function prepareOceanReflection(renderer){
   const plane=new Reflector(new THREE.PlaneGeometry(1,1),{textureWidth:512,textureHeight:512,multisample:0,clipBias:.002});
-  plane.rotation.x=-Math.PI/2;plane.position.set(renderer.world.width/2,.8,renderer.world.height/2);plane.visible=false;plane.updateMatrixWorld(true);
+  plane.rotation.x=-Math.PI/2;plane.position.set(renderer.world.width/2,OCEAN_LEVEL,renderer.world.height/2);plane.visible=false;plane.updateMatrixWorld(true);
   renderer.scene.add(plane);renderer.oceanMirror=plane;
   renderer.track(plane.geometry);renderer.track({dispose:()=>plane.dispose()});
 }
