@@ -2,7 +2,7 @@
 export const SIX_WORLD = Object.freeze({width:5760,height:5760,cell:40,fog:80});
 const center={x:2880,y:2880};
 export const SIX_SPAWNS=Array.from({length:6},(_,side)=>{const angle=-Math.PI/2+side*Math.PI/3;return {side,x:center.x+Math.cos(angle)*1920,y:center.y+Math.sin(angle)*1920,angle:angle+Math.PI};});
-export function sixPoint(side,dx,dy){const s=SIX_SPAWNS[side];return {x:s.x+Math.cos(s.angle)*dx-Math.sin(s.angle)*dy,y:s.y+Math.sin(s.angle)*dx+Math.cos(s.angle)*dy};}
+export function sixPoint(side,dx,dy,map){const s=(map?.spawns||SIX_SPAWNS)[side];return {x:s.x+Math.cos(s.angle)*dx-Math.sin(s.angle)*dy,y:s.y+Math.sin(s.angle)*dx+Math.cos(s.angle)*dy};}
 export function sixPlayerMap(){
  const ore=SIX_SPAWNS.flatMap((s,i)=>[[430,-320,4000,'gold'],[700,-340,4000,'gold'],[550,400,4000,'gold'],[760,0,2800,'gem']].map(([dx,dy,amount,kind])=>{const p=sixPoint(i,dx,dy);return[p.x,p.y,amount,kind];}));
  const oil=[],beacons=[];

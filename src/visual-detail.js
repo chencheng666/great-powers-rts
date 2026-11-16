@@ -1,3 +1,4 @@
+import { snowSurface } from './snow-to-sea.js';
 import { BUILDINGS, UNITS } from './data.js';
 import { lunarRelief } from './lunar-terrain.js';
 import { islandHeight } from './island-map.js';
@@ -6,6 +7,7 @@ import { battlefieldRelief } from './battlefield-relief.js';
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 export function terrainHeight(game, x, z) {
+  if (game.map.snowToSea) return snowSurface(game.map,x,z).height;
   const ridge=ridgeHeight(game.map,x,z);if(ridge!==null)return ridge;
   const relief = battlefieldRelief(game, x, z);
   if (game.map.islands) {

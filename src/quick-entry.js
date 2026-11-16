@@ -1,4 +1,5 @@
 export const QUICK_PRESETS = Object.freeze({
+  snow: { mapId:'snowtosea',difficulty:'standard',victory:'control',description:'雪岭入海 · 你与5个电脑阵营 · 雪山、河谷、湿地与海湾会战' },
   land: { mapId: 'valleyTraining', difficulty: 'recruit', victory: 'quick', description: '灰谷 · 新兵难度 · 跟着提示熟悉指挥' },
   sea: { mapId: 'strait', difficulty: 'recruit', victory: 'quick', description: '海峡前线 · 新兵难度 · 建造船坞，组织海陆协同' },
   combined: { mapId: 'confluence', difficulty: 'standard', victory: 'control', description: '山海会战 · 山口、港岛与外海 · 据点争夺' },
@@ -8,7 +9,7 @@ export const QUICK_PRESETS = Object.freeze({
 export function setupQuickEntry({ onStart, onContinue, candidate = false }) {
   const start = document.querySelector('#quick-start-btn'), presets = document.querySelector('.quick-presets');
   const description = document.querySelector('#quick-entry-description');
-  let choice = 'land';
+  let choice = 'snow';
   if (candidate) { presets.hidden = true; description.textContent = '六方实验战区 · 每席40单位 · 规则与普通双人独立'; }
   for (const button of presets.querySelectorAll('button')) button.addEventListener('click', () => {
     choice = button.dataset.quickPreset;

@@ -675,8 +675,8 @@ export const modernCombat = {
     for (const t of this.activeUnits(side).filter(u => ['landing', 'airlift'].includes(u.type))) {
       if (t.order?.type === 'rearm' || t.deployment) continue;
       const water = this.map.water;
-      const home = (t.type === 'landing' && this.map.landingApproaches?.[side]) || (this.playerCount===6?this.map.spawns[side]:{ x: t.type === 'landing' ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 });
-      const shore = (t.type === 'landing' && this.map.landingApproaches?.[1-side]) || (this.playerCount===6?this.enemyObjective(side):{ x: t.type === 'landing' ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 });
+      const home = (this.map.snowToSea&&t.type==='landing'?this.navalGoal(this.map.harbors[side].x,this.map.harbors[side].y,70):null) || (t.type === 'landing' && this.map.landingApproaches?.[side]) || (this.playerCount===6?this.map.spawns[side]:{ x: t.type === 'landing' ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 });
+      const shore = (this.map.snowToSea&&t.type==='landing'?this.map.landingApproaches[side]:null) || (t.type === 'landing' && this.map.landingApproaches?.[1-side]) || (this.playerCount===6?this.enemyObjective(side):{ x: t.type === 'landing' ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 });
       t.transportStage ||= 'load';
       const goal = ['load', 'return'].includes(t.transportStage) ? home : shore;
       if (distance(t, goal) > 20) { t.order = { type: 'move', ...goal }; continue; }
@@ -685,7 +685,7 @@ export const modernCombat = {
       if (t.transportStage === 'load') {
         t.loadStartedAt ??= this.time;
         if (this.transportLoad(t) >= 4 && this.time - t.loadStartedAt > 12) { t.transportStage = 'depart'; continue; }
-        for (const unit of this.activeUnits(side).filter(u => ['rifle', 'tank'].includes(u.type) && !['board', 'rearm'].includes(u.order?.type) && distance(u, t) < 900)) {
+        for (const unit of this.activeUnits(side).filter(u => ['rifle', 'tank'].includes(u.type) && !['board', 'rearm'].includes(u.order?.type) && (this.map.snowToSea || distance(u, t) < 900)).sort((a,b)=>distance(a,t)-distance(b,t)).slice(0,this.map.snowToSea?4:Infinity)) {
           if (this.canBoardTransport(unit, t)) unit.order = { type: 'board', targetId: t.id };
         }
       } else {

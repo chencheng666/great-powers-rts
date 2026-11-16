@@ -1,3 +1,4 @@
+import { snowToSeaMap } from './snow-to-sea.js';
 import { combinedMap } from './combined-map.js';
 import {sixPlayerMap} from './six-player-map.js';
 import { islandWatchMap } from './island-map.js';
@@ -117,6 +118,7 @@ export const MAPS = {
   islandwatch: islandWatchMap(),
   strategic: strategicMap(),
   confluence: combinedMap(),
+  snowtosea: snowToSeaMap(),
   sixfront: sixPlayerMap(),
   archipelago: {
     name: '跨海登陆战', sector: '战区 07 · 无桥海战', world: { width: 3520, height: 2240, cell: 40, fog: 80 },

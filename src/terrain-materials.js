@@ -1,3 +1,4 @@
+import { snowSurface } from './snow-to-sea.js';
 import * as THREE from 'three';
 import { islandDistance } from './island-map.js';
 
@@ -62,14 +63,23 @@ export function coastalField(game){
   cached={texture,width:world.width,height:world.height,bytes:pixels.byteLength};coasts.set(map,cached);return cached;
 }
 
+const biomeFields=new WeakMap();
+export function snowBiomeField(map){
+  if(biomeFields.has(map))return biomeFields.get(map);
+  const width=384,height=288,pixels=new Uint8Array(width*height*4);
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){const s=snowSurface(map,(x+.5)/width*map.world.width,(y+.5)/height*map.world.height),i=(y*width+x)*4;pixels.set([s.snow,s.desert,s.wetland,s.forest].map(v=>Math.round(v*255)),i);}
+  const texture=new THREE.DataTexture(pixels,width,height);texture.magFilter=texture.minFilter=THREE.LinearFilter;texture.needsUpdate=true;biomeFields.set(map,texture);return texture;
+}
 export function finishLandscape(material,{game,roadMask}){
   const textures=landscapeMaterials(),coast=coastalField(game),cold=game.map.climate==='cold';
   const uniforms={geoAlbedo:{value:textures.albedo},geoSurface:{value:textures.surface},geoCoast:{value:coast.texture},geoRoad:{value:roadMask},geoSize:{value:new THREE.Vector2(game.world.width,game.world.height)}};
+  if(game.map.snowToSea){uniforms.geoBiome={value:snowBiomeField(game.map)};uniforms.geoTime={value:0};}
   material.onBeforeCompile=shader=>{
     Object.assign(shader.uniforms,uniforms);
     shader.vertexShader='varying vec3 vGeoWorld;varying vec3 vGeoNormal;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvGeoWorld=(modelMatrix*vec4(position,1.0)).xyz;vGeoNormal=normalize(mat3(modelMatrix)*normal);');
     shader.fragmentShader=`varying vec3 vGeoWorld;varying vec3 vGeoNormal;
 uniform highp sampler2DArray geoAlbedo;uniform highp sampler2DArray geoSurface;uniform sampler2D geoCoast;uniform sampler2D geoRoad;uniform vec2 geoSize;
+${game.map.snowToSea?'uniform sampler2D geoBiome;uniform float geoTime;':''}
 ${geologicalNoiseGLSL}
 vec4 geoSample(highp sampler2DArray tex,vec2 p,float layer){return texture(tex,vec3(p,layer));}
 vec4 geoTriplanar(highp sampler2DArray tex,vec3 p,vec3 w,float layer){return geoSample(tex,p.zy,layer)*w.x+geoSample(tex,p.xz,layer)*w.y+geoSample(tex,p.xy,layer)*w.z;}
@@ -81,6 +91,7 @@ float geoRock=smoothstep(.035,.28,geoSlope)*smoothstep(20.0,85.0,geoHeight);
 float geoDirt=smoothstep(.39,.72,geoFbm(vGeoWorld.xz*.007));
 float geoDistance=(texture2D(geoCoast,vGeoWorld.xz/geoSize).r-.5)*1024.0;
 float geoSand=1.0-smoothstep(18.0,85.0,geoDistance);
+${game.map.snowToSea?'vec4 geoBiomeValue=texture2D(geoBiome,vGeoWorld.xz/geoSize);geoSand=max(geoSand,geoBiomeValue.g);':''}
 float geoKeep=texture2D(geoRoad,vec2(vGeoWorld.x/geoSize.x,1.0-vGeoWorld.z/geoSize.y)).r;
 vec4 geoGrass=geoSample(geoAlbedo,vGeoWorld.xz/64.0,0.0),geoEarth=geoSample(geoAlbedo,vGeoWorld.xz/71.0,1.0);
 vec4 geoStone=geoTriplanar(geoAlbedo,vGeoWorld/55.0,geoWeights,2.0),geoBeach=geoSample(geoAlbedo,vGeoWorld.xz/48.0,3.0);
@@ -88,8 +99,13 @@ geoStone.rgb=mix(geoStone.rgb,vec3(dot(geoStone.rgb,vec3(.2126,.7152,.0722))),.4
 geoStone.rgb=mix(vec3(.18,.20,.21),geoStone.rgb,.65)*1.2;
 vec3 geoColor=mix(mix(mix(geoGrass.rgb,geoEarth.rgb,geoDirt*.55),geoStone.rgb,geoRock),geoBeach.rgb,geoSand*(1.0-geoRock));
 ${cold?'geoColor=mix(geoColor,vec3(.58,.63,.65),.55);geoColor=mix(geoColor,vec3(.81,.85,.86),smoothstep(135.0,230.0,geoHeight)*smoothstep(.5,.9,vGeoNormal.y)*.7);':''}
+${game.map.snowToSea?`geoColor=mix(geoColor,geoColor*vec3(.72,.91,.72),geoBiomeValue.a*.65);
+geoColor=mix(geoColor,mix(vec3(.10,.18,.12),geoEarth.rgb, .45),geoBiomeValue.b*.65);
+float geoSnowCover=geoBiomeValue.r*smoothstep(.38,.88,vGeoNormal.y);geoColor=mix(geoColor,vec3(.72,.81,.83)*( .94+geoNoise(vGeoWorld.xz*.12)*.06),geoSnowCover);
+float geoCloud=.94+.06*sin(vGeoWorld.x*.0011+vGeoWorld.z*.0018+geoTime*.012);geoColor*=geoCloud;`:''}
 float geoMacro=.87+geoFbm(vGeoWorld.xz*.002)*.24;
 float geoWet=geoSand*(1.0-smoothstep(-5.0,35.0,geoDistance));
+${game.map.snowToSea?'geoWet=max(geoWet,geoBiomeValue.b*(.45+.35*geoNoise(vGeoWorld.xz*.025)));':''}
 geoColor*=geoMacro*(1.0-geoWet*.25);
 diffuseColor.rgb=mix(geoColor,diffuseColor.rgb,geoKeep);
 `)
@@ -108,7 +124,7 @@ vec3 geoBump=mix(vec3(floorBump.x,0.0,floorBump.y),rockBump,geoRock)*(.3+geoRock
 normal=normalize(mix(normal,normalize(mat3(viewMatrix)*normalize(vGeoNormal+geoBump)),1.0-geoKeep));`)
     .replace('#include <aomap_fragment>','#include <aomap_fragment>\nreflectedLight.indirectDiffuse*=mix(1.0,geoDetail.a,.5*(1.0-geoKeep));');
   };
-  material.customProgramCacheKey=()=>`世界地表材质数组:1:${cold}`;
+  material.customProgramCacheKey=()=>`世界地表材质数组:1:${cold}:${!!game.map.snowToSea}`;
   material.userData.landscapeUniforms=uniforms;return material;
 }
 

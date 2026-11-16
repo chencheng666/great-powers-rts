@@ -1,3 +1,4 @@
+import { SnowAmbience } from './snow-ambience.js';
 import { AdaptiveBattleMusic, battleMusicIntensity } from './adaptive-music.js';
 import { SoundEffects } from './sound-effects.js';
 import { MovementSounds, soundPosition } from './battle-sound.js';
@@ -35,6 +36,7 @@ export class GameAudio {
       this.musicBus.connect(this.master); this.effectsBus.connect(this.master); this.voiceBus.connect(this.master);
       this.nuclearAlarm = new NuclearAlarm(ctx, this.effectsBus);
       this.soundEffects = new SoundEffects(ctx, this.effectsBus);
+      this.snowAmbience = new SnowAmbience(ctx,this.effectsBus);
       this.radioFilter = ctx.createBiquadFilter(); this.radioFilter.type = 'lowpass'; this.radioFilter.frequency.value = 4700; this.radioFilter.connect(this.voiceBus);
       this.applySettings();
     }
@@ -103,7 +105,7 @@ export class GameAudio {
   }
 
   stopBattle() {
-    this.soundEffects?.stop(); this.movement.reset();
+    this.soundEffects?.stop(); this.snowAmbience?.stop(); this.movement.reset();
     this.session++; this.active = false; this.paused = false; this.scene = null;
     this.nuclearWarning = false; this.nuclearAlarm?.setActive(false);
     for (const node of this.celebrationNodes) node.stop();
@@ -129,7 +131,7 @@ export class GameAudio {
   applySettings() {
     if (!this.context) return;
     const time = this.context.currentTime, settings = this.settings;
-    if (settings.muted || !settings.master || !settings.effects) { this.soundEffects?.stop(); this.movement.reset(); }
+    if (settings.muted || !settings.master || !settings.effects) { this.soundEffects?.stop(); this.snowAmbience?.silence(); this.movement.reset(); }
     this.master.gain.setTargetAtTime(settings.muted || this.hidden ? 0 : settings.master, time, .04);
     const alarm = nuclearAlarmAudible({ active: this.active, paused: this.paused, wanted: this.nuclearWarning, settings });
     this.nuclearAlarm?.setActive(alarm);
@@ -142,7 +144,7 @@ export class GameAudio {
     const hidden = document.hidden;
     if (this.paused === value && this.hidden === hidden) return;
     this.hidden = hidden; this.paused = value;
-    if (value) { this.soundEffects?.stop(); this.movement.reset(); }
+    if (value) { this.soundEffects?.stop(); this.snowAmbience?.silence(); this.movement.reset(); }
     if (value && !this.currentVoice?.preview) this.clearVoices();
     this.applySettings();
   }
@@ -262,6 +264,7 @@ export class GameAudio {
 
   syncBattle(game, listener, dt) {
     this.listener = listener;
+    this.snowAmbience?.update(game,listener,this.active&&!this.paused&&!this.hidden&&game.running&&!this.settings.muted&&this.settings.master>0&&this.settings.effects>0);
     if(this.music instanceof AdaptiveBattleMusic)this.music.update(battleMusicIntensity(game));
     if(this.reverbMap!==game.map){this.soundEffects?.reverb?.setTerrain(game.map);this.reverbMap=game.map;}
     if (!this.active || this.paused || !game.running || this.settings.muted || !this.settings.master || !this.settings.effects) {

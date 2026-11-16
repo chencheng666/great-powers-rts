@@ -142,7 +142,7 @@ const state = {
   game: null,
   renderer: null,
   faction: 'china',
-  mapId: candidateMode?'sixfront':'valleyTraining',
+  mapId: candidateMode?'sixfront':'snowtosea',
   victoryMode: 'quick',
   difficulty: 'recruit',
   tab: 'build',
@@ -397,7 +397,7 @@ async function deployGame(save = null, onlinePayload = null) {
   window.scrollTo(0, 0);
   $('#side-faction').textContent = state.game.faction.name;
   $('#faction-short').textContent = `我方：${state.game.faction.name}`;
-  $('#enemy-short').textContent = state.game.players.length>2?`其他 ${state.game.players.length-1} 方 · 六方实验 · 每席40单位`:`敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
+  $('#enemy-short').textContent = state.game.map.snowToSea?'5个电脑阵营 · 各自为战':state.game.players.length>2?`其他 ${state.game.players.length-1} 方 · 六方实验 · 每席40单位`:`敌方：${state.game.enemyFaction.name}${onlinePayload?' · '+onlinePayload.room.members[1-onlinePayload.seat].name:''}`;
   $('#battle-status').textContent = state.game.sandbox ? '指挥官沙盘 · 不计荣誉' : '战斗进行中';
   $('#battle-objective').textContent = VICTORY_MODES[state.victoryMode].description;
   $('.battlefield').classList.toggle('future', !!state.game.map.future);
@@ -1509,7 +1509,7 @@ const onlineClient=new OnlineClient({
   onInterrupted:()=>{if(state.game?.online){state.game.running=false;showModal('战局已取消','<p>服务器维护或房间已过期，本局未记录胜负。</p>','<button class="primary-btn" data-modal="online-lobby">返回对战大厅</button>');}}
 });
 drawFactionPicker();
-$('#map-select').innerHTML = Object.entries(MAPS).sort(([a],[b])=>Number(b==='valleyTraining')-Number(a==='valleyTraining')).filter(([,map])=>!map.missionOnly&&(!candidateMode||map.maxPlayers===6)).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
+$('#map-select').innerHTML = Object.entries(MAPS).sort(([a],[b])=>Number(b==='snowtosea')-Number(a==='snowtosea')).filter(([,map])=>!map.missionOnly&&(!candidateMode||map.maxPlayers===6&&!map.singleplayerOnly)).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
 $('#map-select').value = state.mapId;
 const updateNuclearOption=()=>{const enabled=supportsNuclearMap($('#map-select').value);$('#nuclear-option').hidden=!enabled;if(!enabled)$('#nuclear-enabled').checked=false;};
 $('#map-select').addEventListener('change',updateNuclearOption);updateNuclearOption();

@@ -1,3 +1,4 @@
+import { conformSnowMark } from './snow-ground-field.js';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { lunarReliefGLSL } from './lunar-terrain.js';
@@ -9,6 +10,7 @@ import { battlefieldReliefGLSL } from './battlefield-relief.js';
 export const COMMUNITY_3D_BUILDINGS = ['dock', 'radar', 'airfield', 'lab', 'super'];
 
 export function conformGroundMark(material, game) {
+  if(game.map.snowToSea)return conformSnowMark(material,game);
   const water = game.map.water, barriers = game.map.future || game.map.industrial ? [] : game.map.barriers;
   const checks = [
     ...game.map.bridges.map(b => `if (p.x >= ${Number(water?.x1 ?? 1010).toFixed(1)} && p.x <= ${Number(water?.x2 ?? 1230).toFixed(1)} && p.y >= ${b.y1.toFixed(1)} && p.y <= ${b.y2.toFixed(1)}) return 28.2;`),

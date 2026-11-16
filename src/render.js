@@ -1,3 +1,4 @@
+import { snowSurface, snowColor, snowEnvironment, snowElevation } from './snow-to-sea.js';
 import { carrierDeckPose } from './carrier-deck.js';
 import { carrierSlots } from './carrier-operations.js';
 import { createCarrierParkedAircraft } from './carrier-deck-aircraft.js';
@@ -238,7 +239,11 @@ export class Renderer {
     const factor = Math.min(1, maxTexture / this.world.width);
     const canvas = makeCanvas(Math.round(this.world.width * factor), Math.round(this.world.height * factor)), ctx = canvas.getContext('2d'), image = (this.game.map.future ? visualLibrary().meridian : visualLibrary().ground).image;
     ctx.scale(factor, factor);
-    if (islands) paintIslandTerrain(ctx, this.game.map, image);
+    if (this.game.map.snowToSea) {
+      const field=makeCanvas(384,288),paint=field.getContext('2d'),pixels=paint.createImageData(384,288);
+      for(let y=0;y<288;y++)for(let x=0;x<384;x++){const c=snowColor(snowSurface(this.game.map,(x+.5)/384*this.world.width,(y+.5)/288*this.world.height)),i=(y*384+x)*4;pixels.data.set([...c,255],i);}
+      paint.putImageData(pixels,0,0);ctx.drawImage(field,0,0,this.world.width,this.world.height);
+    } else if (islands) paintIslandTerrain(ctx, this.game.map, image);
     else {
       ctx.filter = this.game.map.future ? BATTLE_READABILITY.lunarFilter : BATTLE_READABILITY.groundFilter;
       const tile = this.game.map.future ? 560 : 420;
@@ -486,12 +491,13 @@ export class Renderer {
 
   createBridges() {
     if (!this.game.map.bridges.length) return;
-    const water = this.game.map.water, west = water ? water.x1 - 38 : 1010, east = water ? water.x2 + 38 : 1230;
+    const water = this.game.map.water;
     const concrete = this.track(new THREE.MeshStandardMaterial({ color: '#888b85', roughness: .86 }));
     const asphalt = this.track(new THREE.MeshStandardMaterial({ color: '#3b4144', roughness: .89 }));
     const steel = this.track(new THREE.MeshStandardMaterial({ color: '#475256', roughness: .55, metalness: .67 }));
     const white = this.track(new THREE.MeshStandardMaterial({ color: '#d3cbb3', roughness: .8 }));
     for (const bridge of this.game.map.bridges) {
+      const west=bridge.x1??(water?water.x1-38:1010),east=bridge.x2??(water?water.x2+38:1230),lift=(bridge.height??27)-27;
       const z = (bridge.y1 + bridge.y2) / 2, length = bridge.y2 - bridge.y1;
       const batchStart = this.bridges.length;
       this.box((west + east) / 2, 20, z, east - west, 11, length, concrete); this.box((west + east) / 2, 26, z, east - west - 8, 1.8, length - 15, asphalt);
@@ -503,10 +509,10 @@ export class Renderer {
       for (let x = west + 15; x < east - 15; x += 42) this.box(x, 27.2, z, 20, .3, 1.2, white);
       const supports = [west + 30, east - 30];
       if (east - west > 600) for (let x = west + 210; x < east - 160; x += 230) supports.push(x);
-      for (const x of supports) this.box(x, -3, z, 14, 45, length - 20, concrete);
+      for (const x of supports) this.box(x, -3-lift/2, z, 14, 45+lift, length - 20, concrete);
       const pieces = this.bridges.splice(batchStart), batches = new Map();
       for (const piece of pieces) {
-        piece.updateMatrix();
+        piece.position.y+=lift;piece.updateMatrix();
         const geometry = piece.geometry.clone().applyMatrix4(piece.matrix); geometry.translate(-(west + east) / 2, 0, -z);
         if (!batches.has(piece.material)) batches.set(piece.material, []);
         batches.get(piece.material).push(geometry); this.scene.remove(piece);
@@ -519,6 +525,7 @@ export class Renderer {
   }
 
   elevation(x, z) {
+    if(this.game.map.snowToSea)return snowElevation(this.game.map,x,z);
     if (!this.game.map.bridges.length) return terrainHeight(this.game, x, z) + 1;
     const west = this.game.map.water ? this.game.map.water.x1 - 38 : 1010, east = this.game.map.water ? this.game.map.water.x2 + 38 : 1230;
     return x >= west && x <= east && this.game.map.bridges.some(bridge => z >= bridge.y1 && z <= bridge.y2) ? 27 : this.game.map.water && x > west && x < east ? 1 : terrainHeight(this.game, x, z) + 1;
@@ -529,17 +536,19 @@ export class Renderer {
     for(const entry of this.theaterScenery)this.scene.add(entry.group);
     const props = this.createMapProps();
     const points = { tree: [], rock: [] }, forbidden = [...props.map(p => ({ x: p.x, y: p.z, size: p.width })), ...this.game.buildings, ...this.game.ore, ...this.game.oil, ...this.game.beacons,...(this.game.resourceSites||[])];
-    const density = Math.min(850, Math.round(this.world.width * this.world.height / (2240 * 1440) * 230));
+    const density = this.game.map.snowToSea?(this.mobileBudget?2100:6200):Math.min(850,Math.round(this.world.width*this.world.height/(2240*1440)*230));
     for (let i = 0; i < density; i++) {
       const x = 45 + hash(i, 91) * (this.world.width - 90), z = 40 + hash(i, 193) * (this.world.height - 80);
       if(this.game.map.islands && islandDistance(this.game.map,x,z)<55)continue;
-      if (Math.abs(z - this.game.homeY) < 145 || forbidden.some(item => Math.hypot(item.x - x, item.y - z) < Math.max(100, (item.size || 0) * 1.2))) continue;
+      if ((!this.game.map.snowToSea && Math.abs(z - this.game.homeY) < 145) || forbidden.some(item => Math.hypot(item.x - x, item.y - z) < Math.max(100, (item.size || 0) * 1.2))) continue;
       if (this.game.map.noBuild.some(rect => x > rect.x1 - 25 && x < rect.x2 + 25 && z > rect.y1 - 25 && z < rect.y2 + 25)) continue;
+      const surface=this.game.map.snowToSea?snowSurface(this.game.map,x,z):null;
+      if(surface&&hash(i,88)>Math.max(.12,surface.forest*.94+surface.snow*.42+surface.wetland*.35))continue;
       const height = this.elevation(x, z);
       const crest = height > 80;
-      const kind = this.game.map.future || crest ? 'rock' : hash(i, 71) > .24 ? 'tree' : 'rock';
+      const kind = this.game.map.future || crest || surface?.desert>.5 || surface?.wetland>.45 ? 'rock' : hash(i, 71) > .24 ? 'tree' : 'rock';
       const rockScale = crest ? 20 + hash(i, 45) * 21 : 12 + hash(i, 45) * 11;
-      const point = { x, z, scale: kind === 'tree' ? 8 + hash(i, 25) * 7 : rockScale, angle: hash(i, 33) * TAU };
+      const point = { x, z, snow:surface?.snow>.52, scale: kind === 'tree' ? 8 + hash(i, 25) * 7 : rockScale, angle: hash(i, 33) * TAU };
       if (['tree', 'rock'].some(otherKind => points[otherKind].some(other => Math.hypot(other.x - x, other.z - z) < sceneryFootprint(point, kind === 'tree') + sceneryFootprint(other, otherKind === 'tree') + 8))) continue;
       points[kind].push(point);
     }
@@ -563,6 +572,7 @@ export class Renderer {
     }
     const dummy = new THREE.Object3D();
     this.createFoliage(points.tree);
+    if(this.game.map.snowToSea)this.createWetlandReeds(forbidden);
     this.createNatureProps(points.tree);
     const variants=this.game.map.future?[null]:NATURE_ROCKS;
     for(const [variant,name]of variants.entries()){
@@ -574,6 +584,21 @@ export class Renderer {
       transforms.forEach((point,index)=>{dummy.position.set(point.x,point.heightOffset??this.elevation(point.x,point.z),point.z);dummy.rotation.set(0,point.angle,0);dummy.scale.set(point.scale,point.verticalScale||point.scale,point.scale);dummy.updateMatrix();mesh.setMatrixAt(index,dummy.matrix);});
       this.scene.add(mesh);this.environment.push({mesh,transforms});
     }
+  }
+
+  createWetlandReeds(forbidden) {
+    const transforms=[];
+    for(let i=0;i<3600;i++){
+      const x=150+(i*231.71)%7300,z=3330+(i*171.91)%1460,s=snowSurface(this.game.map,x,z);
+      if(s.wetland<.28||s.distance<35||s.distance>410||forbidden.some(p=>Math.hypot(p.x-x,p.y-z)<100)||this.game.map.bridges.some(b=>x>b.x1-100&&x<b.x2+100&&z>b.y1-70&&z<b.y2+70))continue;
+      transforms.push({x,z,scale:10+hash(i,31)*13,angle:hash(i,37)*TAU});
+    }
+    const parts=[];
+    for(let i=0;i<7;i++){const a=i*2.39996,r=2+(i%3)*1.7,g=new THREE.ConeGeometry(.45,13+i%4,3);g.translate(Math.cos(a)*r,6.5,Math.sin(a)*r);parts.push(g);}
+    const geometry=this.track(mergeGeometries(parts));parts.forEach(p=>p.dispose());
+    const material=this.track(new THREE.MeshStandardMaterial({color:'#9a9c58',roughness:.96,side:THREE.DoubleSide}));
+    const mesh=new THREE.InstancedMesh(geometry,material,transforms.length),dummy=new THREE.Object3D();mesh.name='河口芦苇';mesh.receiveShadow=true;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    transforms.forEach((p,i)=>{p.scale/=12;this.placeFoliage(dummy,p,'grounded',0,true);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});this.scene.add(mesh);this.environment.push({mesh,transforms,foliage:'grounded',angle:0});
   }
 
   createMapProps() {
@@ -622,13 +647,17 @@ export class Renderer {
 
   createFoliage(points) {
     const geometry = this.track(new THREE.PlaneGeometry(1, 1)), dummy = new THREE.Object3D();
-    for (let variant = 0; variant < 4; variant++) {
-      const texture = spriteTexture(`tree_${variant}`), transforms = points.filter((point, i) => i % 4 === variant);
+    for (let variant = 0; variant < (this.game.map.snowToSea?8:4); variant++) {
+      const snowy=variant>=4;
+      const texture = spriteTexture(`tree_${variant%4}`), transforms = points.filter((point, i) => i % 4 + (point.snow?4:0) === variant);
+      if(!transforms.length)continue;
       const face = this.track(foliageMaterial(texture));
       const sides = this.track(foliageMaterial(texture, { color: '#c6d0b5' }));
+      if(snowy)for(const mat of [face,sides]){mat.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor.rgb=mix(diffuseColor.rgb,vec3(.62,.73,.73),.85);');};mat.customProgramCacheKey=()=> '雪林贴片';}
       transforms.forEach(point => { point.height = point.scale * 6.5; point.width = point.height * texture.image.width / texture.image.height; });
       if(!this.game.map.future){
-        const tree=proceduralTreeGeometry(variant);
+        const tree=proceduralTreeGeometry(variant%4);
+        if(snowy)for(const part of tree.children)if(part.material.name==='程序树冠'){part.material.color.set('#cad7d7');part.material.emissive.set('#cad7d7');}
         for(const part of tree.children){
           const mesh=new THREE.InstancedMesh(this.track(part.geometry),this.track(part.material),transforms.length);mesh.name='程序化立体树木';mesh.castShadow=mesh.receiveShadow=true;
           transforms.forEach((point,index)=>{this.placeFoliage(dummy,point,'mesh_tree',0,true);dummy.updateMatrix();mesh.setMatrixAt(index,dummy.matrix);});
@@ -810,15 +839,15 @@ export class Renderer {
     const extents = groundExtents(this.viewport.width, this.viewport.height, this.camera.zoom, this.cameraElevation, this.cameraAzimuth);
     const halfWidth = extents.x, halfHeight = extents.y;
     this.center.x = clamp(this.center.x, Math.min(halfWidth, this.world.width / 2), Math.max(this.world.width - halfWidth, this.world.width / 2));
-    this.center.y = clamp(this.center.y, Math.min(halfHeight, this.world.height / 2), Math.max(this.world.height - halfHeight, this.world.height / 2)); this.camera.x = this.center.x - halfWidth; this.camera.y = this.center.y - halfHeight;
+    this.center.y = clamp(this.center.y, Math.min(halfHeight, this.world.height / 2)-(this.game.map.cameraNorthMargin||0), Math.max(this.world.height - halfHeight, this.world.height / 2)); this.camera.x = this.center.x - halfWidth; this.camera.y = this.center.y - halfHeight;
   }
 
   updateCamera() {
     const halfWidth = this.viewport.width / this.camera.zoom / 2, halfHeight = this.viewport.height / this.camera.zoom / 2;
     Object.assign(this.viewCamera, { left: -halfWidth, right: halfWidth, top: halfHeight, bottom: -halfHeight });
-    const reach = 2075 * Math.cos(this.cameraElevation);
-    this.viewCamera.position.set(this.center.x + Math.sin(this.cameraAzimuth) * reach, 2075 * Math.sin(this.cameraElevation), this.center.y + Math.cos(this.cameraAzimuth) * reach);
-    this.viewCamera.lookAt(this.center.x, 0, this.center.y); this.viewCamera.updateProjectionMatrix(); this.viewCamera.updateMatrixWorld();
+    const reach = 2075 * Math.cos(this.cameraElevation),targetHeight=this.game.map.snowToSea?Math.max(0,terrainHeight(this.game,this.center.x,this.center.y)):0;
+    this.viewCamera.position.set(this.center.x + Math.sin(this.cameraAzimuth) * reach, 2075 * Math.sin(this.cameraElevation)+targetHeight, this.center.y + Math.cos(this.cameraAzimuth) * reach);
+    this.viewCamera.lookAt(this.center.x,targetHeight,this.center.y); this.viewCamera.updateProjectionMatrix(); this.viewCamera.updateMatrixWorld();
     if (this.sun) {
       const radius = Math.max(700, halfWidth * 1.3, halfHeight / Math.sin(this.cameraElevation) * 1.3);
       const snappedX = Math.round(this.center.x / 4) * 4, snappedY = Math.round(this.center.y / 4) * 4;
@@ -1585,8 +1614,15 @@ export class Renderer {
   }
 
   drawOverlay() {
+    if(this.terrainMesh?.material.userData.landscapeUniforms?.geoTime)this.terrainMesh.material.userData.landscapeUniforms.geoTime.value=this.game.time;
     const ctx = this.overlay; ctx.clearRect(0, 0, this.viewport.width, this.viewport.height);
     this.drawPersonnelMarkers();
+    if(this.game.map.snowToSea){
+      const weather=snowEnvironment(this.game.map,this.center.x,this.center.y,this.game.time),snow=weather.snowfall>.12;
+      ctx.save();ctx.strokeStyle=snow?'#e7f3f55c':'#bad4e02c';ctx.fillStyle='#edf5f680';ctx.lineWidth=1;
+      const count=Math.round((snow?100:120)*(snow?weather.snowfall:weather.rain));
+      for(let i=0;i<count;i++){const t=this.game.time,x=(hash(i,107)*this.viewport.width+t*(snow?14:55))%this.viewport.width,y=(hash(i,109)*this.viewport.height+t*(snow?19:330))%this.viewport.height;ctx.beginPath();if(snow){ctx.arc(x,y,1+hash(i,113),0,TAU);ctx.fill();}else{ctx.moveTo(x,y);ctx.lineTo(x+4,y+13);ctx.stroke();}}ctx.restore();
+    }
     if (weatherState(this.game.map, this.game.time).phase === 'storm') {
       ctx.strokeStyle = '#a5d1e526'; ctx.lineWidth = 1;
       for (let i = 0; i < 12; i++) { const x = hash(i, 7) * this.viewport.width, y = (hash(i, 9) * this.viewport.height + this.game.time * 45) % this.viewport.height; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 30, y - 8); ctx.stroke(); }
@@ -1896,8 +1932,8 @@ export class Renderer {
     }
     ctx.drawImage(this.terrainTexture.image, 0, 0, width, height);
     const sx = width / this.world.width, sy = height / this.world.height;
-    if (this.game.map.water) { const water = this.game.map.water; ctx.fillStyle = '#315662'; ctx.fillRect(water.x1 * sx, 0, (water.x2 - water.x1) * sx, height); }
-    if(this.game.map.islands)for(const island of this.game.map.islands){ctx.beginPath();island.points.forEach(([x,y],i)=>i?ctx.lineTo(x*sx,y*sy):ctx.moveTo(x*sx,y*sy));ctx.closePath();ctx.fillStyle='#778268';ctx.fill();ctx.strokeStyle='#b8ac7f';ctx.lineWidth=1;ctx.stroke();}
+    if (this.game.map.water && !this.game.map.snowToSea) { const water = this.game.map.water; ctx.fillStyle = '#315662'; ctx.fillRect(water.x1 * sx, 0, (water.x2 - water.x1) * sx, height); }
+    if(this.game.map.islands&&!this.game.map.snowToSea)for(const island of this.game.map.islands){ctx.beginPath();island.points.forEach(([x,y],i)=>i?ctx.lineTo(x*sx,y*sy):ctx.moveTo(x*sx,y*sy));ctx.closePath();ctx.fillStyle='#778268';ctx.fill();ctx.strokeStyle='#b8ac7f';ctx.lineWidth=1;ctx.stroke();}
     ctx.drawImage(this.minimapRelief, 0, 0, width, height);
     if (this.game.map.combinedArms) {
       ctx.strokeStyle = '#e8c882'; ctx.lineWidth = 1;
@@ -1905,7 +1941,7 @@ export class Renderer {
         ctx.strokeRect(beach.x1 * sx, beach.y1 * sy, (beach.x2 - beach.x1) * sx, (beach.y2 - beach.y1) * sy);
       }
     }
-    for (const bridge of this.game.map.bridges) { ctx.fillStyle = '#a0a296'; ctx.fillRect((this.game.map.water ? this.game.map.water.x1 - 38 : 1010) * sx, bridge.y1 * sy, (this.game.map.water ? this.game.map.water.x2 - this.game.map.water.x1 + 76 : 220) * sx, (bridge.y2 - bridge.y1) * sy); }
+    for (const bridge of this.game.map.bridges) { ctx.fillStyle = '#a0a296'; ctx.fillRect((bridge.x1??(this.game.map.water ? this.game.map.water.x1 - 38 : 1010)) * sx, bridge.y1 * sy, (bridge.x2?bridge.x2-bridge.x1:this.game.map.water ? this.game.map.water.x2 - this.game.map.water.x1 + 76 : 220) * sx, (bridge.y2 - bridge.y1) * sy); }
     for (const ore of this.game.ore) if (ore.amount > 0) { ctx.fillStyle = ore.kind === 'gem' ? '#93b9b8' : '#c6ae75'; ctx.fillRect(ore.x * sx - 2, ore.y * sy - 2, 4, 4); }
     for (const site of [...this.game.oil, ...this.game.beacons]) { ctx.fillStyle = teamVisual(site.owner).color; ctx.fillRect(site.x * sx - 2, site.y * sy - 2, 5, 5); }
     for(const s of this.game.resourceSites||[])if(this.game.hasExploredFor(0,s.x,s.y)){ctx.fillStyle=this.game.isVisibleFor(0,s.x,s.y)?teamVisual(s.owner).color:'#d5bd7c';ctx.fillRect(s.x*sx-2,s.y*sy-2,4,4);}

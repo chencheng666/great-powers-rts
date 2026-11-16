@@ -79,7 +79,7 @@ ${peaks.join('\n')}
 // 从相机向地表采样。先找最前方的交点，再细分，避免落点穿过坡脊。
 export function intersectBattlefieldSurface(ray, elevation, world) {
   if (ray.direction.y >= -0.01) return null;
-  const start = Math.max(0, (330 - ray.origin.y) / ray.direction.y);
+  const start = Math.max(0, ((world.terrainCeiling || 330) - ray.origin.y) / ray.direction.y);
   const end = (-45 - ray.origin.y) / ray.direction.y;
   if (end <= start) return null;
   const point = t => ({

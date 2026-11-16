@@ -33,3 +33,6 @@
  #selection-panel:has(.cruise-control){padding-right:10px;min-width:min(320px,calc(100% - 16px))}
  .cruise-control button{min-height:44px;flex:1}.cruise-control>div{flex-wrap:wrap}
 }
+
+/* 主战场集中展示，教学和旧战区保留在次级入口。 */
+.legacy-presets{font-size:12px;color:#b8c9cc;align-self:center}.legacy-presets summary{cursor:pointer;padding:9px 12px}.legacy-presets[open]{display:flex;flex-wrap:wrap}.legacy-presets[open] button{margin:4px}

@@ -1,3 +1,4 @@
+import { snowBridge } from './snow-to-sea.js';
 import { unitAllowedInRoster, rosterSpawnType, migrateRetiredRoster } from './unit-roster.js';
 import { submarineCruise } from './submarine-cruise.js';
 import { canCrush, crushAlongMove } from './vehicle-crush.js';
@@ -190,7 +191,7 @@ export class Game {
   initBases() {
     if (this.map.missionOnly) return;
     for (const side of this.sides()) {
-      const mirror = (x,y) => this.playerCount===6 ? (()=>{const p=sixPoint(side,x-205,y-720);return[p.x,p.y];})() : side === 0 ? [x, y + this.homeY - 720] : [this.world.width - x, this.world.height - y - this.homeY + 720];
+      const mirror = (x,y) => this.playerCount===6 ? (()=>{const p=sixPoint(side,x-205,y-720,this.map);return[p.x,p.y];})() : side === 0 ? [x, y + this.homeY - 720] : [this.world.width - x, this.world.height - y - this.homeY + 720];
       for (const [type, x, y] of [
         ['hq', 205, 720], ['power', 320, 595], ['refinery', 335, 825],
         ['barracks', 195, 875], ['factory', 460, 705],
@@ -224,7 +225,7 @@ export class Game {
       for (const [type,x,dy] of [['tank',680,-80],['aa',660,30],['supply',560,160],['engineer',500,-150],['rocket',530,230]]) this.spawnUnit(0,type,x,this.homeY+dy);
     }
     this.recalculatePower();
-    this.events.notice?.(this.economyMode === 'mining' ? '月表基地已部署，采矿车开始就地取材。' : '战场已部署，外部后勤运输航线已建立。');
+    this.events.notice?.(this.map.snowToSea ? '六方基地已部署。沿河谷扩张，守住桥头与港口。' : this.economyMode === 'mining' ? '月表基地已部署，采矿车开始就地取材。' : '战场已部署，外部后勤运输航线已建立。');
   }
 
   addBuilding(owner, type, x, y) {
@@ -323,7 +324,7 @@ export class Game {
     const size = BUILDINGS[type].size;
     if (x < size || y < size || x > this.world.width - size || y > this.world.height - size) return false;
     if (type === 'dock') {
-      if (!this.map.dockZones.some(rect => x >= rect.x1 && x <= rect.x2 && y >= rect.y1 && y <= rect.y2 && (side === 0 ? x < this.world.width / 2 : x > this.world.width / 2))) return false;
+      if (!this.map.dockZones.some(rect => x >= rect.x1 && x <= rect.x2 && y >= rect.y1 && y <= rect.y2 && (this.map.snowToSea ? rect.owner === side : side === 0 ? x < this.world.width / 2 : x > this.world.width / 2))) return false;
     } else if ((this.map.combinedArms && islandDistance(this.map,x,y) < size * .65) || this.map.noBuild.some(rect => intersectsRect(x, y, size * 0.6, rect))) return false;
     if (this.ore.some(o => o.amount > 0 && distance(o, { x, y }) < 95)) return false;
     if (this.oil.some(o => distance(o, { x, y }) < 95)) return false;
@@ -606,10 +607,19 @@ export class Game {
     this.fogTimer -= dt;
     if (this.fogTimer <= 0) { this.updateFog(); this.fogTimer = 0.22; }
     if (!this.challenge && this.players.some(p=>this.isAI(p.side)&&!p.eliminated)) {
+    if(this.map.snowToSea){
+      // 各席独立错峰思考，避免五个电脑同时建造、寻路造成帧峰值；计时保存在玩家状态中。
+      for(const p of this.players)if(this.isAI(p.side)&&!p.eliminated){
+        p.nextSnowThink??=p.side*.32;p.nextSnowWave??=this.difficulty.waveStart+p.side*5;
+        if(this.time>=p.nextSnowThink){this.updateAI(p.side);p.nextSnowThink=this.time+this.difficulty.thinkInterval;}
+        if(this.time>=p.nextSnowWave){this.launchAIWave(p.side);p.nextSnowWave=this.time+this.difficulty.waveInterval;}
+      }
+    }else{
     this.aiTimer -= dt;
     if (this.aiTimer <= 0) { for(const p of this.players)if(this.isAI(p.side)&&!p.eliminated)this.updateAI(p.side); this.aiTimer = this.difficulty.thinkInterval; }
     this.aiWaveTimer -= dt;
     if (this.aiWaveTimer <= 0) { for(const p of this.players)if(this.isAI(p.side)&&!p.eliminated)this.launchAIWave(p.side); this.aiWaveTimer = this.difficulty.waveInterval + random(-4, 5); }
+    }
     }
     if (this.selected.some(id => !this.getEntity(id) || this.getEntity(id).embarkedIn)) { this.selected = this.selected.filter(id => this.getEntity(id) && !this.getEntity(id).embarkedIn); this.events.selection?.(); }
     this.checkVictory(dt);
@@ -681,7 +691,8 @@ export class Game {
         const site = [...this.oil, ...this.beacons].filter(item => item.owner !== b.owner && this.hasExploredFor(b.owner, item.x, item.y)).sort((a, b) => distance(a, unit) - distance(b, unit))[0];
         if (site) unit.order = { type: 'capture', targetId: site.id, x: site.x, y: site.y };
       } else if (this.isAI(b.owner) && unit.type === 'scout') {
-        if (this.map.barriers.length && this.map.bridges.length) {
+        if(this.map.snowToSea){const bridge=this.map.bridges[b.owner%this.map.bridges.length];unit.order={type:'move',x:(bridge.x1+bridge.x2)/2,y:(bridge.y1+bridge.y2)/2};}
+        else if (this.map.barriers.length && this.map.bridges.length) {
           const bridge = this.map.bridges[Math.floor(random(0, this.map.bridges.length))];
           unit.order = { type: 'move', x: (this.mapId === 'ocean' ? this.world.width / 2 + 160 : this.map.water ? this.map.water.x2 + 90 : 1320) + random(-30, 30), y: (bridge.y1 + bridge.y2) / 2 + random(-25, 25) };
         } else if (this.map.scouts) unit.order = { type: 'move', ...this.map.scouts[b.owner] };
@@ -691,9 +702,9 @@ export class Game {
       } else if (this.isAI(b.owner) && UNITS[unit.type].tags.includes('air')) {
         unit.order = { type: 'attackMove', ...(this.playerCount===6?this.enemyObjective(b.owner):{x:470+random(-110,110),y:yCenter+random(-240,240)}) };
       } else if (this.isAI(b.owner) && UNITS[unit.type].tags.includes('ship')) {
-        const objective = this.map.navalObjectives?.[b.owner] || { x: this.map.water.x1 + unitRadius(unit) + 40, y: yCenter + random(-290, 290) };
+        const objective = (this.map.snowToSea?this.map.harbors[this.nearestEnemySide(b.owner)]?.approach:null) || this.map.navalObjectives?.[b.owner] || { x: this.map.water.x1 + unitRadius(unit) + 40, y: yCenter + random(-290, 290) };
         unit.order = { type: 'attackMove', ...objective };
-      } else if (this.isAI(b.owner) && unit.type !== 'harvester') unit.order = { type: 'move', ...(this.playerCount===6?sixPoint(b.owner,400+random(-70,70),random(-120,120)):{x:this.world.width-630+random(-70,70),y:yCenter+random(-120,120)}) };
+      } else if (this.isAI(b.owner) && unit.type !== 'harvester') unit.order = { type: 'move', ...(this.playerCount===6?sixPoint(b.owner,400+random(-70,70),random(-120,120),this.map):{x:this.world.width-630+random(-70,70),y:yCenter+random(-120,120)}) };
       if (b.rallyPoint && unit.type !== 'harvester') unit.order = { type: 'move', ...this.resolveMoveGoal(unit, b.rallyPoint.x, b.rallyPoint.y) };
       const carrier = !unit.order && d.tags.includes('deck') ? this.assignNewCarrierAircraft(unit) : null;
       if (unit.order) this.setDroneMission(unit);
@@ -976,6 +987,7 @@ export class Game {
   }
 
   isGroundBlocked(x, y, radius = 0) {
+    if (this.map.snowToSea && snowBridge(this.map,x,y,radius)) return false;
     if (this.map.islands && islandDistance(this.map,x,y) < radius) return true;
     return this.map.barriers.some(rect => intersectsRect(x, y, radius, rect));
   }
@@ -1516,7 +1528,7 @@ export class Game {
       if (this.canBuild(side, type) && p.credits > 300) { this.startBuild(side, type); p.aiPlanIndex++; }
     }
     const savingForTech = !p.buildQueue && ['lab', 'super'].includes(plan[p.aiPlanIndex]) && this.canBuild(side, plan[p.aiPlanIndex]);
-    const fundingTech = prioritizingFirstStrike || savingForTech || ['lab', 'super'].includes(p.buildQueue?.type);
+    const fundingTech = prioritizingFirstStrike || savingForTech || ['lab', 'super'].includes(p.buildQueue?.type) || this.map.snowToSea && ['radar','airfield'].includes(p.buildQueue?.type);
     if (fundingTech) {
       // 用正常取消规则回收已付费用，防止海陆空队列同时耗尽科研预算。
       for (const facility of this.ownedBuildings(side).filter(b => PRODUCERS.includes(b.type))) {
@@ -1536,7 +1548,7 @@ export class Game {
     }
     for (const engineer of this.ownedUnits(side, 'engineer')) {
       if (['capture','defuse','collect'].includes(engineer.order?.type)) continue;
-      const reachable = this.map.combinedArms ? knownSites.filter(site => islandIndex(this.map, site) === islandIndex(this.map, engineer)) : knownSites;
+      const reachable = this.map.combinedArms && !this.map.connectedMainland ? knownSites.filter(site => islandIndex(this.map, site) === islandIndex(this.map, engineer)) : knownSites;
       const site = reachable.sort((a, b) => distance(a, engineer) - distance(b, engineer))[0];
       if (site) engineer.order = { type: 'capture', targetId: site.id, x: site.x, y: site.y };
     }
@@ -1583,7 +1595,7 @@ export class Game {
       }
     }
     for (const transport of this.activeUnits(side, 'apc')) {
-      if (transport.passengers.length && transport.x < this.world.width / 2) this.unloadTransport(transport);
+      if (transport.passengers.length && (this.map.snowToSea ? distance(transport,this.enemyObjective(side))<520 : transport.x < this.world.width / 2)) this.unloadTransport(transport);
       if (!transport.order && transport.passengers.length < UNITS.apc.capacity) {
         for (const infantry of this.activeUnits(side, 'rifle').filter(u => distance(u, transport) < 150).slice(0, UNITS.apc.capacity - transport.passengers.length)) infantry.order = { type: 'board', targetId: transport.id };
       }
@@ -1637,7 +1649,7 @@ export class Game {
     ];
     const index = Math.max(0, this.players[side].aiPlanIndex - 1);
     const preferred = slots[index] || slots[slots.length - 1];
-    const origin = this.playerCount===6 ? sixPoint(side,preferred[0]-205,preferred[1]-720) : { x: this.world.width - preferred[0], y: this.world.height - preferred[1] - this.homeY + 720 };
+    const origin = this.playerCount===6 ? sixPoint(side,preferred[0]-205,preferred[1]-720,this.map) : { x: this.world.width - preferred[0], y: this.world.height - preferred[1] - this.homeY + 720 };
     if (this.placeBuilding(side, type, origin.x, origin.y)) return;
     for (let radius = 0; radius <= 7; radius++) {
       for (let a = 0; a < 16; a++) {
@@ -1654,7 +1666,7 @@ export class Game {
     const combat = this.activeUnits(side).filter(u => (UNITS[u.type].damage > 0 || u.type === 'apc') && !UNITS[u.type].tags.includes('ship') && !UNITS[u.type].tags.includes('jet'));
     if (combat.length < 3) return;
     const wave = combat.filter(u => !['attackMove', 'rearm', 'board'].includes(u.order?.type)).slice(0, this.difficulty.waveSize);
-    const objective = this.victoryMode === 'control' ? this.beacons.filter(site => site.owner !== side && this.hasExploredFor(side, site.x, site.y) && (!this.map.combinedArms || islandIndex(this.map, site) === islandIndex(this.map, wave[0] || combat[0]))).sort((a, b) => distance(a, wave[0] || combat[0]) - distance(b, wave[0] || combat[0]))[0] : null;
+    const objective = this.victoryMode === 'control' ? this.beacons.filter(site => site.owner !== side && this.hasExploredFor(side, site.x, site.y) && (!this.map.combinedArms || this.map.connectedMainland || islandIndex(this.map, site) === islandIndex(this.map, wave[0] || combat[0]))).sort((a, b) => distance(a, wave[0] || combat[0]) - distance(b, wave[0] || combat[0]))[0] : null;
     for (const u of wave) { u.order = { type: 'attackMove', x: (objective?.x ?? (this.enemyObjective(side).x)) + random(-70, 70), y: (objective?.y ?? (this.enemyObjective(side).y)) + random(-90, 90) }; u.path = []; }
     if (wave.length && this.isVisible(wave[0].x, wave[0].y)) this.events.notice?.(objective ? '敌军正在争夺信标' : '敌军正在向基地推进');
   }
