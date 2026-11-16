@@ -1,0 +1,144 @@
+{
+  "build": "20261116-snow-sea-r1",
+  "sourceCommit": "a8006122131d52b1d62a3f045be98bc96358e814",
+  "version": "3.8.0",
+  "health": [
+    {
+      "ok": true,
+      "version": "3.8.0",
+      "build": "20261116-snow-sea-r1",
+      "protocol": 7,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    {
+      "ok": true,
+      "version": "3.8.0",
+      "build": "20261116-snow-sea-r1",
+      "protocol": 8,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  ],
+  "verifiedFiles": [
+    {
+      "path": "/",
+      "sha256": "d1931b644478744488105f3d720cf4ca0ba925c5353aeeaa6a029d9fd1a362a2"
+    },
+    {
+      "path": "/official/",
+      "sha256": "d1931b644478744488105f3d720cf4ca0ba925c5353aeeaa6a029d9fd1a362a2"
+    },
+    {
+      "path": "/play/",
+      "sha256": "e2b4f85707ea2f08dd0c2a4de6cf6195e70ca1f7ee5ef96e114d360334814de4"
+    },
+    {
+      "path": "/candidate/",
+      "sha256": "e2b4f85707ea2f08dd0c2a4de6cf6195e70ca1f7ee5ef96e114d360334814de4"
+    },
+    {
+      "path": "/downloads/index.html",
+      "sha256": "74b1c9cfd2011eddc53544ee2b88ffc89fec521f46e990784fda04abcccbae5c"
+    },
+    {
+      "path": "/downloads/manifest.json",
+      "sha256": "f9ecc73c62f6bfb9bf21c6381dfb9bd562a04a94328a72b692aba1843b753760"
+    },
+    {
+      "path": "/downloads/desktop-update.json",
+      "sha256": "3295c92121e12b377b398256e145e965808e450dfad5db7e967c95a65651c631"
+    },
+    {
+      "path": "/official/site.js",
+      "sha256": "821d2c969f055a81c57d0cf9d88ef0ad0b708217738f91919b47014873a4bb8d"
+    },
+    {
+      "path": "/assets/licenses/third-party-assets.txt",
+      "sha256": "26e46ef9d256fb07bb3080874a9f0bf706738762ba4a7b5f6a48efb44a0ce428"
+    },
+    {
+      "path": "/assets/index-I0aVWrtf.js",
+      "sha256": "a8beae3e350d8f1c83de225ffd2727dec4efeebbc88dbf7899825709d02d19bc"
+    },
+    {
+      "path": "/assets/render-Bj1cpKsv.js",
+      "sha256": "43dd627173d35d00558b9f3ccf688f60aaf5adbd70851153938a1bb1695a7f04"
+    },
+    {
+      "path": "/assets/official-official-cinematic-DZzzadIY.css",
+      "sha256": "0c1ac10c958a491572fd802c786aa03d97f531e7efb5810dc409ee79495ea347"
+    },
+    {
+      "path": "/assets/index-Br5FBCRY.css",
+      "sha256": "788f35fec239d1fa64ee4831900686b9ef7d8738d519a23751f38907c7ba18e6"
+    },
+    {
+      "path": "/assets/mountain-sea-calm-D1D6PUx1.m4a",
+      "sha256": "ff803125c05bbd5c466e8d9a8886f4429bb13cf8c4ebf31ba1b46f493111945d"
+    },
+    {
+      "path": "/assets/mountain-sea-battle-C-wjN6Jc.m4a",
+      "sha256": "3dc074e267c74191f355721897f423a62f0e138f53328a4014afafe5df8449cb"
+    }
+  ],
+  "manifestEntries": 289,
+  "protectedEntriesUnchanged": [
+    "/play/starport/index.html",
+    "/official/starport/index.html",
+    "/resume/",
+    "/mist-harbor/",
+    "/jimao-fable/",
+    "/jiuji/"
+  ],
+  "offlineBytes": 66735079,
+  "offlineSHA256": "daed2156b6a9004696a50697dd738d75a775dfa8af9dc4fc338c4e5c1fbd9ba5",
+  "historicalFilesRetained": 113,
+  "bothDomainsLatest": true,
+  "serverPackage": {
+    "release": "20261116-snow-sea-final",
+    "bytes": 7895403,
+    "sha256": "f4c7676f1eb6fe1c782740d95660228cef88492981be7d1decf2691c3e38dc6f",
+    "sourceCommit": "a8006122131d52b1d62a3f045be98bc96358e814"
+  },
+  "automatedTests": {
+    "passed": 759,
+    "failed": 0
+  },
+  "desktopCI": "https://github.com/chencheng666/great-powers-rts/actions/runs/43790607841",
+  "desktopFiles": 9,
+  "githubAssets": 11,
+  "playerData": {
+    "databases": 6,
+    "integrity": "ok",
+    "allTableCountsRetained": true,
+    "backup": "/opt/great-powers/backups/20261116-snow-sea-final"
+  },
+  "browser": {
+    "players": 6,
+    "ai": 5,
+    "scriptErrors": 0,
+    "fog": {
+      "before": {
+        "oldVisible": true,
+        "nextVisible": false,
+        "enemyVisible": false
+      },
+      "after": {
+        "oldExplored": true,
+        "oldVisible": false,
+        "newVisible": true,
+        "enemyVisible": true,
+        "enemyRendered": true
+      },
+      "fogMargin": 1.9999695071596761,
+      "errors": [],
+      "contextLost": false
+    },
+    "bridgeRemaining": 9.12772797024944,
+    "offlineDisconnectedStart": true,
+    "storageRestored": true
+  }
+}
