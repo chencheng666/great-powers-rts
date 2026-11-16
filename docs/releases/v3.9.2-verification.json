@@ -122,5 +122,144 @@
     "status": "新单机启用独立动力与弹药、实际耗油、预警返场、加油机和补给舰，电脑适配；旧存档保留原规则。"
   },
   "旧存档": "缺少fuelVersion的旧档保持原规则，旧地图、科幻与联机规则不变。",
-  "正式发布": "待上海同步及公网实测，桌面安装包待CI。"
+  "正式发布": "官网与上海双服务已发布并验收，九件桌面包CI构建通过，最终下载清单正在同步。",
+  "正式站实测": {
+    "开局": {
+      "version": "大国崛起 3.9.2 | 雪岭入海",
+      "fuelVersion": 1,
+      "economy": "convoy",
+      "players": 6,
+      "ore": 0,
+      "miners": 0,
+      "fuel": 100,
+      "ammo": 30,
+      "errors": [],
+      "contextLost": false
+    },
+    "界面读档": {
+      "time": 33.81987,
+      "fuelVersion": 1,
+      "economy": "convoy",
+      "tank": [
+        {
+          "fuel": 100,
+          "ammo": 30
+        }
+      ],
+      "errors": [],
+      "loaded": true
+    },
+    "恢复存储": {
+      "restored": true,
+      "otherKeysUnchanged": true
+    }
+  },
+  "上海发布": {
+    "sourceCommit": "07e0ad1b390f7e54abca24368ac822dee2d16fb7",
+    "build": "20261116-fuel-r1",
+    "发布包资源校验": 289,
+    "公网页面与脚本样式校验": 16,
+    "受保护页面": 6,
+    "其他游戏统计模块保留": 3,
+    "数据库": 6,
+    "完整性检查": 12,
+    "记录数未减少表": 46,
+    "发布服务": [
+      {
+        "ok": true,
+        "version": "3.9.2",
+        "build": "20261116-fuel-r1",
+        "protocol": 7,
+        "maxPlayers": 2,
+        "rooms": 0,
+        "battles": 0
+      },
+      {
+        "ok": true,
+        "version": "3.9.2",
+        "build": "20261116-fuel-r1",
+        "protocol": 8,
+        "maxPlayers": 6,
+        "rooms": 0,
+        "battles": 0
+      }
+    ],
+    "发布备份": "20261116-fuel-final"
+  },
+  "桌面发行": {
+    "CI": "全部通过",
+    "地址": "https://github.com/chencheng666/great-powers-rts/actions/runs/43861178149",
+    "安装包": [
+      {
+        "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.9.2/Great.Powers_3.9.2_aarch64.app.tar.gz",
+        "label": "3.9.2 · macOS Apple Silicon · Great.Powers_3.9.2_aarch64.app.tar.gz",
+        "size": 104978794,
+        "sha256": "3b600d041f309028470f4594e3df4c2c45b5dfdd89b360fdac00a4cf1385db18",
+        "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+      },
+      {
+        "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.9.2/Great.Powers_3.9.2_aarch64.AppImage",
+        "label": "3.9.2 · Linux ARM64 · Great.Powers_3.9.2_aarch64.AppImage",
+        "size": 181451272,
+        "sha256": "c1ade61d4ec816b69f8d4ff9befbc9da5c84bc98853e2c73c1741b5473759cf3",
+        "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+      },
+      {
+        "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.9.2/Great.Powers_3.9.2_aarch64.dmg",
+        "label": "3.9.2 · macOS Apple Silicon · Great.Powers_3.9.2_aarch64.dmg",
+        "size": 105100280,
+        "sha256": "c5d573d560b545229e8e9392ab40503491e68161e7a50e9815bb3fa7d09faf02",
+        "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+      },
+      {
+        "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.9.2/Great.Powers_3.9.2_amd64.AppImage",
+        "label": "3.9.2 · Linux x64 · Great.Powers_3.9.2_amd64.AppImage",
+        "size": 183302648,
+        "sha256": "a115cf433d289a8a1fa9cc75e95166a5c9cea7782bf05239335945011cb8b6fc",
+        "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+      },
+      {
+        "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.9.2/Great.Powers_3.9.2_amd64.deb",
+        "label": "3.9.2 · Linux x64 · Great.Powers_3.9.2_amd64.deb",
+        "size": 104913296,
+        "sha256": "5cde8305423f097e69126bae156d6d4ad2f0eb0907a85f54dade7937a83e6114",
+        "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+      },
+      {
+        "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.9.2/Great.Powers_3.9.2_arm64.deb",
+        "label": "3.9.2 · Linux ARM64 · Great.Powers_3.9.2_arm64.deb",
+        "size": 104965090,
+        "sha256": "3b1ce796e94d808fa42e27c1abf0274f8cca5600b5c456e920235e1e8e352166",
+        "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+      },
+      {
+        "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.9.2/Great.Powers_3.9.2_x64-setup.exe",
+        "label": "3.9.2 · Windows x64 · Great.Powers_3.9.2_x64-setup.exe",
+        "size": 322601034,
+        "sha256": "f5da63cb14c11746f74f3ff402dedf2f5b6fd4478d2c49dadab44d5bf6f2767b",
+        "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+      },
+      {
+        "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.9.2/Great.Powers_3.9.2_x64.app.tar.gz",
+        "label": "3.9.2 · macOS Intel · Great.Powers_3.9.2_x64.app.tar.gz",
+        "size": 105783535,
+        "sha256": "2a63650d00bfd80b0f81a1dfcf43bf8b9943697e495673fc6ebb16b1af35f454",
+        "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+      },
+      {
+        "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.9.2/Great.Powers_3.9.2_x64.dmg",
+        "label": "3.9.2 · macOS Intel · Great.Powers_3.9.2_x64.dmg",
+        "size": 105906652,
+        "sha256": "afae02ac76baa3136445a399011098aead62145ec4b495177b8eae43f72d50b0",
+        "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+      }
+    ],
+    "硬件实测": "未逐一在对应硬件实测，Mac未公证、Windows未签名。"
+  },
+  "下载清单": {
+    "历史保留": 143,
+    "总数": 153,
+    "新增桌面包": 9,
+    "新增离线包": 1
+  }
 }
