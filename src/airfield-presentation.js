@@ -1,3 +1,4 @@
+import { UNITS } from './data.js';
 import * as THREE from 'three';
 import { mergeParts } from './model-craft.js';
 import { runwayAircraft, AIRFIELD_LAYOUT, onAirfieldPavement } from './airfield-rules.js';
@@ -37,7 +38,11 @@ export function glideProfile(distance, groundRadius) {
 }
 
 export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight, deckHeight) {
-  if (!fixedWingPresentation(entity.type, game.map.future) || entity.deckApproach || entity.embarkedIn) return null;
+  if(entity.reinforcement&&entity.type==='freightPlane'){
+    const r=entity.reinforcement,heavy=['tank','rocket','ballistic','harvester'].includes(r.type);
+    if(heavy&&r.delivery){const gap=Math.hypot(entity.x-r.delivery.x,entity.y-r.delivery.y),fraction=r.phase==='outbound'?clamp((game.time-(r.departedAt||game.time))/3):clamp((gap-18)/280);return {height:groundHeight+5+(cruiseHeight-groundHeight-5)*fraction,pitch:fraction>0&&fraction<1?-.04:0};}
+  }
+  if (!(fixedWingPresentation(entity.type, game.map.future)||game.frontlineVersion===1&&UNITS[entity.type]?.tags.includes('jet')&&!UNITS[entity.type]?.tags.includes('logistics')) || entity.deckApproach || entity.embarkedIn) return null;
   const grounded = game.aircraftGrounded(entity);
   // 所有机型都须站在铺装表面上，不能仅为带起落架细节的机型抬高。
   const groundOffset = aircraftGroundHeight(game, entity, entry, groundHeight) - groundHeight;

@@ -40,7 +40,11 @@ export function createProceduralAirfield() {
     add(new THREE.CylinderGeometry(.22,.22,.58,12),steel,[x,.42,.05]);
     box(dark,[x,.74,.05],[.4,.04,.38]);
   }
-  mergeParts(body);refineAirfieldRunway(root);
+  const radar=new THREE.Group();radar.name='facility_radar';radar.position.set(-4.4,1.9,-4.1);
+  const mast=new THREE.Mesh(new THREE.CylinderGeometry(.045,.07,2.1,8),steel);mast.position.set(-4.4,1.1,-4.1);body.add(mast);
+  const antenna=new THREE.Mesh(new THREE.BoxGeometry(1.15,.38,.09),steel);radar.add(antenna);
+  const back=new THREE.Mesh(new THREE.BoxGeometry(.85,.07,.24),steel);back.position.z=.1;radar.add(back);
+  root.add(mergeParts(radar));mergeParts(body);refineAirfieldRunway(root);
   root.userData.proceduralFacility=true;root.userData.airfieldLayout={hangars:2,towers:1,parking:6};
   return root;
 }

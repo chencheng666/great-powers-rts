@@ -1,3 +1,4 @@
+import { createFrontlineWarehouse } from './frontline-presentation.js';
 import { createProceduralAirfield } from './procedural-facilities.js';
 import { createAirDefense, AIR_DEFENSE_FACTIONS } from './air-defense-models.js';
 import { createFactionElite } from './faction-models.js';
@@ -174,6 +175,7 @@ export async function prepareVisualAssets({ lunar = false } = {}) {
     for(const type of ['cache','salvage','depot'])models.set(`resource_${type}`,createResourceModel(type));
     models.set('dock', createHarbor(weatherMaterial, {...openAssets,crane:null}));
     models.set('airfield',createProceduralAirfield());
+    models.set('frontlineWarehouse',createFrontlineWarehouse());
     for (const type of COMMUNITY_3D_BUILDINGS.filter(type => !['dock','airfield'].includes(type))) refineFacility(models.get(type), type, weatherMaterial);
     refineRadarStation(models.get('radar'));
     refineAirfieldRunway(models.get('airfield'));

@@ -1,3 +1,4 @@
+import { frontlineEnabled } from './frontline-rules.js';
 import { emitBattleSound } from './battle-sound.js';
 import { BUILDINGS, UNITS } from './data.js';
 import { lunarBuildingProfile } from './lunar-robots.js';
@@ -10,16 +11,16 @@ const ground=u=>!UNITS[u.type].tags.some(t=>['air','ship','logistics'].includes(
 export const intelligenceCombat={
   isControlLocked(side) {
     const p=this.players[side],source=this.getEntity(p.cyberSourceId);
-    return p.cyberLockedUntil>this.time&&source?.kind==='building'&&source.owner!==side&&source.type==='super'&&source.hp>0&&this.hasPower(source.owner);
+    return p.cyberLockedUntil>this.time&&source?.kind==='building'&&source.owner!==side&&source.type===(frontlineEnabled(this)?'hq':'super')&&source.hp>0&&this.hasPower(source.owner);
   },
   launchCyber(side) {
     const targetSide=this.nearestEnemySide(side);if(targetSide===undefined)return false;
-    const p=this.players[side],source=this.ownedBuildings(side,'super')[0];
+    const p=this.players[side],source=this.ownedBuildings(side,frontlineEnabled(this)?'hq':'super')[0];
     if(this.isControlLocked(side)||!source||!this.hasPower(side)||p.cyberCharge<INTELLIGENCE_RULES.cyberCharge||p.credits<INTELLIGENCE_RULES.cyberCost||p.cyberPending)return false;
     p.credits-=INTELLIGENCE_RULES.cyberCost;p.cyberCharge=0;
     p.cyberPending={sourceId:source.id,targetSide,executeAt:this.time+INTELLIGENCE_RULES.cyberWarning};
-    this.events.notice?.(side===1?'敌方网络攻击预警：12 秒后指令链路将受干扰，摧毁源站或切断敌方供电可取消。':'网络攻击已排程，敌方收到 12 秒预警。');
-    this.events.voice?.(side===1?'cyberWarning':'cyberLaunch');
+    this.events.notice?.(side!==0?'敌方网络攻击预警：12 秒后指令链路将受干扰，摧毁源站或切断敌方供电可取消。':'网络攻击已排程，敌方收到 12 秒预警。');
+    this.events.voice?.(side!==0?'cyberWarning':'cyberLaunch');
     return true;
   },
   updateIntelligence(dt) {
@@ -34,7 +35,7 @@ export const intelligenceCombat={
       p.cyberCharge=active&&!p.cyberPending?Math.min(INTELLIGENCE_RULES.cyberCharge,(p.cyberCharge||0)+dt):active?p.cyberCharge||0:0;
       if(p.cyberPending){
         const source=this.getEntity(p.cyberPending.sourceId);
-        if(!active||source?.hp<=0||source?.type!=='super'||source?.owner!==p.side){p.cyberPending=null;this.events.notice?.('网络攻击源站离线，排程已取消。');}
+        if(!active||source?.hp<=0||source?.type!==(frontlineEnabled(this)?'hq':'super')||source?.owner!==p.side){p.cyberPending=null;this.events.notice?.('网络攻击源站离线，排程已取消。');}
         else if(p.cyberPending.executeAt<=this.time){
           const target=this.players[p.cyberPending.targetSide??this.nearestEnemySide(p.side)];if(!target||target.eliminated){p.cyberPending=null;continue;}target.cyberSourceId=source.id;target.cyberLockedUntil=this.time+INTELLIGENCE_RULES.cyberDuration;p.cyberPending=null;
           if(target.side===0){this.placingBuilding=false;this.orderMode=null;this.pendingAbility=false;this.pendingNuclear=false;this.events.voice?.('cyberDisrupted');this.events.notice?.('指令链路受干扰 4 秒：不能下达新指令，部队仍自动还击；镜头、暂停与存档可用。');}

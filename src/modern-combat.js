@@ -1,3 +1,4 @@
+import { frontlineEnabled, transportWeight } from './frontline-rules.js';
 import { snowLandConnected } from './snow-to-sea.js';
 import { unlimitedAmmo } from './commander-sandbox.js';
 import { airfieldParking } from './airfield-rules.js';
@@ -35,6 +36,7 @@ export const modernCombat = {
 
   aircraftGrounded(u) {
     if (!UNITS[u.type]?.tags.includes('air')) return false;
+    if(u.reinforcement?.progress>0&&['tank','rocket','ballistic','harvester'].includes(u.reinforcement.type)&&u.reinforcement.phase==='inbound')return true;
     if (this.online && typeof u.airfieldGrounded === 'boolean') return u.airfieldGrounded;
     if (u.airfieldOps && ['taxiIn','parked','taxiOut'].includes(u.airfieldOps.phase) && !u.embarkedIn) return true;
     return !!UNITS[u.type]?.tags.includes('air') && !u.embarkedIn && !u.deployment && !u.deckApproach &&
@@ -45,7 +47,7 @@ export const modernCombat = {
   serviceGroundUnit(u, dt, home = null) {
     if (!this.serviceReady(u) || isLunarRobot(this.map, u.type) || UNITS[u.type].tags.some(t => ['air', 'ship', 'logistics'].includes(t))) return false;
     const infantry = UNITS[u.type].tags.includes('infantry');
-    home ||= [...this.ownedBuildings(u.owner).filter(b => infantry ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type)),...theaterServiceSites(this,u.owner)].find(b => theaterServiceAllowed(this,b) && distance(b, u) <= b.size * .55 + 40);
+    home ||= [...this.ownedBuildings(u.owner).filter(b => frontlineEnabled(this)?b.type==='refinery':infantry ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type)),...theaterServiceSites(this,u.owner)].find(b => theaterServiceAllowed(this,b) && distance(b, u) <= b.size * .55 + 40);
     const depot=watchDepot(this,u.owner);
     if(!home && depot && distance(depot,u)<=depot.size*.55+40)home=depot;
     if(home?.id==='island-power'&&!depot)return false;
@@ -112,6 +114,7 @@ export const modernCombat = {
   },
 
   shipBerth(u, home) {
+    if(frontlineEnabled(this)&&u.assignment?.homeId===home.id)return this.frontlineBerth(u,home);
     if (isLifeline(this)) return harborPlan(this,u,home);
     const peers = this.activeUnits(u.owner).filter(v => UNITS[v.type].tags.includes('ship') && v.order?.type === 'rearm' && (!v.order.homeId || v.order.homeId === home.id))
       .sort((a, b) => a.id - b.id);
@@ -305,7 +308,7 @@ export const modernCombat = {
       const price = d.ammo && u.ammo < d.ammo ? d.ammoCost ?? 10 : 1;
       if (truck && this.players[u.owner].credits >= price) { u.path = []; return; }
     }
-    let homes = this.ownedBuildings(u.owner).filter(b => naval ? b.type === 'dock' : d.tags.includes('infantry') ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type));
+    let homes = this.ownedBuildings(u.owner).filter(b => naval ? b.type === 'dock' : frontlineEnabled(this)?b.type==='refinery':d.tags.includes('infantry') ? b.type === 'barracks' : ['factory', 'armory'].includes(b.type));
     if(!naval)homes=[...homes,...theaterServiceSites(this,u.owner)].filter(b=>theaterServiceAllowed(this,b));
     if(!naval && this.map.islands){const depot=watchDepot(this,u.owner);if(depot)homes.push(depot);homes=homes.filter(b=>islandIndex(this.map,b)===islandIndex(this.map,u));}
     const home = homes.find(b => b.id === u.order?.homeId) || homes.sort((a, b) => distance(a, u) - distance(b, u))[0];
@@ -342,7 +345,7 @@ export const modernCombat = {
 
   updateSupply(u, dt) {
     const p = this.players[u.owner],depot=watchDepot(this,u.owner);
-    const home = [...this.ownedBuildings(u.owner,'factory'),...theaterServiceSites(this,u.owner),...(depot?[depot]:[])].filter(b=>theaterServiceAllowed(this,b)&&(!this.map.islands||islandIndex(this.map,b)===islandIndex(this.map,u))).sort((a, b) => distance(a, u) - distance(b, u))[0];
+    const home = [...this.ownedBuildings(u.owner,frontlineEnabled(this)?'refinery':'factory'),...theaterServiceSites(this,u.owner),...(depot?[depot]:[])].filter(b=>theaterServiceAllowed(this,b)&&(!this.map.islands||islandIndex(this.map,b)===islandIndex(this.map,u))).sort((a, b) => distance(a, u) - distance(b, u))[0];
     const manualMove = ['move', 'attackMove'].includes(u.order?.type);
     if (u.stock < 8 && home && !manualMove) {
       if (u.order?.type !== 'restock') { u.resumeOrder = u.order; u.order = { type: 'restock' }; }
@@ -434,16 +437,16 @@ export const modernCombat = {
 
   transportLoad(transport) {
     return (transport.passengers || []).reduce((total, id) => {
-      const u = this.getEntity(id); return total + (u && u.hp > 0 ? transport.type === 'carrier' || UNITS[u.type].tags.includes('infantry') ? 1 : 4 : 0);
+      const u = this.getEntity(id); return total + (u && u.hp > 0 ? transportWeight(this,u,transport) : 0);
     }, 0);
   },
 
   canBoardTransport(u, transport) {
     if (!u || !transport || u === transport || u.kind !== 'unit' || transport.hp <= 0 || u.hp <= 0 || u.owner !== transport.owner || u.embarkedIn || transport.embarkedIn || !UNITS[transport.type].capacity || UNITS[u.type].capacity) return false;
-    const tags = UNITS[u.type].tags, weight = tags.includes('infantry') ? 1 : 4;
+    const tags = UNITS[u.type].tags, weight = transportWeight(this,u,transport);
     if (transport.type === 'carrier') return tags.includes('deck') && (u.homeCarrierId === transport.id || this.carrierAircraft(transport).length < UNITS.carrier.capacity) && transport.passengers.length < UNITS.carrier.capacity;
     if (tags.some(t => ['air', 'ship'].includes(t)) || transport.type === 'apc' && !tags.includes('infantry')) return false;
-    return this.transportLoad(transport) + weight <= UNITS[transport.type].capacity;
+    return this.transportLoad(transport) + weight <= UNITS[transport.type].capacity + 1e-9;
   },
 
   transportGrounded(transport) {
@@ -459,7 +462,8 @@ export const modernCombat = {
       u.deckApproach=null;u.order = null; return;
     }
     if (transport.type === 'landing') {
-      const shore = this.resolveMoveGoal(u, transport.x, transport.y);
+      const shore = frontlineEnabled(this)?this.landingBoardingPoint(u,transport):this.resolveMoveGoal(u, transport.x, transport.y);
+      if(!shore)return;
       if (distance(shore, transport) > 145 || !this.canOccupyUnit(u, shore)) return;
       if (distance(u, transport) > 150) { this.moveUnit(u, shore, dt, 12); return; }
     } else {
@@ -674,10 +678,18 @@ export const modernCombat = {
 
   updateAITransports(side=1) {
     for (const t of this.activeUnits(side).filter(u => ['landing', 'airlift'].includes(u.type))) {
-      if (t.order?.type === 'rearm' || t.deployment) continue;
+      if (t.order?.type === 'rearm' || t.deployment || t.reinforcement) continue;
       const water = this.map.water;
-      const home = (this.map.snowToSea&&t.type==='landing'?this.navalGoal(this.map.harbors[side].x,this.map.harbors[side].y,70):null) || (t.type === 'landing' && this.map.landingApproaches?.[side]) || (this.playerCount===6?this.map.spawns[side]:{ x: t.type === 'landing' ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 });
-      const shore = (this.map.snowToSea&&t.type==='landing'?this.map.landingApproaches[side]:null) || (t.type === 'landing' && this.map.landingApproaches?.[1-side]) || (this.playerCount===6?this.enemyObjective(side):{ x: t.type === 'landing' ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 });
+      let home = (this.map.snowToSea&&t.type==='landing'?this.navalGoal(this.map.harbors[side].x,this.map.harbors[side].y,70):null) || (t.type === 'landing' && this.map.landingApproaches?.[side]) || (this.playerCount===6?this.map.spawns[side]:{ x: t.type === 'landing' ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 });
+      let shore = (this.map.snowToSea&&t.type==='landing'?this.map.landingApproaches[side]:null) || (t.type === 'landing' && this.map.landingApproaches?.[1-side]) || (this.playerCount===6?this.enemyObjective(side):{ x: t.type === 'landing' ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 });
+      if(frontlineEnabled(this)&&t.type==='airlift'){
+        const base=this.getEntity(t.assignment?.homeId),parking=base?airfieldParking(base,t.assignment.slot):home;
+        home=this.transportLandingPoint(t,parking)||home;
+        const island=this.beacons.find(b=>b.owner!==side&&this.hasExploredFor(side,b.x,b.y)&&!snowLandConnected(this.map,home,b));
+        const target=island||this.players[side].frontlineObjective||shore;
+        shore=this.transportLandingPoint(t,target);
+        if(!shore)continue;
+      }
       t.transportStage ||= 'load';
       const goal = ['load', 'return'].includes(t.transportStage) ? home : shore;
       if (distance(t, goal) > 20) { t.order = { type: 'move', ...goal }; continue; }
@@ -685,8 +697,8 @@ export const modernCombat = {
       if (t.transportStage === 'return') { t.transportStage = 'load'; t.loadStartedAt = this.time; }
       if (t.transportStage === 'load') {
         t.loadStartedAt ??= this.time;
-        if (this.transportLoad(t) >= 4 && this.time - t.loadStartedAt > 12) { t.transportStage = 'depart'; continue; }
-        for (const unit of this.activeUnits(side).filter(u => (this.map.snowToSea?['rifle','tank','engineer']:['rifle','tank']).includes(u.type) && !['board', 'rearm'].includes(u.order?.type) && (this.map.snowToSea || distance(u, t) < 900)).sort((a,b)=>(this.map.snowToSea?Number(b.type==='engineer')-Number(a.type==='engineer'):0)||distance(a,t)-distance(b,t)).slice(0,this.map.snowToSea?4:Infinity)) {
+        if (t.passengers.length && (this.transportLoad(t) >= 4 || this.time - t.loadStartedAt > 24) && this.time - t.loadStartedAt > 12) { t.transportStage = 'depart'; continue; }
+        for (const unit of this.activeUnits(side).filter(u => (this.map.snowToSea?['rifle','tank','engineer']:['rifle','tank']).includes(u.type) && !u.reinforcement && !u.deliveryUntil && !['board', 'rearm','capture','defuse'].includes(u.order?.type) && (this.map.snowToSea || distance(u, t) < 900)).sort((a,b)=>(this.map.snowToSea?Number(b.type==='engineer')-Number(a.type==='engineer'):0)||distance(a,t)-distance(b,t)).slice(0,this.map.snowToSea?4:Infinity)) {
           if (this.canBoardTransport(unit, t)) unit.order = { type: 'board', targetId: t.id };
         }
       } else {

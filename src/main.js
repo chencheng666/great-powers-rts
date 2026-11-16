@@ -1,4 +1,6 @@
 import { unitAllowedInRoster } from './unit-roster.js';
+import { frontlineEnabled, frontlineBuilding, reinforcementProducer, FRONTLINE_BUILDINGS, FRONTLINE_PRODUCERS } from './frontline-rules.js';
+import { reinforcementDomain } from './frontline-operations.js';
 import { CRUISE, cruiseAvailability } from './submarine-cruise.js';
 import { ensureBattleCanvas } from './battle-canvas.js';
 import { setupUnitPresentation } from './unit-presentation.js';
@@ -113,7 +115,7 @@ const updateBattleTutorial = setupTutorial({onAction(step) {
   }
   setSidebarCollapsed(false);
   document.querySelector(`[data-tab="${step===2?'build':'units'}"]`).click();
-  const target=step===2?document.querySelector('[data-build="power"]'):document.querySelector('[data-unit]:not(:disabled)');
+  const target=step===2?document.querySelector(state.game?.frontlineVersion?'[data-build="refinery"]':'[data-build="power"]'):document.querySelector('[data-unit]:not(:disabled)');
   if(target){target.scrollIntoView({block:'nearest'});target.focus();}
 }});
 const loyalty = new CommanderLoyalty(localStorage);
@@ -595,12 +597,15 @@ function updateProductionOverview(g,root) {
   const {inventory,types,facilities}=productionOverview(g);
   for(const el of root.querySelectorAll('[data-unit-stock]')){
     const type=el.dataset.unitStock,entry=types[type],count=inventory.types[type]||0;
-    el.textContent=`现有 ${count}`+(entry?.active?` · ${entry.active>1?`${entry.active}线生产，最快 `:''}${entry.stopped||`剩 ${entry.remaining} 秒`}`:'')+(entry?.queued?` · 排队 ${entry.queued}`:'');
+    const domain=frontlineEnabled(g)?reinforcementDomain(type):null,capacity=domain?g.reinforcementCapacity(0,domain):null;
+    const inbound=g.ownedUnits(0).filter(u=>u.reinforcement?.type===type&&u.reinforcement.phase==='inbound').length;
+    if(frontlineEnabled(g)){const d=UNITS[type];el.closest('button').disabled=!g.hasBuilding(0,'hq')||!g.hasBuilding(0,reinforcementProducer(g,type))||!!(d.requires&&!g.hasBuilding(0,d.requires))||!!(capacity&&capacity.free<=0);}
+    el.textContent=(capacity?`编制 ${capacity.used+capacity.pending}/${capacity.capacity} · `:'')+`现有 ${count}`+(inbound?` · 在途 ${inbound}`:'')+(entry?.active?` · ${entry.active>1?`${entry.active}线生产，最快 `:''}${entry.stopped||`剩 ${entry.remaining} 秒`}`:'')+(entry?.queued?` · 排队 ${entry.queued}`:'');
   }
   for(const el of root.querySelectorAll('[data-producer-status]')){
     const tasks=facilities.filter(f=>f.producer===el.dataset.producerStatus);
     const active=tasks.filter(f=>f.type),queued=tasks.reduce((sum,f)=>sum+f.queued,0);
-    el.textContent=active.length?`${active.length}线生产 · ${active.map(f=>`${equipmentProfile(g.players[0].faction,f.type,g.map.future).name} ${f.stopped||`${f.remaining}秒`}`).join(' / ')}`:queued?`排队 ${queued} 项`:g.hasBuilding(0,el.dataset.producerStatus)?'待命':'未部署';
+    el.textContent=active.length?`${active.length}线${frontlineEnabled(g)?'准备增援':'生产'} · ${active.map(f=>`${equipmentProfile(g.players[0].faction,f.type,g.map.future).name} ${f.stopped||`${f.remaining}秒`}`).join(' / ')}`:queued?`排队 ${queued} 项`:g.hasBuilding(0,el.dataset.producerStatus)?'待命':'未部署';
   }
   for(const el of root.querySelectorAll('[data-build-time]')){
     const type=el.dataset.buildTime,q=g.players[0].buildQueue;
@@ -651,30 +656,30 @@ function updateSidebar(force = false) {
   root.dataset.intelligenceKey=intelligenceKey;
   const p = g.players[0], faction = FACTIONS[p.faction];
   if (state.tab === 'build') {
-    root.innerHTML = `<p class="content-subhead">基地设施 · 按顺序解锁</p><div class="action-list">${BUILD_ORDER.filter(type => (!BUILDINGS[type].nuclear||g.nuclearEnabled)&&(!BUILDINGS[type].naval || g.map.water) && supportsMap(BUILDINGS[type].map, g.mapId)).map(type => {
-      const d = lunarBuildingProfile(g.map.future, type, BUILDINGS[type]), locked = !g.canBuild(0, type), queued = p.buildQueue?.type === type || g.pendingBuilding === type;
+    root.innerHTML = `<p class="content-subhead">基地设施 · 按顺序解锁</p><div class="action-list">${(frontlineEnabled(g)?FRONTLINE_BUILDINGS:BUILD_ORDER).filter(type => (!BUILDINGS[type].nuclear||g.nuclearEnabled)&&(!BUILDINGS[type].naval || g.map.water) && supportsMap(BUILDINGS[type].map, g.mapId)).map(type => {
+      const d = lunarBuildingProfile(g.map.future, type, frontlineBuilding(g,type)), locked = !g.canBuild(0, type), queued = p.buildQueue?.type === type || g.pendingBuilding === type;
       const label = locked ? `需要 ${lunarBuildingProfile(g.map.future, d.requires, BUILDINGS[d.requires])?.name || '指挥中心'}` : d.desc;
       const ready = g.pendingBuilding === type;
-      return `<button class="action-card ${locked ? 'locked' : ''} ${queued ? 'queued' : ''}" data-build="${type}" ${!ready && (locked || p.buildQueue || g.pendingBuilding) ? 'disabled' : ''} title="${ready ? '建造完成，点击部署' : d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${d.name}</strong><small>${ready ? '已完成 · 点击部署' : label}</small></span><span class="action-cost">${ready ? '部署' : `¤ ${fmt(d.cost)}`}<small data-build-time="${type}">${ready ? '待命' : `${Math.ceil(d.time / sandboxSpeed(g,0))} 秒`}</small></span></button>`;
+      return `<button class="action-card ${locked ? 'locked' : ''} ${queued ? 'queued' : ''}" data-build="${type}" ${!ready && (locked || p.buildQueue || g.pendingBuilding) ? 'disabled' : ''} title="${ready ? '建造完成，点击部署' : d.desc}"><span class="action-icon"><img src="${modelThumbnail(frontlineEnabled(g)&&type==='refinery'?'frontlineWarehouse':equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${d.name}</strong><small>${ready ? '已完成 · 点击部署' : label}</small></span><span class="action-cost">${ready ? '部署' : `¤ ${fmt(d.cost)}`}<small data-build-time="${type}">${ready ? '待命' : `${Math.ceil(d.time / sandboxSpeed(g,0))} 秒`}</small></span></button>`;
     }).join('')}</div>`;
     root.querySelectorAll('[data-build]').forEach(button => button.addEventListener('click', () => {
       if (g.pendingBuilding === button.dataset.build) { g.placingBuilding = true; g.orderMode = null; clearOrderButtons(); updateUI(true); }
       else if (g.startBuild(0, button.dataset.build)) updateUI(true);
     }));
   } else if (state.tab === 'units') {
-    root.innerHTML = PRODUCERS.map(producer => {
-      const types = UNIT_ORDER.filter(type => unitAllowedInRoster(type,g.map) && (type !== 'harvester' || g.economyMode === 'mining') && UNITS[type].producer === producer && (!UNITS[type].faction || UNITS[type].faction === p.faction) && (!UNITS[type].naval || g.map.water) && supportsMap(UNITS[type].map, g.mapId));
+    root.innerHTML = (frontlineEnabled(g)?FRONTLINE_PRODUCERS:PRODUCERS).map(producer => {
+      const types = UNIT_ORDER.filter(type => unitAllowedInRoster(type,g.map) && (type !== 'harvester' || g.economyMode === 'mining') && UNITS[type].producer && reinforcementProducer(g,type) === producer && (!UNITS[type].faction || UNITS[type].faction === p.faction) && (!UNITS[type].naval || g.map.water) && supportsMap(UNITS[type].map, g.mapId));
       if (!types.length) return '';
       const facilities = g.ownedBuildings(0, producer), count = facilities.reduce((sum,b) => sum + b.queue.length + (b.active ? 1 : 0),0);
-      const producerName = lunarBuildingProfile(g.map.future, producer, BUILDINGS[producer]).name;
+      const producerName = lunarBuildingProfile(g.map.future, producer, frontlineBuilding(g,producer)).name;
       return `<section class="production-group" data-producer="${producer}"><h3><span>${producerName}</span><small data-producer-status="${producer}">${!facilities.length ? '未部署' : count ? `${count} 项生产任务` : '待命'}</small>${count ? `<button class="icon-btn" data-cancel-producer="${producer}" title="取消${producerName}当前生产" aria-label="取消${producerName}当前生产">${icon('x')}</button>` : ''}</h3><div class="action-list">${types.map(type => {
-        const d = UNITS[type], locked = !g.hasBuilding(0, d.producer) || d.requires && !g.hasBuilding(0, d.requires);
+        const d = UNITS[type], locked = !g.hasBuilding(0, reinforcementProducer(g,type)) || d.requires && !g.hasBuilding(0, d.requires);
         const profile = equipmentProfile(p.faction, type, g.map.future);
-        const label = locked ? `需要 ${lunarBuildingProfile(g.map.future, !g.hasBuilding(0, d.producer) ? d.producer : d.requires, BUILDINGS[!g.hasBuilding(0, d.producer) ? d.producer : d.requires]).name}` : isLunarRobot(g.map, type) ? '电池驱动 · 电力充能' : d.desc;
-        return `<button class="action-card ${locked ? 'locked' : ''}" data-unit="${type}" ${locked ? 'disabled' : ''} title="${profile.category} · ${profile.country}：${profile.description}；游戏定位：${d.desc}"><span class="action-icon"><img src="${modelThumbnail(equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${profile.name}</strong>${unitRole(type, p.faction) ? `<em class="unit-role">${unitRole(type, p.faction)}</em>` : ''}<span class="unit-stock" data-unit-stock="${type}">现有 0</span><small>${label} · ${profile.category}</small></span><span class="action-cost">¤ ${fmt(g.unitCost(0, type))}<small>${Math.ceil(productionDuration(g, {owner:0,type:producer}, type))} 秒</small></span></button>`;
+        const label = locked ? `需要 ${lunarBuildingProfile(g.map.future, !g.hasBuilding(0, d.producer) ? d.producer : d.requires, BUILDINGS[!g.hasBuilding(0, d.producer) ? d.producer : d.requires]).name}` : frontlineEnabled(g) ? frontlineUnitDescription(type) : isLunarRobot(g.map, type) ? '电池驱动 · 电力充能' : d.desc;
+        return `<button class="action-card ${locked ? 'locked' : ''}" data-unit="${type}" ${locked ? 'disabled' : ''} title="${profile.category} · ${profile.country}：${profile.description}；游戏定位：${d.desc}"><span class="action-icon"><img src="${modelThumbnail(frontlineEnabled(g)&&type==='refinery'?'frontlineWarehouse':equipmentModel(p.faction, type, g.map.future), teamVisual(0).color)}" alt=""></span><span class="action-text"><strong>${profile.name}</strong>${unitRole(type, p.faction) ? `<em class="unit-role">${unitRole(type, p.faction)}</em>` : ''}<span class="unit-stock" data-unit-stock="${type}">现有 0</span><small>${label} · ${profile.category}</small></span><span class="action-cost">¤ ${fmt(g.unitCost(0, type))}<small>${Math.ceil(productionDuration(g, {owner:0,type:producer}, type))} 秒</small></span></button>`;
       }).join('')}</div></section>`;
     }).join('');
-    root.querySelectorAll('[data-unit]').forEach(button => button.addEventListener('click', () => { if (!g.queueUnit(0, button.dataset.unit)) toast(UNITS[button.dataset.unit].limit?'该装备已达到数量上限（含生产队列），或队列已满':'生产队列已满', true); updateUI(true); }));
+    root.querySelectorAll('[data-unit]').forEach(button => button.addEventListener('click', () => { if (!g.queueUnit(0, button.dataset.unit)) toast(frontlineEnabled(g)?'接收队列或编制已满；舰载机需要有空位的航母':UNITS[button.dataset.unit].limit?'该装备已达到数量上限（含生产队列），或队列已满':'生产队列已满', true); updateUI(true); }));
     root.querySelectorAll('[data-cancel-producer]').forEach(button => button.addEventListener('click', () => {
       const facilities = g.ownedBuildings(0, button.dataset.cancelProducer), facility = facilities.find(b => b.active) || facilities.find(b => b.queue.length);
       if (facility) g.cancelUnitProduction(0, facility.id);
@@ -682,7 +687,7 @@ function updateSidebar(force = false) {
     }));
   } else {
     const ready = g.hasBuilding(0, 'super') && g.hasPower(0) && p.abilityCharge >= 100 && p.abilityCooldown <= 0 && p.credits >= 650;
-    root.innerHTML = `<div class="tactic-panel" style="--faction-color:${faction.color}"><div class="tactic-banner"><strong>${faction.role}</strong><p>${faction.summary}<br>${faction.perk}</p></div><div class="ability-card"><div class="ability-card-header"><strong>${faction.ability}</strong>${icon('crosshair')}</div><p>${faction.abilityDesc}</p><div class="ability-charge"><div style="width:${p.abilityCharge}%"></div></div><div class="ability-meta"><span>充能 ${Math.floor(p.abilityCharge)}%</span><span>消耗 ¤ 650</span></div><button class="ability-button" id="ability-button" ${ready ? '' : 'disabled'}>${ready ? p.faction === 'china' ? '启动协同电子防护' : '选择打击区域' : !g.hasBuilding(0, 'super') ? '需要战略武器站' : !g.hasPower(0) ? '电力不足' : p.abilityCooldown > 0 ? `冷却 ${Math.ceil(p.abilityCooldown)} 秒` : p.credits < 650 ? '资金不足' : '正在充能'}</button></div><div class="tactic-details"><div>黄矿：每份 1 资金 · 宝石：每份 2 资金</div><div>中立油井：每座 +11 资金/秒</div><div>雷达信标：占领后获得中央视野与小地图</div><div>断电：炮塔与雷达停用，高级生产减速</div><div>胜利目标：${VICTORY_MODES[g.victoryMode].description.replace('240', String(g.controlGoal))}</div></div></div>`;
+    root.innerHTML = `<div class="tactic-panel" style="--faction-color:${faction.color}"><div class="tactic-banner"><strong>${faction.role}</strong><p>${faction.summary}<br>${faction.perk}</p></div><div class="ability-card"><div class="ability-card-header"><strong>${faction.ability}</strong>${icon('crosshair')}</div><p>${faction.abilityDesc}</p><div class="ability-charge"><div style="width:${p.abilityCharge}%"></div></div><div class="ability-meta"><span>充能 ${Math.floor(p.abilityCharge)}%</span><span>消耗 ¤ 650</span></div><button class="ability-button" id="ability-button" ${ready ? '' : 'disabled'}>${ready ? p.faction === 'china' ? '启动协同电子防护' : '选择打击区域' : !g.hasBuilding(0, 'super') ? (frontlineEnabled(g)?'需要指挥中心、仓库与机场':'需要战略武器站') : !g.hasPower(0) ? '电力不足' : p.abilityCooldown > 0 ? `冷却 ${Math.ceil(p.abilityCooldown)} 秒` : p.credits < 650 ? '资金不足' : '正在充能'}</button></div><div class="tactic-details"><div>黄矿：每份 1 资金 · 宝石：每份 2 资金</div><div>中立油井：每座 +11 资金/秒</div><div>雷达信标：占领后获得中央视野与小地图</div><div>断电：炮塔与雷达停用，高级生产减速</div><div>胜利目标：${VICTORY_MODES[g.victoryMode].description.replace('240', String(g.controlGoal))}</div></div></div>`;
     $('#ability-button').addEventListener('click', () => {
       if (p.faction === 'china') g.castAbility(0, 0);
       else { g.pendingAbility = true;g.pendingNuclear=false;g.pendingCruise=null; toast('左键选择已侦察的技能目标区域'); }
@@ -691,14 +696,14 @@ function updateSidebar(force = false) {
     const cooldown = Math.ceil(Math.max(0, (p.satelliteReadyAt || 0) - g.time));
     const satelliteReady = g.hasBuilding(0, 'radar') && g.hasBuilding(0, 'lab') && g.hasPower(0) && p.credits >= 1000 && !cooldown;
     root.querySelector('.tactic-details').firstElementChild.textContent = g.economyMode === 'mining' ? '月表矿石：黄矿 1／宝石 2 资金' : '空运每批 720、海运每批 900。最短班次间隔 36／60 秒，前班退出后再发下一班，卸货到账。';
-    root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin', `<div class="ability-card"><div class="ability-card-header"><strong>侦察卫星</strong>${icon('satellite')}</div><p>全图视野 8 秒 · 潜航仍需声呐 · 冷却 120 秒</p><div class="ability-meta"><span>${(p.satelliteUntil || 0) > g.time ? '卫星过境中' : cooldown ? `冷却 ${cooldown} 秒` : '待命'}</span><span>¤ 1,000</span></div><button class="ability-button" id="satellite-button" ${satelliteReady ? '' : 'disabled'}>${icon('satellite')} ${satelliteReady ? '请求卫星侦察' : !g.hasBuilding(0, 'lab') || !g.hasBuilding(0, 'radar') ? '需要雷达站与实验室' : !g.hasPower(0) ? '电力不足' : cooldown ? '卫星重新部署中' : '资金不足'}</button></div>`);
+    root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin', `<div class="ability-card"><div class="ability-card-header"><strong>侦察卫星</strong>${icon('satellite')}</div><p>全图视野 8 秒 · 潜航仍需声呐 · 冷却 120 秒</p><div class="ability-meta"><span>${(p.satelliteUntil || 0) > g.time ? '卫星过境中' : cooldown ? `冷却 ${cooldown} 秒` : '待命'}</span><span>¤ 1,000</span></div><button class="ability-button" id="satellite-button" ${satelliteReady ? '' : 'disabled'}>${icon('satellite')} ${satelliteReady ? '请求卫星侦察' : !g.hasBuilding(0, 'lab') || !g.hasBuilding(0, 'radar') ? (frontlineEnabled(g)?'需要仓库与机场雷达':'需要雷达站与实验室') : !g.hasPower(0) ? '电力不足' : cooldown ? '卫星重新部署中' : '资金不足'}</button></div>`);
     $('#satellite-button').addEventListener('click', () => { g.activateSatellite(0); updateUI(true); });
     const cyberReady=g.hasBuilding(0,'super')&&g.hasPower(0)&&!p.cyberPending&&(p.cyberCharge||0)>=INTELLIGENCE_RULES.cyberCharge&&p.credits>=INTELLIGENCE_RULES.cyberCost&&!g.isControlLocked(0);
-    root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin',`<div class="ability-card"><div class="ability-card-header"><strong>指令链路干扰</strong>${icon('network')}</div><p>120 秒充能 · 12 秒预警 · 干扰新指令 4 秒<br>部队仍自动还击；源站摧毁或断电立即解除。</p><div class="ability-meta"><span>${Math.floor(p.cyberCharge||0)} / 120 秒</span><span>¤ 500</span></div><button id="cyber-button" class="ability-button" ${cyberReady?'':'disabled'}>${icon('radio-tower')}${cyberReady?'排程网络攻击':p.cyberPending?'攻击已排程':!g.hasBuilding(0,'super')?'需要战略武器站':!g.hasPower(0)?'电力不足':p.credits<500?'资金不足':'网络系统充能中'}</button></div>`);
+    root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin',`<div class="ability-card"><div class="ability-card-header"><strong>指令链路干扰</strong>${icon('network')}</div><p>120 秒充能 · 12 秒预警 · 干扰新指令 4 秒<br>部队仍自动还击；源站摧毁或断电立即解除。</p><div class="ability-meta"><span>${Math.floor(p.cyberCharge||0)} / 120 秒</span><span>¤ 500</span></div><button id="cyber-button" class="ability-button" ${cyberReady?'':'disabled'}>${icon('radio-tower')}${cyberReady?'排程网络攻击':p.cyberPending?'攻击已排程':!g.hasBuilding(0,'super')?(frontlineEnabled(g)?'需要指挥中心、仓库与机场':'需要战略武器站'):!g.hasPower(0)?'电力不足':p.credits<500?'资金不足':'网络系统充能中'}</button></div>`);
     $('#cyber-button').addEventListener('click',()=>{g.launchCyber(0);updateUI(true);});
     if(g.nuclearEnabled){
       const ready=g.nuclearReady(0),pending=p.nuclearPending;
-      root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin',`<div class="ability-card nuclear-control"><div class="ability-card-header"><strong>战略核威慑</strong>${icon('radiation')}</div><p>8 秒可中止准备 · 20 秒公开落区预警<br>敌我均受区域伤害；反导多次拦截、疏散和设施突袭可反制。</p><div class="ability-charge"><div style="width:${Math.min(100,(p.nuclearCharge||0)/DETERRENCE.charge*100)}%"></div></div><div class="ability-meta"><span>${p.nuclearSpent?'本局已发射':pending?'发射准备中':`${Math.floor(p.nuclearCharge||0)} / ${DETERRENCE.charge} 秒`}</span><span>¤ 4,500 · 每局一次</span></div><button id="nuclear-button" class="ability-button" ${ready?'':'disabled'}>${icon('crosshair')}${ready?'选择威慑落区':p.nuclearSpent?'本局次数已用尽':pending?'准备中，落区已公开':!g.hasBuilding(0,'nuclearSilo')?'需要战略威慑发射井':!g.hasPower(0)?'电力不足':!g.hasBuilding(0,'radar')||!g.hasBuilding(0,'lab')?'需要雷达站与实验室':p.credits<4500?'资金不足':'战略系统准备中'}</button></div>`);
+      root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin',`<div class="ability-card nuclear-control"><div class="ability-card-header"><strong>战略核威慑</strong>${icon('radiation')}</div><p>8 秒可中止准备 · 20 秒公开落区预警<br>敌我均受区域伤害；反导多次拦截、疏散和设施突袭可反制。</p><div class="ability-charge"><div style="width:${Math.min(100,(p.nuclearCharge||0)/DETERRENCE.charge*100)}%"></div></div><div class="ability-meta"><span>${p.nuclearSpent?'本局已发射':pending?'发射准备中':`${Math.floor(p.nuclearCharge||0)} / ${DETERRENCE.charge} 秒`}</span><span>¤ 4,500 · 每局一次</span></div><button id="nuclear-button" class="ability-button" ${ready?'':'disabled'}>${icon('crosshair')}${ready?'选择威慑落区':p.nuclearSpent?'本局次数已用尽':pending?'准备中，落区已公开':!g.hasBuilding(0,'nuclearSilo')?'需要战略威慑发射井':!g.hasPower(0)?'电力不足':!g.hasBuilding(0,'radar')||!g.hasBuilding(0,'lab')?(frontlineEnabled(g)?'需要仓库与机场雷达':'需要雷达站与实验室'):p.credits<4500?'资金不足':'战略系统准备中'}</button></div>`);
       $('#nuclear-button').addEventListener('click',()=>{g.pendingAbility=true;g.pendingNuclear=true;g.pendingCruise=null;g.placingBuilding=false;toast('选择当前可见区域，投入后不退款；落区将公开，友军也需疏散。');});
     }
     root.querySelector('.tactic-details').insertAdjacentHTML('beforeend','<div>物资箱：陆军回收 300；设备回收场：工程师／矿车／补给车回收 900。</div><div>能源仓：工程师接管，40 电力、有限 1800 库存，可作为扩建前哨。</div>');
@@ -1548,3 +1553,10 @@ desktopNotice();
 setupDesktopUpdates({enabled:isDesktop(),version:GAME_VERSION,openDownloads:()=>desktopInvoke('desktop_downloads')});
 if (location.protocol === 'file:' || isDesktop()) $('#offline-telemetry-note').hidden = false;
 setupUtools();
+
+function frontlineUnitDescription(type) {
+  if(type==='airlift')return '8格载重：1辆重型坦克或3辆轻车，人员每人1格；在安全陆地着陆装卸。';
+  if(type==='navalFighter')return '从后方直接转场至本方航母；在途与出击均占航母编制，负责制空与舰队护航。';
+  const d=UNITS[type],description=d.desc.replaceAll('兵工厂','后勤仓库').replaceAll('战车工厂','后勤仓库').replaceAll('实验室','机场保障').replaceAll('雷达站','机场雷达').replaceAll('回厂','回仓库').replaceAll('另造','另行申请增援');
+  return description+(d.tags.includes('ship')?' 从外海驶入，占1个港口编制泊位。':d.tags.includes('air')?' 从后方飞抵，占1个机场编制机位。':' 从后方空运至本方仓库接收区。');
+}

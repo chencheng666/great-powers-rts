@@ -13,7 +13,7 @@ test('雪岭入海部署六个独立基地、矿区与港口，出生及资源�
   const g=make();assert.equal(g.players.length,6);assert.equal(g.players.filter(p=>g.isAI(p.side)).length,5);
   assert.equal(g.ore.length,24);assert.equal(g.resourceSites.length,18);
   for(let side=0;side<6;side++){
-    assert.equal(g.ownedBuildings(side).length,6);assert.equal(g.ownedUnits(side,'harvester').length,2);assert.equal(g.ownedUnits(side,'patrol').length,1);
+    assert.equal(g.ownedBuildings(side).length,4);assert.equal(g.ownedUnits(side,'harvester').length,2);assert.equal(g.ownedUnits(side,'patrol').length,1);
     for(const u of g.ownedUnits(side))assert.equal(UNITS[u.type].tags.includes('ship')?g.isNavalBlocked(u.x,u.y,20):g.isGroundBlocked(u.x,u.y,14),false,`${side} ${u.type}`);
     for(const b of g.ownedBuildings(side).filter(b=>b.type!=='dock'))assert(islandDistance(g.map,b.x,b.y)>b.size);
   }

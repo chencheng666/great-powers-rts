@@ -12,7 +12,7 @@ const memoryStorage = () => {
 
 test('常规地图完整保存双方资源、队列、迷雾、AI 和时间，不重复部署基地', () => {
   for (const mapId of Object.keys(MAPS).filter(id=>!MAPS[id].missionOnly)) {
-    const g = new Game('china', 'nato', {}, { mapId, difficulty: 'veteran', victoryMode: 'control' });
+    const g = new Game('china', 'nato', {}, { frontlineVersion:0,mapId, difficulty: 'veteran', victoryMode: 'control' });
     g.startBuild(0, 'power'); g.queueUnit(0, 'tank'); g.queueUnit(0, 'rifle');
     advance(g, 4);
     const save = createSave(g, { center: { x: 900, y: 800 }, zoom: 1.2 });
@@ -84,4 +84,14 @@ test('损坏、未知版本、恶意字段、错误模型和迷雾尺寸拒绝�
   }
   assert.deepEqual(g.toSave().state, original.state);
   g.running = false; assert.throws(() => g.toSave(), /结束/);
+});
+
+
+test('六方迷雾按位保存后适应受限空间，读取恢复完整状态且旧JSON继续可读',()=>{
+ const g=new Game('china','russia',{}, {mapId:'snowtosea'});g.update(.05);const save=g.toSave(),values=new Map();
+ const storage={getItem:k=>values.get(k)||null,setItem(k,v){if(v.length>200000)throw Error('空间不足');values.set(k,v);}};
+ assert(JSON.stringify(save).length>200000);writeSave(storage,'manual',save);const text=values.get(SAVE_KEYS.manual);
+ assert(text.length<JSON.stringify(save).length*.3);assert.deepEqual(readSave(storage,'manual'),save);assert.deepEqual(parseSave(JSON.stringify(save)),save);
+ const broken=JSON.parse(text);broken.state.fogs[0].bits='AA==';assert.throws(()=>parseSave(JSON.stringify(broken)));
+ broken.state.fogs[0].cols=999999999;assert.throws(()=>parseSave(JSON.stringify(broken)));
 });

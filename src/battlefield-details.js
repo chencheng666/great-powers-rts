@@ -1,3 +1,4 @@
+import { frontlineEnabled, frontlineBuilding, FRONTLINE_PRODUCERS } from './frontline-rules.js';
 import { sandboxSpeed } from './commander-sandbox.js';
 import { BUILDINGS, FACTIONS, PRODUCERS, UNITS } from './data.js';
 import { equipmentProfile } from './equipment.js';
@@ -20,15 +21,15 @@ export function productionDuration(game, building, type) {
 
 export function buildingInformation(game, building) {
   if (!building || building.kind !== 'building' || building.hp <= 0 || !game.canSeeEntity(0, building)) return null;
-  const data = lunarBuildingProfile(game.map.future, building.type, BUILDINGS[building.type]), own = building.owner === 0;
-  const producer = PRODUCERS.includes(building.type), active = own ? building.active : null;
+  const data = lunarBuildingProfile(game.map.future, building.type, frontlineBuilding(game,building.type)), own = building.owner === 0;
+  const producer = (frontlineEnabled(game)?FRONTLINE_PRODUCERS:PRODUCERS).includes(building.type), active = own ? building.active : null;
   const duration = active ? productionDuration(game, building, active.type) : 0;
   return {
     id: building.id, name: data.name, description: data.desc,
     faction: FACTIONS[game.players[building.owner].faction].name, own,
     health: Math.ceil(building.hp), maxHealth: Math.ceil(building.maxHp), ratio: building.hp / building.maxHp,
     power: data.power, cost: data.cost, time: data.time,
-    status: building.sabotage ? `定时破坏 ${Math.max(0,Math.ceil(building.sabotage.detonateAt-game.time))} 秒` : !own ? '敌方设施' : building.repairing ? '维修中' : !game.hasPower(0) && data.power < 0 ? '供电不足' : active ? '生产中' : producer ? '生产线待命' : '运行正常',
+    status: building.sabotage ? `定时破坏 ${Math.max(0,Math.ceil(building.sabotage.detonateAt-game.time))} 秒` : !own ? '敌方设施' : building.repairing ? '维修中' : !game.hasPower(0) && data.power < 0 ? '供电不足' : active ? (frontlineEnabled(game)?'增援准备中':'生产中') : producer ? (frontlineEnabled(game)?'接收待命':'生产线待命') : '运行正常',
     producer, repairing: own && building.repairing,
     queue: own ? building.queue.length : null,
     production: active ? { name: equipmentProfile(game.players[building.owner].faction, active.type, game.map.future).name, progress: Math.min(1, active.progress / duration), remaining: Math.max(0, Math.ceil(duration - active.progress)) } : null,

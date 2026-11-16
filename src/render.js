@@ -1,3 +1,5 @@
+import { frontlineEnabled } from './frontline-rules.js';
+import { createFrontlinePiers, createDeliveryCanopy } from './frontline-presentation.js';
 import { snowSurface, snowColor, snowEnvironment, snowElevation } from './snow-to-sea.js';
 import { carrierDeckPose } from './carrier-deck.js';
 import { carrierSlots } from './carrier-operations.js';
@@ -935,8 +937,10 @@ export class Renderer {
 
   createEntity(entity) {
     const color = teamVisual(entity.owner).color, name = equipmentModel(this.game.players[entity.owner].faction, entity.type, this.game.map.future);
-    const model = createModel(name, color);
-    if (entity.type === 'airfield' && !this.game.map.future) groundAirfieldPavement(model, entity, (x, y) => this.elevation(x, y), resource => this.track(resource));
+    const model = createModel(frontlineEnabled(this.game)&&entity.type==='refinery'?'frontlineWarehouse':name, color);
+    const localResources=[];
+    const support=frontlineEnabled(this.game)&&entity.type==='dock'?createFrontlinePiers(this.game,entity,r=>{localResources.push(r);return r;}):null;if(support)this.scene.add(support);
+    if (entity.type === 'airfield' && !this.game.map.future) groundAirfieldPavement(model, entity, (x, y) => this.elevation(x, y), resource => localResources.push(resource));
     const unscaledBounds = new THREE.Box3().setFromObject(model), size = unscaledBounds.getSize(new THREE.Vector3());
     const groundClearance = Math.max(0, -unscaledBounds.min.y);
     const scale = entity.kind === 'building' ? entity.size / 7.2 : unitModelScale(entity.type, size, UNIT_SCALE[entity.type], this.game.map.future);
@@ -1013,7 +1017,7 @@ export class Renderer {
     const damageMeshes = [];
     model.traverse(mesh => { if (mesh.isMesh) damageMeshes.push({ mesh, original: mesh.material }); });
     const tracks = []; model.traverse(object => { if (object.isInstancedMesh && object.name.startsWith('track_belt_')) tracks.push(object); });
-    const value = { model, ring, identity, entity, scale, groundClearance, airShadow, wakeStern, wakeBeam, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, airDefenseRadar: model.getObjectByName('air_defense_radar'), weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
+    const value = { localResources, support, model, ring, identity, entity, scale, groundClearance, airShadow, wakeStern, wakeBeam, sprite, entrance, exhausts, topHeight, submergedMaterials, damageDetail, damageMeshes, personnelLOD: distantPersonnel, lodJoints, damageStage: 0, heading: entity.angle, lastX: entity.x, lastY: entity.y, trackX: entity.x, trackY: entity.y, trailAt: 0, smokeAt: 0, healthEcho: entity.hp / entity.maxHp, healthAt: this.game.time, airDefenseRadar: model.getObjectByName('air_defense_radar'), weapon: model.getObjectByName('weapon'), barrel: model.getObjectByName('barrel'), upperBody: model.getObjectByName('upper_body'), weaponPose: model.getObjectByName('weapon_pose'), tracks, legs: [model.getObjectByName('leg_left'), model.getObjectByName('leg_right')].filter(Boolean), rotors, bank: 0, pitch: 0, deckModels: new Map() }; this.entities.set(entity.id, value); return value;
   }
 
   setDamageStage(entry, stage) {
@@ -1289,13 +1293,14 @@ export class Renderer {
           entry.model.rotation.x = entry.bank; entry.model.rotation.z = entry.pitch;
           if (tags.includes('drone')) height += Math.sin(this.game.time * 2.3 + entity.id * .7) * .7;
         }
-      } else if (entity.type === 'dock') entry.model.rotation.y = -(islandHarbor(this.game.map,entity)?.angle ?? (entity.x > this.world.width / 2 ? Math.PI : 0));
+      } else if (entity.type === 'dock') entry.model.rotation.y = frontlineEnabled(this.game)?-this.game.frontlineHarborAngle(entity):-(islandHarbor(this.game.map,entity)?.angle ?? (entity.x > this.world.width / 2 ? Math.PI : 0));
       else if (entity.type === 'turret') entry.model.rotation.y = -entity.angle;
       if (entity.kind==='unit') animatePriorityAircraft(entry,entity,this.game,dt,height-this.elevation(entity.x,entity.y));
       if(entity.type==='containerShip') {
         entry.cargoLoad??=entry.model.getObjectByName('cargo_load');
         if(entry.cargoLoad)entry.cargoLoad.visible=(entity.freight?.value??900)>0;
       }
+      if(entry.support)entry.support.visible=visible;
       animateFacility(entry.model, entity, this.game);
       if (!this.game.map.future && AIRCRAFT_LENGTHS[entity.type]) {
         const cruise = aircraftCruiseHeight(entity.type, UNITS[entity.type].tags, false, entry.model.userData.tandemRotors);
@@ -1313,6 +1318,12 @@ export class Renderer {
       entry.groundFactor = groundFactor;
       const identitySize = this.game.map.future ? identityRadius(entity, UNITS[entity.type]?.tags) : presentationRadius(entity.type, identityRadius(entity, UNITS[entity.type]?.tags));
       entry.identity.scale.set(identitySize * groundFactor, 1, identitySize * groundFactor);
+      if(entity.deliveryKind==='parachute'&&entity.deliveryUntil>this.game.time){
+        const fraction=Math.max(0,Math.min(1,(entity.deliveryUntil-this.game.time)/3));height+=fraction*105;
+        if(!entry.deliveryCanopy){this.deliveryCanopyTemplate??=createDeliveryCanopy(r=>this.track(r));entry.deliveryCanopy=this.deliveryCanopyTemplate.clone();this.scene.add(entry.deliveryCanopy);}
+        const size=UNITS[entity.type].tags.includes('infantry')?16:30;
+        entry.deliveryCanopy.scale.setScalar(size);entry.deliveryCanopy.position.set(entity.x,height+size*1.35,entity.y);entry.deliveryCanopy.visible=visible;
+      }else if(entry.deliveryCanopy){this.scene.remove(entry.deliveryCanopy);entry.deliveryCanopy=null;}
       entry.model.position.set(entity.x, height, entity.y);
       if (entry.airShadow) {
         const ground = this.elevation(entity.x, entity.y), rotor = UNITS[entity.type].tags.includes('rotorcraft') || entry.model.userData.tandemRotors;
@@ -1424,7 +1435,7 @@ export class Renderer {
     }
     for (const [id, entry] of this.entities) if (!active.has(id)) {
       if (entry.airShadow) { this.scene.remove(entry.airShadow); entry.airShadow.material.dispose(); }
-      entry.exhausts.forEach(sprite => sprite.material.dispose()); this.scene.remove(entry.model, entry.ring, entry.identity); this.removeFoundation(id); this.addLossWreck(entry); this.entities.delete(id);
+      entry.exhausts.forEach(sprite => sprite.material.dispose()); this.scene.remove(entry.model, entry.ring, entry.identity); this.removeFoundation(id); this.addLossWreck(entry);if(entry.support)this.scene.remove(entry.support);if(entry.deliveryCanopy)this.scene.remove(entry.deliveryCanopy);entry.localResources?.forEach(r=>r.dispose());this.entities.delete(id);
     }
     for(const entry of this.entities.values()) {const prop=entry.model.getObjectByName('naval_propeller');if(prop)prop.rotation.x=this.game.time*(entry.entity.order?10:1.5);}
     this.updateShipwrecks();
@@ -1663,7 +1674,7 @@ export class Renderer {
       const numeric = presentation.numeric;
       const label = `${entity.owner !== 0 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
       const stance = entity.owner === 0 && isSelected && supportsCombatStance(entity) ? combatStance(entity) : 'free';
-      const status = presentation.detailed ? carrierLabel || (entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : stance !== 'free' ? COMBAT_STANCES[stance].name : '') : '';
+      const status = presentation.detailed ? carrierLabel || (entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.reinforcement ? entity.reinforcement.phase==='inbound'?'增援在途':'撤出战区' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : stance !== 'free' ? COMBAT_STANCES[stance].name : '') : '';
       ctx.font = '500 10px "Noto Sans SC",sans-serif';
       const shownAmmo = presentation.detailed ? ammo : 0;
       const width = Math.max(presentation.width, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0, status ? Math.ceil(ctx.measureText(status).width) + 8 : 0);
@@ -1964,7 +1975,7 @@ export class Renderer {
     this.composer?.passes.forEach(pass => pass.dispose()); this.composer?.dispose();
     this.projectileModels.forEach(model => model.children.at(-1)?.material?.dispose());
     this.trails.forEach(trail => trail.sprite.material.dispose()); this.trailPool.forEach(sprite => sprite.material.dispose());
-    this.entities.forEach(entry => entry.exhausts.forEach(sprite => sprite.material.dispose()));
+    this.entities.forEach(entry => {entry.exhausts.forEach(sprite => sprite.material.dispose());entry.localResources?.forEach(r=>r.dispose());});
     this.ownedResources.forEach(resource => {
       resource.dispose();
       // 本局生成的画布不再保留大块原生像素；共享图片与数据贴图不在此处改动。
