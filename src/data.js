@@ -69,6 +69,8 @@ export const UNITS = {
 };
 
 Object.assign(UNITS, {
+  tanker: { name:'空中加油机',cost:1200,time:42,hp:340,speed:160,range:230,damage:0,cooldown:1,sight:370,icon:'fuel',producer:'airfield',requires:'radar',map:'snowtosea',tags:['air','jet','support'],desc:'无武装的动力保障机，携420供油库存，在230范围脱战为一架友方飞机逐步加油。自身低油或缺货返机场付费补满；占一个机场机位，需制空护航。' },
+  supplyShip: { name:'舰队补给舰',cost:1050,time:38,hp:760,speed:70,range:280,damage:0,cooldown:1,sight:320,icon:'fuel',producer:'dock',requires:'radar',map:'snowtosea',tags:['ship','naval','support'],desc:'携680供油库存和90批弹药库存；在280范围双方停航脱战后，先供油再付费补弹。不提供维修，缺货返港付费补满；占一个舰艇泊位，需要护航。' },
   evacuee: { name: '待撤离人员', cost: 0, time: 1, hp: 120, speed: 60, range: 0, damage: 0, cooldown: 1, sight: 100, icon: 'user-round', tags: ['infantry', 'civilian'], desc: '归航行动保护目标；在集合点等待登陆舰自动接运，不能作为作战部队下达指令。' },
   ewPlane: { name: '电子压制机', cost: 1350, time: 43, hp: 185, speed: 168, range: 230, damage: 0, cooldown: 1, sight: 410, producer: 'airfield', requires: 'lab', tags: ['air', 'jet', 'support'], icon: 'radio-tower', desc: '原创概念：每 10 秒在 230 范围内压制敌方防空 2.5 秒；自身无武装，制空机与范围外防空可反制。' },
   navalFighter: { ...UNITS.fighter, name: '舰载制空机', cost: 760, time: 29, hp: 225, ammo: 8, requires: 'lab', map: 'ocean', tags: ['air', 'jet', 'anti-air', 'deck'], desc: '原版仅制空与舰队护航，不再对地攻击；机场完工后优先转场至有空位的本方航母，停航着舰、付费维修补弹。' },
@@ -94,6 +96,7 @@ export const UNIT_ORDER = ['rifle', 'engineer', 'scout', 'tank', 'apc', 'supply'
 UNIT_ORDER.push('railgun', 'aegis', 'relay');
 UNIT_ORDER.push('landing', 'bomber', 'airlift');
 UNIT_ORDER.push('navalFighter', 'navalStrike');
+UNIT_ORDER.push('tanker','supplyShip');
 Object.assign(UNITS, STRATEGIC_UNITS);
 BUILDINGS.nuclearSilo={name:'战略威慑发射井',cost:2400,time:70,hp:950,power:-100,size:90,icon:'radiation',requires:'lab',map:'modern',nuclear:true,desc:'仅开局启用核威慑规则可造；240 秒准备，4500 资金，8 秒可中止准备与20 秒公开飞行预警，每方每局一次实际发射。需雷达、实验室和供电；准备期摧毁设施或断网可取消，投入资金不退。区域反导、分散和疏散可反制，友军亦受损。'};
 BUILD_ORDER.push('nuclearSilo');

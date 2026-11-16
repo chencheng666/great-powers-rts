@@ -1,3 +1,4 @@
+import { validFuelState } from './fuel-rules.js';
 import { packFog, unpackFog } from './network-protocol.js';
 import { transportWeight, FRONTLINE_CAPACITY } from './frontline-rules.js';
 import { runwayAircraft } from './airfield-rules.js';
@@ -46,6 +47,7 @@ export function validateSave(save) {
   if (config.economyMode !== undefined && !['mining', 'convoy'].includes(config.economyMode)) invalid();
   if(config.nuclearEnabled!==undefined&&(typeof config.nuclearEnabled!=='boolean'||config.nuclearEnabled&&!supportsNuclearMap(config.mapId)))invalid();
   if(s.pendingNuclear!==undefined&&(typeof s.pendingNuclear!=='boolean'||s.pendingNuclear&&(!config.nuclearEnabled||!s.pendingAbility)))invalid();
+  if(config.fuelVersion!==undefined&&(config.fuelVersion!==1||config.mapId!=='snowtosea'||config.frontlineVersion!==1))invalid();
   if(config.frontlineVersion!==undefined&&(config.frontlineVersion!==1||config.mapId!=='snowtosea'))invalid();
   if (config.battleId !== undefined && !validBattleId(config.battleId)) invalid();
   if(config.battlefieldScale!==undefined&&![1,1.5].includes(config.battlefieldScale))invalid();
@@ -85,6 +87,7 @@ export function validateSave(save) {
       if (!object(entity) || !Number.isSafeInteger(entity.id) || entity.id < 1 || ids.has(entity.id) || entity.kind !== (key === 'units' ? 'unit' : 'building') || !known(definitions, entity.type) || !owners.includes(entity.owner) || !point(entity) || entity.x < 0 || entity.x > world.width || entity.y < 0 || entity.y > world.height || !finite(entity.hp) || !finite(entity.maxHp) || entity.maxHp <= 0 || !finite(entity.angle) || !finite(entity.fireTimer)) invalid();
       ids.add(entity.id);
       if (key === 'units') {
+        if(!validFuelState(entity,config,s))invalid();
         if (!Array.isArray(entity.path) || entity.path.some(p => !point(p)) || !Array.isArray(entity.passengers) || entity.passengers.some(id => !Number.isSafeInteger(id)) || !['pathTimer', 'stunUntil', 'turretAngle', 'cargo', 'cargoValue', 'rearmProgress', 'temporaryUntil', 'movePulse', 'heat', 'deployProgress'].every(key => finite(entity[key]))) invalid();
         if(entity.assignment!==undefined){
           const a=entity.assignment,domain=dummyDomain(entity.type);
@@ -223,7 +226,7 @@ export function parseSave(text) {
 export function createSave(game, view = {}, savedAt = Date.now()) {
   if (!game?.running || game.winner !== null) throw new Error('只能保存尚未结束的战局');
   const difficulty = Object.entries(AI_DIFFICULTIES).find(([, value]) => value === game.difficulty)?.[0];
-  const save = { format: 'great-powers-rts', version: game.playerCount===6?2:SAVE_VERSION, savedAt, config: { ...(game.frontlineVersion?{frontlineVersion:game.frontlineVersion}:{}),...(game.sandbox?{sandbox:{...game.sandbox}}:{}),...(game.challenge?{challengeId:game.challenge.id}:{}),...(game.playerCount===6?{playerCount:6}:{}),nuclearEnabled:!!game.nuclearEnabled,battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])),...(game.challenge?{challenge:game.challenge}:{}),pendingNuclear:!!game.pendingNuclear, logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
+  const save = { format: 'great-powers-rts', version: game.playerCount===6?2:SAVE_VERSION, savedAt, config: { ...(game.fuelVersion?{fuelVersion:game.fuelVersion}:{}),...(game.frontlineVersion?{frontlineVersion:game.frontlineVersion}:{}),...(game.sandbox?{sandbox:{...game.sandbox}}:{}),...(game.challenge?{challengeId:game.challenge.id}:{}),...(game.playerCount===6?{playerCount:6}:{}),nuclearEnabled:!!game.nuclearEnabled,battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])),...(game.challenge?{challenge:game.challenge}:{}),pendingNuclear:!!game.pendingNuclear, logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
   validateSave(save);
   return JSON.parse(JSON.stringify(save));
 }

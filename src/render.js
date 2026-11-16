@@ -1,3 +1,4 @@
+import { fuelProfile, fuelStatus, FUEL } from './fuel-rules.js';
 import { frontlineEnabled } from './frontline-rules.js';
 import { createFrontlinePiers, createDeliveryCanopy } from './frontline-presentation.js';
 import { snowSurface, snowColor, snowEnvironment, snowElevation } from './snow-to-sea.js';
@@ -1261,6 +1262,7 @@ export class Renderer {
           }
           height = entry.flightHeight;
         }
+        if(entity.fuelEmergencyAt!==undefined&&!this.game.aircraftGrounded(entity)){height=Math.max(10,height*(1-Math.min(.92,(this.game.time-entity.fuelEmergencyAt)/FUEL.emergencySeconds)));entry.model.rotation.z=-.1;}
         if (entry.airDefenseRadar) entry.airDefenseRadar.rotation.y += dt * .7;
         if (entry.weapon) { entry.weapon.rotation.y = weaponMountYaw(entity.type, entry.heading, animation.turret); entry.weapon.position.x = 0; }
         if (entry.barrel) animateIdleGun(entry, animation, dt);
@@ -1674,11 +1676,12 @@ export class Renderer {
       const numeric = presentation.numeric;
       const label = `${entity.owner !== 0 ? '敌 ' : ''}${Math.ceil(entity.hp)}/${Math.ceil(entity.maxHp)}`;
       const stance = entity.owner === 0 && isSelected && supportsCombatStance(entity) ? combatStance(entity) : 'free';
-      const status = presentation.detailed ? carrierLabel || (entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.reinforcement ? entity.reinforcement.phase==='inbound'?'增援在途':'撤出战区' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : stance !== 'free' ? COMBAT_STANCES[stance].name : '') : '';
+      const status = presentation.detailed ? fuelStatus(this.game,entity) || carrierLabel || (entity.stunUntil > this.game.time ? '瘫痪' : entity.ewSuppressedUntil > this.game.time ? '防空受压制' : entity.jammedUntil > this.game.time ? '干扰' : robot && entity.battery <= 0 ? '电量耗尽' : entity.reinforcement ? entity.reinforcement.phase==='inbound'?'增援在途':'撤出战区' : entity.freight ? entity.freight.phase === 'unloading' ? '物资交付' : entity.freight.phase === 'outbound' ? '空载返航' : '补给运输' : entity.order?.type === 'patrol' ? '巡逻' : entity.order?.type === 'rearm' || entity.order?.type === 'restock' ? robot ? '充电整备' : UNITS[entity.type]?.tags.includes('ship') ? '返港整备' : '补给' : stance !== 'free' ? COMBAT_STANCES[stance].name : '') : '';
       ctx.font = '500 10px "Noto Sans SC",sans-serif';
       const shownAmmo = presentation.detailed ? ammo : 0;
-      const width = Math.max(presentation.width, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0, status ? Math.ceil(ctx.measureText(status).width) + 8 : 0);
-      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, ammo: shownAmmo, trackHeight: presentation.trackHeight, maxOffset: presentation.maxOffset, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: presentation.trackHeight + 2 + (numeric ? 12 : 0) + (shownAmmo ? 5 : 0) + (status ? 12 : 0), priority: presentation.priority });
+      const shownFuel = presentation.detailed && entity.owner===0 && !!fuelProfile(this.game,entity);
+      const width = Math.max(presentation.width, shownFuel?80:0, numeric ? Math.ceil(ctx.measureText(label).width) + 8 : 0, status ? Math.ceil(ctx.measureText(status).width) + 8 : 0);
+      bars.push({ id: entity.id, entity, ratio, echo: entry.healthEcho, selected: isSelected, numeric, label, status, fuel:shownFuel?entity.fuel:null, ammo: shownAmmo, trackHeight: presentation.trackHeight, maxOffset: presentation.maxOffset, charge: robot ? entity.battery / 10 : entity.ammo, anchorX: screen.x, anchorY: screen.y, width, height: presentation.trackHeight + 2 + (numeric ? 12 : 0) + (shownFuel ? 10 : 0) + (shownAmmo ? shownFuel?10:5 : 0) + (status ? 12 : 0), priority: presentation.priority });
     }
     const repairs = this.game.ownedBuildings(0).filter(b => b.repairing && b.hp < b.maxHp).map(building => {
       const point = this.entityAnchor(building);
@@ -1701,8 +1704,18 @@ export class Renderer {
       ctx.fillStyle = '#081116d9';
       const cells = entity.kind === 'building' ? 8 : width >= 40 ? 6 : 4;
       for (let i = 1; i < cells; i++) ctx.fillRect(Math.round(x + 2 + inner * i / cells), top + 1, 1, track - 2);
-      if (ammo) for (let i = 0; i < ammo; i++) { ctx.fillStyle = i < bar.charge ? style.frame : '#273a47'; ctx.fillRect(x + 2 + i * inner / ammo, top + track + 2, Math.max(1, inner / ammo - 1), 2); }
-      if (bar.status) { const baseline = top + track + (ammo ? 15 : 10); ctx.font = '500 9px "Noto Sans SC",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#0b1218'; ctx.strokeText(bar.status, x + width / 2, baseline); ctx.fillStyle = '#f4ce82'; ctx.fillText(bar.status, x + width / 2, baseline); }
+      const withFuel=bar.fuel!==null;
+      if(withFuel){
+        ctx.font='500 8px sans-serif';ctx.textAlign='left';ctx.fillStyle='#a9d8eb';ctx.fillText('动力',x,top+track+9);
+        ctx.fillStyle='#253743';ctx.fillRect(x+21,top+track+4,width-23,4);ctx.fillStyle=bar.fuel<=FUEL.critical?'#ff866d':'#64ceec';ctx.fillRect(x+21,top+track+4,(width-23)*bar.fuel/100,4);
+      }
+      const ammoY=top+track+(withFuel?14:2),ammoX=x+(withFuel?21:2),ammoWidth=width-(withFuel?23:4);
+      if(ammo){
+        if(withFuel){ctx.font='500 8px sans-serif';ctx.textAlign='left';ctx.fillStyle='#e7d49a';ctx.fillText('弹药',x,ammoY+5);}
+        for(let i=0;i<ammo;i++){ctx.fillStyle=i<bar.charge?(withFuel?'#dfc17a':style.frame):'#273a47';ctx.fillRect(ammoX+i*ammoWidth/ammo,ammoY,Math.max(1,ammoWidth/ammo-1),withFuel?4:2);}
+      }
+      if(bar.status){const baseline=top+track+(withFuel?10:0)+(ammo?withFuel?22:15:10);ctx.font='500 9px "Noto Sans SC",sans-serif';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#0b1218';ctx.strokeText(bar.status,x+width/2,baseline);ctx.fillStyle='#f4ce82';ctx.fillText(bar.status,x+width/2,baseline);}
+
     }
     if (this.dragBox) {
       const { start: a, end: b } = this.dragBox; ctx.fillStyle = 'rgba(104,220,239,.1)'; ctx.strokeStyle = '#8de5f0'; ctx.lineWidth = 1; ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y); ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
@@ -1711,6 +1724,11 @@ export class Renderer {
       const start = this.worldToScreen(building.x, building.y), point = this.worldToScreen(building.rallyPoint.x, building.rallyPoint.y);
       ctx.save(); ctx.strokeStyle = '#b6ead7'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(point.x, point.y); ctx.stroke(); ctx.setLineDash([]);
       ctx.fillStyle = '#91d8b5'; ctx.beginPath(); ctx.moveTo(point.x, point.y - 22); ctx.lineTo(point.x + 18, point.y - 17); ctx.lineTo(point.x, point.y - 10); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(point.x, point.y); ctx.lineTo(point.x, point.y - 22); ctx.stroke(); ctx.restore();
+    }
+    for(const effect of this.game.effects)if(effect.type==='fuelTransfer'&&this.game.isVisibleFor(0,effect.x,effect.y)&&this.game.isVisibleFor(0,effect.toX,effect.toY)){
+      const source=this.entities.get(effect.sourceId),target=this.entities.get(effect.targetId);
+      const a=this.worldToScreen(effect.x,effect.y,(source?.model.position.y||0)+8),b=this.worldToScreen(effect.toX,effect.toY,(target?.model.position.y||0)+8);
+      ctx.save();ctx.strokeStyle='#75d7ec';ctx.globalAlpha=1-effect.age/effect.duration;ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();
     }
     for (const effect of this.game.effects) if (effect.type === 'income' && this.game.isVisibleFor(0, effect.x, effect.y)) {
       const point = this.worldToScreen(effect.x, effect.y, 20 + effect.age / effect.duration * 32); ctx.font = '600 13px "Noto Sans SC",sans-serif'; ctx.fillStyle = '#e9cd90'; ctx.textAlign = 'center'; ctx.fillText(`+${effect.amount}`, point.x, point.y);

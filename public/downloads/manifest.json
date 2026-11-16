@@ -1,8 +1,15 @@
 {
-  "version": "3.9.1",
-  "releaseTag": "v3.9.1",
-  "createdAt": "2026-11-16T09:46:17.170990+00:00",
+  "version": "3.9.2",
+  "releaseTag": "v3.9.2",
+  "createdAt": "2026-11-16T11:41:40.865782+00:00",
   "files": [
+    {
+      "name": "packages/Great-Powers-RTS-v3.9.2.zip",
+      "label": "3.9.2 · 动力保障 · 免安装离线单机 ZIP",
+      "size": 66755071,
+      "sha256": "5eafb5e3968b8d86c17408f9ea3429a56f50c8d48089dd068f8d06a42485ccd0",
+      "status": "新单机启用独立动力与弹药、实际耗油、预警返场、加油机和补给舰，电脑适配；旧存档保留原规则。"
+    },
     {
       "name": "packages/Great-Powers-RTS-v3.9.1.zip",
       "label": "3.9.1 · 空海补给经济 · 免安装离线单机 ZIP",
@@ -1005,9 +1012,10 @@
       "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
     }
   ],
-  "webReleaseTag": "v3.9.1",
+  "webReleaseTag": "v3.9.2",
   "updatedAt": "2026-11-16T05:36:23.386269+00:00",
   "archiveTags": [
+    "v3.9.1",
     "v3.9.0",
     "v3.8.0",
     "v3.7.1",
@@ -1021,7 +1029,7 @@
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v3.9.1.zip",
+  "offlineFile": "packages/Great-Powers-RTS-v3.9.2.zip",
   "webBuild": "20261116-frontline-r1",
   "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs",
   "starportFile": "packages/Great-Powers-Starport-v3.0.1-TapTap-r4.zip",

@@ -8,7 +8,7 @@ export const GROUND_MODEL_LENGTHS = Object.freeze({
 export const PERSONNEL_HEIGHT = 13.27 * 1.75 / 2.4;
 export const LAND_AIRCRAFT_LENGTHS = Object.freeze({
   helicopter: 43.2, fighter: 72, strike: 72, bomber: 108,
-  airlift: 144, freightPlane: 144, ewPlane: 72,
+  airlift: 144, freightPlane: 144, tanker:144, ewPlane: 72,
 });
 // 舰载机保持独立的甲板基准，不把陆地比例表套到舰载机上。
 export const AIRCRAFT_LENGTHS = Object.freeze({
@@ -19,7 +19,7 @@ export const CARRIER_MODEL_LENGTH = 288;
 export const CARRIER_DECK_HEIGHT = 1.3;
 export const aircraftGroundFactor = type => type === 'navalFighter' || type === 'navalStrike' ? 2 / 7 : .8;
 
-const fixedWingCruise = { fighter: 86, strike: 82, ewPlane: 96, bomber: 112, airlift: 156, freightPlane: 156 };
+const fixedWingCruise = { fighter: 86, strike: 82, ewPlane: 96, bomber: 112, airlift: 156, freightPlane: 156, tanker:100 };
 const lunarCruise = { airlift: 148, freightPlane: 148 };
 
 export function aircraftCruiseHeight(type, tags = [], future = false, tandem = false) {
@@ -38,6 +38,7 @@ export function unitModelScale(type, size, fallback, future = false) {
   if (future) return fallback;
   if (['rifle', 'engineer', 'scout', 'evacuee'].includes(type)) return size.y > 0 ? PERSONNEL_HEIGHT / size.y : fallback;
   if (type === 'carrier' && size.x > 0) return CARRIER_MODEL_LENGTH / size.x;
+  if (type === 'supplyShip' && size.x > 0) return 180 / size.x;
   if (GROUND_MODEL_LENGTHS[type]) return size.x > 0 ? GROUND_MODEL_LENGTHS[type] / size.x : fallback;
   return airframeScale(type, size.x, fallback);
 }

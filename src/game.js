@@ -1,4 +1,6 @@
 import { frontlineEnabled, frontlineBuilding, reinforcementProducer, transportWeight } from './frontline-rules.js';
+import { fuelSystem } from './fuel-system.js';
+import { fuelUnitAvailable } from './fuel-rules.js';
 import { frontlineOperations } from './frontline-operations.js';
 import { frontlineAI } from './frontline-ai.js';
 import { CombatSpatialIndex } from './simulation-index.js';
@@ -77,6 +79,7 @@ export class Game {
     this.map = battlefieldMap(this.mapId,this.battlefieldScale);
     this.world = this.map.world || WORLD;
     this.frontlineVersion = this.map.snowToSea && !this.multiplayer && options.frontlineVersion !== 0 ? 1 : 0;
+    this.fuelVersion = this.frontlineVersion===1 && options.fuelVersion!==0 ? 1 : 0;
     this.playerCount = this.map.maxPlayers===6 ? 6 : 2;
     this.nuclearEnabled=supportsNuclearMap(this.mapId)&&options.nuclearEnabled===true;
     this.pendingNuclear=false;
@@ -145,6 +148,7 @@ export class Game {
     game.battleId = copy.config.battleId || legacyBattleId(copy);
     game.mapId = copy.config.mapId; game.battlefieldScale=copy.config.battlefieldScale||1;game.map = battlefieldMap(game.mapId,game.battlefieldScale); game.world = game.map.world || WORLD;
     game.frontlineVersion=copy.config.frontlineVersion||0;
+    game.fuelVersion=copy.config.fuelVersion||0;
     game.playerCount=copy.state.players.length;game.playerConfigs=copy.state.players.map(p=>({faction:p.faction,controlType:p.controlType|| (p.side===0?"human":"ai")}));game.multiplayer=false;
     game.homeY = game.world.height / 2; game.victoryMode = copy.config.victoryMode;
     game.nuclearEnabled=copy.config.nuclearEnabled===true;game.pendingNuclear=copy.state.pendingNuclear===true;
@@ -260,6 +264,7 @@ export class Game {
     if (supportsCombatStance(unit)) unit.combatStance = 'free';
     if (supportsDroneAutonomy(unit)) { unit.autoDrone = true; unit.droneRole = 'guard'; }
     if (isLunarRobot(this.map, type)) { unit.battery = ROBOT_ENERGY.capacity; unit.ammo = null; }
+    this.initUnitFuel(unit);
     this.units.push(unit);
     this.entityLookup?.set(unit.id,unit);
     if (this.isAI(owner) && type === 'strike') this.players[owner].aiFirstStrikeProduced = true;
@@ -417,7 +422,7 @@ export class Game {
     if(this.isControlLocked(side)||this.players[side]?.eliminated)return false;
     if(this.playerCount===6&&this.unitCapacityUsed(side)>=40)return false;
     const d = UNITS[type];
-    if (!d || !unitAllowedInRoster(type,this.map) || FREIGHT_TYPES.includes(type) || type === 'harvester' && this.economyMode !== 'mining' || (d.naval && !this.map.water) || !supportsMap(d.map, this.mapId) || (d.faction && this.players[side].faction !== d.faction) || (d.requires && !this.hasBuilding(side, d.requires))) return false;
+    if (!d || !fuelUnitAvailable(this,type) || !unitAllowedInRoster(type,this.map) || FREIGHT_TYPES.includes(type) || type === 'harvester' && this.economyMode !== 'mining' || (d.naval && !this.map.water) || !supportsMap(d.map, this.mapId) || (d.faction && this.players[side].faction !== d.faction) || (d.requires && !this.hasBuilding(side, d.requires))) return false;
     if (!d.producer || d.limit && this.ownedUnits(side,type).length + this.ownedBuildings(side).reduce((n,b)=>n+b.queue.filter(t=>t===type).length+Number(b.active?.type===type),0)>=d.limit) return false;
     if(frontlineEnabled(this))return this.queueReinforcement(side,type);
     const producer = this.ownedBuildings(side, d.producer).sort((a, b) => a.queue.length - b.queue.length)[0];
@@ -590,6 +595,7 @@ export class Game {
     this.updateIntelligence(dt);
     this.updateDeterrence(dt);
     this.updateLogistics(dt);
+    this.updateFuelSystem(dt);
     for (const p of this.players) {
       battleMetric(this, p.side, 'oilSeconds', this.oil.filter(o => o.owner === p.side).length * dt);
       battleMetric(this, p.side, 'beaconSeconds', this.beacons.filter(o => o.owner === p.side).length * dt);
@@ -809,6 +815,8 @@ export class Game {
     }
     if (u.temporaryUntil && this.time >= u.temporaryUntil) { u.hp = 0; return; }
     if (FREIGHT_TYPES.includes(u.type)) { this.updateFreight(u, dt); return; }
+    if(this.updateFuelRecipient(u,dt))return;
+    if(this.updateFuelSupport(u,dt))return;
     this.advanceQueuedOrder(u);
     if(this.time>=u.stunUntil&&this.updateSpecialOrder(u,dt))return;
     if (u.type === 'harvester') {
@@ -970,7 +978,7 @@ export class Game {
     if (!this.serviceReady(u)) return;
     this.refillStationAmmo(u, dt);
     const d = UNITS[u.type];
-    if ((!d.ammo || u.ammo === d.ammo) && u.hp >= u.maxHp - .01) {
+    if ((!d.ammo || u.ammo === d.ammo) && u.hp >= u.maxHp - .01 && this.fuelServiceComplete(u)) {
       this.restoreCombatOrder(u);
       if (u.owner === 0) this.events.notice?.(`${UNITS[u.type].name}补给完成`);
     }
@@ -1252,6 +1260,13 @@ export class Game {
   }
 
   moveUnitNow(u, goal, dt, stopDistance = 8) {
+    const time=this.fuelMovementTime(u,dt);if(time<=0)return;
+    const from={x:u.x,y:u.y};
+    this.moveUnitPowered(u,goal,time,stopDistance);
+    this.consumeMovementFuel(u,distance(u,from));
+  }
+
+  moveUnitPowered(u, goal, dt, stopDistance = 8) {
     if (distance(u, goal) <= stopDistance) return;
     if (UNITS[u.type].tags.includes('air')) {
       const landing = u.order?.type === 'rearm' && this.aircraftServiceSites(u).some(b => distance(u, airfieldApron(b)) < 260);
@@ -1738,4 +1753,4 @@ export class Game {
   }
 }
 
-Object.assign(Game.prototype, frontlineOperations, frontlineAI, submarineCruise, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat, droneAutonomy, strategicCombat,deterrenceCombat,commandQueue,challengeCombat,combatStanceCommands);
+Object.assign(Game.prototype, fuelSystem, frontlineOperations, frontlineAI, submarineCruise, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat, droneAutonomy, strategicCombat,deterrenceCombat,commandQueue,challengeCombat,combatStanceCommands);

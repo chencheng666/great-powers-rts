@@ -1,0 +1,126 @@
+{
+  "版本": "3.9.2",
+  "构建": "20261116-fuel-r1",
+  "验收日期": "2026-11-16",
+  "完整回归": {
+    "总数": 798,
+    "通过": 798,
+    "失败": 0,
+    "动力专项": 16
+  },
+  "五电脑长局": {
+    "simulatedSeconds": 1800.0499999989106,
+    "steps": 36001,
+    "medianMs": 7.296,
+    "p95Ms": 10.437,
+    "p99Ms": 12.028,
+    "maxMs": 66.75729099998716,
+    "fuelVersion": 1,
+    "fuelReturns": 53,
+    "fuelRecipients": 27,
+    "emergencies": 23,
+    "economyMode": "convoy",
+    "ore": 0,
+    "receipts": [
+      {
+        "air": 50,
+        "sea": 6
+      },
+      {
+        "air": 49,
+        "sea": 13
+      },
+      {
+        "air": 50,
+        "sea": 26
+      },
+      {
+        "air": 20,
+        "sea": 3
+      },
+      {
+        "air": 50,
+        "sea": 30
+      },
+      {
+        "air": 50,
+        "sea": 30
+      }
+    ]
+  },
+  "性能说明": "模拟耗时，不代表画面帧率；每分钟存读档通过。",
+  "空中供油": {
+    "fuel": 20.544150000000002,
+    "ammo": 2,
+    "stock": 419.4,
+    "link": 61,
+    "transferEffect": true,
+    "errors": [],
+    "contextLost": false
+  },
+  "海上先油": {
+    "fuel": 74.00000000000024,
+    "ammo": 0,
+    "fuelStock": 625.9999999999945,
+    "ammoStock": 90,
+    "link": 63,
+    "errors": []
+  },
+  "海上后弹": {
+    "fuel": 95,
+    "ammo": 8,
+    "fuelStock": 604.9999999999928,
+    "ammoStock": 82,
+    "link": null,
+    "errors": [],
+    "contextLost": false
+  },
+  "浏览器读档": {
+    "time": 26.050000000000235,
+    "fuelVersion": 1,
+    "economyMode": "convoy",
+    "sea": [
+      {
+        "id": 63,
+        "type": "supplyShip",
+        "fuel": 100,
+        "ammo": null,
+        "fuelStock": 604.9999999999928,
+        "ammoStock": 82
+      },
+      {
+        "id": 64,
+        "type": "destroyer",
+        "fuel": 95,
+        "ammo": 8
+      }
+    ],
+    "errors": []
+  },
+  "离线断网": {
+    "version": "大国崛起 3.9.2 | 雪岭入海",
+    "fuelVersion": 1,
+    "economy": "convoy",
+    "players": 6,
+    "ore": 0,
+    "miners": 0,
+    "time": 14.033501999999984,
+    "tank": [
+      {
+        "fuel": 100,
+        "ammo": 30
+      }
+    ],
+    "errors": [],
+    "restored": true
+  },
+  "离线包": {
+    "name": "packages/Great-Powers-RTS-v3.9.2.zip",
+    "label": "3.9.2 · 动力保障 · 免安装离线单机 ZIP",
+    "size": 66755071,
+    "sha256": "5eafb5e3968b8d86c17408f9ea3429a56f50c8d48089dd068f8d06a42485ccd0",
+    "status": "新单机启用独立动力与弹药、实际耗油、预警返场、加油机和补给舰，电脑适配；旧存档保留原规则。"
+  },
+  "旧存档": "缺少fuelVersion的旧档保持原规则，旧地图、科幻与联机规则不变。",
+  "正式发布": "待上海同步及公网实测，桌面安装包待CI。"
+}

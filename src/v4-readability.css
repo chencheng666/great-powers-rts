@@ -4,3 +4,11 @@
 .faction-doctrine small { color: #b4cdca; }
 .faction-doctrine p { margin: 8px 0 0; line-height: 1.7; }
 .faction-doctrine .doctrine-caution { color: #e8c8a9; }
+
+/* 动力与弹药各占一行，保障库存不与载具自身油量混用。 */
+.fuel-readout{display:grid;gap:5px;width:100%;margin-top:6px;padding-top:7px;border-top:1px solid #78919a44;max-width:340px}
+.fuel-readout>div{display:grid;grid-template-columns:108px minmax(80px,1fr);align-items:center;gap:8px;font-size:11px}
+.fuel-readout b{font-variant-numeric:tabular-nums;color:#d7e9ec;font-weight:500}
+.fuel-readout progress{width:100%;height:7px;accent-color:#64ceec}
+.fuel-readout>div:nth-child(2) progress{accent-color:#dfc17a}
+.fuel-readout small{font-size:10px;line-height:1.5;color:#d6bc7d}

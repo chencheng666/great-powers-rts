@@ -20,7 +20,9 @@ export function frontlineBuilding(game, type) {
     dock: { name:'海军港口', requires:'refinery', desc:'六个舰艇编制泊位，接收外海增援，提供维修和补弹；舰艇出港仍占泊位。舰载机直接调往本方航母。' },
     turret: { requires:'refinery' }
   };
-  return { ...base, ...overrides[type] };
+  const result={ ...base, ...overrides[type] };
+  if(game.fuelVersion===1&&['refinery','airfield','dock'].includes(type))result.desc+=' 动力规则：有电、脱战且停稳后付费供油，优先于补弹。';
+  return result;
 }
 // 游戏载重，不映射真实装备参数。旧规则和海运载重保持不变。
 export function transportWeight(game, passenger, transport) {

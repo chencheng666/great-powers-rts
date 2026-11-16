@@ -3,8 +3,9 @@ import { unitAllowedInRoster } from './unit-roster.js';
 import { reinforcementProducer } from './frontline-rules.js';
 import { snowLandConnected } from './snow-to-sea.js';
 import { knownThreats, retreatAIUnits } from './tactical-ai.js';
+import { fuelEnabled, fuelProfile, fuelUnitAvailable } from './fuel-rules.js';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const busy=u=>!!u.reinforcement||u.deliveryUntil>0&&u.deliveryUntil>u._aiTime||['rearm','restock','board','capture','defuse','collect'].includes(u.order?.type)||u.nuclearEvadeUntil>u._aiTime;
+const busy=u=>!!u.reinforcement||u.fuelReturn||u.fuelServiceId||u.deliveryUntil>0&&u.deliveryUntil>u._aiTime||['rearm','restock','board','capture','defuse','collect'].includes(u.order?.type)||u.nuclearEvadeUntil>u._aiTime;
 
 export const frontlineAI = {
   frontlineCount(side,type) {
@@ -50,14 +51,14 @@ export const frontlineAI = {
     const pending=this.ownedBuildings(side).reduce((n,b)=>n+b.queue.length+Number(!!b.active),0);
     // 运输收入存在交付间隔，预留600资金给维修、弹药和补给线应急；旧采矿局沿用450。
     const committed=this.ownedBuildings(side).reduce((n,b)=>n+b.queue.reduce((v,t)=>v+this.unitCost(side,t),0)+(b.active?Math.max(0,this.unitCost(side,b.active.type)-b.active.paid):0),0);
-    const budget=p.credits-(this.economyMode==='convoy'?600:450)-committed-(p.buildQueue?Math.max(0,600-p.buildQueue.paid):0);
+    const budget=p.credits-(fuelEnabled(this)?850:this.economyMode==='convoy'?600:450)-committed-(p.buildQueue?Math.max(0,600-p.buildQueue.paid):0);
     const choose=(choices)=>choices.find(type=>{
-      const d=UNITS[type];return d&&unitAllowedInRoster(type,this.map)&&supportsMap(d.map,this.mapId)&&(!d.faction||d.faction===p.faction)&&(!d.requires||this.hasBuilding(side,d.requires))&&this.ownedBuildings(side,reinforcementProducer(this,type)).length&&budget>=this.unitCost(side,type);
+      const d=UNITS[type];return d&&fuelUnitAvailable(this,type)&&unitAllowedInRoster(type,this.map)&&supportsMap(d.map,this.mapId)&&(!d.faction||d.faction===p.faction)&&(!d.requires||this.hasBuilding(side,d.requires))&&this.ownedBuildings(side,reinforcementProducer(this,type)).length&&budget>=this.unitCost(side,type);
     });
     const sites=[...this.oil,...this.beacons,...this.resourceSites.filter(s=>s.type==='depot')].filter(s=>s.owner!==side&&this.hasExploredFor(side,s.x,s.y)&&snowLandConnected(this.map,home,s));
     const ground=this.activeUnits(side).filter(u=>UNITS[u.type].damage>0&&!UNITS[u.type].tags.some(t=>['ship','air'].includes(t)));
     const needs=[...(this.economyMode==='mining'&&count('harvester')<2?['harvester']:[]),...(count('scout')<1?['scout']:[]),...(sites.length&&count('engineer')<2?['engineer']:[]),...(threats.air>0&&count('aa')<Math.max(1,Math.ceil(threats.air/2))?['aa']:[]),...(ground.length>=3&&count('supply')<2?['supply']:[])];
-    const strategic=this.time>55&&ground.length>=3?(count('fighter')<1?'fighter':count('frigate')<1?'frigate':count('airlift')<1?'airlift':count('landing')<1?'landing':this.time>240&&count('destroyer')<1?'destroyer':this.time>420&&count('carrier')<1?'carrier':null):null;
+    const strategic=this.time>55&&ground.length>=3?(count('fighter')<1?'fighter':count('frigate')<1?'frigate':fuelEnabled(this)&&this.time>100&&count('tanker')<1?'tanker':fuelEnabled(this)&&this.time>125&&count('supplyShip')<1?'supplyShip':count('airlift')<1?'airlift':count('landing')<1?'landing':this.time>240&&count('destroyer')<1?'destroyer':this.time>420&&count('carrier')<1?'carrier':null):null;
     const strategicOrdered=strategic&&pending<3&&choose([strategic])&&this.queueAIUnit(strategic,side);
     p.aiSavingsTarget=strategic||null;
     if(!strategicOrdered&&pending<4&&budget>150){
@@ -99,7 +100,7 @@ export const frontlineAI = {
   coordinateFrontlineForces(side,objective=this.frontlineObjective(side),wave=false) {
     const home=this.ownedBuildings(side,'hq')[0];if(!home)return;
     const units=this.activeUnits(side);for(const u of units)u._aiTime=this.time;
-    const ready=units.filter(u=>!busy(u)&&u.hp>=u.maxHp*.45&&(!UNITS[u.type].ammo||u.ammo>UNITS[u.type].ammo*.25));
+    const ready=units.filter(u=>!busy(u)&&(!fuelProfile(this,u)||u.fuel>30)&&u.hp>=u.maxHp*.45&&(!UNITS[u.type].ammo||u.ammo>UNITS[u.type].ammo*.25));
     const armor=ready.filter(u=>['tank','rifle','rocket','loiterer'].includes(u.type));
     const advance=objective.phase==='defend'||wave&&armor.length>=3||armor.some(u=>u.order?.type==='attackMove');
     const center=armor.length?armor.reduce((p,u)=>({x:p.x+u.x/armor.length,y:p.y+u.y/armor.length}),{x:0,y:0}):home;
@@ -122,6 +123,7 @@ export const frontlineAI = {
     const landing=units.find(u=>u.type==='landing'&&u.passengers.length&&u.transportStage==='depart')||freight.find(u=>u.type==='containerShip');
     const harbor=this.map.harbors[this.nearestEnemySide(side)]?.approach;
     for(const u of ready.filter(u=>['patrol','frigate','destroyer','submarine','carrier'].includes(u.type))){
+      if(fuelEnabled(this)&&u.type==='carrier'&&this.carrierAircraft(u).some(p=>p.fuelReturn||p.fuelServiceId)){u.order=null;u.path=[];continue;}
       const goal=landing?this.navalGoal(landing.x+Math.cos(u.id)*260,landing.y+Math.sin(u.id)*260,100):this.time>110?harbor:this.map.harbors[side].approach;
       if(goal)this.frontlineAIOrder(u,'attackMove',goal);
     }

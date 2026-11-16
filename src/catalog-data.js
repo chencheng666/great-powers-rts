@@ -1,3 +1,4 @@
+import { FUEL_UNIT_TYPES, fuelProfile, FUEL_SUPPORT } from './fuel-rules.js';
 import { unitAllowedInRoster } from './unit-roster.js';
 import { BUILDINGS, FACTIONS, MAPS, UNITS, supportsMap, supportsNuclearMap } from './data.js';
 import { equipmentModel, equipmentProfile } from './equipment.js';
@@ -10,6 +11,8 @@ import { supportsDroneAutonomy } from './drone-autonomy.js';
 export const CATALOG_CATEGORIES = { all: '全部', infantry: '人物／机器人', ground: '地面装备', air: '空中装备', naval: '舰艇', building: '建筑' };
 // 这里只补充战术说明；造价、生命、弹药、前置和地图限制读取实际规则。
 const GUIDES = {
+  tanker:['空中动力保障','与低油飞机会合，230范围内脱战逐步供油；420库存有限，缺货返机场付费补充。','无武装、占一个机场机位；不能给敌军、无人机或经济货运加油，需制空护航。'],
+  supplyShip:['舰队动力与弹药保障','双方停航、脱战后先供油再付费补弹；680供油库存与90批弹药库存独立消耗，缺货返港。','占一个舰艇泊位，无武装、不维修；移动、受袭或库存不足时无法连续保障。'],
   evacuee:['撤离保护目标','归航行动中等待登陆舰接运；抵达安全出口并完成停驻才计入撤离人数。','无武装、不能生产或下达作战命令。运输途中仍可能受损，重复装卸不增加撤离积分。'],
   helicopter:['低空反装甲','越障接近装甲，有限导弹、机场整备；配合制空护航。','不能攻击飞行目标；高空制空机与防空车克制，激光车不能代替常规防空。'],
   ballistic:['常规纵深打击','以共享实时视野锁定发射时坐标，展开 5 秒后发射高弧线常规弹。','有最小射程、飞行时间和两发容量；目标可疏散，区域反导可拦截，发射车怕突击。不是核武器。'],
@@ -78,6 +81,7 @@ const BUILDING_GUIDES = {
 const buildingName = (type, future) => lunarBuildingProfile(future, type, BUILDINGS[type]).name;
 export function catalogAvailability(kind, type, faction, mapId) {
   const map = MAPS[mapId], d = kind === 'unit' ? UNITS[type] : BUILDINGS[type];
+  if(kind==='unit'&&FUEL_UNIT_TYPES.includes(type)&&mapId!=='snowtosea')return {available:false,reason:'仅雪岭入海启用动力的新单机可调入'};
   if (kind==='unit'&&!unitAllowedInRoster(type,map))return {available:false,reason:'已移出原版现代编制，科幻演习保留'};
   if (d.nuclear && !supportsNuclearMap(mapId)) return { available: false, reason: '仅常规双人战区可选择开启核威慑规则' };
   if (d.faction && d.faction !== faction) return { available: false, reason: `仅 ${FACTIONS[d.faction].name} 可生产` };
@@ -110,6 +114,7 @@ export function catalogEntry(kind, type, faction = 'china', mapId = 'valley') {
     if (d.capacity) stats.push([type === 'carrier' ? '甲板机位' : '载重格数', `${d.capacity}`]);
     if (d.stock) stats.push(['库存', `${d.stock}`], ['保障范围', `${d.range}`]);
     if (d.sonar) stats.push(['声呐', `${d.sonar}`]);
+    if(fuelProfile({fuelVersion:mapId==='snowtosea'?1:0,map:MAPS[mapId]},{kind:'unit',type})){stats.push(['动力容量','100%']);if(FUEL_SUPPORT[type])stats.push(['供油库存',String(FUEL_SUPPORT[type].stock)]);}
   } else stats.push(['电力', d.power >= 0 ? `+${d.power}` : `${d.power}`]);
   const attention = [guide[2]], tactics = [guide[1]], service = [];
   if (kind === 'unit' && supportsDroneAutonomy({ type })) {
@@ -124,6 +129,7 @@ export function catalogEntry(kind, type, faction = 'china', mapId = 'valley') {
     if (d.ammo) attention.push('弹药是射击批次，不是真实逐发弹匣；耗尽自动返场，满弹掉血也可主动整备。');
   }
   if (kind === 'unit' && d.tags.includes('drone') && !d.tags.includes('swarm')) service.push('低空无人机可在兵工厂或机场维修补弹；需要供电、资金和脱战停稳。');
+  if(kind==='unit'&&mapId==='snowtosea'&&fuelProfile({fuelVersion:1,map:MAPS[mapId]},{kind:'unit',type}))service.push('仅启用动力的新单机：油量独立于弹药，实际移动耗油；按返程距离提前预警并自动返场，固定基地先付费供油再补弹。旧存档不强制加入动力。');
   const modifiers = { 'nato:tank': '生命 +15%', 'asia:drone': '造价与生命均 -15%', 'china:aa': '生命 +15%', 'russia:aa': '对空伤害 -12%', 'middleeast:tank': '伤害 -10%' };
   if (kind === 'unit' && modifiers[`${faction}:${type}`]) attention.push(`当前阵营修正：${modifiers[`${faction}:${type}`]}。面板生命与造价已计入；基础伤害不含目标克制与阵营倍率。`);
   if (kind === 'building' && type === 'turret' && faction === 'china') attention.push('华夏炮塔承受伤害乘 0.85；面板生命不增加。');

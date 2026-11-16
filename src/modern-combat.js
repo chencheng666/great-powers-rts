@@ -1,4 +1,5 @@
 import { frontlineEnabled, transportWeight } from './frontline-rules.js';
+import { FUEL, fuelEnabled, fuelProfile, fuelReadyForAmmo } from './fuel-rules.js';
 import { snowLandConnected } from './snow-to-sea.js';
 import { unlimitedAmmo } from './commander-sandbox.js';
 import { airfieldParking } from './airfield-rules.js';
@@ -63,7 +64,7 @@ export const modernCombat = {
 
   refillStationAmmo(u, dt) {
     const d = UNITS[u.type];
-    if (!d.ammo || isLunarRobot(this.map, u.type) || u.ammo >= d.ammo || !this.serviceReady(u)) return;
+    if (!d.ammo || isLunarRobot(this.map, u.type) || u.ammo >= d.ammo || !this.serviceReady(u) || !fuelReadyForAmmo(this,u)) return;
     if (isLifeline(this) && d.tags.includes('ship')) {
       const home = this.getEntity(u.order?.homeId), plan = home?.owner === u.owner && home.hp > 0 && home.type === 'dock' ? harborPlan(this,u,home) : null;
       if (!plan?.assigned || plan.waiting || distance(u,plan) > 95) return;
@@ -99,6 +100,7 @@ export const modernCombat = {
   },
 
   requestResupply(u, home = null) {
+    if(u?.type==='supply'&&fuelEnabled(this)&&u.hp>0&&!u.embarkedIn){if(u.order?.type!=='restock'){u.resumeOrder=u.order;u.order={type:'restock'};u.path=[];}return true;}
     if (!u || u.hp <= 0 || u.embarkedIn || ['harvester', 'supply'].includes(u.type) || UNITS[u.type].tags.includes('logistics')) return false;
     if (u.order?.type !== 'rearm') { u.resumeOrder = u.order; u.order = { type: 'rearm' }; u.path = []; u.pathTimer = 0; }
     if (home?.type === 'airfield' && home.hp > 0 && home.owner === u.owner && UNITS[u.type].tags.includes('air')) u.order.homeId = home.id;
@@ -108,6 +110,7 @@ export const modernCombat = {
 
   submarineSurfaced(u) {
     if (u.type !== 'submarine' || u.embarkedIn || u.hp <= 0) return false;
+    if(u.fuelServiceId){const supply=this.getEntity(u.fuelServiceId);if(supply?.type==='supplyShip'&&supply.owner===u.owner&&supply.hp>0&&distance(u,supply)<=280&&this.time-(u.lastMovedAt??-10)>=.5)return true;}
     if (u.order && u.order.type !== 'rearm') return false;
     return this.ownedBuildings(u.owner, 'dock').some(home =>
       (!u.order?.homeId || u.order.homeId === home.id) && distance(u, u.order?.type === 'rearm' ? this.shipBerth(u, home) : this.navalGoal(home.x, home.y, unitRadius(u) + 10)) <= 95);
@@ -326,7 +329,7 @@ export const modernCombat = {
       u.wingRearm = (u.wingRearm || 0) + dt;
       if (u.wingRearm >= 8) { u.wing++; u.wingRearm = 0; this.players[u.owner].credits -= 150; }
     }
-    if ((!d.ammo || u.ammo === d.ammo) && u.hp >= u.maxHp - .01 && (u.type !== 'carrier' || (this.carrierAircraft(u).length || u.wing === d.wing) && (u.defenseAmmo ?? 12) === 12)) {
+    if ((!d.ammo || u.ammo === d.ammo) && u.hp >= u.maxHp - .01 && this.fuelServiceComplete(u) && (u.type !== 'carrier' || (this.carrierAircraft(u).length || u.wing === d.wing) && (u.defenseAmmo ?? 12) === 12)) {
       this.restoreCombatOrder(u);
       if (naval && !u.order) {
         // 空闲舰艇离开整备泊位，给后续伤舰留下进港空间。
@@ -340,6 +343,7 @@ export const modernCombat = {
 
   restoreCombatOrder(u) {
     battleMetric(this, u.owner, 'resupplies', 1);
+    delete u.fuelReturn;delete u.fuelServiceId;
     u.order = u.resumeOrder; u.resumeOrder = null; u.rearmProgress = 0;
   },
 
@@ -355,7 +359,7 @@ export const modernCombat = {
       if (distance(u, home) > home.size * .55 + 40) { u.rearmProgress = 0; this.moveUnit(u, home, dt, home.size * .55 + 24); return; }
       if (!this.hasPower(u.owner) || p.credits < SUPPLY.restockPrice) return;
       u.rearmProgress += dt;
-      if (u.rearmProgress >= SUPPLY.restockTime) { p.credits -= SUPPLY.restockPrice; u.stock = UNITS.supply.stock; this.restoreCombatOrder(u); }
+      if (u.rearmProgress >= SUPPLY.restockTime && this.fuelServiceComplete(u)) { p.credits -= SUPPLY.restockPrice; u.stock = UNITS.supply.stock; this.restoreCombatOrder(u); }
       return;
     }
     if (u.stock <= 0) {
@@ -368,19 +372,19 @@ export const modernCombat = {
       return;
     }
     const eligible = v => v !== u && v.type !== 'supply' && !UNITS[v.type].tags.some(t => ['air', 'ship', 'harvester', 'logistics'].includes(t));
-    const needs = v => eligible(v) && (p.credits > 0 && (v.hp < v.maxHp - .01 || !isLunarRobot(this.map, v.type) && UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo) || isLunarRobot(this.map, v.type) && v.order?.type === 'rearm' && v.battery < 100 && this.hasPower(u.owner));
+    const needs = v => eligible(v) && (p.credits > 0 && (v.hp < v.maxHp - .01 || !isLunarRobot(this.map, v.type) && UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo) || isLunarRobot(this.map, v.type) && v.order?.type === 'rearm' && v.battery < 100 && this.hasPower(u.owner)) || v!==u&&u.fuelStock>0&&fuelProfile(this,v)?.domain==='land'&&(v.fuel<60||v.fuelReturn&&v.fuel<FUEL.ready);
     const units = this.activeUnits(u.owner), nearby = units.filter(v => eligible(v) && distance(u, v) <= UNITS.supply.range && this.hasLineOfFire(u, v));
     // 范围补弹按同一脉冲覆盖所有单位；多个补给车不能在同一时刻无限叠加。
     u.serviceTimer = Math.max(0, (u.serviceTimer || 0) - dt);
     if (u.serviceTimer <= 1e-9) {
       u.serviceTimer = SUPPLY.pulse;
-      const empty = nearby.filter(v => !isLunarRobot(this.map, v.type) && UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo && this.time - (v.suppliedAmmoAt ?? -100) + 1e-9 >= SUPPLY.pulse)
+      const empty = nearby.filter(v => fuelReadyForAmmo(this,v) && !isLunarRobot(this.map, v.type) && UNITS[v.type].ammo && v.ammo < UNITS[v.type].ammo && this.time - (v.suppliedAmmoAt ?? -100) + 1e-9 >= SUPPLY.pulse)
         .sort((a, b) => a.ammo / UNITS[a.type].ammo - b.ammo / UNITS[b.type].ammo || a.id - b.id);
       for (const v of empty) {
         const cost = UNITS[v.type].ammoCost ?? 10, stock = ammoStockCost(v.type, UNITS[v.type].tags);
         if (u.stock < stock || p.credits < cost) continue;
         u.stock -= stock; p.credits -= cost; v.ammo++; v.suppliedAmmoAt = this.time;
-        if (v.order?.type === 'rearm' && v.hp >= v.maxHp - .01 && v.ammo >= Math.ceil(UNITS[v.type].ammo / 2)) this.restoreCombatOrder(v);
+        if (v.order?.type === 'rearm' && fuelReadyForAmmo(this,v) && v.hp >= v.maxHp - .01 && v.ammo >= Math.ceil(UNITS[v.type].ammo / 2)) this.restoreCombatOrder(v);
         if (this.time >= (v.supplyFXAt || 0)) {
           v.supplyFXAt = this.time + 2;
           this.effects.push({ type: 'shot', style: 'repair', x: u.x, y: u.y, toX: v.x, toY: v.y, sourceType: 'supply', targetType: v.type, owner: u.owner, age: 0, duration: .5 });
@@ -611,7 +615,7 @@ export const modernCombat = {
       if (onlyId !== null && id !== onlyId) continue;
       const plane = this.getEntity(id);
       if (!plane || plane.hp <= 0) { carrier.passengers = carrier.passengers.filter(v => v !== id); continue; }
-      if (!emergency && (plane.ammo < UNITS[plane.type].ammo || plane.hp < plane.maxHp - .01)) continue;
+      if (!emergency && (!fuelReadyForAmmo(this,plane) || plane.ammo < UNITS[plane.type].ammo || plane.hp < plane.maxHp - .01)) continue;
       if (!emergency) {
         if (plane.deckTaxi?.phase === 'in') plane.deckTaxi.launch = true;
         else if (!plane.deckTaxi) plane.deckTaxi = { phase: 'queued', progress: 0, launch: true };
@@ -641,7 +645,7 @@ export const modernCombat = {
     const taxi = deckPlanes.find(plane => plane.deckTaxi.phase === 'in') || (airborne<CARRIER_SORTIE_LIMIT&&!carrier.airGroupHold?deckPlanes.find(p=>p.deckTaxi.phase==='out')||deckPlanes.find(p=>p.deckTaxi.phase==='queued'):null);
     const landingActive=landing?.hp>0&&landing.deckApproach?.carrierId===carrier.id&&(landing.order?.type==='board'&&landing.order.targetId===carrier.id||landing.order?.type==='rearm'&&landing.homeCarrierId===carrier.id);
     if(!landingActive&&carrier.landingId){if(landing)landing.deckApproach=null;carrier.landingId=null;}
-    if (taxi && !landingActive && (taxi.deckTaxi.phase === 'in' || taxi.hp >= taxi.maxHp - .01 && taxi.ammo >= UNITS[taxi.type].ammo)) {
+    if (taxi && !landingActive && (taxi.deckTaxi.phase === 'in' || fuelReadyForAmmo(this,taxi) && taxi.hp >= taxi.maxHp - .01 && taxi.ammo >= UNITS[taxi.type].ammo)) {
       if (taxi.deckTaxi.phase === 'queued') taxi.deckTaxi.phase = 'out';
       taxi.deckTaxi.progress = Math.min(1, taxi.deckTaxi.progress + dt / 2);
       if (taxi.deckTaxi.progress >= 1) {
@@ -664,10 +668,10 @@ export const modernCombat = {
       const repair = Math.min(18 * dt, plane.maxHp - plane.hp, p.credits / .35);
       plane.hp += repair; p.credits = Math.max(0, p.credits - repair * .35); battleMetric(this, plane.owner, 'repairHP', repair);
       plane.rearmProgress += dt;
-      if (plane.ammo < d.ammo && plane.rearmProgress >= d.rearmTime / d.ammo && p.credits >= 10) {
+      if (fuelReadyForAmmo(this,plane) && plane.ammo < d.ammo && plane.rearmProgress >= d.rearmTime / d.ammo && p.credits >= 10) {
         p.credits -= 10; plane.ammo++; plane.rearmProgress = 0;
       }
-      if (plane.deckTaxi || carrier.airGroupHold || carrier.order?.type === 'rearm' || plane.hp < plane.maxHp - .01 || plane.ammo < d.ammo) continue;
+      if (plane.deckTaxi || carrier.airGroupHold || carrier.order?.type === 'rearm' || !fuelReadyForAmmo(this,plane) || plane.hp < plane.maxHp - .01 || plane.ammo < d.ammo) continue;
       if (!plane.resumeOrder) {
         const target = this.closestEnemy(plane, UNITS.carrier.range, carrier.owner);
         if (target) plane.resumeOrder = { type: 'attack', targetId: target.id, x: target.x, y: target.y };
