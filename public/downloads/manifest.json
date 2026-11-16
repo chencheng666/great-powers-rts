@@ -11,6 +11,69 @@
       "status": "树冠与远景树木补上散射光，海上迷雾高于波峰；主画面与小地图共用视野遮罩，不改作战规则。升级前导出战局与荣誉。"
     },
     {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.1/Great.Powers_3.7.1_aarch64.app.tar.gz",
+      "label": "3.7.1 · macOS Apple Silicon · Great.Powers_3.7.1_aarch64.app.tar.gz",
+      "size": 104953997,
+      "sha256": "586f184aff8d6c81e8ed51e8a08b16e6fbbeaaefd20b837cfd93e26fd69d18b5",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.1/Great.Powers_3.7.1_aarch64.AppImage",
+      "label": "3.7.1 · Linux ARM64 · Great.Powers_3.7.1_aarch64.AppImage",
+      "size": 181426696,
+      "sha256": "b27f2eacf20ff8be82e645a8f136926a0e33363aadef31f2f202f1f1c7737b8b",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.1/Great.Powers_3.7.1_aarch64.dmg",
+      "label": "3.7.1 · macOS Apple Silicon · Great.Powers_3.7.1_aarch64.dmg",
+      "size": 105070692,
+      "sha256": "b66fd340668309de812f57e8239bdabbfaed392f20d22ce47677cd1cd7d05fdf",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.1/Great.Powers_3.7.1_amd64.AppImage",
+      "label": "3.7.1 · Linux x64 · Great.Powers_3.7.1_amd64.AppImage",
+      "size": 183273976,
+      "sha256": "bb575e10369812edc597e11712ff4254f7af74e533cf3f241d88346171185744",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.1/Great.Powers_3.7.1_amd64.deb",
+      "label": "3.7.1 · Linux x64 · Great.Powers_3.7.1_amd64.deb",
+      "size": 104891128,
+      "sha256": "d35324483773a4a13865c7191ac994a26de0c51c7a9f3515a143d427fea972f3",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.1/Great.Powers_3.7.1_arm64.deb",
+      "label": "3.7.1 · Linux ARM64 · Great.Powers_3.7.1_arm64.deb",
+      "size": 104943428,
+      "sha256": "69bea9f4897f401a6e375fffa32b38032a3992043cfe5e66c570049a629992e5",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.1/Great.Powers_3.7.1_x64-setup.exe",
+      "label": "3.7.1 · Windows x64 · Great.Powers_3.7.1_x64-setup.exe",
+      "size": 322530064,
+      "sha256": "7a6c1bf39886f3957ada9c32177f63585c7bc92541b9fa18c5de98af085d862f",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.1/Great.Powers_3.7.1_x64.app.tar.gz",
+      "label": "3.7.1 · macOS Intel · Great.Powers_3.7.1_x64.app.tar.gz",
+      "size": 105759939,
+      "sha256": "389b94057eae0cd196e5a547a26d7ac16c90868d3e8d053f5cb57ccd9768edfc",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.7.1/Great.Powers_3.7.1_x64.dmg",
+      "label": "3.7.1 · macOS Intel · Great.Powers_3.7.1_x64.dmg",
+      "size": 105883231,
+      "sha256": "315a47a868aace80b202258ebaded288416159db77486b8b9d2f2266fd7411d3",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v3.7.0.zip",
       "label": "3.7.0 · 管弦配乐与现代编制 · 免安装离线单机 ZIP",
       "size": 66731082,
@@ -733,7 +796,7 @@
     }
   ],
   "webReleaseTag": "v3.7.1",
-  "updatedAt": "2026-11-16T00:53:11.284768+00:00",
+  "updatedAt": "2026-11-16T01:04:17.290047+00:00",
   "archiveTags": [
     "v3.7.0",
     "v3.6.3",
