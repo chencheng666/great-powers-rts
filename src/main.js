@@ -82,7 +82,7 @@ import { shouldPanMap, panConsumesClick, touchTransform, touchDragMode } from '.
 import { BackgroundPause } from './background-pause.js';
 import { DRONE_ROLES, supportsDroneAutonomy } from './drone-autonomy.js';
 import { COMBAT_STANCES, supportsCombatStance, combatStance } from './combat-stance.js';
-import { isLifeline, LIFELINE, lifelineSummary, harborPlan, freightRules } from './maritime-logistics.js';
+import { isLifeline, LIFELINE, lifelineSummary, harborPlan, freightRules, FREIGHT_STATUS } from './maritime-logistics.js';
 import { isIslandWatch, watchPanelHTML, watchSummary } from './island-watch.js';
 import { theaterDefinition } from './theater-operations.js';
 import { theaterPanelHTML, theaterSummary } from './theater-ui.js';
@@ -695,7 +695,16 @@ function updateSidebar(force = false) {
     });
     const cooldown = Math.ceil(Math.max(0, (p.satelliteReadyAt || 0) - g.time));
     const satelliteReady = g.hasBuilding(0, 'radar') && g.hasBuilding(0, 'lab') && g.hasPower(0) && p.credits >= 1000 && !cooldown;
-    root.querySelector('.tactic-details').firstElementChild.textContent = g.economyMode === 'mining' ? '月表矿石：黄矿 1／宝石 2 资金' : '空运每批 720、海运每批 900。最短班次间隔 36／60 秒，前班退出后再发下一班，卸货到账。';
+    root.querySelector('.tactic-details').firstElementChild.textContent = g.economyMode === 'mining' ? '矿石：黄矿 1／宝石 2 资金' : '空运每批 720、海运每批 900。最短班次间隔 36／60 秒，前班退出后再发下一班，卸货到账。仓库损失后空运改送指挥中心，每批降为 180。';
+    if(g.economyMode==='convoy'){
+      const route=g.logistics[0],status=(type,channel)=>{
+        const u=g.economicFreight(0,type)[0];
+        if(u)return FREIGHT_STATUS[u.freight.blockedReason||u.freight.phase]||'运输中';
+        if(!g.freightDestination(0,channel==='Sea'))return '缺少接收建筑';
+        return `待发 ${Math.max(0,Math.ceil(route[`next${channel}`]-g.time))} 秒`;
+      };
+      root.querySelector('.tactic-details').insertAdjacentHTML('beforeend',`<div>空运：${status('freightPlane','Air')} · 海运：${status('containerShip','Sea')}</div><div>累计交付 ${Math.floor(route.delivered)} · 运输损失 ${Math.floor(route.lost)} 资金</div>`);
+    }
     root.querySelector('.tactic-details').insertAdjacentHTML('beforebegin', `<div class="ability-card"><div class="ability-card-header"><strong>侦察卫星</strong>${icon('satellite')}</div><p>全图视野 8 秒 · 潜航仍需声呐 · 冷却 120 秒</p><div class="ability-meta"><span>${(p.satelliteUntil || 0) > g.time ? '卫星过境中' : cooldown ? `冷却 ${cooldown} 秒` : '待命'}</span><span>¤ 1,000</span></div><button class="ability-button" id="satellite-button" ${satelliteReady ? '' : 'disabled'}>${icon('satellite')} ${satelliteReady ? '请求卫星侦察' : !g.hasBuilding(0, 'lab') || !g.hasBuilding(0, 'radar') ? (frontlineEnabled(g)?'需要仓库与机场雷达':'需要雷达站与实验室') : !g.hasPower(0) ? '电力不足' : cooldown ? '卫星重新部署中' : '资金不足'}</button></div>`);
     $('#satellite-button').addEventListener('click', () => { g.activateSatellite(0); updateUI(true); });
     const cyberReady=g.hasBuilding(0,'super')&&g.hasPower(0)&&!p.cyberPending&&(p.cyberCharge||0)>=INTELLIGENCE_RULES.cyberCharge&&p.credits>=INTELLIGENCE_RULES.cyberCost&&!g.isControlLocked(0);

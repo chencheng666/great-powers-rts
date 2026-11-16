@@ -16,7 +16,7 @@ export function mapBrief(id) {
   const m=MAPS[id]; if(!m)return null;
   const tips={beginner:'推荐新兵难度，先练习移动、建造与补给。',land:'关注通道与侧翼，保持生产与前线补给。',sea:'先发展船坞，安排运输与护航，留意可登陆岸线。',future:'月表使用独立装备体系，注意矿石精炼与环境扰动。',strategy:'战场较大，先稳住资源与侦察，再规划多线推进。'};
   const w=m.world||WORLD;
-  if(m.snowToSea)return {category:'主战场',tip:'沿雪岭河谷推进，跨桥争夺资源，用舰队控制河口，再派运输机和登陆舰争夺港岛。',size:`${w.width} × ${w.height}`,special:'1位玩家＋5个电脑阵营 · 五处信标 · 三座跨河桥'};
+  if(m.snowToSea)return {category:'主战场',tip:'护送空运与海运物资，卸货后资金到账。跨桥争夺油井和资源点，用舰队控制河口，再派运输部队争夺港岛。',size:`${w.width} × ${w.height}`,special:'1位玩家＋5个电脑阵营 · 空海补给经济 · 五处信标'};
   return {category:MAP_CATEGORIES[mapCategory(id)],tip:m.combinedArms?'北部山口、中部谷道、南部外海。守住船坞，派登陆舰争夺港岛。':tips[mapCategory(id)],size:`${w.width} × ${w.height}`,special:m.combinedArms?'三线推进 · 航空母舰与潜艇':m.progression?'成长解锁 · 普通单机':m.maxPlayers===6?'六方实验战场':m.training?'新兵：5000初始资金与支援':'可调整难度与胜利规则'};
 }
 // 只用地图定义绘制地形示意，不加载战斗模型，也不展示运行中的敌军信息。

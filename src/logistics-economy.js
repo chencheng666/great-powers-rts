@@ -15,7 +15,12 @@ export const SUPPLY_ROUTES = {
 // 外部后勤与战斗运输分离，避免用载兵运输机反复卸货刷资金。
 export const logisticsEconomy = {
   initLogistics() {
-    this.logistics = this.players.map(({side}) => ({ side, nextAir: this.time + 3, nextSea: this.time + 10, delivered: 0, lost: 0 }));
+    this.logistics = this.players.map(({side}) => ({ side, nextAir: this.time + 3, nextSea: this.time + 10 + (this.map.snowToSea ? side % 2 * 6 : 0), delivered: 0, lost: 0 }));
+  },
+
+  economicFreight(side, type = null) {
+    // 部队增援也使用运输机外形，但不能占用经济班次或堵住物资卸货队列。
+    return this.activeUnits(side, type).filter(u => u.freight && !u.reinforcement);
   },
 
   freightDestination(side, sea = false) {
@@ -29,6 +34,10 @@ export const logisticsEconomy = {
 
   freightEntry(side, sea = false) {
     if (sea && this.map.seaEntries) return { ...this.map.seaEntries[side] };
+    if (!sea && this.map.snowToSea) {
+      const home = this.freightDestination(side) || this.map.spawns[side];
+      return { x: Math.max(90, Math.min(this.world.width - 90, home.x + (side % 2 ? -200 : 200))), y: home.y < this.world.height / 2 ? 90 : this.world.height - 90 };
+    }
     if(sea && this.map.freight)return {...this.map.freight.entry};
     if (sea && isLifeline(this)) return { x: 2160, y: unitRadius({ type: 'containerShip' }) + 12 };
     const margin = sea ? unitRadius({ type: 'containerShip' }) + 12 : 90;
@@ -37,6 +46,7 @@ export const logisticsEconomy = {
   },
 
   launchFreight(side, sea = false) {
+    if (this.players[side]?.eliminated) return null;
     if (sea && !theaterFreightReady(this)) return null;
     if (isIslandWatch(this) && (sea && !watchSummary(this).connected || !sea)) return null;
     const control = isLifeline(this) ? this.logistics[side].seaControl : null;
@@ -44,6 +54,7 @@ export const logisticsEconomy = {
     const home = this.freightDestination(side, sea);
     if (!home) return null;
     const entry = this.freightEntry(side, sea), type = sea ? 'containerShip' : 'freightPlane';
+    if (sea && this.isNavalBlocked(entry.x, entry.y, unitRadius({ type }) + 12)) return null;
     const u = this.spawnUnit(side, type, entry.x, entry.y);
     u.freight = { homeId: home.id, phase: 'inbound', progress: 0, entry,
       value: home.type === 'hq' ? 180 : SUPPLY_ROUTES[sea ? 'sea' : 'air'].value };
@@ -81,12 +92,13 @@ export const logisticsEconomy = {
       }
     }
     for (const route of this.logistics) for (const [channel, sea, type] of [['Air', false, 'freightPlane'], ['Sea', true, 'containerShip']]) {
+      if (this.players[route.side].eliminated) continue;
       if (isLifeline(this) && (route.side !== 0 || sea && route.seaControl.paused)) continue;
       if(isIslandWatch(this) && (!sea || !watchSummary(this).connected))continue;
       if(sea&&!theaterFreightReady(this))continue;
       if (sea && !this.map.water || this.time < route[`next${channel}`]) continue;
       // 同侧同类线路在上一班退出后才放行；延误不追补，不改变每批物资价值。
-      if (this.activeUnits(route.side, type).length) continue;
+      if (this.economicFreight(route.side, type).length) continue;
       route[`next${channel}`] = this.time + (isLifeline(this) ? sea ? LIFELINE.seaInterval : LIFELINE.airInterval : SUPPLY_ROUTES[sea ? 'sea' : 'air'].interval);
       this.launchFreight(route.side, sea);
     }
@@ -144,12 +156,12 @@ export const logisticsEconomy = {
     }
     if (!sea) {
       // 接收点按到达批次串行服务，等待航线与卸货航线保持两倍翼展以上的间隔。
-      const first = this.activeUnits(u.owner, 'freightPlane').filter(other => other.freight?.homeId === home.id).sort((a, b) => a.id - b.id)[0];
+      const first = this.economicFreight(u.owner, 'freightPlane').filter(other => other.freight.homeId === home.id).sort((a, b) => a.id - b.id)[0];
       const waiting = first !== u, arrived = this.flyFreightCircuit(u, home, dt, waiting);
       if (waiting || !arrived) { f.phase = 'inbound'; if (!waiting) f.progress = 0; return; }
     } else {
       // 兼容旧存档中的积压货船，后船在外海等待，不与前船争抢同一泊位。
-      const first = this.activeUnits(u.owner, 'containerShip').filter(other => other.freight?.homeId === home.id && (!isLifeline(this) || other.freight?.phase !== 'outbound')).sort((a, b) => a.id - b.id)[0];
+      const first = this.economicFreight(u.owner, 'containerShip').filter(other => other.freight.homeId === home.id && (!isLifeline(this) || other.freight.phase !== 'outbound')).sort((a, b) => a.id - b.id)[0];
       f.holding = first !== u;
       if (f.holding) {
         const goal = this.navalGoal((this.map.water.x1 + this.map.water.x2) / 2, home.y + (u.owner ? 1 : -1) * 360, unitRadius(u) + 12);
@@ -161,7 +173,8 @@ export const logisticsEconomy = {
       if (distance(u, goal) > 95) {
         f.phase = 'inbound'; f.blockedReason = 'inbound'; f.progress = 0; this.moveUnit(u, goal, dt, 66.5); return;
       }
-      u.angle = u.owner ? -Math.PI / 2 : Math.PI / 2;
+      const harbor = islandHarbor(this.map, home);
+      u.angle = harbor ? harbor.angle + Math.PI : u.owner ? -Math.PI / 2 : Math.PI / 2;
     }
     f.phase = 'unloading';
     f.blockedReason = !this.hasPower(u.owner) ? 'power' : isIslandWatch(this) && !watchSummary(this).connected || sea && !theaterFreightReady(this) ? 'network' : this.time - (u.lastDamageAt ?? -10) <= 3 || this.time - (home.lastDamageAt ?? -10) <= 3 ? 'combat' : 'unloading';

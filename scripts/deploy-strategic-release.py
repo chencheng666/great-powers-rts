@@ -38,9 +38,13 @@ def link(path,target):
     temporary.symlink_to(target);os.replace(temporary,path)
 
 def inherit_frozen_channel(previous,stage):
-    """原版网页更新时保留独立科幻渠道，不用缺省构建清空其游戏入口。"""
+    """保留独立科幻入口与共用服务中的其他游戏统计，不用原版发行回退它们。"""
     source=previous/'dist/starport';target=stage/'dist/starport'
     if source.is_dir() and not target.exists():shutil.copytree(source,target)
+    for source in (previous/'server').glob('jiuji-*.mjs'):
+        if source.is_file():
+            target=stage/'server'/source.name;target.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copy2(source,target)
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('archive');parser.add_argument('sha256');parser.add_argument('release');parser.add_argument('--domestic',action='store_true');args=parser.parse_args()

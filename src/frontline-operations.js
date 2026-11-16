@@ -7,7 +7,7 @@ import { battleMetric } from './battle-report.js';
 
 const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
 const clamp = (n,max) => Math.max(45,Math.min(max-45,n));
-export const reinforcementDomain = type => UNITS[type].tags.includes('deck') ? 'carrier' : UNITS[type].tags.includes('ship') ? 'dock' : UNITS[type].tags.includes('air') && !UNITS[type].tags.includes('logistics') ? 'airfield' : null;
+export const reinforcementDomain = type => UNITS[type].tags.includes('logistics') ? null : UNITS[type].tags.includes('deck') ? 'carrier' : UNITS[type].tags.includes('ship') ? 'dock' : UNITS[type].tags.includes('air') ? 'airfield' : null;
 
 export const frontlineOperations = {
   reinforcementHomes(side,domain) {

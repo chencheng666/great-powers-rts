@@ -22,6 +22,12 @@ export const frontlineAI = {
     const known=this.enemyUnits(side).filter(u=>this.canSeeEntity(side,u)&&distance(u,home)<850&&!UNITS[u.type].tags.includes('logistics'));
     const threats=known.filter(u=>UNITS[u.type].damage>0);
     if(threats.length){const target=threats.sort((a,b)=>distance(a,home)-distance(b,home))[0];return {phase:'defend',...target};}
+    if(this.economyMode==='convoy'){
+      const receivers=this.ownedBuildings(side).filter(b=>['refinery','dock'].includes(b.type));
+      const convoys=this.economicFreight(side).filter(u=>u.freight.value>0&&u.freight.phase!=='outbound');
+      const threat=this.enemyUnits(side).filter(u=>UNITS[u.type].damage>0&&this.canSeeEntity(side,u)&&[...receivers,...convoys].some(v=>distance(u,v)<650)).sort((a,b)=>distance(a,home)-distance(b,home))[0];
+      if(threat)return {phase:'defend',...threat};
+    }
     const sites=this.beacons.filter(s=>s.owner!==side&&this.hasExploredFor(side,s.x,s.y)&&snowLandConnected(this.map,home,s));
     if(sites.length)return {phase:'advance',...sites.sort((a,b)=>distance(home,a)-distance(home,b))[0]};
     const enemy=this.enemyBuildings(side).filter(b=>this.canSeeEntity(side,b)&&snowLandConnected(this.map,home,b));
@@ -39,18 +45,18 @@ export const frontlineAI = {
       const missing=['refinery','airfield','dock'].find(t=>!this.ownedBuildings(side,t).length);
       const plan=['turret','refinery','turret','airfield','dock'];
       const type=missing||plan[p.aiPlanIndex];
-      if(type&&p.credits>900&&this.canBuild(side,type)&&this.startBuild(side,type))if(!missing)p.aiPlanIndex++;
+      if(type&&p.credits>(missing?900:this.economyMode==='convoy'?1600:900)&&this.canBuild(side,type)&&this.startBuild(side,type))if(!missing)p.aiPlanIndex++;
     }
     const pending=this.ownedBuildings(side).reduce((n,b)=>n+b.queue.length+Number(!!b.active),0);
-    // 真实资金覆盖并行订单，保留至少450资金供修理与弹药；不靠额外收入驱动电脑。
+    // 运输收入存在交付间隔，预留600资金给维修、弹药和补给线应急；旧采矿局沿用450。
     const committed=this.ownedBuildings(side).reduce((n,b)=>n+b.queue.reduce((v,t)=>v+this.unitCost(side,t),0)+(b.active?Math.max(0,this.unitCost(side,b.active.type)-b.active.paid):0),0);
-    const budget=p.credits-450-committed-(p.buildQueue?Math.max(0,600-p.buildQueue.paid):0);
+    const budget=p.credits-(this.economyMode==='convoy'?600:450)-committed-(p.buildQueue?Math.max(0,600-p.buildQueue.paid):0);
     const choose=(choices)=>choices.find(type=>{
       const d=UNITS[type];return d&&unitAllowedInRoster(type,this.map)&&supportsMap(d.map,this.mapId)&&(!d.faction||d.faction===p.faction)&&(!d.requires||this.hasBuilding(side,d.requires))&&this.ownedBuildings(side,reinforcementProducer(this,type)).length&&budget>=this.unitCost(side,type);
     });
     const sites=[...this.oil,...this.beacons,...this.resourceSites.filter(s=>s.type==='depot')].filter(s=>s.owner!==side&&this.hasExploredFor(side,s.x,s.y)&&snowLandConnected(this.map,home,s));
     const ground=this.activeUnits(side).filter(u=>UNITS[u.type].damage>0&&!UNITS[u.type].tags.some(t=>['ship','air'].includes(t)));
-    const needs=[...(count('harvester')<2?['harvester']:[]),...(count('scout')<1?['scout']:[]),...(sites.length&&count('engineer')<2?['engineer']:[]),...(threats.air>0&&count('aa')<Math.max(1,Math.ceil(threats.air/2))?['aa']:[]),...(ground.length>=3&&count('supply')<2?['supply']:[])];
+    const needs=[...(this.economyMode==='mining'&&count('harvester')<2?['harvester']:[]),...(count('scout')<1?['scout']:[]),...(sites.length&&count('engineer')<2?['engineer']:[]),...(threats.air>0&&count('aa')<Math.max(1,Math.ceil(threats.air/2))?['aa']:[]),...(ground.length>=3&&count('supply')<2?['supply']:[])];
     const strategic=this.time>55&&ground.length>=3?(count('fighter')<1?'fighter':count('frigate')<1?'frigate':count('airlift')<1?'airlift':count('landing')<1?'landing':this.time>240&&count('destroyer')<1?'destroyer':this.time>420&&count('carrier')<1?'carrier':null):null;
     const strategicOrdered=strategic&&pending<3&&choose([strategic])&&this.queueAIUnit(strategic,side);
     p.aiSavingsTarget=strategic||null;
@@ -71,7 +77,8 @@ export const frontlineAI = {
     for(const u of this.activeUnits(side))u._aiTime=this.time;
     for(const engineer of this.activeUnits(side,'engineer').filter(u=>!busy(u))){
       const claimed=new Set(this.activeUnits(side,'engineer').filter(u=>u!==engineer&&u.order?.type==='capture').map(u=>u.order.targetId));
-      const site=sites.filter(s=>!claimed.has(s.id)&&snowLandConnected(this.map,engineer,s)).sort((a,b)=>distance(a,engineer)-distance(b,engineer))[0];
+      const priority=s=>this.economyMode==='convoy'?(this.oil.includes(s) ? .65 : s.type==='depot'&&s.amount>0 ? .8 : 1):1;
+      const site=sites.filter(s=>!claimed.has(s.id)&&snowLandConnected(this.map,engineer,s)).sort((a,b)=>distance(a,engineer)*priority(a)-distance(b,engineer)*priority(b))[0];
       if(site){engineer.order={type:'capture',targetId:site.id,x:site.x,y:site.y};engineer.path=[];}
     }
     for(const scout of this.activeUnits(side,'scout').filter(u=>!busy(u)))this.frontlineAIOrder(scout,'move',objective.phase==='defend'?home:objective);
@@ -103,7 +110,8 @@ export const frontlineAI = {
     const supportPoint={x:center.x+(home.x-center.x)*.16,y:center.y+(home.y-center.y)*.16};
     for(const u of ready.filter(u=>['aa','jammer','abm','counterIntel','supply'].includes(u.type)))if(distance(u,supportPoint)>180)this.frontlineAIOrder(u,'move',supportPoint);
     // 运输机/登陆舰的航路是护航目标，护航不覆盖装载、整备和返航状态。
-    const convoy=units.find(u=>['airlift','landing'].includes(u.type)&&u.passengers.length&&u.transportStage==='depart');
+    const freight=this.economyMode==='convoy'?this.economicFreight(side).filter(u=>u.freight.value>0&&u.freight.phase!=='outbound'):[];
+    const convoy=units.find(u=>['airlift','landing'].includes(u.type)&&u.passengers.length&&u.transportStage==='depart')||freight.find(u=>u.type==='freightPlane');
     const escortGoal=convoy||center;
     for(const u of ready.filter(u=>['fighter','navalFighter','helicopter','ewPlane'].includes(u.type))){
       if(u.homeCarrierId&&!u.embarkedIn){const carrier=this.getEntity(u.homeCarrierId);if(carrier&&distance(carrier,escortGoal)>1600)continue;}
@@ -111,10 +119,10 @@ export const frontlineAI = {
       const goal={x:escortGoal.x+Math.cos(heading)*180,y:escortGoal.y+Math.sin(heading)*180};
       this.frontlineAIOrder(u,u.type==='ewPlane'?'move':'attackMove',goal);
     }
-    const landing=units.find(u=>u.type==='landing'&&u.passengers.length&&u.transportStage==='depart');
+    const landing=units.find(u=>u.type==='landing'&&u.passengers.length&&u.transportStage==='depart')||freight.find(u=>u.type==='containerShip');
     const harbor=this.map.harbors[this.nearestEnemySide(side)]?.approach;
     for(const u of ready.filter(u=>['patrol','frigate','destroyer','submarine','carrier'].includes(u.type))){
-      const goal=landing?this.navalGoal(landing.x+Math.cos(u.id)*180,landing.y+Math.sin(u.id)*180,100):this.time>110?harbor:this.map.harbors[side].approach;
+      const goal=landing?this.navalGoal(landing.x+Math.cos(u.id)*260,landing.y+Math.sin(u.id)*260,100):this.time>110?harbor:this.map.harbors[side].approach;
       if(goal)this.frontlineAIOrder(u,'attackMove',goal);
     }
   }

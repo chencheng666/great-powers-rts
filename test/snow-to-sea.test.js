@@ -9,11 +9,11 @@ import { terrainHeight } from '../src/visual-detail.js';
 import { mapBrief, discoverMaps } from '../src/map-discovery.js';
 const make = () => new Game('china','russia',{}, {mapId:'snowtosea',victoryMode:'control'});
 
-test('雪岭入海部署六个独立基地、矿区与港口，出生及资源均在合法地表',()=>{
+test('雪岭入海部署六个独立基地和港口，取消新局采矿但保留油井与资源争夺',()=>{
   const g=make();assert.equal(g.players.length,6);assert.equal(g.players.filter(p=>g.isAI(p.side)).length,5);
-  assert.equal(g.ore.length,24);assert.equal(g.resourceSites.length,18);
+  assert.equal(g.economyMode,'convoy');assert.equal(g.ore.length,0);assert.equal(g.oil.length,6);assert.equal(g.resourceSites.length,18);
   for(let side=0;side<6;side++){
-    assert.equal(g.ownedBuildings(side).length,4);assert.equal(g.ownedUnits(side,'harvester').length,2);assert.equal(g.ownedUnits(side,'patrol').length,1);
+    assert.equal(g.ownedBuildings(side).length,4);assert.equal(g.ownedUnits(side,'harvester').length,0);assert.equal(g.ownedUnits(side,'patrol').length,1);assert.equal(g.queueUnit(side,'harvester'),false);
     for(const u of g.ownedUnits(side))assert.equal(UNITS[u.type].tags.includes('ship')?g.isNavalBlocked(u.x,u.y,20):g.isGroundBlocked(u.x,u.y,14),false,`${side} ${u.type}`);
     for(const b of g.ownedBuildings(side).filter(b=>b.type!=='dock'))assert(islandDistance(g.map,b.x,b.y)>b.size);
   }
@@ -59,9 +59,9 @@ test('主地图检索入口收敛到雪岭入海，历史地图仍可检索',()=
   assert.deepEqual(discoverMaps(Object.keys(MAPS),'recommended'),['snowtosea']);assert(discoverMaps(Object.keys(MAPS),'all').includes('confluence'));assert.match(mapBrief('snowtosea').special,/5个电脑/);
 });
 
-test('五个电脑持续采矿、扩建并发出进攻命令，真人席位不被电脑接管',()=>{
+test('五个电脑用实际运输收入扩建和推进，不采购矿车，真人席位不被电脑接管',()=>{
   const g=make(),initial=g.units.map(u=>u.id),advanced=new Set();for(let i=0;i<3000;i++){g.update(.05);for(const u of g.units)if(u.order?.type==='attackMove')advanced.add(u.owner);}
-  for(let side=1;side<6;side++){const p=g.players[side];assert(p.aiPlanIndex>=3,`扩建${side}:${p.aiPlanIndex}`);assert(g.ore.slice(side*4,side*4+4).some(o=>o.amount<o.max),`采矿${side}`);assert(g.ownedUnits(side).some(u=>!initial.includes(u.id)),`生产${side}`);assert(advanced.has(side),`推进${side}`);}
+  for(let side=1;side<6;side++){const p=g.players[side];assert(p.aiPlanIndex>=1,`扩建${side}:${p.aiPlanIndex}`);assert(g.logistics[side].delivered>0,`物资到账${side}`);assert.equal(g.ownedUnits(side,'harvester').length,0);assert(!g.ownedBuildings(side).some(b=>b.queue.includes('harvester')||b.active?.type==='harvester'));assert(g.ownedUnits(side).some(u=>!initial.includes(u.id)&&!UNITS[u.type].tags.includes('logistics')),`增援${side}`);assert(advanced.has(side),`推进${side}`);}
   assert.equal(g.players[0].aiPlanIndex,0);assert(g.running);
 });
 

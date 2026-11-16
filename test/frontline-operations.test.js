@@ -102,7 +102,9 @@ test('运输机装载点和投送点避开指挥中心，带载后由制空机�
 });
 
 test('巡逻艇实际完成从外海到所属泊位的航行，舰载机实际着舰',()=>{
- const g=make();g.units=g.units.filter(u=>u.owner===0);g.players[0].credits=20000;const ship=dispatch(g,'patrol');advance(g,180);assert.equal(ship.reinforcement,undefined);assert(ship.assignment);assert(distance(ship,g.shipBerth(ship,g.getEntity(ship.assignment.homeId)))<110);
+ const g=make();g.units=g.units.filter(u=>u.owner===0);g.closestEnemy=()=>null;g.players[0].credits=20000;const ship=dispatch(g,'patrol');
+ for(let n=0;n<3600&&ship.reinforcement;n++)g.update(.05);
+ assert.equal(ship.reinforcement,undefined);assert(ship.assignment);assert(distance(ship,g.shipBerth(ship,g.getEntity(ship.assignment.homeId)))<110);
  const carrier=g.addUnit(0,'carrier',4100,5600);g.assignReinforcementHome(carrier,g.reinforcementHome(0,'carrier'));carrier.airGroupHold=true;
  const plane=dispatch(g,'navalFighter');advance(g,50);assert.equal(plane.embarkedIn,carrier.id);assert.equal(plane.reinforcement,undefined);
 });

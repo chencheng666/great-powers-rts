@@ -32,7 +32,7 @@ export function snowToSeaMap() {
   const map = {
     name:'雪岭入海',sector:'雪山 · 河谷 · 湿地 · 海湾',snowToSea:true,seed:161116,
     world:{width,height,cell:40,fog:80,terrainCeiling:800},fixedScale:true,cameraNorthMargin:520,maxPlayers:6,singleplayerOnly:true,
-    combinedArms:true,connectedMainland:true,naval:true,economyMode:'mining',startingCredits:4200,controlGoal:600,spawns,
+    combinedArms:true,connectedMainland:true,naval:true,economyMode:'convoy',startingCredits:4200,controlGoal:600,spawns,
     water:rect(0,0,width,height),
     islands:[
       {name:'西岸雪岭与森林河谷',points:[[0,0],...westBank,[3500,4380],[2800,4660],[1500,4800],[0,4600]]},
@@ -43,13 +43,15 @@ export function snowToSeaMap() {
     dockZones:harbors.map((p,owner)=>({...rect(p.x-70,p.y-80,p.x+70,p.y+80),owner})),
     beaches:[rect(2500,4470,2920,4870),rect(5630,4340,6100,4780),rect(3610,4850,3880,5220),rect(4170,4800,4450,5180)],
     landingApproaches:[{x:2800,y:4770},{x:2800,y:4770},{x:5900,y:4610},{x:5900,y:4610},{x:3610,y:5000},{x:3610,y:5000}],
-    navalObjectives:harbors.map(p=>({...p.approach})),scouts:spawns.map(p=>({x:p.x,y:p.y})),seaEntries:harbors.map(p=>({...p.approach})),
+    navalObjectives:harbors.map(p=>({...p.approach})),scouts:spawns.map(p=>({x:p.x,y:p.y})),
+    seaEntries:harbors.map((p,side)=>side<4?{x:(riverBanks(120).west+riverBanks(120).east)/2+(side<2?-100:100),y:120}:{x:p.x,y:height-120}),
     roads:[[[750,1320],[2170,1200],[3000,1450],[4100,1450],[5800,1260]],[[1980,2520],[3100,2900],[4250,2900],[6000,2940]],[[1200,4000],[3060,3910],[5090,3910],[6200,4160]],[[2200,1200],[2060,2520],[2600,3620],[2800,4380]],[[5800,1260],[5420,2300],[6020,2940],[5800,4190]]],
     cover:[rect(2200,1650,2640,2020),rect(4800,3270,5310,3660)],ore:[],oil:[],resources:[],
     beacons:[{id:'snow-pass',name:'雪岭山口',x:2920,y:1020},{id:'snow-valley',name:'河谷枢纽',x:2890,y:2730},{id:'snow-grass',name:'草原驿站',x:4910,y:2330},{id:'snow-marsh',name:'芦洲河口',x:3100,y:4150},{id:'snow-port',name:'港岛航标',x:4020,y:5030}]
   };
   for(const s of spawns) {
     const point=(dx,dy)=>({x:s.x+Math.cos(s.angle)*dx-Math.sin(s.angle)*dy,y:s.y+Math.sin(s.angle)*dx+Math.cos(s.angle)*dy});
+    // 仅保留旧采矿存档的地形元数据；新局采用运输经济，不生成矿区或矿车。
     for(const [dx,dy,kind] of [[510,-320,'gold'],[720,-310,'gold'],[560,440,'gold'],[760,260,'gem']]) {const p=point(dx,dy);if(s.side===5)p.y=Math.min(p.y,4380);map.ore.push([p.x,p.y,6000,kind]);}
     const oil=point(-220,-340);map.oil.push({...oil,id:`snow-oil-${s.side}`});
     for(const [type,dx,dy]of [['cache',610,40],['salvage',850,40],['depot',1010,-90]])map.resources.push({...point(dx,dy),type,id:`snow-${s.side}-${type}`});
