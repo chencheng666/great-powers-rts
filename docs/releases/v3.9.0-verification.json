@@ -1,0 +1,95 @@
+{
+  "版本": "3.9.0",
+  "构建": "20261116-frontline-r1",
+  "验收日期": "2026-11-16",
+  "自动检查": {
+    "总数": 776,
+    "通过": 776,
+    "失败": 0
+  },
+  "五电脑长局": {
+    "simulatedSeconds": 1800.0499999989106,
+    "steps": 36001,
+    "medianMs": 6.421,
+    "p95Ms": 10.359,
+    "p99Ms": 15.607,
+    "maxMs": 105.72166700000525
+  },
+  "性能说明": "单步模拟耗时，不代表实际画面帧率；30分钟内每分钟存读档通过。",
+  "正式站交互": {
+    "version": "3.9.0",
+    "map": "snowtosea",
+    "rules": 1,
+    "players": 6,
+    "buildings": [
+      "hq",
+      "refinery",
+      "airfield",
+      "dock"
+    ],
+    "encoding": "fog-bits-v1",
+    "characters": 56614,
+    "errors": [],
+    "restoreDialog": true
+  },
+  "测试数据还原": {
+    "gameRestored": true,
+    "otherGamesUnchanged": true
+  },
+  "生产服务": [
+    {
+      "ok": true,
+      "version": "3.9.0",
+      "build": "20261116-frontline-r1",
+      "protocol": 7,
+      "maxPlayers": 2,
+      "rooms": 0,
+      "battles": 0
+    },
+    {
+      "ok": true,
+      "version": "3.9.0",
+      "build": "20261116-frontline-r1",
+      "protocol": 8,
+      "maxPlayers": 6,
+      "rooms": 0,
+      "battles": 0
+    }
+  ],
+  "公网摘要一致文件数": 16,
+  "受保护页面": {
+    "/play/starport/index.html": true,
+    "/official/starport/index.html": true,
+    "/resume/": true,
+    "/mist-harbor/": true,
+    "/jimao-fable/": true,
+    "/jiuji/": true
+  },
+  "保留历史下载数": 123,
+  "当前下载数": 133,
+  "离线完整下载": {
+    "bytes": 66745524,
+    "sha256": "a7530598ca9198c22db2b78e3ad18fa9bc3c7e660e32e9f579c2138a77e1ef28"
+  },
+  "数据库": {
+    "数据库数": 6,
+    "完整性检查数": 12,
+    "记录数未减少表数": 46,
+    "检查结果": "通过",
+    "证据": "服务器备份目录中的 data-verification-v39.json 与本地受限QA截图"
+  },
+  "发行": {
+    "桌面CI": "九件全部成功",
+    "硬件实测": "未逐一验证对应硬件",
+    "资源摘要项数": 289,
+    "上线代码提交": "f8f94203a8093e7f90a0d4f9acc77090875e9baa",
+    "公网下载清单提交": "3a0f524ff0482c9993b20d46d3ce568abbe902a8"
+  },
+  "启用范围": "雪岭入海的新单机；历史地图、3.8旧档、科幻版、双人及六方联机保留原规则。",
+  "未包含": [
+    "燃油",
+    "加油机",
+    "补给舰",
+    "4.0连续战役"
+  ]
+}
