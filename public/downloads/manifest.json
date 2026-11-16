@@ -11,6 +11,69 @@
       "status": "雪山、森林河谷、湿地、沙地与海湾；玩家与5个电脑阵营，三座桥、河海航道及区域雨雪声音。升级前导出战局与荣誉。"
     },
     {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.8.0/Great.Powers_3.8.0_aarch64.app.tar.gz",
+      "label": "3.8.0 · macOS Apple Silicon · Great.Powers_3.8.0_aarch64.app.tar.gz",
+      "size": 104961608,
+      "sha256": "8832d9c8705a68673485df0a406e905d6e400f3a4bad3cf609c778a60bc2d7ec",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.8.0/Great.Powers_3.8.0_aarch64.AppImage",
+      "label": "3.8.0 · Linux ARM64 · Great.Powers_3.8.0_aarch64.AppImage",
+      "size": 181438984,
+      "sha256": "3c9f4062494e9af20a8b05c67657fe3033fb5b7b9e76c22c5044c2b0236435b3",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.8.0/Great.Powers_3.8.0_aarch64.dmg",
+      "label": "3.8.0 · macOS Apple Silicon · Great.Powers_3.8.0_aarch64.dmg",
+      "size": 105082639,
+      "sha256": "5ad42ca1067cbf14768b3703e279add1ae9e8e9982a07f264bed5f6ed79bdbf8",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.8.0/Great.Powers_3.8.0_amd64.AppImage",
+      "label": "3.8.0 · Linux x64 · Great.Powers_3.8.0_amd64.AppImage",
+      "size": 183278072,
+      "sha256": "d2e987f460e7529fd971bea816c33f862d73ab0c5e96ca3ed64d71913cf4ffbd",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.8.0/Great.Powers_3.8.0_amd64.deb",
+      "label": "3.8.0 · Linux x64 · Great.Powers_3.8.0_amd64.deb",
+      "size": 104896016,
+      "sha256": "1e9179f8e97197e96aad9fa7808667ecb5fdfa38a9df80aa1f71c668d9316b6f",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.8.0/Great.Powers_3.8.0_arm64.deb",
+      "label": "3.8.0 · Linux ARM64 · Great.Powers_3.8.0_arm64.deb",
+      "size": 104948086,
+      "sha256": "f56211d8e1c10e067f1d2e3b4accdb3221a679d05fe5fe8d105626839aa261b9",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.8.0/Great.Powers_3.8.0_x64-setup.exe",
+      "label": "3.8.0 · Windows x64 · Great.Powers_3.8.0_x64-setup.exe",
+      "size": 322473551,
+      "sha256": "e339cc39b1e7bfae0693d2a60a394800ffb785a51c385fea40fc48f3314d7422",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.8.0/Great.Powers_3.8.0_x64.app.tar.gz",
+      "label": "3.8.0 · macOS Intel · Great.Powers_3.8.0_x64.app.tar.gz",
+      "size": 105767126,
+      "sha256": "f53d2d8c82ad77d5491f209f7e7dc2e9be4634794c9f25dba6d49b9ef5d2f931",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v3.8.0/Great.Powers_3.8.0_x64.dmg",
+      "label": "3.8.0 · macOS Intel · Great.Powers_3.8.0_x64.dmg",
+      "size": 105889393,
+      "sha256": "a86aa269628999e61a394d294573411d33bf63d2931847ac0ab41e9e1db79cb2",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v3.7.1.zip",
       "label": "3.7.1 · 树木光照与海面视野修复 · 免安装离线单机 ZIP",
       "size": 66731258,
