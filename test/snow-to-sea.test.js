@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Game } from '../src/game.js';
 import { MAPS, UNITS } from '../src/data.js';
 import { islandDistance } from '../src/island-map.js';
-import { snowSurface, snowEnvironment, snowToSeaMap, snowElevation } from '../src/snow-to-sea.js';
+import { snowSurface, snowEnvironment, snowToSeaMap, snowElevation, snowLandConnected } from '../src/snow-to-sea.js';
 import { navalPath } from '../src/island-navigation.js';
 import { terrainHeight } from '../src/visual-detail.js';
 import { mapBrief, discoverMaps } from '../src/map-discovery.js';
@@ -73,4 +73,11 @@ test('六个电脑登陆目标都有合法浅岸卸载位，运输机能在陆�
     assert.equal(g.isNavalBlocked(p.x,p.y,35),false);t.passengers.push(u.id);u.embarkedIn=t.id;assert.equal(g.unloadTransport(t,false,true),1);assert.equal(g.isGroundBlocked(u.x,u.y,6),false);
   }
   const t=g.addUnit(0,'airlift',2400,3440),u=g.ownedUnits(0,'rifle')[1];t.passengers.push(u.id);u.embarkedIn=t.id;assert(g.unloadTransport(t)>0);assert.equal(u.embarkedIn,null);
+});
+
+
+test('陆上电脑能跨桥争夺两岸据点，但不会给大陆工程师分配离岸港岛任务',()=>{
+ const g=make();for(const f of g.fogs)f.explored.fill(true);const e=g.ownedUnits(4,'engineer')[0];
+ assert(snowLandConnected(g.map,e,g.map.spawns[3]));assert.equal(snowLandConnected(g.map,e,g.beacons.at(-1)),false);
+ g.updateAI(4);const site=g.getEntity(e.order?.targetId);assert(site);assert(snowLandConnected(g.map,e,site));
 });

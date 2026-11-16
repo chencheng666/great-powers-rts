@@ -1,4 +1,4 @@
-import { snowBridge } from './snow-to-sea.js';
+import { snowBridge, snowLandConnected } from './snow-to-sea.js';
 import { unitAllowedInRoster, rosterSpawnType, migrateRetiredRoster } from './unit-roster.js';
 import { submarineCruise } from './submarine-cruise.js';
 import { canCrush, crushAlongMove } from './vehicle-crush.js';
@@ -1548,7 +1548,7 @@ export class Game {
     }
     for (const engineer of this.ownedUnits(side, 'engineer')) {
       if (['capture','defuse','collect'].includes(engineer.order?.type)) continue;
-      const reachable = this.map.combinedArms && !this.map.connectedMainland ? knownSites.filter(site => islandIndex(this.map, site) === islandIndex(this.map, engineer)) : knownSites;
+      const reachable = this.map.combinedArms ? knownSites.filter(site => this.map.snowToSea?snowLandConnected(this.map,site,engineer):islandIndex(this.map,site)===islandIndex(this.map,engineer)) : knownSites;
       const site = reachable.sort((a, b) => distance(a, engineer) - distance(b, engineer))[0];
       if (site) engineer.order = { type: 'capture', targetId: site.id, x: site.x, y: site.y };
     }
@@ -1666,7 +1666,7 @@ export class Game {
     const combat = this.activeUnits(side).filter(u => (UNITS[u.type].damage > 0 || u.type === 'apc') && !UNITS[u.type].tags.includes('ship') && !UNITS[u.type].tags.includes('jet'));
     if (combat.length < 3) return;
     const wave = combat.filter(u => !['attackMove', 'rearm', 'board'].includes(u.order?.type)).slice(0, this.difficulty.waveSize);
-    const objective = this.victoryMode === 'control' ? this.beacons.filter(site => site.owner !== side && this.hasExploredFor(side, site.x, site.y) && (!this.map.combinedArms || this.map.connectedMainland || islandIndex(this.map, site) === islandIndex(this.map, wave[0] || combat[0]))).sort((a, b) => distance(a, wave[0] || combat[0]) - distance(b, wave[0] || combat[0]))[0] : null;
+    const objective = this.victoryMode === 'control' ? this.beacons.filter(site => site.owner !== side && this.hasExploredFor(side, site.x, site.y) && (!this.map.combinedArms || (this.map.snowToSea?snowLandConnected(this.map,site,wave[0]||combat[0]):islandIndex(this.map,site)===islandIndex(this.map,wave[0]||combat[0])))).sort((a, b) => distance(a, wave[0] || combat[0]) - distance(b, wave[0] || combat[0]))[0] : null;
     for (const u of wave) { u.order = { type: 'attackMove', x: (objective?.x ?? (this.enemyObjective(side).x)) + random(-70, 70), y: (objective?.y ?? (this.enemyObjective(side).y)) + random(-90, 90) }; u.path = []; }
     if (wave.length && this.isVisible(wave[0].x, wave[0].y)) this.events.notice?.(objective ? '敌军正在争夺信标' : '敌军正在向基地推进');
   }

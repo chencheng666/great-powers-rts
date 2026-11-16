@@ -1,3 +1,4 @@
+import { snowLandConnected } from './snow-to-sea.js';
 import { unlimitedAmmo } from './commander-sandbox.js';
 import { airfieldParking } from './airfield-rules.js';
 import { emitBattleSound, weaponSound, impactSound } from './battle-sound.js';
@@ -685,7 +686,7 @@ export const modernCombat = {
       if (t.transportStage === 'load') {
         t.loadStartedAt ??= this.time;
         if (this.transportLoad(t) >= 4 && this.time - t.loadStartedAt > 12) { t.transportStage = 'depart'; continue; }
-        for (const unit of this.activeUnits(side).filter(u => ['rifle', 'tank'].includes(u.type) && !['board', 'rearm'].includes(u.order?.type) && (this.map.snowToSea || distance(u, t) < 900)).sort((a,b)=>distance(a,t)-distance(b,t)).slice(0,this.map.snowToSea?4:Infinity)) {
+        for (const unit of this.activeUnits(side).filter(u => (this.map.snowToSea?['rifle','tank','engineer']:['rifle','tank']).includes(u.type) && !['board', 'rearm'].includes(u.order?.type) && (this.map.snowToSea || distance(u, t) < 900)).sort((a,b)=>(this.map.snowToSea?Number(b.type==='engineer')-Number(a.type==='engineer'):0)||distance(a,t)-distance(b,t)).slice(0,this.map.snowToSea?4:Infinity)) {
           if (this.canBoardTransport(unit, t)) unit.order = { type: 'board', targetId: t.id };
         }
       } else {
@@ -694,7 +695,7 @@ export const modernCombat = {
         else this.unloadTransport(t);
         for (const id of carried) {
           const u = this.getEntity(id);
-          if (u?.hp > 0 && !u.embarkedIn) u.order = { type: 'attackMove', ...(this.map.combinedArms ? this.enemyObjective(side) : { x: 300, y: this.homeY }) };
+          if(u?.hp>0&&!u.embarkedIn){const objective=this.enemyObjective(side),local=this.map.snowToSea&&!snowLandConnected(this.map,u,objective)?this.beacons.find(b=>snowLandConnected(this.map,u,b)):null;u.order={type:'attackMove',...(local|| (this.map.combinedArms?objective:{x:300,y:this.homeY}))};}
         }
         if (!t.passengers.length) { t.transportStage = 'return'; t.loadStartedAt = null; }
       }

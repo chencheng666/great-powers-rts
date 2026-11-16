@@ -1,4 +1,4 @@
-import { islandDistance } from './island-map.js';
+import { islandDistance, islandIndex } from './island-map.js';
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a)); return t * t * (3 - 2 * t); };
@@ -85,3 +85,6 @@ export function snowColor(s) {
 }
 
 export function snowElevation(map,x,y){const bridge=snowBridge(map,x,y);return bridge?bridge.height+1:snowSurface(map,x,y).height+1;}
+
+// 两岸由桥连通；离岸港岛仍须运输，不能把整个地图都当成同一块陆地。
+export function snowLandConnected(map,a,b){const x=islandIndex(map,a),y=islandIndex(map,b);return x>=0&&y>=0&&(x===y||x<2&&y<2);}
