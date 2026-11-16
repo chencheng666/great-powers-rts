@@ -1,0 +1,150 @@
+{
+  "版本": "3.9.1",
+  "构建": "20261116-convoy-r1",
+  "验收日期": "2026-11-16",
+  "完整回归": {
+    "总数": 781,
+    "通过": 781,
+    "失败": 0
+  },
+  "发布保留专项": {
+    "总数": 1,
+    "通过": 1
+  },
+  "五电脑长局": {
+    "simulatedSeconds": 1800.0499999989106,
+    "steps": 36001,
+    "medianMs": 6.355,
+    "p95Ms": 9.656,
+    "p99Ms": 12.122,
+    "maxMs": 49.643708000003244,
+    "economyMode": "convoy",
+    "ore": 0,
+    "receipts": [
+      {
+        "air": 50,
+        "sea": 6
+      },
+      {
+        "air": 46,
+        "sea": 11
+      },
+      {
+        "air": 50,
+        "sea": 28
+      },
+      {
+        "air": 11,
+        "sea": 1
+      },
+      {
+        "air": 50,
+        "sea": 30
+      },
+      {
+        "air": 50,
+        "sea": 30
+      }
+    ]
+  },
+  "性能说明": "记录模拟耗时，不代表实际画面帧率；每分钟存读档通过。",
+  "浏览器交付": {
+    "economy": "convoy",
+    "players": 6,
+    "ore": 0,
+    "miners": 0,
+    "before": 7260,
+    "after": 8160,
+    "deliveredBefore": 3060,
+    "deliveredAfter": 3960,
+    "ship": {
+      "x": 3503.05108419016,
+      "y": 596.8890394999924,
+      "phase": "outbound",
+      "value": 0
+    },
+    "errors": [],
+    "contextLost": false
+  },
+  "离线断网": {
+    "version": "3.9.1",
+    "economy": "convoy",
+    "players": 6,
+    "ore": 0,
+    "miners": 0,
+    "time": 51.75780000000164,
+    "credits": 4920,
+    "delivered": 720,
+    "encoding": "fog-bits-v1",
+    "characters": 83342,
+    "errors": []
+  },
+  "兼容": "3.9及更早采矿存档保留原经济、矿车与货物，资源点不重新补满。",
+  "离线包": {
+    "name": "packages/Great-Powers-RTS-v3.9.1.zip",
+    "label": "3.9.1 · 空海补给经济 · 免安装离线单机 ZIP",
+    "size": 66746451,
+    "sha256": "67962e3603fd356674370a2b24869d0ea003b2a5b9a673593c176303008430d9",
+    "status": "雪岭入海新局取消采矿，空运与海运卸货到账，保留油井及资源点；电脑护航与预算适配，旧采矿存档保留。"
+  },
+  "上线": {
+    "游戏代码提交": "19a4d62f76d6fb9862f8cd14b2164d40ce85aaa1",
+    "服务": [
+      {
+        "ok": true,
+        "version": "3.9.1",
+        "build": "20261116-convoy-r1",
+        "protocol": 7,
+        "maxPlayers": 2,
+        "rooms": 0,
+        "battles": 0
+      },
+      {
+        "ok": true,
+        "version": "3.9.1",
+        "build": "20261116-convoy-r1",
+        "protocol": 8,
+        "maxPlayers": 6,
+        "rooms": 0,
+        "battles": 0
+      }
+    ],
+    "公网摘要一致文件数": 16,
+    "保留历史下载数": 133,
+    "当前下载数": 134,
+    "受保护页面": {
+      "/play/starport/index.html": true,
+      "/official/starport/index.html": true,
+      "/resume/": true,
+      "/mist-harbor/": true,
+      "/jimao-fable/": true,
+      "/jiuji/": true
+    },
+    "独立其他游戏统计模块保留数": 3
+  },
+  "桌面": "CI verify已通过，等待五平台打包完成。",
+  "燃油": "未接入，本次只完成运输经济与电脑适配。",
+  "正式站交互": {
+    "title": "大国崛起 3.9.1 | 雪岭入海",
+    "economy": "convoy",
+    "rules": 1,
+    "players": 6,
+    "ore": 0,
+    "miners": 0,
+    "credits": 4920,
+    "delivered": 720,
+    "time": 44.14199999999992,
+    "errors": []
+  },
+  "正式站测试数据恢复": {
+    "restored": true,
+    "otherGamesUnchanged": true
+  },
+  "数据库": {
+    "数据库数": 6,
+    "完整性检查数": 12,
+    "记录数未减少表数": 46,
+    "结果": "通过",
+    "证据": "服务器发布备份中的data-verification-v391.json与受限本地QA截图"
+  }
+}
