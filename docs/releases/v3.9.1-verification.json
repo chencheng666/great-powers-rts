@@ -111,7 +111,7 @@
     ],
     "公网摘要一致文件数": 16,
     "保留历史下载数": 133,
-    "当前下载数": 134,
+    "当前下载数": 143,
     "受保护页面": {
       "/play/starport/index.html": true,
       "/official/starport/index.html": true,
@@ -120,9 +120,71 @@
       "/jimao-fable/": true,
       "/jiuji/": true
     },
-    "独立其他游戏统计模块保留数": 3
+    "独立其他游戏统计模块保留数": 3,
+    "下载清单提交": "e5ad7a4a23ad21b522e63e66cc012832682783f0"
   },
-  "桌面": "CI verify已通过，等待五平台打包完成。",
+  "桌面": {
+    "CI": "verify与五平台任务全部成功",
+    "任务": "https://github.com/chencheng666/great-powers-rts/actions/runs/43843500433",
+    "附件": [
+      {
+        "name": "Great-Powers-RTS-v3.9.1.zip",
+        "size": 66746451,
+        "sha256": "67962e3603fd356674370a2b24869d0ea003b2a5b9a673593c176303008430d9"
+      },
+      {
+        "name": "great-powers-server-v3.9.1.tar.gz",
+        "size": 74670615,
+        "sha256": "612c819aeb521d39e1ed6b6eeb17b74e1b703bd4f9423660aba36e05dfbe50a4"
+      },
+      {
+        "name": "Great.Powers_3.9.1_aarch64.app.tar.gz",
+        "size": 104971403,
+        "sha256": "6aae5b7c3d437bfca4eb7d0b3ea40bcb9f8a6a6e014bf116c650512204b16a23"
+      },
+      {
+        "name": "Great.Powers_3.9.1_aarch64.AppImage",
+        "size": 181443080,
+        "sha256": "4bb49dd3982a913c0b58316996fbeb9b9d13beb170ed27a9eb33e5687bd70e95"
+      },
+      {
+        "name": "Great.Powers_3.9.1_aarch64.dmg",
+        "size": 105091476,
+        "sha256": "2aec3bb7fba46325d8714fa291d5b208e1726d28152655bac1cf72c37014126a"
+      },
+      {
+        "name": "Great.Powers_3.9.1_amd64.AppImage",
+        "size": 183282168,
+        "sha256": "05c623723b1a8c9fb2eb9467ce55a62cebc3caf087b442280761c03dfd9af391"
+      },
+      {
+        "name": "Great.Powers_3.9.1_amd64.deb",
+        "size": 104906106,
+        "sha256": "f8b95782b0e71b2d7099e77cb3cbaebf43041ab8c3c10e7a053d4871f29cf598"
+      },
+      {
+        "name": "Great.Powers_3.9.1_arm64.deb",
+        "size": 104959448,
+        "sha256": "ef302fa03ecab81381b278e8329f4660799668974d770146f7fc85ee6babd9b4"
+      },
+      {
+        "name": "Great.Powers_3.9.1_x64-setup.exe",
+        "size": 322577151,
+        "sha256": "b4c15174122264c48c90e2e7b645c2532adefede4b027b25e4354cd77dd8e486"
+      },
+      {
+        "name": "Great.Powers_3.9.1_x64.app.tar.gz",
+        "size": 105776612,
+        "sha256": "88c483281aff7ef867d317e6123a4c8d9f7a45bfcef9fe0095acfb085bfc9b18"
+      },
+      {
+        "name": "Great.Powers_3.9.1_x64.dmg",
+        "size": 105899721,
+        "sha256": "9253433bbedb9533d63a289912c885869abe321df14dcdde95f52f3280110c1d"
+      }
+    ],
+    "硬件实测": "未逐一在对应硬件验证；Mac未公证、Windows未签名。"
+  },
   "燃油": "未接入，本次只完成运输经济与电脑适配。",
   "正式站交互": {
     "title": "大国崛起 3.9.1 | 雪岭入海",
