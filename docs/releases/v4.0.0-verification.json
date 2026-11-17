@@ -221,10 +221,289 @@
     "status": "雪岭入海新单机支持三段连续战役、两栖登陆舰、作战方向与联合推进；旧存档保留原规则。"
   },
   "server": {
-    "status": "pending"
+    "version": "4.0.0",
+    "build": "20261117-command-r1",
+    "sourceCommit": "e7dd70f04a1e44262efdfae818da6ccaa104e4ca",
+    "health": [
+      {
+        "ok": true,
+        "version": "4.0.0",
+        "build": "20261117-command-r1",
+        "protocol": 7,
+        "maxPlayers": 2,
+        "rooms": 0,
+        "battles": 0
+      },
+      {
+        "ok": true,
+        "version": "4.0.0",
+        "build": "20261117-command-r1",
+        "protocol": 8,
+        "maxPlayers": 6,
+        "rooms": 0,
+        "battles": 0
+      }
+    ],
+    "verifiedFiles": [
+      {
+        "path": "/",
+        "sha256": "627ce253ea15f09e8da02c9dc2fc696df638ffc8aceef6512131807d54749881",
+        "bytes": 24027
+      },
+      {
+        "path": "/official/",
+        "sha256": "627ce253ea15f09e8da02c9dc2fc696df638ffc8aceef6512131807d54749881",
+        "bytes": 24027
+      },
+      {
+        "path": "/play/",
+        "sha256": "0c29d7822accc5f6d65b0469b01b9e2e78e9c9194c42998b1363547258286b85",
+        "bytes": 27161
+      },
+      {
+        "path": "/candidate/",
+        "sha256": "0c29d7822accc5f6d65b0469b01b9e2e78e9c9194c42998b1363547258286b85",
+        "bytes": 27161
+      },
+      {
+        "path": "/downloads/index.html",
+        "sha256": "c5d5f0223ee23896c90b63fa67804adb715e45b07e6f9f81aa0fdf5b9f02c96d",
+        "bytes": 14363
+      },
+      {
+        "path": "/downloads/manifest.json",
+        "sha256": "8ffb6b6c6d2fe9e37da0ad35ee756363e7e5b62fee53fbcdd1524f7fea8e2597",
+        "bytes": 75977
+      },
+      {
+        "path": "/play/release.json",
+        "sha256": "82366ef7cab1a4b59b0101f8bfec8db3e4b3a2b3f9bdb2034852bd3fc5722faa",
+        "bytes": 33143
+      },
+      {
+        "path": "/candidate/release.json",
+        "sha256": "82366ef7cab1a4b59b0101f8bfec8db3e4b3a2b3f9bdb2034852bd3fc5722faa",
+        "bytes": 33143
+      },
+      {
+        "path": "/assets/index-B02zDWW-.js",
+        "sha256": "54690b3af475dfb1c4783bcd3583dd953380c66cf4fb14dde6db66f9616f6818",
+        "bytes": 979670
+      },
+      {
+        "path": "/assets/official-cinematic-CaWuZ9Bp.js",
+        "sha256": "0559979e5f897345b76b1046aed847636f910f47af4a49d2673b81b92b2fc9db",
+        "bytes": 15487
+      },
+      {
+        "path": "/assets/official-official-scene3d-Dk9VweJg.js",
+        "sha256": "04a334078e5b81502aeac7186b2cc94693e778e4aa43f810968bea4a3c60c25a",
+        "bytes": 654836
+      },
+      {
+        "path": "/assets/index-BaIu3b58.css",
+        "sha256": "e66ef5bbae324d7dc5a239bf01265b98a0998eb0d618431a3f2200ba78ba913b",
+        "bytes": 98007
+      },
+      {
+        "path": "/assets/visual-assets-qmxSgPN6.js",
+        "sha256": "186264e8ad8b9184e64fb3ce8f72619331773be72b9a9f0d0fead2aa1bc49470",
+        "bytes": 843640
+      },
+      {
+        "path": "/assets/catalog-preview-wPWvo6Zm.js",
+        "sha256": "954beaadb23e0492742a3cb56c1ced918e7d3c2d1b21e130ae1ec4bba459f870",
+        "bytes": 24971
+      },
+      {
+        "path": "/assets/official-official-cinematic-DZzzadIY.css",
+        "sha256": "0c1ac10c958a491572fd802c786aa03d97f531e7efb5810dc409ee79495ea347",
+        "bytes": 11772
+      },
+      {
+        "path": "/assets/render-7IOzf_96.js",
+        "sha256": "813b0b432346c343a84a0f71f994c51f08e26629cf2ed8f6fe5650b30f0de15b",
+        "bytes": 392468
+      }
+    ],
+    "protected": {
+      "/play/starport/index.html": true,
+      "/official/starport/index.html": true,
+      "/resume/": true,
+      "/mist-harbor/": true,
+      "/jimao-fable/": true,
+      "/jiuji/": true
+    },
+    "historicalDownloadsRetained": 153,
+    "currentDownloads": 163,
+    "offline": {
+      "bytes": 66761566,
+      "sha256": "9464d3db3af61c875b19693a9c759247c92a13012d8765857afb1cec37f1b45f"
+    },
+    "status": "verified",
+    "catalogCommit": "a190e6c60dcadc58de666dc400ef5d04268189c7",
+    "productionSaveLoad": {
+      "moneyPreserved": true,
+      "unitIdsPreserved": true,
+      "doctrinePreserved": true,
+      "queuesPreserved": true,
+      "scriptErrors": 0,
+      "contextLost": false
+    },
+    "storage": {
+      "restored": true,
+      "otherGamesUnchanged": true
+    },
+    "databaseRetention": {
+      "databases": 6,
+      "integrityChecks": 12,
+      "tables": 46,
+      "allRowsRetained": true
+    },
+    "preservedOtherGameModules": 3
   },
   "desktop": {
-    "status": "pending",
-    "hardwareValidation": "未逐一在五种目标系统与架构实测"
+    "status": "CI成功",
+    "run": "https://github.com/chencheng666/great-powers-rts/actions/runs/44004392548",
+    "headSha": "e7dd70f04a1e44262efdfae818da6ccaa104e4ca",
+    "jobs": [
+      {
+        "name": "verify",
+        "conclusion": "success"
+      },
+      {
+        "name": "desktop (ubuntu-22.04, x86_64-unknown-linux-gnu, deb,appimage)",
+        "conclusion": "success"
+      },
+      {
+        "name": "desktop (macos-latest, aarch64-apple-darwin, app,dmg)",
+        "conclusion": "success"
+      },
+      {
+        "name": "desktop (macos-latest, x86_64-apple-darwin, app,dmg)",
+        "conclusion": "success"
+      },
+      {
+        "name": "desktop (windows-latest, x86_64-pc-windows-msvc, nsis)",
+        "conclusion": "success"
+      },
+      {
+        "name": "desktop (ubuntu-22.04-arm, aarch64-unknown-linux-gnu, deb,appimage)",
+        "conclusion": "success"
+      }
+    ],
+    "assets": [
+      {
+        "name": "Great.Powers_4.0.0_aarch64.app.tar.gz",
+        "bytes": 104987244,
+        "sha256": "795386f753df12aca8277c035270448758fbdaaba6c541b24b8524fc128057c9"
+      },
+      {
+        "name": "Great.Powers_4.0.0_aarch64.AppImage",
+        "bytes": 181459464,
+        "sha256": "ef26db0d0497d31bb250c50b1f3bbc3ca735e78423c68355a43b44e5f2dba18b"
+      },
+      {
+        "name": "Great.Powers_4.0.0_aarch64.dmg",
+        "bytes": 105108919,
+        "sha256": "ac42798b8ce159a718b57b8122b2f8a7f5645d1fda7f6fd130cba610644e7824"
+      },
+      {
+        "name": "Great.Powers_4.0.0_amd64.AppImage",
+        "bytes": 183310840,
+        "sha256": "f40fe813f01041d7f283147b1b437d01c7116d1e6aba4353a8fed6f6488f5a54"
+      },
+      {
+        "name": "Great.Powers_4.0.0_amd64.deb",
+        "bytes": 104923292,
+        "sha256": "ee8a8863996505ecf6fb4c1a418642d28c5ba8aaf9317597227b06200a169af5"
+      },
+      {
+        "name": "Great.Powers_4.0.0_arm64.deb",
+        "bytes": 104974958,
+        "sha256": "065fe42a40b71b74edda5865e5532ed253b7178525b3465e7c5ebb56dbe8b1e8"
+      },
+      {
+        "name": "Great.Powers_4.0.0_x64-setup.exe",
+        "bytes": 322555205,
+        "sha256": "798cb86cb330d10a3476ab132add5d1ca0d459e29baffe54bd59f00b135fea39"
+      },
+      {
+        "name": "Great.Powers_4.0.0_x64.app.tar.gz",
+        "bytes": 105792521,
+        "sha256": "cd265a9971f23ef3fbf14fe11fcafd3fa09f4497f020c9500fb9ad0f5877cb0d"
+      },
+      {
+        "name": "Great.Powers_4.0.0_x64.dmg",
+        "bytes": 105914719,
+        "sha256": "9e4005d8a71f47a8d9bdbdee177045805b8f1b4d479cc5ca94975093a33109d3"
+      }
+    ],
+    "hardwareValidation": "未逐一在全部目标硬件实测，Mac未公证、Windows未签名"
+  },
+  "oldSave": {
+    "version": "大国崛起 4.0.0 | 雪岭入海",
+    "commandVersion": 0,
+    "fuelVersion": 1,
+    "time": 1800.0499999989106,
+    "map": "snowtosea",
+    "campaign": null,
+    "units": 172,
+    "errors": [],
+    "contextLost": false
+  },
+  "naturalBrowser": {
+    "scenario": "正常资源与五AI自然运行，页面切换时自动暂停；宿主后台降频，非一小时实时时长",
+    "gameSeconds": 289.090000000017,
+    "activeWallMs": 292765.5000000003,
+    "elapsedWallMs": 2824770,
+    "checkpoints": [
+      {
+        "time": 60.012200000000064,
+        "activeMs": 60749.5,
+        "units": 57,
+        "models": 9,
+        "geometries": 114,
+        "textures": 41,
+        "heap": 166087778
+      },
+      {
+        "time": 120.01589999999858,
+        "activeMs": 120753.2,
+        "units": 78,
+        "models": 9,
+        "geometries": 120,
+        "textures": 41,
+        "heap": 172796871
+      },
+      {
+        "time": 180.0364000000061,
+        "activeMs": 180773.8,
+        "units": 64,
+        "models": 8,
+        "geometries": 114,
+        "textures": 41,
+        "heap": 167813859
+      },
+      {
+        "time": 240.0648000000138,
+        "activeMs": 243731.9000000002,
+        "units": 74,
+        "models": 9,
+        "geometries": 120,
+        "textures": 42,
+        "heap": 178390119
+      }
+    ],
+    "units": 76,
+    "memory": {
+      "geometries": 120,
+      "textures": 42
+    },
+    "contextLost": false,
+    "errors": [],
+    "storage": {
+      "restored": true
+    }
   }
 }
