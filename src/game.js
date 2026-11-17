@@ -1,3 +1,6 @@
+import { commandDoctrines, doctrineFactor } from './command-doctrines.js';
+import { jointOperations, isLandingShip } from './joint-operations.js';
+import { snowCampaign } from './snow-campaign.js';
 import { frontlineEnabled, frontlineBuilding, reinforcementProducer, transportWeight } from './frontline-rules.js';
 import { fuelSystem } from './fuel-system.js';
 import { fuelUnitAvailable } from './fuel-rules.js';
@@ -68,6 +71,7 @@ export class Game {
       options = { ...options, mapId: CHALLENGES[options.challengeId].mapId, difficulty: 'standard', victoryMode: 'annihilation', battlefieldScale: 1, nuclearEnabled:false, players: undefined };
       playerFaction = 'china'; enemyFaction = 'asia';
     }
+    if(options.campaignId==='snowline'&&!options.multiplayer)options={...options,mapId:'snowtosea',victoryMode:'annihilation',sandbox:null,challengeId:undefined};
     this.events = events;
     this.multiplayer = !!options.multiplayer;
     this.battleId = createBattleId();
@@ -80,6 +84,7 @@ export class Game {
     this.world = this.map.world || WORLD;
     this.frontlineVersion = this.map.snowToSea && !this.multiplayer && options.frontlineVersion !== 0 ? 1 : 0;
     this.fuelVersion = this.frontlineVersion===1 && options.fuelVersion!==0 ? 1 : 0;
+    this.commandVersion=this.fuelVersion===1&&options.commandVersion!==0?1:0;
     this.playerCount = this.map.maxPlayers===6 ? 6 : 2;
     this.nuclearEnabled=supportsNuclearMap(this.mapId)&&options.nuclearEnabled===true;
     this.pendingNuclear=false;
@@ -126,6 +131,7 @@ export class Game {
     this.initBases();
     if (!this.multiplayer) this.initChallenge(options.challengeId);
     if (options.sandbox && !this.challenge && !this.multiplayer && this.playerCount === 2) applySandbox(this, options.sandbox);
+    this.initSnowCampaign(options.campaignId);
     this.updateFog();
   }
 
@@ -148,7 +154,7 @@ export class Game {
     game.battleId = copy.config.battleId || legacyBattleId(copy);
     game.mapId = copy.config.mapId; game.battlefieldScale=copy.config.battlefieldScale||1;game.map = battlefieldMap(game.mapId,game.battlefieldScale); game.world = game.map.world || WORLD;
     game.frontlineVersion=copy.config.frontlineVersion||0;
-    game.fuelVersion=copy.config.fuelVersion||0;
+    game.fuelVersion=copy.config.fuelVersion||0;game.commandVersion=copy.config.commandVersion||0;game.campaign=copy.state.campaign||null;game.commandStats=copy.state.commandStats||null;
     game.playerCount=copy.state.players.length;game.playerConfigs=copy.state.players.map(p=>({faction:p.faction,controlType:p.controlType|| (p.side===0?"human":"ai")}));game.multiplayer=false;
     game.homeY = game.world.height / 2; game.victoryMode = copy.config.victoryMode;
     game.nuclearEnabled=copy.config.nuclearEnabled===true;game.pendingNuclear=copy.state.pendingNuclear===true;
@@ -485,6 +491,7 @@ export class Game {
 
   command(x, y, attackMove = false, side = 0, append = false) {
     if(this.isControlLocked(side))return false;
+    if(this.orderMode==='jointMove')return this.commandJointMove(x,y,side);
     if (append) { this.orderMode = null; return this.appendWaypoint(x, y, attackMove, side); }
     const patrol = this.orderMode === 'patrol';
     const selectedUnits = this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !e.embarkedIn && !e.reinforcement && !protectedPassenger(e) && !FREIGHT_TYPES.includes(e.type));
@@ -496,12 +503,12 @@ export class Game {
     const site = theaterCaptureTarget(this,{x,y},side) || [...this.oil, ...this.beacons, ...(this.resourceSites||[]).filter(s=>s.type==='depot')].find(item => distance(item, { x, y }) < 40 && item.owner !== side && this.hasExploredFor(side, item.x, item.y));
     const cache=(this.resourceSites||[]).find(s=>s.type!=='depot'&&s.amount>0&&distance(s,{x,y})<45&&this.hasExploredFor(side,s.x,s.y));
     const bomb=this.ownedBuildings(side).find(b=>b.sabotage&&distance(b,{x,y})<b.size*.55);
-    const transport = !attackMove && this.activeUnits(side).find(v => UNITS[v.type].capacity && !this.selected.includes(v.id) && distance(v, { x, y }) < (v.type === 'carrier' ? 95 : v.type === 'landing' ? 75 : 45));
+    const transport = !attackMove && this.activeUnits(side).find(v => UNITS[v.type].capacity && !this.selected.includes(v.id) && distance(v, { x, y }) < (v.type === 'carrier' ? 95 : isLandingShip(v.type) ? 90 : 45));
     const airbase = !attackMove && !patrol && this.ownedBuildings(side, 'airfield').find(b => distance(b, { x, y }) <= b.size * .65);
     const port = !attackMove && !patrol && this.ownedBuildings(side, 'dock').find(b => distance(b, { x, y }) <= b.size * .65);
     const offsets = formationOffsets(selectedUnits, { x, y });
     selectedUnits.forEach(u => {
-      u.orderQueue = [];
+      delete u.jointMission;u.orderQueue = [];
       const offset = offsets.get(u.id);
       if (patrol) {
         const goal = this.resolveMoveGoal(u, clamp(x + offset.x, 20, this.world.width - 20), clamp(y + offset.y, 20, this.world.height - 20));
@@ -521,6 +528,7 @@ export class Game {
         u.order = { type: attackMove ? 'attackMove' : 'move', ...goal, ...(selectedUnits.length > 1 ? { formation: true } : {}) };
       }
       if (supportsCombatStance(u) && ['attack', 'attackMove', 'patrol'].includes(u.order?.type)) u.combatStance = 'free';
+      if(this.commandVersion===1&&side===0&&!['rearm','restock'].includes(u.order?.type)&&u.fuel>0){u.fuelOverrideUntil=this.time+12;delete u.fuelReturn;delete u.fuelServiceId;}
       u.resumeOrder = null; u.path = []; u.pathTimer = 0; u.deployProgress = 0;u.avoidSide=0;u.avoidUntil=0;delete u.navigationProgress;delete u.navigationStalled;delete u.navigationAttempts;
       this.setDroneMission(u);
     });
@@ -532,7 +540,7 @@ export class Game {
   stopSelected(side = 0) {
     if(this.isControlLocked(side))return false;
     if (this.selected.some(id => this.getEntity(id)?.kind === 'unit')) this.events.voice?.('stopOrder');
-    this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !FREIGHT_TYPES.includes(e.type)).forEach(u => { u.order = null; u.orderQueue = []; u.resumeOrder = null; u.path = []; if (u.type === 'supply') u.autoSupply = false; if (supportsDroneAutonomy(u)) u.droneRole = 'hold'; });
+    this.selected.map(id => this.getEntity(id)).filter(e => e?.kind === 'unit' && e.owner === side && !FREIGHT_TYPES.includes(e.type)).forEach(u => { delete u.jointMission;if(this.commandVersion===1&&side===0&&u.fuel>0){u.fuelOverrideUntil=this.time+12;delete u.fuelReturn;delete u.fuelServiceId;}u.order = null; u.orderQueue = []; u.resumeOrder = null; u.path = []; if (u.type === 'supply') u.autoSupply = false; if (supportsDroneAutonomy(u)) u.droneRole = 'hold'; });
     this.orderMode = null;
   }
 
@@ -595,7 +603,9 @@ export class Game {
     this.updateIntelligence(dt);
     this.updateDeterrence(dt);
     this.updateLogistics(dt);
+    this.updateDoctrines(dt);
     this.updateFuelSystem(dt);
+    this.updateJointMissions();
     for (const p of this.players) {
       battleMetric(this, p.side, 'oilSeconds', this.oil.filter(o => o.owner === p.side).length * dt);
       battleMetric(this, p.side, 'beaconSeconds', this.beacons.filter(o => o.owner === p.side).length * dt);
@@ -837,7 +847,7 @@ export class Game {
     this.serviceIdleUnit(u, dt);
     if (u.order?.type === 'board') { this.boardTransport(u, dt); return; }
     if (u.type === 'supply') { this.updateSupply(u, dt); return; }
-    if (d.ammo && !isLunarRobot(this.map, u.type) && (u.ammo <= 0 || u.type === 'carrier' && u.wing <= 0) && u.order?.type !== 'rearm') {
+    if (d.ammo && !(this.commandVersion===1&&u.type==='amphibious') && !isLunarRobot(this.map, u.type) && (u.ammo <= 0 || u.type === 'carrier' && u.wing <= 0) && u.order?.type !== 'rearm' && !(this.commandVersion===1&&u.owner===0&&['move','patrol','board'].includes(u.order?.type))) {
       u.resumeOrder = u.order;
       u.order = { type: 'rearm' };
       u.path = [];
@@ -1108,7 +1118,7 @@ export class Game {
     if (this.players[u.owner].faction === 'russia' && target.kind === 'building') amount *= 1.15;
     if (this.players[u.owner].faction === 'russia' && u.type === 'aa' && targetTags.includes('air')) amount *= 0.88;
     if (this.players[u.owner].faction === 'middleeast' && u.type === 'tank') amount *= 0.9;
-    return amount * tacticalDamage(this.map, u, target);
+    return amount * tacticalDamage(this.map, u, target)*doctrineFactor(this,u,'damage');
   }
 
   fire(source, target, amount, style) {
@@ -1270,7 +1280,7 @@ export class Game {
     if (distance(u, goal) <= stopDistance) return;
     if (UNITS[u.type].tags.includes('air')) {
       const landing = u.order?.type === 'rearm' && this.aircraftServiceSites(u).some(b => distance(u, airfieldApron(b)) < 260);
-      const speedStep = UNITS[u.type].speed * dt * (u.jammedUntil > this.time ? .6 : 1);
+      const speedStep = UNITS[u.type].speed * doctrineFactor(this,u,'speed') * dt * (u.jammedUntil > this.time ? .6 : 1);
       const amount = Math.min(speedStep, Math.max(0, distance(u, goal) - stopDistance));
       const step = landing || u.airfieldOps?.phase === 'taxiOut' ? null : aircraftStep(u, goal, dt, amount, this.world, this.map.future);
       if (step) {
@@ -1361,7 +1371,7 @@ export class Game {
   }
 
   moveWithAvoidance(unit, point, dt, stopDistance = 0) {
-    const dist = distance(unit, point), amount = Math.min(UNITS[unit.type].speed * dt * (unit.jammedUntil > this.time ? .6 : 1), Math.max(0, dist - stopDistance));
+    const dist = distance(unit, point), amount = Math.min(UNITS[unit.type].speed * doctrineFactor(this,unit,'speed') * dt * (unit.jammedUntil > this.time ? .6 : 1), Math.max(0, dist - stopDistance));
     if (amount <= .001) return true;
     const angle = Math.atan2(point.y - unit.y, point.x - unit.x), radius = unitRadius(unit);
     const neighbors = (this.unitIndex || new UnitSpatialIndex(this.units)).nearby(unit);
@@ -1500,7 +1510,7 @@ export class Game {
         for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)if(shields.some(u=>distance(u,{x:(x+.5)*this.world.fog,y:(y+.5)*this.world.fog})<=UNITS.counterIntel.range))visible[y*cols+x]=false;
       }
       const sources = [
-        ...this.activeUnits(side).filter(u => !isLunarRobot(this.map, u.type) || u.battery > 0).map(u => ({ x: u.x, y: u.y, sight: UNITS[u.type].sight, overTerrain: UNITS[u.type].tags.includes('air') || UNITS[u.type].tags.includes('ship') || u.type === 'aa' })),
+        ...this.activeUnits(side).filter(u => !isLunarRobot(this.map, u.type) || u.battery > 0).map(u => ({ x: u.x, y: u.y, sight: UNITS[u.type].sight*doctrineFactor(this,u,'sight'), overTerrain: UNITS[u.type].tags.includes('air') || UNITS[u.type].tags.includes('ship') || u.type === 'aa' })),
         ...this.ownedBuildings(side).map(b => ({ x: b.x, y: b.y, sight: (b.type === 'radar'||frontlineEnabled(this)&&b.type==='airfield') && this.hasPower(side) ? 630 : b.type === 'hq' ? 400 : 310, overTerrain: (b.type === 'radar'||frontlineEnabled(this)&&b.type==='airfield') && this.hasPower(side) }))
       ];
       for (const beacon of this.beacons.filter(site => site.owner === side)) sources.push({ x: beacon.x, y: beacon.y, sight: 650, overTerrain: true });
@@ -1726,6 +1736,7 @@ export class Game {
   }
 
   checkVictory(dt=0) {
+    if (this.campaign) { this.updateSnowCampaign(dt); return; }
     if (this.challenge) { this.updateChallenge(dt); return; }
     if(this.playerCount===6){
       for(const p of this.players)if(!p.eliminated){const lost=this.victoryMode==='annihilation'?this.ownedBuildings(p.side).length===0&&this.ownedUnits(p.side).filter(u=>!FREIGHT_TYPES.includes(u.type)).length===0:!this.ownedBuildings(p.side).some(b=>CORE_BUILDINGS.includes(b.type));if(lost){p.eliminated=true;p.buildQueue=null;p.readyBuilding=null;this.units=this.units.filter(u=>u.owner!==p.side);this.buildings=this.buildings.filter(b=>b.owner!==p.side);for(const site of [...this.oil,...this.beacons,...this.resourceSites])if(site.owner===p.side)site.owner=null;}}
@@ -1753,4 +1764,4 @@ export class Game {
   }
 }
 
-Object.assign(Game.prototype, fuelSystem, frontlineOperations, frontlineAI, submarineCruise, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat, droneAutonomy, strategicCombat,deterrenceCombat,commandQueue,challengeCombat,combatStanceCommands);
+Object.assign(Game.prototype, commandDoctrines, jointOperations, snowCampaign, fuelSystem, frontlineOperations, frontlineAI, submarineCruise, modernCombat, logisticsEconomy, lunarRobots, intelligenceCombat, droneAutonomy, strategicCombat,deterrenceCombat,commandQueue,challengeCombat,combatStanceCommands);

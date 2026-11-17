@@ -11,6 +11,7 @@ import { supportsDroneAutonomy } from './drone-autonomy.js';
 export const CATALOG_CATEGORIES = { all: '全部', infantry: '人物／机器人', ground: '地面装备', air: '空中装备', naval: '舰艇', building: '建筑' };
 // 这里只补充战术说明；造价、生命、弹药、前置和地图限制读取实际规则。
 const GUIDES = {
+  amphibious:['两栖登陆与后续运输','20格载重，车辆4格、步兵1格；靠岸停稳后每0.75秒卸下一队。自卫弹药与动力独立补充。','占一个港口泊位；深海无法卸载，舰队护航、防空与登陆部队须配合。'],
   tanker:['空中动力保障','与低油飞机会合，230范围内脱战逐步供油；420库存有限，缺货返机场付费补充。','无武装、占一个机场机位；不能给敌军、无人机或经济货运加油，需制空护航。'],
   supplyShip:['舰队动力与弹药保障','双方停航、脱战后先供油再付费补弹；680供油库存与90批弹药库存独立消耗，缺货返港。','占一个舰艇泊位，无武装、不维修；移动、受袭或库存不足时无法连续保障。'],
   evacuee:['撤离保护目标','归航行动中等待登陆舰接运；抵达安全出口并完成停驻才计入撤离人数。','无武装、不能生产或下达作战命令。运输途中仍可能受损，重复装卸不增加撤离积分。'],
@@ -81,7 +82,7 @@ const BUILDING_GUIDES = {
 const buildingName = (type, future) => lunarBuildingProfile(future, type, BUILDINGS[type]).name;
 export function catalogAvailability(kind, type, faction, mapId) {
   const map = MAPS[mapId], d = kind === 'unit' ? UNITS[type] : BUILDINGS[type];
-  if(kind==='unit'&&FUEL_UNIT_TYPES.includes(type)&&mapId!=='snowtosea')return {available:false,reason:'仅雪岭入海启用动力的新单机可调入'};
+  if(kind==='unit'&&[...FUEL_UNIT_TYPES,'amphibious'].includes(type)&&mapId!=='snowtosea')return {available:false,reason:'仅雪岭入海启用动力的新单机可调入'};
   if (kind==='unit'&&!unitAllowedInRoster(type,map))return {available:false,reason:'已移出原版现代编制，科幻演习保留'};
   if (d.nuclear && !supportsNuclearMap(mapId)) return { available: false, reason: '仅常规双人战区可选择开启核威慑规则' };
   if (d.faction && d.faction !== faction) return { available: false, reason: `仅 ${FACTIONS[d.faction].name} 可生产` };

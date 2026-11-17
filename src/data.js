@@ -96,7 +96,9 @@ export const UNIT_ORDER = ['rifle', 'engineer', 'scout', 'tank', 'apc', 'supply'
 UNIT_ORDER.push('railgun', 'aegis', 'relay');
 UNIT_ORDER.push('landing', 'bomber', 'airlift');
 UNIT_ORDER.push('navalFighter', 'navalStrike');
+UNITS.amphibious={name:'两栖登陆舰',cost:1650,time:52,hp:1200,speed:54,range:200,damage:13,cooldown:1.2,sight:370,capacity:20,ammo:16,rearmTime:28,ammoCost:9,icon:'ship',producer:'dock',requires:'radar',map:'ocean',tags:['ship','naval','transport'],desc:'20格载重：步兵1格、车辆4格；停航靠岸分批卸载。携有限自卫弹药，占一个港口泊位，需要舰队与防空护航。'};
 UNIT_ORDER.push('tanker','supplyShip');
+UNIT_ORDER.push('amphibious');
 Object.assign(UNITS, STRATEGIC_UNITS);
 BUILDINGS.nuclearSilo={name:'战略威慑发射井',cost:2400,time:70,hp:950,power:-100,size:90,icon:'radiation',requires:'lab',map:'modern',nuclear:true,desc:'仅开局启用核威慑规则可造；240 秒准备，4500 资金，8 秒可中止准备与20 秒公开飞行预警，每方每局一次实际发射。需雷达、实验室和供电；准备期摧毁设施或断网可取消，投入资金不退。区域反导、分散和疏散可反制，友军亦受损。'};
 BUILD_ORDER.push('nuclearSilo');

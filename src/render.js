@@ -1149,7 +1149,8 @@ export class Renderer {
     this.cargoDetail=landingDetailPlan(this.game.units.filter(u=>framed.has(u.id)),this.camera.zoom,this.quality,this.game.selected,this.center,this.cargoDetail);
     for (const entity of [...this.game.buildings, ...this.game.units]) {
       if (entity.hp <= 0) continue; active.add(entity.id);
-      const visible=visibility.get(entity.id);let cached=this.entities.get(entity.id);
+      const point=this.worldToScreen(entity.x,entity.y,entity.kind==='unit'&&UNITS[entity.type].tags.includes('air')?50:0);
+      const visible=visibility.get(entity.id)&&inDetailViewport(point,this.viewport,320);let cached=this.entities.get(entity.id);
       if (!visible) {
         if (cached) { cached.entity=entity;cached.model.visible=false;cached.identity.visible=false;cached.ring.visible=false;cached.lastX=entity.x;cached.lastY=entity.y;if (entity.embarkedIn) cached.flightHeight = undefined; }
         if(entity.kind==='building')this.updateFoundation(entity,false);

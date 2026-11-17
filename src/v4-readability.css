@@ -12,3 +12,5 @@
 .fuel-readout progress{width:100%;height:7px;accent-color:#64ceec}
 .fuel-readout>div:nth-child(2) progress{accent-color:#dfc17a}
 .fuel-readout small{font-size:10px;line-height:1.5;color:#d6bc7d}
+
+.command-doctrine,.campaign-objectives{padding:14px;margin-bottom:14px;border:1px solid #6a8a8e;background:#16252b;color:#e2ecec}.command-doctrine h3,.campaign-objectives h3{font-size:15px;margin:0 0 9px}.command-doctrine p,.campaign-objectives p{font-size:12px;line-height:1.65;color:#b8cbd0}.command-doctrine article{padding:10px 0;border-top:1px solid #354d55}.campaign-objectives button{margin:4px 4px 4px 0}.command-doctrine button{width:100%} #joint-move-btn.active{border-color:#92d5de;background:#304d58}

@@ -1,3 +1,4 @@
+import { createAmphibiousModel } from './amphibious-model.js';
 import { createFrontlineWarehouse } from './frontline-presentation.js';
 import { createFuelSupportModel } from './fuel-support-models.js';
 import { createProceduralAirfield } from './procedural-facilities.js';
@@ -177,6 +178,7 @@ export async function prepareVisualAssets({ lunar = false } = {}) {
     models.set('dock', createHarbor(weatherMaterial, {...openAssets,crane:null}));
     models.set('airfield',createProceduralAirfield());
     models.set('frontlineWarehouse',createFrontlineWarehouse());
+    models.set('amphibious',createAmphibiousModel());
     for(const type of ['tanker','supplyShip'])models.set(type,createFuelSupportModel(type));
     for (const type of COMMUNITY_3D_BUILDINGS.filter(type => !['dock','airfield'].includes(type))) refineFacility(models.get(type), type, weatherMaterial);
     refineRadarStation(models.get('radar'));

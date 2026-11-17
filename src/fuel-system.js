@@ -1,3 +1,4 @@
+import { doctrineFactor,commandEnabled } from './command-doctrines.js';
 import { UNITS } from './data.js';
 import { FUEL, FUEL_SUPPORT, fuelEnabled, fuelProfile } from './fuel-rules.js';
 import { snowLandConnected } from './snow-to-sea.js';
@@ -27,14 +28,19 @@ export const fuelSystem = {
   },
   consumeMovementFuel(unit,distance) {
     const profile=fuelProfile(this,unit);if(!profile||unit.embarkedIn)return;
-    unit.fuel=Math.max(0,unit.fuel-distance*profile.distance);
+    unit.fuel=Math.max(0,unit.fuel-distance*profile.distance*doctrineFactor(this,unit,'fuelUse'));
   },
   fuelHome(unit) {
     const profile=fuelProfile(this,unit);if(!profile)return null;
     if(unit.homeCarrierId){const carrier=this.getEntity(unit.homeCarrierId);if(carrier?.hp>0&&carrier.owner===unit.owner)return carrier;}
     const type=profile.domain==='air'?'airfield':profile.domain==='sea'?'dock':'refinery';
-    const homes=this.ownedBuildings(unit.owner,type).filter(b=>profile.domain!=='land'||snowLandConnected(this.map,unit,b));
+    const homes=(this.fuelHomeGroups?.get(`${unit.owner}:${type}`)||this.ownedBuildings(unit.owner,type)).filter(b=>b.hp>0).filter(b=>profile.domain!=='land'||snowLandConnected(this.map,unit,b));
     return homes.find(b=>b.id===(unit.order?.homeId||unit.assignment?.homeId))||homes.sort((a,b)=>gap(a,unit)-gap(b,unit))[0]||null;
+  },
+  nearbyFuelAnchor(unit){
+    if(!commandEnabled(this))return null;const domain=fuelProfile(this,unit)?.domain;
+    if(domain!=='land')return this.fuelProviderFor(unit);
+    return (this.fuelProviderGroups?.get(`${unit.owner}:land`)||this.activeUnits(unit.owner,'supply')).filter(v=>v!==unit&&v.hp>0&&!v.embarkedIn&&!v.reinforcement&&!v.fuelReturn&&v.order?.type!=='restock'&&v.fuel>35&&v.fuelStock>=45&&gap(v,unit)<650&&this.time-(v.lastDamageAt??-10)>3&&this.hasLineOfFire(v,unit)).sort((a,b)=>gap(a,unit)-gap(b,unit))[0]||null;
   },
   fuelStation(unit) {
     const profile=fuelProfile(this,unit);if(!profile||this.time-(unit.lastDamageAt??-10)<=3||!this.hasPower(unit.owner))return null;
@@ -52,7 +58,7 @@ export const fuelSystem = {
     const support=FUEL_SUPPORT[unit.type];
     if(unit.fuel>=100&&(!support||unit.fuelStock>=support.stock)&&(!support?.ammoStock||unit.ammoStock>=support.ammoStock))return;
     if(!this.fuelStation(unit))return;
-    const p=this.players[unit.owner],gain=Math.min(FUEL.capacity-unit.fuel,FUEL.refillRate*dt,p.credits/FUEL.price);
+    const p=this.players[unit.owner],gain=Math.min(FUEL.capacity-unit.fuel,FUEL.refillRate*dt*doctrineFactor(this,unit,'service'),p.credits/FUEL.price);
     unit.fuel+=gain;p.credits=Math.max(0,p.credits-gain*FUEL.price);
     if(unit.fuel>=FUEL.ready)delete unit.fuelEmergencyAt;
     if(!support||unit.fuel<99.5)return;
@@ -71,7 +77,8 @@ export const fuelSystem = {
     const amount=Math.max(0,Math.min(FUEL.ready-unit.fuel,rule.rate*dt,provider.fuelStock));
     provider.fuelStock-=amount;unit.fuel+=amount;unit.fueledAt=this.time;
     if(amount>0){
-      delete unit.fuelEmergencyAt;
+      delete unit.fuelEmergencyAt;this.noteCommandStat?.(unit.owner,'transferred',amount);
+      if(commandEnabled(this)&&domain==='land'&&unit.fuel>=FUEL.ready&&unit.fuelReturn&&(!UNITS[unit.type].ammo||unit.ammo===UNITS[unit.type].ammo)&&unit.hp>=unit.maxHp-.01)this.restoreCombatOrder(unit);
       if(this.time>=(provider.fuelFXAt||0)){
         provider.fuelFXAt=this.time+.5;
         this.effects.push({type:'fuelTransfer',sourceId:provider.id,targetId:unit.id,x:provider.x,y:provider.y,toX:unit.x,toY:unit.y,owner:unit.owner,age:0,duration:.6});
@@ -81,11 +88,11 @@ export const fuelSystem = {
   },
   fuelProviderFor(unit) {
     const domain=fuelProfile(this,unit)?.domain;if(!domain||domain==='land'||FUEL_SUPPORT[unit.type])return null;
-    return this.activeUnits(unit.owner,domain==='air'?'tanker':'supplyShip').filter(p=>p.autoFuel!==false&&!p.reinforcement&&!p.fuelReturn&&p.order?.type!=='rearm'&&p.fuel>35&&p.fuelStock>=15&&(!p.fuelTargetId||p.fuelTargetId===unit.id)&&!manual(p)&&gap(p,unit)<1600&&this.time-(p.lastDamageAt??-10)>3).sort((a,b)=>gap(a,unit)-gap(b,unit))[0]||null;
+    return (this.fuelProviderGroups?.get(`${unit.owner}:${domain}`)||this.activeUnits(unit.owner,domain==='air'?'tanker':'supplyShip')).filter(p=>p.autoFuel!==false&&!p.reinforcement&&!p.fuelReturn&&p.order?.type!=='rearm'&&p.fuel>35&&p.fuelStock>=15&&(!p.fuelTargetId||p.fuelTargetId===unit.id)&&!manual(p)&&gap(p,unit)<1600&&this.time-(p.lastDamageAt??-10)>3).sort((a,b)=>gap(a,unit)-gap(b,unit))[0]||null;
   },
   beginFuelReturn(unit) {
     if(unit.fuelReturn||unit.reinforcement||unit.embarkedIn)return;
-    unit.fuelReturn=true;
+    unit.fuelReturn=true;this.noteCommandStat?.(unit.owner,'returns');
     const provider=this.fuelProviderFor(unit),home=this.fuelHome(unit);
     if(unit.type==='supply'){
       unit.resumeOrder=unit.order;unit.order={type:'restock'};unit.path=[];
@@ -100,22 +107,26 @@ export const fuelSystem = {
   },
   updateFuelSystem(dt) {
     if(!fuelEnabled(this))return;
+    this.fuelHomeGroups=new Map();this.fuelProviderGroups=new Map();
+    for(const b of this.buildings)if(b.hp>0&&['airfield','dock','refinery'].includes(b.type)){const k=`${b.owner}:${b.type}`;if(!this.fuelHomeGroups.has(k))this.fuelHomeGroups.set(k,[]);this.fuelHomeGroups.get(k).push(b);}
+    for(const u of this.units)if(u.hp>0&&['tanker','supplyShip','supply'].includes(u.type)){const k=`${u.owner}:${u.type==='tanker'?'air':u.type==='supply'?'land':'sea'}`;if(!this.fuelProviderGroups.has(k))this.fuelProviderGroups.set(k,[]);this.fuelProviderGroups.get(k).push(u);}
     for(const u of this.units){
       const profile=fuelProfile(this,u);if(!profile||u.hp<=0)continue;
       if(profile.domain==='air'&&!u.embarkedIn&&this.fuelAirborne(u))u.fuel=Math.max(0,u.fuel-profile.idle*dt);
+      if(commandEnabled(this)&&u.airfieldOps?.phase==='taxiOut'&&u.order?.type==='rearm'){u.airfieldOps.phase='taxiIn';u.path=[];}
       this.fillFuelAtStation(u,dt);
       if(u.fuel<=0&&profile.domain==='air'&&!u.embarkedIn&&this.fuelAirborne(u)){
         if(u.fuelEmergencyAt===undefined){
-          u.fuelEmergencyAt=this.time;
+          u.fuelEmergencyAt=this.time;this.noteCommandStat?.(u.owner,'emergencies');
           if(u.owner===0&&this.time-(this.lastFuelEmergencyNoticeAt??-100)>8){this.lastFuelEmergencyNoticeAt=this.time;this.events.notice?.(`${UNITS[u.type].name}动力耗尽：20秒内获得供油或安全着陆，否则坠毁。`);}
         }
-        if(this.time-u.fuelEmergencyAt>=FUEL.emergencySeconds){this.damage(u,u.hp*4,null);continue;}
+        if(this.time-u.fuelEmergencyAt>=FUEL.emergencySeconds){this.noteCommandStat?.(u.owner,'fuelLosses');this.damage(u,u.hp*4,null);continue;}
       }else if(u.fuel>0)delete u.fuelEmergencyAt;
       if(u.embarkedIn||u.reinforcement||this.time<(u.nextFuelCheckAt||0))continue;
       u.nextFuelCheckAt=this.time+1;
-      const home=this.fuelHome(u),need=home?gap(u,home)*profile.distance*(profile.domain==='land'?1.65:1.4)+14:FUEL.warning;
+      const home=this.nearbyFuelAnchor(u)||this.fuelHome(u),need=home?gap(u,home)*profile.distance*doctrineFactor(this,u,'fuelUse')*(commandEnabled(this)?(profile.domain==='land'?2:profile.domain==='sea'?1.6:1.6):(profile.domain==='land'?1.65:1.4))+(commandEnabled(this)?22:14):FUEL.warning;
       const low=u.fuel<=Math.min(85,Math.max(FUEL.warning,need));
-      if(low&&!this.fuelStation(u))this.beginFuelReturn(u);
+      if(low&&!(u.fuelOverrideUntil>this.time)&&!this.fuelStation(u))this.beginFuelReturn(u);
       if(profile.domain==='sea'&&!FUEL_SUPPORT[u.type]&&u.order?.type==='rearm'&&(u.ammo<UNITS[u.type].ammo||u.type==='carrier'&&(u.defenseAmmo??12)<12)&&!u.fuelServiceId&&!this.fuelStation(u)){
         const provider=this.fuelProviderFor(u);if(provider){u.fuelReturn=true;u.fuelServiceId=provider.id;provider.fuelTargetId=u.id;}
       }
@@ -136,15 +147,16 @@ export const fuelSystem = {
       delete unit.fuelServiceId;unit.path=[];this.requestResupply(unit);return false;
     }
     const air=UNITS[unit.type].tags.includes('air'),distance=gap(unit,provider);
-    if(distance>rule.range*.8){this.moveUnit(unit,provider,dt,rule.range*.65);return true;}
+    if(distance>(air?rule.range:rule.range*.8)){this.moveUnit(unit,provider,dt,rule.range*.65);return true;}
     if(air){
-      this.moveUnit(unit,{x:provider.x-Math.cos(provider.angle)*120,y:provider.y-Math.sin(provider.angle)*120},dt,60);
+      this.transferFuel(provider,unit,dt);
+      this.moveUnit(unit,{x:provider.x-Math.cos(provider.angle)*120,y:provider.y-Math.sin(provider.angle)*120},dt*Math.min(1,UNITS[provider.type].speed/UNITS[unit.type].speed),60);
     }else if(this.time-(unit.lastMovedAt??-10)<.5||this.time-(provider.lastMovedAt??-10)<.5)return true;
-    this.transferFuel(provider,unit,dt);
+    if(!air)this.transferFuel(provider,unit,dt);
     if(unit.fuel<FUEL.ready)return true;
     const d=UNITS[unit.type];
     if(!air&&(d.ammo&&unit.ammo<d.ammo||unit.type==='carrier'&&(unit.defenseAmmo??12)<12)&&provider.ammoStock>=1){
-      unit.mobileAmmoProgress=(unit.mobileAmmoProgress||0)+dt;
+      unit.mobileAmmoProgress=Math.min(1,(unit.mobileAmmoProgress||0)+dt);
       if(unit.mobileAmmoProgress>=1&&this.players[unit.owner].credits>=(d.ammoCost??10)){
         if(unit.type==='carrier'&&(unit.defenseAmmo??12)<12)unit.defenseAmmo=(unit.defenseAmmo??12)+1;else unit.ammo++;
         provider.ammoStock--;this.players[unit.owner].credits-=d.ammoCost??10;unit.mobileAmmoProgress=0;

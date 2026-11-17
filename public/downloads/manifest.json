@@ -1,8 +1,15 @@
 {
-  "version": "3.9.2",
-  "releaseTag": "v3.9.2",
-  "createdAt": "2026-11-16T11:41:40.865782+00:00",
+  "version": "4.0.0",
+  "releaseTag": "v4.0.0",
+  "createdAt": "2026-11-17T02:23:13.902359+00:00",
   "files": [
+    {
+      "name": "packages/Great-Powers-RTS-v4.0.0.zip",
+      "label": "4.0.0 · 雪岭远征 · 免安装离线单机 ZIP",
+      "size": 66761566,
+      "sha256": "9464d3db3af61c875b19693a9c759247c92a13012d8765857afb1cec37f1b45f",
+      "status": "雪岭入海新单机支持三段连续战役、两栖登陆舰、作战方向与联合推进；旧存档保留原规则。"
+    },
     {
       "name": "packages/Great-Powers-RTS-v3.9.2.zip",
       "label": "3.9.2 · 动力保障 · 免安装离线单机 ZIP",
@@ -1075,9 +1082,10 @@
       "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
     }
   ],
-  "webReleaseTag": "v3.9.2",
+  "webReleaseTag": "v4.0.0",
   "updatedAt": "2026-11-16T11:59:23.335521+00:00",
   "archiveTags": [
+    "v3.9.2",
     "v3.9.1",
     "v3.9.0",
     "v3.8.0",
@@ -1092,8 +1100,8 @@
     "v1.3.1",
     "v2.0.0"
   ],
-  "offlineFile": "packages/Great-Powers-RTS-v3.9.2.zip",
-  "webBuild": "20261116-fuel-r1",
+  "offlineFile": "packages/Great-Powers-RTS-v4.0.0.zip",
+  "webBuild": "20261117-command-r1",
   "utoolsFile": "packages/Great-Powers-RTS-v2.0.2-utools-market.upxs",
   "starportFile": "packages/Great-Powers-Starport-v3.0.1-TapTap-r4.zip",
   "starportBuild": "20261109-scifi-mobile-r4"

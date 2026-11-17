@@ -10,7 +10,7 @@ export const FUEL_SUPPORT = Object.freeze({
 export const FUEL_UNIT_TYPES = ['tanker','supplyShip'];
 const PROFILES={air:{domain:'air',distance:.0052,idle:.025},tanker:{domain:'air',distance:.0035,idle:.025},sea:{domain:'sea',distance:.004,idle:0},land:{domain:'land',distance:.009,idle:0}};
 export const fuelEnabled = game => game.fuelVersion===1 && !game.multiplayer && !game.map?.future;
-export const fuelUnitAvailable = (game,type) => !FUEL_UNIT_TYPES.includes(type)||fuelEnabled(game);
+export const fuelUnitAvailable = (game,type) => type==='amphibious'?game.commandVersion===1:!FUEL_UNIT_TYPES.includes(type)||fuelEnabled(game);
 export function fuelProfile(game,unit) {
   if(!fuelEnabled(game)||unit.kind!=='unit'||unit.temporaryUntil||unit.swarmParentId)return null;
   const tags=UNITS[unit.type]?.tags||[];
@@ -49,6 +49,6 @@ export function validFuelState(unit,config,state) {
   }
   if(unit.fuelEmergencyAt!==undefined&&(profile.domain!=='air'||!finite(unit.fuelEmergencyAt)||unit.fuelEmergencyAt<0||unit.fuelEmergencyAt>state.time||unit.fuel>0))return false;
   if(unit.mobileAmmoProgress!==undefined&&(!finite(unit.mobileAmmoProgress)||unit.mobileAmmoProgress<0||unit.mobileAmmoProgress>2))return false;
-  for(const k of ['nextFuelCheckAt','nextFuelSearchAt','nextFuelEscortAt','fuelFXAt','fueledAt'])if(unit[k]!==undefined&&(!finite(unit[k])||unit[k]<0))return false;
+  for(const k of ['nextFuelCheckAt','nextFuelSearchAt','nextFuelEscortAt','fuelFXAt','fueledAt','fuelOverrideUntil'])if(unit[k]!==undefined&&(!finite(unit[k])||unit[k]<0))return false;
   return true;
 }

@@ -1,3 +1,6 @@
+import { validDoctrine } from './command-doctrines.js';
+import { validCampaign } from './snow-campaign.js';
+import { isLandingShip } from './joint-operations.js';
 import { validFuelState } from './fuel-rules.js';
 import { packFog, unpackFog } from './network-protocol.js';
 import { transportWeight, FRONTLINE_CAPACITY } from './frontline-rules.js';
@@ -47,6 +50,9 @@ export function validateSave(save) {
   if (config.economyMode !== undefined && !['mining', 'convoy'].includes(config.economyMode)) invalid();
   if(config.nuclearEnabled!==undefined&&(typeof config.nuclearEnabled!=='boolean'||config.nuclearEnabled&&!supportsNuclearMap(config.mapId)))invalid();
   if(s.pendingNuclear!==undefined&&(typeof s.pendingNuclear!=='boolean'||s.pendingNuclear&&(!config.nuclearEnabled||!s.pendingAbility)))invalid();
+  if(config.commandVersion!==undefined&&(config.commandVersion!==1||config.fuelVersion!==1||config.mapId!=='snowtosea'))invalid();
+  if(s.commandStats!==undefined&&(!Array.isArray(s.commandStats)||s.commandStats.length!==count||s.commandStats.some(v=>!object(v)||['returns','emergencies','fuelLosses','transferred'].some(k=>!finite(v[k])||v[k]<0))))invalid();
+  if(!validCampaign(s.campaign,config.commandVersion===1,s.time)||s.campaign&&!['active','intermission'].includes(s.campaign.status))invalid();
   if(config.fuelVersion!==undefined&&(config.fuelVersion!==1||config.mapId!=='snowtosea'||config.frontlineVersion!==1))invalid();
   if(config.frontlineVersion!==undefined&&(config.frontlineVersion!==1||config.mapId!=='snowtosea'))invalid();
   if (config.battleId !== undefined && !validBattleId(config.battleId)) invalid();
@@ -54,11 +60,15 @@ export function validateSave(save) {
   if (SNAPSHOT_FIELDS.some(key => !Object.hasOwn(s, key))) invalid();
   if (!Array.isArray(s.players) || s.players.length !== count) invalid();
   const checkProduction = (queue, definitions) => {
+    if(queue?.type==='amphibious'&&config.commandVersion!==1)invalid();
     if (queue !== null && (!object(queue) || !known(definitions, queue.type) || !finite(queue.progress) || queue.progress < 0 || !finite(queue.paid) || queue.paid < 0)) invalid();
   };
   for (const [side, player] of s.players.entries()) {
     if (!object(player) || player.side !== side || !known(FACTIONS, player.faction) || !['credits', 'abilityCharge', 'abilityCooldown', 'shieldUntil', 'controlScore', 'unitCount', 'aiPlanIndex', 'aiUnitCount', 'aiAirUnitCount', 'aiNavyUnitCount', 'aiEngineerRetryAt', 'aiScoutRetryAt', 'aiGhostRetryAt'].every(key => finite(player[key])) || player.credits < 0) invalid();
     if(count===6&&(!["human","ai"].includes(player.controlType)||typeof player.eliminated!=="boolean"))invalid();
+    if(!validDoctrine(player,config.commandVersion===1,s.time))invalid();
+    if(player.frontlineContacts!==undefined){const w=MAPS[config.mapId].world||WORLD;if(config.commandVersion!==1||!Array.isArray(player.frontlineContacts)||player.frontlineContacts.length>12||player.frontlineContacts.some(c=>!object(c)||!Number.isSafeInteger(c.id)||c.id<1||!finite(c.x)||!finite(c.y)||c.x<0||c.y<0||c.x>w.width||c.y>w.height||!finite(c.seenAt)||c.seenAt<0||c.seenAt>s.time))invalid();}
+    if(player.jointTask!==undefined){const t=player.jointTask,w=MAPS[config.mapId].world||WORLD;if(config.commandVersion!==1||!object(t)||!['assemble','advance','recover','defend'].includes(t.phase)||!finite(t.x)||!finite(t.y)||t.x<0||t.y<0||t.x>w.width||t.y>w.height||!finite(t.since)||t.since<0||t.since>s.time)invalid();}
     checkProduction(player.buildQueue, BUILDINGS);
     if(player.nuclearCharge!==undefined&&(!finite(player.nuclearCharge)||player.nuclearCharge<0||player.nuclearCharge>R.charge))invalid();
     if(player.nuclearSpent!==undefined&&typeof player.nuclearSpent!=='boolean')invalid();
@@ -88,6 +98,9 @@ export function validateSave(save) {
       ids.add(entity.id);
       if (key === 'units') {
         if(!validFuelState(entity,config,s))invalid();
+        if(entity.type==='amphibious'&&config.commandVersion!==1)invalid();
+        if(entity.landTransportId!==undefined){const t=s.units.find(u=>u.id===entity.landTransportId);if(config.commandVersion!==1||entity.type!=='engineer'||!Number.isSafeInteger(entity.landTransportId)||entity.landTransportId<1||t&&(t.owner!==entity.owner||!['landing','amphibious','airlift'].includes(t.type)))invalid();}
+        if(entity.jointMission!==undefined){const m=entity.jointMission;if(config.commandVersion!==1||!object(m)||!point(m)||m.x<0||m.y<0||m.x>world.width||m.y>world.height||m.side!==entity.owner||!['assemble','advance'].includes(m.stage)||!finite(m.since)||m.since<0||m.since>s.time||!point(m.rally)||m.rally.x<0||m.rally.y<0||m.rally.x>world.width||m.rally.y>world.height||!Array.isArray(m.group)||m.group.length>240||m.group.some(id=>!Number.isSafeInteger(id)||id<1))invalid();}
         if (!Array.isArray(entity.path) || entity.path.some(p => !point(p)) || !Array.isArray(entity.passengers) || entity.passengers.some(id => !Number.isSafeInteger(id)) || !['pathTimer', 'stunUntil', 'turretAngle', 'cargo', 'cargoValue', 'rearmProgress', 'temporaryUntil', 'movePulse', 'heat', 'deployProgress'].every(key => finite(entity[key]))) invalid();
         if(entity.assignment!==undefined){
           const a=entity.assignment,domain=dummyDomain(entity.type);
@@ -108,8 +121,8 @@ export function validateSave(save) {
           }
         }
         const d = UNITS[entity.type];
-        if(entity.unloadQueue!==undefined&&(entity.type!=='landing'||typeof entity.unloadQueue!=='boolean'))invalid();
-        if(entity.nextUnloadAt!==undefined&&(entity.type!=='landing'||!finite(entity.nextUnloadAt)||entity.nextUnloadAt<0||entity.nextUnloadAt>s.time+.76))invalid();
+        if(entity.unloadQueue!==undefined&&(!isLandingShip(entity.type)||typeof entity.unloadQueue!=='boolean'))invalid();
+        if(entity.nextUnloadAt!==undefined&&(!isLandingShip(entity.type)||!finite(entity.nextUnloadAt)||entity.nextUnloadAt<0||entity.nextUnloadAt>s.time+.76))invalid();
         if (entity.combatStance !== undefined && (!supportsCombatStance(entity) || typeof entity.combatStance !== 'string' || !Object.hasOwn(COMBAT_STANCES, entity.combatStance))) invalid();
         if(entity.swarmParentId!==undefined&&(!Number.isSafeInteger(entity.swarmParentId)||entity.swarmParentId<1||entity.temporaryUntil<=s.time||!['swarmScout','swarmDecoy','drone'].includes(entity.type)))invalid();
         if (entity.battery !== undefined && (!isLunarRobot(MAPS[config.mapId], entity.type) || !finite(entity.battery) || entity.battery < 0 || entity.battery > ROBOT_ENERGY.capacity)) invalid();
@@ -134,7 +147,7 @@ export function validateSave(save) {
         if (entity.deckTaxi && (!object(entity.deckTaxi) || !d.tags.includes('deck') || !entity.embarkedIn || !['in','queued','out'].includes(entity.deckTaxi.phase) || !finite(entity.deckTaxi.progress) || entity.deckTaxi.progress < 0 || entity.deckTaxi.progress > 1 || typeof entity.deckTaxi.launch !== 'boolean')) invalid();
       } else {
         if(entity.sabotage&&(!object(entity.sabotage)||(!owners.includes(entity.sabotage.owner)||entity.sabotage.owner===entity.owner)||!finite(entity.sabotage.plantedAt)||!finite(entity.sabotage.detonateAt)||entity.sabotage.plantedAt<0||entity.sabotage.detonateAt!==entity.sabotage.plantedAt+INTELLIGENCE_RULES.bombDelay||entity.sabotage.plantedAt>s.time+.01))invalid();
-        if (!Array.isArray(entity.queue) || entity.queue.length > 1000 || entity.queue.some(type => !known(UNITS, type)) || !finite(entity.size) || entity.rallyPoint && !point(entity.rallyPoint)) invalid();
+        if (!Array.isArray(entity.queue) || entity.queue.length > 1000 || entity.queue.some(type => (!known(UNITS, type)||type==='amphibious'&&config.commandVersion!==1)) || !finite(entity.size) || entity.rallyPoint && !point(entity.rallyPoint)) invalid();
         checkProduction(entity.active, UNITS);
       }
     }
@@ -200,7 +213,7 @@ export function validateSave(save) {
   if (!validChallengeState(s.challenge, config, s.time, [...s.units,...s.buildings],[...s.beacons,...(s.resourceSites||[])]) || s.challenge && count !== 2) invalid();
   if (s.logistics !== undefined) {
     if (!Array.isArray(s.logistics) || s.logistics.length !== count) invalid();
-    for (const [side, route] of s.logistics.entries()) if (!object(route) || route.side !== side || !['nextAir', 'nextSea', 'delivered', 'lost'].every(key => finite(route[key]) && route[key] >= 0)) invalid();
+    for (const [side, route] of s.logistics.entries()) if (!object(route) || route.side !== side || !['nextAir', 'nextSea', 'delivered', 'lost'].every(key => finite(route[key]) && route[key] >= 0)||route.seaDelivered!==undefined&&(!finite(route.seaDelivered)||route.seaDelivered<0||route.seaDelivered>route.delivered)) invalid();
   } else if (config.economyMode === 'convoy') invalid();
   if (!validMaritimeSave(s,config)) invalid();
   return save;
@@ -226,17 +239,21 @@ export function parseSave(text) {
 export function createSave(game, view = {}, savedAt = Date.now()) {
   if (!game?.running || game.winner !== null) throw new Error('只能保存尚未结束的战局');
   const difficulty = Object.entries(AI_DIFFICULTIES).find(([, value]) => value === game.difficulty)?.[0];
-  const save = { format: 'great-powers-rts', version: game.playerCount===6?2:SAVE_VERSION, savedAt, config: { ...(game.fuelVersion?{fuelVersion:game.fuelVersion}:{}),...(game.frontlineVersion?{frontlineVersion:game.frontlineVersion}:{}),...(game.sandbox?{sandbox:{...game.sandbox}}:{}),...(game.challenge?{challengeId:game.challenge.id}:{}),...(game.playerCount===6?{playerCount:6}:{}),nuclearEnabled:!!game.nuclearEnabled,battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])),...(game.challenge?{challenge:game.challenge}:{}),pendingNuclear:!!game.pendingNuclear, logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
+  const save = { format: 'great-powers-rts', version: game.playerCount===6?2:SAVE_VERSION, savedAt, config: { ...(game.commandVersion?{commandVersion:1}:{}),...(game.fuelVersion?{fuelVersion:game.fuelVersion}:{}),...(game.frontlineVersion?{frontlineVersion:game.frontlineVersion}:{}),...(game.sandbox?{sandbox:{...game.sandbox}}:{}),...(game.challenge?{challengeId:game.challenge.id}:{}),...(game.playerCount===6?{playerCount:6}:{}),nuclearEnabled:!!game.nuclearEnabled,battlefieldScale:game.battlefieldScale||1,battleId:game.battleId, mapId: game.mapId, victoryMode: game.victoryMode, difficulty, economyMode: game.economyMode }, state: { ...(game.campaign?{campaign:game.campaign}:{}),...(game.commandStats?{commandStats:game.commandStats}:{}),...Object.fromEntries(SNAPSHOT_FIELDS.map(key => [key, game[key]])),...(game.challenge?{challenge:game.challenge}:{}),pendingNuclear:!!game.pendingNuclear, logistics: game.logistics,resourceSites:game.resourceSites||[], battleStats: game.battleStats }, view };
   validateSave(save);
   return JSON.parse(JSON.stringify(save));
 }
 
+export function encodeStoredSave(save) {
+  validateSave(save);
+  // 普通存档与战役检查点共用迷雾压缩，导出和运行态仍保留完整数组。
+  return JSON.stringify({...save,storageEncoding:'fog-bits-v1',state:{...save.state,fogs:save.state.fogs.map(packFog)}});
+}
+
 export function writeSave(storage, slot, save) {
   if (!SAVE_KEYS[slot]) throw new Error('未知存档位置');
-  validateSave(save);
-  // 只压缩本地持久化的迷雾；导出和运行态仍是完整数组，旧档可直接读取。
-  const compact={...save,storageEncoding:'fog-bits-v1',state:{...save.state,fogs:save.state.fogs.map(packFog)}};
-  try { storage.setItem(SAVE_KEYS[slot], JSON.stringify(compact)); } catch { throw new Error('本地存储不可用或空间不足，请导出存档文件；当前战局仍然保留'); }
+  const text=encodeStoredSave(save);
+  try { storage.setItem(SAVE_KEYS[slot], text); } catch { throw new Error('本地存储不可用或空间不足，请导出存档文件；当前战局仍然保留'); }
   return save;
 }
 

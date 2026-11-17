@@ -1,0 +1,230 @@
+{
+  "version": "4.0.0",
+  "build": "20261117-command-r1",
+  "regression": {
+    "passed": 817,
+    "failed": 0,
+    "commandSpecific": 19
+  },
+  "headless": {
+    "scenario": "未修改资源、生命与胜利规则的五AI单机长局；模拟时间由命令参数指定，自然结束则停止",
+    "simulatedSeconds": 3600.000000004331,
+    "wallSeconds": 487.63475558299996,
+    "steps": 72000,
+    "medianMs": 6.693,
+    "p95Ms": 9.782,
+    "p99Ms": 11.49,
+    "maxMs": 138.18725000001723,
+    "commandVersion": 1,
+    "fuelVersion": 1,
+    "commandStats": [
+      {
+        "returns": 0,
+        "emergencies": 0,
+        "fuelLosses": 0,
+        "transferred": 0
+      },
+      {
+        "returns": 26,
+        "emergencies": 3,
+        "fuelLosses": 0,
+        "transferred": 3156.270953194212
+      },
+      {
+        "returns": 75,
+        "emergencies": 0,
+        "fuelLosses": 0,
+        "transferred": 2157.462809548773
+      },
+      {
+        "returns": 20,
+        "emergencies": 1,
+        "fuelLosses": 1,
+        "transferred": 523.8371595787792
+      },
+      {
+        "returns": 36,
+        "emergencies": 11,
+        "fuelLosses": 11,
+        "transferred": 2443.5366132890667
+      },
+      {
+        "returns": 86,
+        "emergencies": 3,
+        "fuelLosses": 3,
+        "transferred": 3582.9603196970215
+      }
+    ],
+    "produced": [
+      [],
+      [
+        "scout",
+        "engineer",
+        "supply",
+        "rifle",
+        "loiterer",
+        "tank",
+        "fighter",
+        "frigate",
+        "tanker",
+        "supplyShip",
+        "airlift",
+        "aa",
+        "landing",
+        "destroyer",
+        "carrier",
+        "navalFighter",
+        "rocket"
+      ],
+      [
+        "scout",
+        "engineer",
+        "supply",
+        "aa",
+        "rifle",
+        "fighter",
+        "frigate",
+        "tanker",
+        "airlift",
+        "supplyShip",
+        "tank",
+        "amphibious",
+        "destroyer",
+        "carrier",
+        "loiterer",
+        "navalFighter",
+        "rocket",
+        "helicopter",
+        "submarine"
+      ],
+      [
+        "scout",
+        "engineer",
+        "supply",
+        "rifle",
+        "fighter",
+        "frigate",
+        "aa",
+        "drone",
+        "tank",
+        "rocket",
+        "tanker"
+      ],
+      [
+        "scout",
+        "engineer",
+        "supply",
+        "rifle",
+        "aa",
+        "fighter",
+        "frigate",
+        "tanker",
+        "rocket",
+        "supplyShip",
+        "airlift",
+        "tank",
+        "amphibious",
+        "destroyer",
+        "helicopter",
+        "submarine",
+        "loiterer",
+        "carrier",
+        "navalFighter"
+      ],
+      [
+        "scout",
+        "engineer",
+        "supply",
+        "rifle",
+        "fighter",
+        "frigate",
+        "aa",
+        "airlift",
+        "landing",
+        "tank",
+        "rocket",
+        "tanker",
+        "supplyShip",
+        "destroyer",
+        "helicopter",
+        "submarine",
+        "loiterer"
+      ]
+    ]
+  },
+  "campaign": {
+    "controlledFlow": true,
+    "completed": [
+      0,
+      1,
+      2
+    ],
+    "chapter1Seconds": 191.1153,
+    "chapter2Seconds": 282.5153,
+    "completedSeconds": 490.1153,
+    "checkpointPreservedMoneyAndUnitIds": true,
+    "retreatPreservesStageCheckpoint": true
+  },
+  "denseLoad": {
+    "scenario": "140单位受控混战同步渲染负载，300帧；浏览器后台帧调度降频，不能折算真实FPS",
+    "frames": 300,
+    "simulatedSeconds": 15.450000000003513,
+    "units": 148,
+    "renderMedianMs": 8.099999904632568,
+    "renderP95Ms": 58.40000009536743,
+    "simulationMedianMs": 12.200000047683716,
+    "simulationP95Ms": 13.599999904632568,
+    "memory": {
+      "geometries": 335,
+      "textures": 47
+    },
+    "models": 146,
+    "drawCalls": 702,
+    "contextLost": false,
+    "errors": [],
+    "failedPrograms": 0
+  },
+  "offline": {
+    "offline": true,
+    "title": "大国崛起 4.0.0 | 雪岭入海",
+    "map": "snowtosea",
+    "commandVersion": 1,
+    "fuelVersion": 1,
+    "campaign": {
+      "version": 1,
+      "chapter": 0,
+      "status": "active",
+      "hold": 0,
+      "startedAt": 0,
+      "baseline": 0,
+      "seaBaseline": 0,
+      "retreats": 0,
+      "completed": [],
+      "reason": ""
+    },
+    "storageEncoding": "fog-bits-v1",
+    "checkpointCharacters": 46219,
+    "manualSaved": true,
+    "loadThroughUI": true,
+    "errors": [],
+    "contextLost": false,
+    "storage": {
+      "restored": true,
+      "otherGamesUnchanged": true
+    }
+  },
+  "offlinePackage": {
+    "name": "packages/Great-Powers-RTS-v4.0.0.zip",
+    "label": "4.0.0 · 雪岭远征 · 免安装离线单机 ZIP",
+    "size": 66761566,
+    "sha256": "9464d3db3af61c875b19693a9c759247c92a13012d8765857afb1cec37f1b45f",
+    "status": "雪岭入海新单机支持三段连续战役、两栖登陆舰、作战方向与联合推进；旧存档保留原规则。"
+  },
+  "server": {
+    "status": "pending"
+  },
+  "desktop": {
+    "status": "pending",
+    "hardwareValidation": "未逐一在五种目标系统与架构实测"
+  }
+}

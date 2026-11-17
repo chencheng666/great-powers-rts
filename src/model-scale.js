@@ -38,6 +38,7 @@ export function unitModelScale(type, size, fallback, future = false) {
   if (future) return fallback;
   if (['rifle', 'engineer', 'scout', 'evacuee'].includes(type)) return size.y > 0 ? PERSONNEL_HEIGHT / size.y : fallback;
   if (type === 'carrier' && size.x > 0) return CARRIER_MODEL_LENGTH / size.x;
+  if (type === 'amphibious' && size.x > 0) return 215 / size.x;
   if (type === 'supplyShip' && size.x > 0) return 180 / size.x;
   if (GROUND_MODEL_LENGTHS[type]) return size.x > 0 ? GROUND_MODEL_LENGTHS[type] / size.x : fallback;
   return airframeScale(type, size.x, fallback);

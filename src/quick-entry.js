@@ -22,6 +22,8 @@ export function setupQuickEntry({ onStart, onContinue, candidate = false }) {
     const panel = document.querySelector('#custom-deployment'); panel.open = true;
     panel.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
   });
+  document.querySelector('#quick-campaign-btn').hidden=candidate;
+  document.querySelector('#quick-campaign-btn').addEventListener('click',()=>document.querySelector('#campaign-btn').click());
   document.querySelector('#quick-challenge-btn').addEventListener('click', () => document.querySelector('#challenge-btn').click());
   document.querySelector('#quick-online-btn').addEventListener('click', () => document.querySelector('#online-btn').click());
   document.addEventListener('gp-deploying', event => {

@@ -18,6 +18,7 @@ export const commandQueue = {
     const planned = units.map(u => { const end = u.orderQueue?.at(-1) || u.order; return { ...u, x: Number.isFinite(end?.x) ? end.x : u.x, y: Number.isFinite(end?.y) ? end.y : u.y }; });
     const offsets = formationOffsets(planned, { x, y });
     for (const u of eligible) {
+      delete u.jointMission;
       const offset = offsets.get(u.id), goal = this.resolveMoveGoal(u, Math.max(20, Math.min(this.world.width - 20, x + offset.x)), Math.max(20, Math.min(this.world.height - 20, y + offset.y)));
       const order = { type: attackMove ? 'attackMove' : 'move', ...goal, ...(units.length > 1 ? { formation: true } : {}) };
       u.orderQueue ??= [];

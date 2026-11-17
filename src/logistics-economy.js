@@ -192,6 +192,7 @@ export const logisticsEconomy = {
     }
     this.players[u.owner].credits += f.value;
     this.logistics[u.owner].delivered += f.value;
+    if(u.type==='containerShip')this.logistics[u.owner].seaDelivered=(this.logistics[u.owner].seaDelivered||0)+f.value;
     recordBattleEvent(this,{kind:'delivered',owner:u.owner,type:u.type,value:f.value});
     this.effects.push({ type: 'capture', x: home.x, y: home.y, owner: u.owner, age: 0, duration: 1.2 });
     if (u.owner === 0) this.events.notice?.(`${sea ? '集装箱船' : '后勤运输机'}卸货完成：+${f.value} 资金`);

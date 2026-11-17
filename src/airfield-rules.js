@@ -28,7 +28,13 @@ export function airfieldRunwayAvailable(game, unit, home) {
   if (peers.some(other => other !== unit && other.deployment?.buildingId === home.id)) return false;
   // 已进入跑道的飞机先完成滑行；尚未进场时，出场优先，再按机号排队。
   const operations = peers.filter(other => other.airfieldOps?.homeId === home.id && other.airfieldOps.phase !== 'parked');
-  const priority = other => ['taxiIn', 'taxiOut'].includes(other.airfieldOps.phase) ? 0 : 1;
+  const priority = other => {
+    if(game.commandVersion!==1)return ['taxiIn','taxiOut'].includes(other.airfieldOps.phase)?0:1;
+    const phase=other.airfieldOps.phase,parking=airfieldParking(home,other.airfieldOps.slot);
+    if(phase==='taxiIn'||phase==='taxiOut'&&Math.hypot(other.x-parking.x,other.y-parking.y)>35)return 0;
+    if(phase==='approach'&&other.fuel<40&&Math.hypot(other.x-home.x,other.y-home.y)<700)return 1;
+    return phase==='taxiOut'?2:3;
+  };
   operations.sort((a, b) => priority(a) - priority(b) || a.id - b.id);
   return !operations.length || operations[0] === unit;
 }

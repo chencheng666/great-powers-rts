@@ -1,3 +1,5 @@
+import { isLandingShip,unitMissionReady } from './joint-operations.js';
+import { commandEnabled } from './command-doctrines.js';
 import { frontlineEnabled, transportWeight } from './frontline-rules.js';
 import { FUEL, fuelEnabled, fuelProfile, fuelReadyForAmmo } from './fuel-rules.js';
 import { snowLandConnected } from './snow-to-sea.js';
@@ -455,6 +457,7 @@ export const modernCombat = {
 
   transportGrounded(transport) {
     if (transport.type === 'carrier') return this.time - (transport.lastMovedAt ?? -10) >= 1;
+    if(isLandingShip(transport.type)&&commandEnabled(this))return this.time-(transport.lastMovedAt??-10)>=.5;
     if (transport.type !== 'airlift') return true;
     return !this.isGroundBlocked(transport.x, transport.y, 35) && this.time - (transport.lastMovedAt ?? -10) >= .5 && !this.buildings.some(b => b.hp > 0 && distance(b, transport) < b.size * .5 + 35);
   },
@@ -465,7 +468,8 @@ export const modernCombat = {
       if(transport?.type==='carrier'&&transport.landingId===u.id)transport.landingId=null;
       u.deckApproach=null;u.order = null; return;
     }
-    if (transport.type === 'landing') {
+    if (isLandingShip(transport.type)) {
+      if(commandEnabled(this)&&!this.transportGrounded(transport))return;
       const shore = frontlineEnabled(this)?this.landingBoardingPoint(u,transport):this.resolveMoveGoal(u, transport.x, transport.y);
       if(!shore)return;
       if (distance(shore, transport) > 145 || !this.canOccupyUnit(u, shore)) return;
@@ -504,7 +508,7 @@ export const modernCombat = {
       if (transport.owner === 0) this.events.notice?.('运输单位需要在安全位置停驻后卸载');
       return 0;
     }
-    if(this.map.islands && transport.type==='landing' && !emergency && !step){
+    if(this.map.islands && isLandingShip(transport.type) && !emergency && !step){
       transport.unloadQueue=!transport.unloadQueue;
       this.events.notice?.(transport.unloadQueue?'登陆卸载已排队，若无合法沙滩请取消后重新靠岸':'已取消后续卸载，未下船部队仍在舰内');
       return 0;
@@ -517,7 +521,7 @@ export const modernCombat = {
       for (let n = 0; n < 180; n++) {
         const angle = n * 2.399963, reach = 50 + Math.floor(n / 12) * 12;
         const candidate = { x: transport.x + Math.cos(angle) * reach, y: transport.y + Math.sin(angle) * reach };
-        if ((!this.map.islands || transport.type!=='landing' || legalIslandLanding(this.map,candidate)) && this.canOccupyUnit(passenger, candidate) && !this.units.some(v => alive(v) && unitLayer(v) === 'ground' && distance(v, candidate) < unitRadius(v) + unitRadius(passenger) + 4)) { spot = candidate; break; }
+        if ((!this.map.islands || !isLandingShip(transport.type) || legalIslandLanding(this.map,candidate)) && this.canOccupyUnit(passenger, candidate) && !this.units.some(v => alive(v) && unitLayer(v) === 'ground' && distance(v, candidate) < unitRadius(v) + unitRadius(passenger) + 4)) { spot = candidate; break; }
       }
       if (!spot && !emergency) continue;
       passenger.embarkedIn = null;
@@ -533,7 +537,7 @@ export const modernCombat = {
   },
 
   updateLandingUnload(transport) {
-    if(transport.type!=='landing'||!transport.unloadQueue)return;
+    if(!isLandingShip(transport.type)||!transport.unloadQueue)return;
     if(['move','attackMove','patrol'].includes(transport.order?.type)){transport.unloadQueue=false;return;}
     if(this.time>=(transport.nextUnloadAt||0)){
       this.unloadTransport(transport,false,true);transport.nextUnloadAt=this.time+.75;
@@ -681,11 +685,14 @@ export const modernCombat = {
   },
 
   updateAITransports(side=1) {
-    for (const t of this.activeUnits(side).filter(u => ['landing', 'airlift'].includes(u.type))) {
-      if (t.order?.type === 'rearm' || t.deployment || t.reinforcement) continue;
+    for (const t of this.activeUnits(side).filter(u => (isLandingShip(u.type)||u.type==='airlift'))) {
+      if (t.order?.type === 'rearm' || t.fuelReturn || t.fuelServiceId || t.deployment || t.reinforcement) continue;
+      if(commandEnabled(this)&&t.type==='amphibious'&&t.ammo<=0&&!t.passengers.length){this.requestResupply(t);continue;}
       const water = this.map.water;
-      let home = (this.map.snowToSea&&t.type==='landing'?this.navalGoal(this.map.harbors[side].x,this.map.harbors[side].y,70):null) || (t.type === 'landing' && this.map.landingApproaches?.[side]) || (this.playerCount===6?this.map.spawns[side]:{ x: t.type === 'landing' ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 });
-      let shore = (this.map.snowToSea&&t.type==='landing'?this.map.landingApproaches[side]:null) || (t.type === 'landing' && this.map.landingApproaches?.[1-side]) || (this.playerCount===6?this.enemyObjective(side):{ x: t.type === 'landing' ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 });
+      let home = (this.map.snowToSea&&isLandingShip(t.type)?this.navalGoal(this.map.harbors[side].x,this.map.harbors[side].y,70):null) || (isLandingShip(t.type) && this.map.landingApproaches?.[side]) || (this.playerCount===6?this.map.spawns[side]:{ x: isLandingShip(t.type) ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 });
+      let shore = (this.map.snowToSea&&isLandingShip(t.type)?this.map.landingApproaches[side]:null) || (isLandingShip(t.type) && this.map.landingApproaches?.[1-side]) || (this.playerCount===6?this.enemyObjective(side):{ x: isLandingShip(t.type) ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 });
+      const islandTarget=commandEnabled(this)?this.knownIslandObjective(side):null;
+      if(islandTarget&&isLandingShip(t.type))shore=this.navalGoal(islandTarget.x-360,islandTarget.y,unitRadius(t)+5);
       if(frontlineEnabled(this)&&t.type==='airlift'){
         const base=this.getEntity(t.assignment?.homeId),parking=base?airfieldParking(base,t.assignment.slot):home;
         home=this.transportLandingPoint(t,parking)||home;
@@ -701,17 +708,17 @@ export const modernCombat = {
       if (t.transportStage === 'return') { t.transportStage = 'load'; t.loadStartedAt = this.time; }
       if (t.transportStage === 'load') {
         t.loadStartedAt ??= this.time;
-        if (t.passengers.length && (this.transportLoad(t) >= 4 || this.time - t.loadStartedAt > 24) && this.time - t.loadStartedAt > 12) { t.transportStage = 'depart'; continue; }
-        for (const unit of this.activeUnits(side).filter(u => (this.map.snowToSea?['rifle','tank','engineer']:['rifle','tank']).includes(u.type) && !u.reinforcement && !u.deliveryUntil && !['board', 'rearm','capture','defuse'].includes(u.order?.type) && (this.map.snowToSea || distance(u, t) < 900)).sort((a,b)=>(this.map.snowToSea?Number(b.type==='engineer')-Number(a.type==='engineer'):0)||distance(a,t)-distance(b,t)).slice(0,this.map.snowToSea?4:Infinity)) {
+        if (t.passengers.length && (!islandTarget||t.passengers.some(id=>this.getEntity(id)?.type==='engineer')) && (!commandEnabled(this)||unitMissionReady(this,t,shore)&&(!isLandingShip(t.type)||this.activeUnits(side).some(v=>['frigate','destroyer','patrol'].includes(v.type)&&unitMissionReady(this,v,shore)&&distance(v,t)<750))) && (this.transportLoad(t) >= (commandEnabled(this)?Math.min(UNITS[t.type].capacity*.6,12):4) || this.time - t.loadStartedAt > 24) && this.time - t.loadStartedAt > 12) { t.transportStage = 'depart'; continue; }
+        for (const unit of this.activeUnits(side).filter(u => (this.map.snowToSea?['rifle','tank','engineer']:['rifle','tank']).includes(u.type) && !u.reinforcement && !u.deliveryUntil && !['board', 'rearm','capture','defuse'].includes(u.order?.type) && (commandEnabled(this)?u.landTransportId===t.id||!u.landTransportId&&distance(u,t)<900: this.map.snowToSea || distance(u,t)<900)).sort((a,b)=>(this.map.snowToSea?Number(b.type==='engineer')-Number(a.type==='engineer'):0)||distance(a,t)-distance(b,t)).slice(0,this.map.snowToSea?4:Infinity)) {
           if (this.canBoardTransport(unit, t)) unit.order = { type: 'board', targetId: t.id };
         }
       } else {
         const carried = [...t.passengers];
-        if (this.map.combinedArms && t.type === 'landing') this.unloadTransport(t, false, true);
+        if (this.map.combinedArms && isLandingShip(t.type)) this.unloadTransport(t, false, true);
         else this.unloadTransport(t);
         for (const id of carried) {
           const u = this.getEntity(id);
-          if(u?.hp>0&&!u.embarkedIn){const objective=this.enemyObjective(side),local=this.map.snowToSea&&!snowLandConnected(this.map,u,objective)?this.beacons.find(b=>snowLandConnected(this.map,u,b)):null;u.order={type:'attackMove',...(local|| (this.map.combinedArms?objective:{x:300,y:this.homeY}))};}
+          if(u?.hp>0&&!u.embarkedIn){delete u.landTransportId;const objective=this.enemyObjective(side),local=this.map.snowToSea&&!snowLandConnected(this.map,u,objective)?this.beacons.find(b=>snowLandConnected(this.map,u,b)):null;u.order=commandEnabled(this)&&u.type==='engineer'&&local&&local.owner!==side?{type:'capture',targetId:local.id,x:local.x,y:local.y}:{type:'attackMove',...(local|| (this.map.combinedArms?objective:{x:300,y:this.homeY}))};}
         }
         if (!t.passengers.length) { t.transportStage = 'return'; t.loadStartedAt = null; }
       }

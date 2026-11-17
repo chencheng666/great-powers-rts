@@ -105,7 +105,11 @@ float geoSnowCover=geoBiomeValue.r*smoothstep(.38,.88,vGeoNormal.y);geoColor=mix
 float geoCloud=.94+.06*sin(vGeoWorld.x*.0011+vGeoWorld.z*.0018+geoTime*.012);geoColor*=geoCloud;`:''}
 float geoMacro=.87+geoFbm(vGeoWorld.xz*.002)*.24;
 float geoWet=geoSand*(1.0-smoothstep(-5.0,35.0,geoDistance));
-${game.map.snowToSea?'geoWet=max(geoWet,geoBiomeValue.b*(.45+.35*geoNoise(vGeoWorld.xz*.025)));':''}
+float geoPuddle=0.0;
+${game.map.snowToSea?`float geoRain=(1.0-geoBiomeValue.r)*(1.0-geoBiomeValue.g)*(.42+.30*sin(geoTime/95.0+vGeoWorld.x/3100.0));
+geoWet=max(geoWet,geoBiomeValue.b*(.35+.35*geoNoise(vGeoWorld.xz*.025))*(.65+geoRain));
+geoPuddle=geoBiomeValue.b*(1.0-geoBiomeValue.r)*smoothstep(.955,.995,vGeoNormal.y)*smoothstep(.60,.82,geoNoise(vGeoWorld.xz*.038))*(.3+.7*geoRain/.72);
+geoWet=max(geoWet,geoPuddle);`:''}
 geoColor*=geoMacro*(1.0-geoWet*.25);
 diffuseColor.rgb=mix(geoColor,diffuseColor.rgb,geoKeep);
 `)
@@ -115,16 +119,16 @@ vec4 geoRockX=geoSample(geoSurface,vGeoWorld.zy/55.0,2.0),geoRockY=geoSample(geo
 vec4 geoSandDetail=geoSample(geoSurface,vGeoWorld.xz/48.0,3.0);
 vec4 geoRockDetail=geoRockX*geoWeights.x+geoRockY*geoWeights.y+geoRockZ*geoWeights.z;
 vec4 geoDetail=mix(mix(geoGroundDetail,geoRockDetail,geoRock),geoSandDetail,geoSand*(1.0-geoRock));
-roughnessFactor=mix(clamp(geoDetail.b-geoWet*.2,.5,1.0),roughnessFactor,geoKeep);`)
+roughnessFactor=mix(mix(clamp(geoDetail.b-geoWet*.2,.5,1.0),.19,geoPuddle),roughnessFactor,geoKeep);`)
     .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
 vec2 nx=geoRockX.rg*2.0-1.0,ny=geoRockY.rg*2.0-1.0,nz=geoRockZ.rg*2.0-1.0;
 vec3 rockBump=vec3(ny.x*geoWeights.y+nz.x*geoWeights.z,nx.y*geoWeights.x+nz.y*geoWeights.z,nx.x*geoWeights.x+ny.y*geoWeights.y);
 vec2 floorBump=mix(geoGroundDetail.rg,geoSandDetail.rg,geoSand)*2.0-1.0;
 vec3 geoBump=mix(vec3(floorBump.x,0.0,floorBump.y),rockBump,geoRock)*(.3+geoRock*.3);
-normal=normalize(mix(normal,normalize(mat3(viewMatrix)*normalize(vGeoNormal+geoBump)),1.0-geoKeep));`)
+normal=normalize(mix(normal,normalize(mat3(viewMatrix)*normalize(vGeoNormal+geoBump*(1.0-geoPuddle*.8))),1.0-geoKeep));`)
     .replace('#include <aomap_fragment>','#include <aomap_fragment>\nreflectedLight.indirectDiffuse*=mix(1.0,geoDetail.a,.5*(1.0-geoKeep));');
   };
-  material.customProgramCacheKey=()=>`世界地表材质数组:1:${cold}:${!!game.map.snowToSea}`;
+  material.customProgramCacheKey=()=>`世界地表材质数组:2:${cold}:${!!game.map.snowToSea}`;
   material.userData.landscapeUniforms=uniforms;return material;
 }
 

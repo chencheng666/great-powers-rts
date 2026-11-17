@@ -133,14 +133,14 @@ export function refineLandingCraft(model) {
 }
 
 export function animateLandingCraft(entry,unit,game,dt) {
-  if(unit.type!=='landing')return;
+  if(!['landing','amphibious'].includes(unit.type))return;
   const ramp=entry.landingRamp??(entry.landingRamp=entry.model.getObjectByName('landing_ramp'));if(!ramp)return;
   const water=game.map.water,forward=Math.cos(entry.heading??unit.angle??0);
   const nearShore=game.map.islands?Math.abs(islandDistance(game.map,unit.x,unit.y))<=190:water&&(forward>.55?Math.abs(unit.x-water.x2)<=160:forward<-.55&&Math.abs(unit.x-water.x1)<=160);
   const stopped=!['move','attackMove','patrol'].includes(unit.order?.type)&&game.time-(unit.lastMovedAt??-10)>=.35;
   const target=nearShore&&stopped?1:0,previous=entry.rampDeployment??0;
   entry.rampDeployment=previous+(target-previous)*(1-Math.exp(-5*Math.max(0,dt)));
-  ramp.rotation.z=Math.PI/2-entry.rampDeployment*(Math.PI/2+.12);
+  ramp.rotation.z=unit.type==='amphibious'?-Math.PI/2+entry.rampDeployment*(Math.PI/2+.12):Math.PI/2-entry.rampDeployment*(Math.PI/2+.12);
 }
 
 export function landingCargoLayout(passengers) {
