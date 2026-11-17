@@ -11,6 +11,69 @@
       "status": "雪岭入海新单机支持三段连续战役、两栖登陆舰、作战方向与联合推进；旧存档保留原规则。"
     },
     {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v4.0.0/Great.Powers_4.0.0_aarch64.app.tar.gz",
+      "label": "4.0.0 · macOS Apple Silicon · Great.Powers_4.0.0_aarch64.app.tar.gz",
+      "size": 104987244,
+      "sha256": "795386f753df12aca8277c035270448758fbdaaba6c541b24b8524fc128057c9",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v4.0.0/Great.Powers_4.0.0_aarch64.AppImage",
+      "label": "4.0.0 · Linux ARM64 · Great.Powers_4.0.0_aarch64.AppImage",
+      "size": 181459464,
+      "sha256": "ef26db0d0497d31bb250c50b1f3bbc3ca735e78423c68355a43b44e5f2dba18b",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v4.0.0/Great.Powers_4.0.0_aarch64.dmg",
+      "label": "4.0.0 · macOS Apple Silicon · Great.Powers_4.0.0_aarch64.dmg",
+      "size": 105108919,
+      "sha256": "ac42798b8ce159a718b57b8122b2f8a7f5645d1fda7f6fd130cba610644e7824",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v4.0.0/Great.Powers_4.0.0_amd64.AppImage",
+      "label": "4.0.0 · Linux x64 · Great.Powers_4.0.0_amd64.AppImage",
+      "size": 183310840,
+      "sha256": "f40fe813f01041d7f283147b1b437d01c7116d1e6aba4353a8fed6f6488f5a54",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v4.0.0/Great.Powers_4.0.0_amd64.deb",
+      "label": "4.0.0 · Linux x64 · Great.Powers_4.0.0_amd64.deb",
+      "size": 104923292,
+      "sha256": "ee8a8863996505ecf6fb4c1a418642d28c5ba8aaf9317597227b06200a169af5",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v4.0.0/Great.Powers_4.0.0_arm64.deb",
+      "label": "4.0.0 · Linux ARM64 · Great.Powers_4.0.0_arm64.deb",
+      "size": 104974958,
+      "sha256": "065fe42a40b71b74edda5865e5532ed253b7178525b3465e7c5ebb56dbe8b1e8",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v4.0.0/Great.Powers_4.0.0_x64-setup.exe",
+      "label": "4.0.0 · Windows x64 · Great.Powers_4.0.0_x64-setup.exe",
+      "size": 322555205,
+      "sha256": "798cb86cb330d10a3476ab132add5d1ca0d459e29baffe54bd59f00b135fea39",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v4.0.0/Great.Powers_4.0.0_x64.app.tar.gz",
+      "label": "4.0.0 · macOS Intel · Great.Powers_4.0.0_x64.app.tar.gz",
+      "size": 105792521,
+      "sha256": "cd265a9971f23ef3fbf14fe11fcafd3fa09f4497f020c9500fb9ad0f5877cb0d",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
+      "name": "https://github.com/chencheng666/great-powers-rts/releases/download/v4.0.0/Great.Powers_4.0.0_x64.dmg",
+      "label": "4.0.0 · macOS Intel · Great.Powers_4.0.0_x64.dmg",
+      "size": 105914719,
+      "sha256": "9e4005d8a71f47a8d9bdbdee177045805b8f1b4d479cc5ca94975093a33109d3",
+      "status": "CI构建通过，大小与SHA256来自GitHub发行API；未在全部对应硬件实测，Mac未公证、Windows未签名。"
+    },
+    {
       "name": "packages/Great-Powers-RTS-v3.9.2.zip",
       "label": "3.9.2 · 动力保障 · 免安装离线单机 ZIP",
       "size": 66755071,
