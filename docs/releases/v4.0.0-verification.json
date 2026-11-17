@@ -247,13 +247,13 @@
     "verifiedFiles": [
       {
         "path": "/",
-        "sha256": "627ce253ea15f09e8da02c9dc2fc696df638ffc8aceef6512131807d54749881",
-        "bytes": 24027
+        "sha256": "584430907b17508c84626a0a155b4dd88176041d98d8e56be86fd89e20320cf9",
+        "bytes": 24030
       },
       {
         "path": "/official/",
-        "sha256": "627ce253ea15f09e8da02c9dc2fc696df638ffc8aceef6512131807d54749881",
-        "bytes": 24027
+        "sha256": "584430907b17508c84626a0a155b4dd88176041d98d8e56be86fd89e20320cf9",
+        "bytes": 24030
       },
       {
         "path": "/play/",
@@ -277,12 +277,12 @@
       },
       {
         "path": "/play/release.json",
-        "sha256": "82366ef7cab1a4b59b0101f8bfec8db3e4b3a2b3f9bdb2034852bd3fc5722faa",
+        "sha256": "4829db5a54558646df836baa1faa2b345d8a6594f78cc0c087fc640b23b122ec",
         "bytes": 33143
       },
       {
         "path": "/candidate/release.json",
-        "sha256": "82366ef7cab1a4b59b0101f8bfec8db3e4b3a2b3f9bdb2034852bd3fc5722faa",
+        "sha256": "4829db5a54558646df836baa1faa2b345d8a6594f78cc0c087fc640b23b122ec",
         "bytes": 33143
       },
       {
@@ -341,7 +341,7 @@
       "sha256": "9464d3db3af61c875b19693a9c759247c92a13012d8765857afb1cec37f1b45f"
     },
     "status": "verified",
-    "catalogCommit": "a190e6c60dcadc58de666dc400ef5d04268189c7",
+    "catalogCommit": "da79896a1bff3dac1e9f7bfa9549799ad7f33852",
     "productionSaveLoad": {
       "moneyPreserved": true,
       "unitIdsPreserved": true,
@@ -360,7 +360,9 @@
       "tables": 46,
       "allRowsRetained": true
     },
-    "preservedOtherGameModules": 3
+    "preservedOtherGameModules": 3,
+    "officialTitle": "大国崛起 4.0.0｜雪岭远征",
+    "downloadPageCurrentFiles": 10
   },
   "desktop": {
     "status": "CI成功",
