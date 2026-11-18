@@ -34,7 +34,7 @@ trap finish EXIT
 tar -xzf "$archive" -C "$stage"
 install -d "$backup"
 # 可选同步官网和下载页，白名单内的每页均先备份，再统一校验。
-for page in official/index.html downloads/index.html downloads/manifest.json utools/privacy/index.html release.json; do
+for page in official/index.html official/site.js official/articles/v3-20261106/index.html downloads/index.html downloads/manifest.json utools/privacy/index.html release.json; do
   if [[ -f "$stage/$page" ]]; then pages+=("$page"); fi
 done
 for page in "${pages[@]}"; do
@@ -53,6 +53,17 @@ for file in "$stage"/assets/*; do
   [[ "$name" =~ ^[0-9A-Za-z_.-]+\.(js|css|svg|png|webp|glb)$ ]]
   if [[ -e "$root/assets/$name" ]]; then cmp "$file" "$root/assets/$name"; else install -m 644 "$file" "$root/assets/$name"; fi
 done
+# 群码按日期新增文件，避免旧页面和缓存指向另一张二维码。
+if [[ -d "$stage/official/assets/community" ]]; then
+  install -d "$root/official/assets/community"
+  for file in "$stage"/official/assets/community/*; do
+    [[ -f "$file" ]]
+    name=$(basename "$file")
+    [[ "$name" =~ ^wechat-group-[0-9]{8}\.png$ ]]
+    target="$root/official/assets/community/$name"
+    if [[ -e "$target" ]]; then cmp "$file" "$target"; else install -m 644 "$file" "$target"; fi
+  done
+fi
 # 新离线包只新增，同名历史包必须完全一致，不能覆盖玩家正在下载的文件。
 if [[ -d "$stage/downloads/packages" ]]; then
   install -d "$root/downloads/packages"

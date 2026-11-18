@@ -22,8 +22,9 @@ Promise.all([
   for(const a of document.querySelectorAll('[data-latest-release]'))a.href='https://github.com/chencheng666/great-powers-rts/releases/tag/'+tag;
 }).catch(()=>{});
 
-const groupExpiresAt = Date.parse('2026-11-19T00:00:00+08:00');
+const groupQR = document.querySelector('[data-group-qr]');
+const groupExpiresAt = Date.parse(groupQR?.dataset.expiresAt ?? '');
 if (Date.now() >= groupExpiresAt) {
-  document.querySelector('[data-group-qr]')?.setAttribute('hidden', '');
+  groupQR.hidden = true;
   document.querySelector('[data-group-expired]')?.removeAttribute('hidden');
 }
