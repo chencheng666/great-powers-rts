@@ -21,6 +21,7 @@ export function sceneryClearance(point, buildings, units = [], foliage = false, 
       const scale = b.size / 7.2, dx = point.x - b.x, dz = point.z - b.y;
       const clearance = foliage ? Math.max(radius, (point.height || 0) * .8) : radius;
       if (Math.abs(dx) <= AIRFIELD_LAYOUT.apronHalfWidth * scale + clearance && dz >= 1 * scale - clearance && dz <= AIRFIELD_LAYOUT.apronEnd * scale + clearance) return true;
+      if (Math.abs(dx) >= 7.1 * scale - clearance && Math.abs(dx) <= 12.5 * scale + clearance && dz >= 2.1 * scale - clearance && dz <= 11.3 * scale + clearance) return true;
       if (Math.abs(dx) <= AIRFIELD_LAYOUT.runwayHalfLength * scale + clearance && Math.abs(dz - AIRFIELD_LAYOUT.runwayZ * scale) <= AIRFIELD_LAYOUT.runwayHalfWidth * scale + clearance) return true;
     }
     if(b.type==='dock'){

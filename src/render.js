@@ -1,7 +1,8 @@
 import { fuelProfile, fuelStatus, FUEL } from './fuel-rules.js';
 import { frontlineEnabled } from './frontline-rules.js';
+import { TreeContactGrid, trailSamples } from './terrain-contact.js';
 import { createFrontlinePiers, createDeliveryCanopy } from './frontline-presentation.js';
-import { snowSurface, snowColor, snowEnvironment, snowElevation } from './snow-to-sea.js';
+import { snowSurface, snowColor, snowEnvironment, snowElevation, snowBridge, riverBanks } from './snow-to-sea.js';
 import { carrierDeckPose } from './carrier-deck.js';
 import { carrierSlots } from './carrier-operations.js';
 import { createCarrierParkedAircraft } from './carrier-deck-aircraft.js';
@@ -510,8 +511,9 @@ export class Renderer {
         for (let x = west + 10; x < east; x += 48) this.box(x, 37, side, 3, 2.5, 3, white);
       }
       for (let x = west + 15; x < east - 15; x += 42) this.box(x, 27.2, z, 20, .3, 1.2, white);
-      const supports = [west + 30, east - 30];
-      if (east - west > 600) for (let x = west + 210; x < east - 160; x += 230) supports.push(x);
+      const banks = this.game.map.snowToSea ? riverBanks(z) : null;
+      const supports = banks ? [banks.west - 52, banks.east + 52] : [west + 30, east - 30];
+      if (!banks && east - west > 600) for (let x = west + 210; x < east - 160; x += 230) supports.push(x);
       for (const x of supports) this.box(x, -3-lift/2, z, 14, 45+lift, length - 20, concrete);
       const pieces = this.bridges.splice(batchStart), batches = new Map();
       for (const piece of pieces) {
@@ -574,6 +576,8 @@ export class Renderer {
       const n = hash(x, z, 45); points.rock.push({ x: x + (n - .5) * 22, z: z + (hash(z, x, 23) - .5) * 30, scale: 8 + n * 13, heightOffset: -5, angle: n * TAU });
     }
     const dummy = new THREE.Object3D();
+    this.treeContacts = new TreeContactGrid(points.tree);
+    this.fallingTrees = new Set();
     this.createFoliage(points.tree);
     if(this.game.map.snowToSea)this.createWetlandReeds(forbidden);
     this.createNatureProps(points.tree);
@@ -681,11 +685,23 @@ export class Renderer {
       this.scene.add(shadow); this.environment.push({ mesh: shadow, transforms, foliage: 'shadow', angle: 0 });
     }
     this.updateFoliageLayers();
+    for (const layer of this.environment) {
+      if (!['mesh_tree','shadow','billboard','volume'].includes(layer.foliage)) continue;
+      layer.transforms.forEach((point, index) => (point.instances ??= []).push({ layer, index }));
+    }
   }
 
   placeFoliage(dummy, point, foliage, angle, known) {
     const ground = this.elevation(point.x, point.z);
-    if(foliage==='mesh_tree'){dummy.position.set(point.x,ground,point.z);dummy.rotation.set(0,point.angle,0);dummy.scale.setScalar(known?point.height/1.38:0);}
+    const fall = point.fallenAt === undefined ? 0 : clamp((this.game.time - point.fallenAt) / .55, 0, 1);
+    if (point.fallenAt !== undefined && (fall >= 1 || ['shadow','volume'].includes(foliage))) known = false;
+    if (fall > 0 && known && foliage === 'billboard') {
+      const yaw = this.cameraAzimuth || 0, direction = Math.cos(point.fallHeading - yaw) >= 0 ? 1 : -1;
+      dummy.position.set(point.x + Math.cos(point.fallHeading) * point.height * fall * .42, ground + point.height * (1 - fall) * .47, point.z + Math.sin(point.fallHeading) * point.height * fall * .42);
+      dummy.rotation.set(-this.cameraElevation, yaw, direction * fall * Math.PI / 2, 'YXZ');
+      dummy.scale.set(point.width, point.height, 1); return;
+    }
+    if(foliage==='mesh_tree'){dummy.position.set(point.x,ground,point.z);dummy.rotation.set(0, fall > 0 ? -point.fallHeading : point.angle, -fall * Math.PI / 2, 'YXZ');dummy.scale.setScalar(known?point.height/1.38:0);}
     else if(foliage==='grounded'){dummy.position.set(point.x,ground,point.z);dummy.rotation.set(0,point.angle,0);dummy.scale.setScalar(known?point.scale:0);}
     else if (foliage === 'shadow') {
       const yaw = Math.atan2(this.sun.position.x - this.sun.target.position.x, this.sun.position.z - this.sun.target.position.z);
@@ -778,18 +794,13 @@ export class Renderer {
     const fog = this.fogCanvas.getContext('2d'); fog.clearRect(0, 0, 560, 360); fog.filter = 'blur(9px)'; fog.drawImage(this.fogSmall, -5, -5, 570, 370); fog.filter = 'none'; this.fogTexture.needsUpdate = true;
     const dummy = new THREE.Object3D(), sceneryVisible = new Map();
     const knownBuildings = this.game.buildings.filter(b => b.owner === 0 || this.game.canSeeEntity(0, b)).map(b=>{const harbor=islandHarbor(this.game.map,b);return harbor?{...b,harborAngle:harbor.angle}:b;});
-    const knownGroundUnits = this.game.units.filter(u => !UNITS[u.type].tags.includes('air') && (u.owner === 0 || this.game.canSeeEntity(0, u))).map(u => ({...u,
-      sceneryRadius: (this.game.map.future ? unitRadius(u) : presentationRadius(u.type, unitRadius(u))) * groundPresentationFactor(u, UNITS[u.type].tags, this.camera.zoom, this.presentation, this.game.map.future)
-    }));
     for (const mesh of this.bridges) mesh.visible = this.game.hasExploredFor(0, mesh.position.x, mesh.position.z);
     for(const entry of this.theaterScenery||[])entry.group.visible=this.game.hasExploredFor(0,entry.x,entry.y)&&(!entry.entityId||this.game.getEntity(entry.entityId)?.hp<=0);
     for (const { mesh, transforms, foliage, angle } of this.environment) {
       transforms.forEach((point, index) => {
         if (!sceneryVisible.has(point)) {
           point.cleared ||= sceneryClearance(point, knownBuildings, [], !!foliage, this.world.width);
-          const occupied = sceneryClearance(point, [], knownGroundUnits, !!foliage);
-          point.cleared ||= occupied;
-          point.known = !point.cleared && !occupied && this.game.hasExploredFor(0, point.x, point.z);
+          point.known = !point.cleared && this.game.hasExploredFor(0, point.x, point.z);
           sceneryVisible.set(point, point.known);
         }
         const known = sceneryVisible.get(point);
@@ -1256,7 +1267,7 @@ export class Renderer {
           }
           entry.bank += (aircraftBankTarget(entity, turn, this.game.aircraftGrounded(entity), height - (deckHeight ?? ground)) - entry.bank) * (1 - Math.exp(-dt * 5));
           entry.model.rotation.x = entry.bank;
-          if (entity.deckApproach) entry.flightHeight = height;
+          if (entity.deckApproach || entity.reinforcement?.cargo) entry.flightHeight = height;
           else {
             entry.flightHeight ??= height;
             entry.flightHeight += (height - entry.flightHeight) * (1 - Math.exp(-dt * 5));
@@ -1323,8 +1334,13 @@ export class Renderer {
       entry.identity.scale.set(identitySize * groundFactor, 1, identitySize * groundFactor);
       if(entity.deliveryKind==='parachute'&&entity.deliveryUntil>this.game.time){
         const fraction=Math.max(0,Math.min(1,(entity.deliveryUntil-this.game.time)/3));height+=fraction*105;
-        if(!entry.deliveryCanopy){this.deliveryCanopyTemplate??=createDeliveryCanopy(r=>this.track(r));entry.deliveryCanopy=this.deliveryCanopyTemplate.clone();this.scene.add(entry.deliveryCanopy);}
-        const size=UNITS[entity.type].tags.includes('infantry')?16:30;
+        const infantry=UNITS[entity.type].tags.includes('infantry');
+        if(!entry.deliveryCanopy){
+          const style=infantry?'deliveryCanopyTemplate':'vehicleCanopyTemplate';
+          this[style]??=createDeliveryCanopy(r=>this.track(r),!infantry);
+          entry.deliveryCanopy=this[style].clone();this.scene.add(entry.deliveryCanopy);
+        }
+        const size=infantry?16:28;
         entry.deliveryCanopy.scale.setScalar(size);entry.deliveryCanopy.position.set(entity.x,height+size*1.35,entity.y);entry.deliveryCanopy.visible=visible;
       }else if(entry.deliveryCanopy){this.scene.remove(entry.deliveryCanopy);entry.deliveryCanopy=null;}
       entry.model.position.set(entity.x, height, entity.y);
@@ -1411,6 +1427,7 @@ export class Renderer {
           }
         }
       }
+      if (entity.kind === 'unit') this.updateTerrainContact(entry, visible);
       if (entity.kind === 'unit' && visible && moving && !UNITS[entity.type].tags.some(tag => ['air', 'ship', 'infantry'].includes(tag)) && Math.hypot(entity.x - entry.trackX, entity.y - entry.trackY) >= 13) {
         this.leaveTracks(entry); entry.trackX = entity.x; entry.trackY = entity.y;
       }
@@ -1462,6 +1479,47 @@ export class Renderer {
     const material = this.track(new THREE.MeshBasicMaterial({ map: texture, color: '#31362d', transparent: true, opacity: .16, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }));
     this.trackMesh = new THREE.InstancedMesh(geometry, material, 600); this.trackMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.trackMesh.frustumCulled = false; this.trackMesh.count = 0;
     this.trackMarks = []; this.trackCursor = 0; this.scene.add(this.trackMesh); this.trackDummy = new THREE.Object3D();
+    if (!this.game.map.snowToSea) return;
+    const sole=makeCanvas(32,64), brush=sole.getContext('2d');
+    brush.fillStyle='#bcbcbc';
+    brush.beginPath(); brush.ellipse(16,18,10,15,0,0,TAU); brush.ellipse(16,47,7,10,0,0,TAU); brush.fill();
+    brush.fillStyle='#fff';
+    for(let y=10;y<26;y+=5)brush.fillRect(9,y,14,2);
+    brush.fillRect(11,47,10,4);
+    const print=this.track(new THREE.MeshBasicMaterial({map:this.track(new THREE.CanvasTexture(sole)),color:'#344d5d',opacity:.42,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
+    this.footMesh=new THREE.InstancedMesh(geometry,print,640);this.footMesh.name='雪地脚印';
+    this.footMesh.frustumCulled=false;this.footMesh.count=0;this.footMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.footMarks=[];this.footCursor=0;this.scene.add(this.footMesh);
+  }
+
+  updateTerrainContact(entry, visible) {
+    const u=entry.entity, tags=UNITS[u.type].tags;
+    if (!visible || u.embarkedIn || u.deliveryUntil>this.game.time || u.hp<=0 || tags.includes('air') || tags.includes('ship')) {
+      entry.terrainPosition=null;entry.stepRemainder=0;return;
+    }
+    const end={x:u.x,y:u.y,time:this.game.time};
+    if (this.footMesh && tags.includes('infantry')) {
+      for (const mark of trailSamples(entry,end,8)) {
+        if (snowBridge(this.game.map,mark.x,mark.y) || snowSurface(this.game.map,mark.x,mark.y).snow<.50) continue;
+        this.footMarks[this.footCursor]=mark;this.footCursor=(this.footCursor+1)%this.footMesh.instanceMatrix.count;
+      }
+    } else if (['tank','elite'].includes(u.type)) {
+      const start=entry.terrainPosition;
+      entry.terrainPosition=end;
+      if (!start || end.time-start.time>.6) return;
+      for (const point of this.treeContacts.cross(start,end,12,this.game.time,(x,y)=>this.game.isVisibleFor(0,x,y))) this.fallingTrees.add(point);
+    }
+  }
+
+  updateFallingTrees() {
+    if (!this.fallingTrees.size) return;
+    for (const point of this.fallingTrees) {
+      for (const {layer,index} of point.instances || []) {
+        this.placeFoliage(this.trackDummy, point, layer.foliage, layer.angle, point.known!==false);
+        this.trackDummy.updateMatrix();layer.mesh.setMatrixAt(index,this.trackDummy.matrix);layer.mesh.instanceMatrix.needsUpdate=true;
+      }
+      if (this.game.time-point.fallenAt>=.55) this.fallingTrees.delete(point);
+    }
   }
 
   leaveTracks({ entity, heading }) {
@@ -1480,6 +1538,20 @@ export class Renderer {
       dummy.scale.set(mark.width * Math.min(1, (24 - age) / 6), 1, 15); dummy.updateMatrix(); this.trackMesh.setMatrixAt(count++, dummy.matrix);
     }
     this.trackMesh.count = count; this.trackMesh.instanceMatrix.needsUpdate = true;
+    this.updateFallingTrees();
+    if (!this.footMesh) return;
+    let prints=0;
+    for (const mark of this.footMarks) {
+      const age=this.game.time-mark.start;
+      if(age>31||!this.game.isVisibleFor(0,mark.x,mark.y))continue;
+      const dummy=this.trackDummy, height=this.elevation(mark.x,mark.y);
+      dummy.position.set(mark.x,height+.26,mark.y);
+      dummy.rotation.set(0,Math.PI/2-mark.heading,0);
+      const fade=Math.min(1,(31-age)/8);
+      dummy.scale.set(4.8*fade,1,8.4*fade);dummy.updateMatrix();
+      this.footMesh.setMatrixAt(prints++,dummy.matrix);
+    }
+    this.footMesh.count=prints;this.footMesh.instanceMatrix.needsUpdate=true;
   }
 
   effectSprite(color, smoke = false) {

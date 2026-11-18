@@ -120,6 +120,11 @@ export function createStrategicModel(type) {
       for(let i=0;i<4;i++)box([.35,.05,.35],metal,[-1.35+i*.55,-.68,side*.58]);
       box([1.8,.025,.22],team,[-.6,.27,side*4]);
     }
+    for(const side of [-1,1]){
+      panel([[.55,side*.56],[-.6,side*6.72],[-.91,side*6.76],[.24,side*.57]],.275,metal);
+      for(const z of [2,3.25,4.5,5.75])box([.035,.024,.52],dark,[-1.1, .124, side*z],[0,side*.14,0]);
+      box([.95,.06,.08],team,[-.99,.1,side*6.78]);
+    }
     tail(-4.2,1.1,0);tube(.36,1.7,dark,[-1.9,1.03,0]);
     add(new THREE.SphereGeometry(.32,12,8),glass,[3.25,-.43,0]);
   } else {

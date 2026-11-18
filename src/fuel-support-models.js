@@ -10,7 +10,10 @@ export function createFuelSupportModel(type) {
   const mark=new THREE.MeshStandardMaterial({name:'动力补给识别',color:'#e3b954',roughness:.7});
   const add=(geometry,material,x,y,z,rotation)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);if(rotation)m.rotation.set(...rotation);root.add(m);return m;};
   if(air){
+    const intake=new THREE.MeshStandardMaterial({name:'加油荚舱入口',color:'#263937',roughness:.66,metalness:.3});
     for(const side of [-1,1]){
+      add(new THREE.SphereGeometry(.36,12,8),steel,.1,.62,side*6).scale.x=2.05;
+      add(new THREE.CylinderGeometry(.19,.19,.12,10),intake,-2.02,.64,side*6,[0,0,Math.PI/2]);
       add(new THREE.CylinderGeometry(.24,.24,2.5,12),steel,-1,.65,side*6,[0,0,Math.PI/2]);
       const curve=new THREE.CatmullRomCurve3([new THREE.Vector3(-2,.65,side*6),new THREE.Vector3(-3.5,.12,side*6.1),new THREE.Vector3(-5.1,.08,side*6.2)]);
       add(new THREE.TubeGeometry(curve,10,.055,5,false),dark,0,0,0);

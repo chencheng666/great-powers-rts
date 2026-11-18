@@ -4,6 +4,7 @@ export const AIRFIELD_LAYOUT = Object.freeze({ runwayHalfLength: 12.6, runwayZ: 
 export function onAirfieldPavement(x, z) {
   return Math.abs(x) <= AIRFIELD_LAYOUT.runwayHalfLength && Math.abs(z - AIRFIELD_LAYOUT.runwayZ) <= AIRFIELD_LAYOUT.runwayHalfWidth
     || Math.abs(x) <= AIRFIELD_LAYOUT.apronHalfWidth && z >= 3.25 && z <= AIRFIELD_LAYOUT.apronEnd
+    || Math.abs(x) >= 7.1 && Math.abs(x) <= 12.5 && z >= 2.1 && z <= 11.3
     || Math.abs(x) <= 4.7 && z >= -4.5 && z <= 1.1;
 }
 
@@ -25,7 +26,8 @@ export function airfieldDeparture(home, type) {
 export const AIRFIELD_SLOTS = 6;
 export function airfieldRunwayAvailable(game, unit, home) {
   const peers = game.units.filter(other => other.hp > 0 && !other.embarkedIn && other.owner === unit.owner);
-  if (peers.some(other => other !== unit && other.deployment?.buildingId === home.id)) return false;
+  if (peers.some(other => other !== unit && (other.deployment?.buildingId === home.id ||
+    other.reinforcement?.cargo?.airfieldId === home.id && other.reinforcement.cargo.stage !== 'approach'))) return false;
   // 已进入跑道的飞机先完成滑行；尚未进场时，出场优先，再按机号排队。
   const operations = peers.filter(other => other.airfieldOps?.homeId === home.id && other.airfieldOps.phase !== 'parked');
   const priority = other => {
@@ -49,6 +51,26 @@ export function airfieldParking(home, slot) {
   return { x: apron.x + (column - 1) * 100, y: apron.y + 88 + row * 95,
     angle: home.owner ? -Math.PI * 3 / 4 : Math.PI / 4 };
 }
+export function taxiAirfield(game, unit, home, dt, outbound) {
+  const ops = unit.airfieldOps, apron = airfieldApron(home), parking = airfieldParking(home, ops.slot);
+  const farRow = ops.slot >= 3;
+  const laneX = farRow ? parking.x + (ops.slot % 3 === 2 ? -50 : 50) : parking.x;
+  const route = [{ x: laneX, y: apron.y }, { x: laneX, y: parking.y }, parking];
+  if (outbound) route.reverse(), route.shift();
+  if (ops.taxiOutbound !== outbound) { ops.taxiStep = 0; ops.taxiOutbound = outbound; }
+  const target = route[ops.taxiStep ?? 0];
+  if (!target) return true;
+  const dx = target.x - unit.x, dy = target.y - unit.y, distance = Math.hypot(dx, dy);
+  if (distance > .01) {
+    const ratio = Math.min(1, 55 * dt / distance);
+    unit.angle = Math.atan2(dy, dx);
+    unit.x += ratio * dx; unit.y += ratio * dy; unit.lastMovedAt = game.time;
+    if (ratio < 1) return false;
+  }
+  ops.taxiStep = (ops.taxiStep ?? 0) + 1;
+  return ops.taxiStep >= route.length;
+}
+
 export function allocateAirfieldSlot(game, unit, home) {
   const used = new Set(game.units.filter(other => other !== unit && other.hp > 0 && other.airfieldOps?.homeId === home.id).map(other => other.airfieldOps.slot));
   for (let slot = 0; slot < AIRFIELD_SLOTS; slot++) {

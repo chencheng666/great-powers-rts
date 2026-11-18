@@ -8,7 +8,7 @@ export const GROUND_MODEL_LENGTHS = Object.freeze({
 export const PERSONNEL_HEIGHT = 13.27 * 1.75 / 2.4;
 export const LAND_AIRCRAFT_LENGTHS = Object.freeze({
   helicopter: 43.2, fighter: 72, strike: 72, bomber: 108,
-  airlift: 144, freightPlane: 144, tanker:144, ewPlane: 72,
+  airlift: 144, freightPlane: 144, tanker:168, ewPlane: 72, swarmCarrier:92, swarmScout:31, swarmDecoy:28,
 });
 // 舰载机保持独立的甲板基准，不把陆地比例表套到舰载机上。
 export const AIRCRAFT_LENGTHS = Object.freeze({
@@ -17,7 +17,7 @@ export const AIRCRAFT_LENGTHS = Object.freeze({
 });
 export const CARRIER_MODEL_LENGTH = 288;
 export const CARRIER_DECK_HEIGHT = 1.3;
-export const aircraftGroundFactor = type => type === 'navalFighter' || type === 'navalStrike' ? 2 / 7 : .8;
+export const aircraftGroundFactor = type => type === 'navalFighter' || type === 'navalStrike' ? 2 / 7 : type === 'freightPlane' ? .62 : type === 'tanker' ? .7 : .8;
 
 const fixedWingCruise = { fighter: 86, strike: 82, ewPlane: 96, bomber: 112, airlift: 156, freightPlane: 156, tanker:100 };
 const lunarCruise = { airlift: 148, freightPlane: 148 };

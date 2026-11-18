@@ -38,9 +38,12 @@ export function glideProfile(distance, groundRadius) {
 }
 
 export function fixedWingHeight(game, entity, entry, groundHeight, cruiseHeight, deckHeight) {
-  if(entity.reinforcement&&entity.type==='freightPlane'){
-    const r=entity.reinforcement,heavy=['tank','rocket','ballistic','harvester'].includes(r.type);
-    if(heavy&&r.delivery){const gap=Math.hypot(entity.x-r.delivery.x,entity.y-r.delivery.y),fraction=r.phase==='outbound'?clamp((game.time-(r.departedAt||game.time))/3):clamp((gap-18)/280);return {height:groundHeight+5+(cruiseHeight-groundHeight-5)*fraction,pitch:fraction>0&&fraction<1?-.04:0};}
+  const cargo = entity.reinforcement?.cargo;
+  if (cargo) {
+    const base = aircraftGroundHeight(game, entity, entry, groundHeight);
+    const fraction = cargo.stage === 'approach' ? 1 : clamp(cargo.fraction);
+    const pitch = cargo.stage === 'climb' ? .07 : cargo.stage === 'glide' ? -.06 * Math.sin(Math.PI * fraction) : 0;
+    return { height: base + (cruiseHeight - base) * fraction, pitch };
   }
   if (!(fixedWingPresentation(entity.type, game.map.future)||game.frontlineVersion===1&&UNITS[entity.type]?.tags.includes('jet')&&!UNITS[entity.type]?.tags.includes('logistics')) || entity.deckApproach || entity.embarkedIn) return null;
   const grounded = game.aircraftGrounded(entity);
@@ -79,7 +82,8 @@ export function refineAirfieldRunway(model) {
   const yellow = new THREE.MeshStandardMaterial({ name: '滑行引导线', color: '#d8bb62', roughness: .85 });
   const light = new THREE.MeshStandardMaterial({ name: '跑道边灯', color: '#9cd8eb', emissive: '#9cd8eb', emissiveIntensity: .5 });
   const part = (material, size, position, angle = 0) => {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size, Math.max(1, Math.ceil(size[0] * 2)), 1, Math.max(1, Math.ceil(size[2] * 2))), material); mesh.position.set(...position); mesh.rotation.y = angle;
+    const density = material === apron ? 1 : 2;
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size, Math.max(1, Math.ceil(size[0] * density)), 1, Math.max(1, Math.ceil(size[2] * density))), material); mesh.position.set(...position); mesh.rotation.y = angle;
     mesh.receiveShadow = true; runway.add(mesh);
   };
   // 延长独立跑道，六个机位和滑行连接仍使用原有调度坐标。
@@ -87,6 +91,12 @@ export function refineAirfieldRunway(model) {
   part(apron, [14.4, .05, 9.4], [0, .035, 8.9]);
   part(apron, [14.4, .05, 1.1], [0, .035, 3.7]);
   part(apron, [9.4, .05, 5.6], [0, .035, -1.7]);
+  for (const side of [-1, 1]) {
+    const x = side * 9.8;
+    part(apron, [5.4, .05, 9.2], [x, .035, 6.7]);
+    part(yellow, [.065, .008, 6.6], [x, .069, 5.53]);
+    part(yellow, [3.9, .008, .11], [x, .069, 8.7]);
+  }
   for (const x of [-5.625, 0, 5.625]) for (const z of [7.05, 12.4]) {
     const angle=Math.PI/4,c=Math.cos(angle),sn=Math.sin(angle);
     const mark=(lx,lz,size)=>part(yellow,size,[x+lx*c-lz*sn,.068,z+lx*sn+lz*c],-angle);

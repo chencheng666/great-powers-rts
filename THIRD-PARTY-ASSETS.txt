@@ -128,3 +128,17 @@ VSCO 2 Community Edition 选定管弦乐采样
 许可：CC0 1.0 Universal，全文见assets/third-party/vsco2-selected/LICENSE
 修改：选用24段采样，WAV无损转FLAC（PCM逐样本一致）；项目原创乐谱驱动重采样、配器与混音，输出两首AAC配器。
 文件与原始/派生SHA256见assets/third-party/vsco2-selected/source.json。原采样仅用于构建，游戏分发合成混音。非真人乐团整曲实录。
+
+《0 A.D.》场景模型：石墙、石桥、木桶
+作者及权利归属：Wildfire Games（https://wildfiregames.com/）
+许可：Creative Commons Attribution-ShareAlike 3.0 Unported（CC BY-SA 3.0）
+https://creativecommons.org/licenses/by-sa/3.0/
+原项目美术许可：https://github.com/0ad/0ad/blob/master/binaries/data/mods/public/art/LICENSE.txt
+原文件：https://github.com/0ad/0ad/tree/master/binaries/data/mods/public/art/meshes/props
+  石墙 rock_fence_short.dae
+  石桥 rome_bridge.dae
+  木桶 brit_workshop_barrels_01.dae
+修改：统一坐标和尺度，提取、量化网格，调整材质和颜色，以程序化地形装饰重新布置。
+转换后的上述三个网格继续以 CC BY-SA 3.0 分发。原文件及转换记录见项目的
+assets/third-party/scenery-20261111/，运行时数据见 src/map-scenery-mesh-data.js。
+这三个网格已用于 4.0.0 及后续构建，本条同时补记历史版本的素材署名。

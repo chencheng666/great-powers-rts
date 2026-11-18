@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { riverBanks } from './snow-to-sea.js';
 import { mergeParts, craftedMaterial } from './model-craft.js';
 
 export function createFrontlineWarehouse(){
@@ -37,6 +38,14 @@ export function createFrontlinePiers(game,home,track){
   const box=(m,size,p)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(...size),m);mesh.position.set(...p);mesh.rotation.y=-angle;mesh.receiveShadow=true;root.add(mesh);};
   for(let slot=0;slot<6;slot++){
     const p=game.frontlineBerth({type:'frigate',owner:home.owner,assignment:{homeId:home.id,slot}},home);
+    if(game.map.snowToSea&&home.owner<4&&game.map.harbors[home.owner]){
+      const side=home.owner<2?1:-1,bank=riverBanks(p.y)[side>0?'west':'east'];
+      const start=bank-side*24,end=bank+side*24;
+      box(concrete,[48,8,36],[(start+end)/2,4,p.y]);
+      for(const offset of [-14,14])box(rubber,[6,10,5],[end,5,p.y+offset]);
+      for(const offset of [-17,17])box(light,[4,7,4],[end-side*5,8,p.y+offset]);
+      continue;
+    }
     // 船体中心留空，突堤与防撞墩位于泊位侧面；模拟仍以同一泊位中心调度。
     const x=p.x-forward.y*76,y=p.y+forward.x*76;
     if(slot<3){
@@ -52,7 +61,14 @@ export function createFrontlinePiers(game,home,track){
   const merged=mergeParts(root);merged.traverse(mesh=>{if(mesh.isMesh)track(mesh.geometry);});return merged;
 }
 
-export function createDeliveryCanopy(track){
+export function createDeliveryCanopy(track, multiple=false){
+  if (multiple) {
+    const group=new THREE.Group(), canopy=createDeliveryCanopy(track);
+    for(const [x,z,y] of [[-.93,0,.15],[.7,-.76,.04],[.7,.76,.09]]) {
+      const part=canopy.clone();part.position.set(x,y,z);part.scale.setScalar(.76);group.add(part);
+    }
+    return group;
+  }
   const root=new THREE.Group(),cloth=track(new THREE.MeshStandardMaterial({color:'#c5c7a1',side:THREE.DoubleSide,roughness:.9}));
   const canopy=new THREE.Mesh(track(new THREE.SphereGeometry(1,12,5,0,Math.PI*2,0,Math.PI/2)),cloth);canopy.scale.y=.42;root.add(canopy);
   const points=[];for(let i=0;i<8;i++){const a=i/8*Math.PI*2;points.push(Math.cos(a),0,Math.sin(a),0,-1.35,0);}

@@ -41,7 +41,7 @@ import { deterrenceCombat } from './deterrence.js';
 import { CHALLENGES, challengeCombat } from './challenges.js';
 import { createLossBreakdown } from './loss-breakdown.js';
 import { aircraftStep, aircraftCanFire, aircraftAttackGoal } from './aircraft-flight.js';
-import { runwayAircraft, airfieldApron, airfieldParking, allocateAirfieldSlot, airfieldDeparture, airfieldRunwayAvailable, airfieldHoldingPoint } from './airfield-rules.js';
+import { runwayAircraft, airfieldApron, airfieldParking, allocateAirfieldSlot, airfieldDeparture, airfieldRunwayAvailable, airfieldHoldingPoint, taxiAirfield } from './airfield-rules.js';
 import { islandDistance, islandHarbor, islandIndex } from './island-map.js';
 import { navalPath, nearestSeaPoint } from './island-navigation.js';
 import { updateIslandCapture } from './island-watch.js';
@@ -748,12 +748,12 @@ export class Game {
     }
   }
 
-  findSpawn(x, y, type = 'tank', clearance = 4) {
+  findSpawn(x, y, type = 'tank', clearance = 4, accepts = null) {
     const unit = { type }, radius = unitRadius(unit), layer = unitLayer(unit);
     for (let n = 0; n < 128; n++) {
       const angle = n * 2.399963, reach = n ? 18 * Math.sqrt(n) : 0;
       const p = { x: clamp(x + Math.cos(angle) * reach, 50, this.world.width - 50), y: clamp(y + Math.sin(angle) * reach, 50, this.world.height - 50) };
-      if (!this.canOccupyUnit(unit, p) || this.units.some(other => other.hp > 0 && unitLayer(other) === layer && distance(other, p) < unitRadius(other) + radius + clearance)) continue;
+      if (accepts && !accepts(p) || !this.canOccupyUnit(unit, p) || this.units.some(other => other.hp > 0 && unitLayer(other) === layer && distance(other, p) < unitRadius(other) + radius + clearance)) continue;
       return p;
     }
     return null; // 出口完全堵塞时等待，不把新单位生成在建筑或车辆内部。
@@ -807,15 +807,15 @@ export class Game {
           if (u.order) ops.phase = 'taxiOut';
           else {
             const parking = airfieldParking(home, ops.slot);
-            if (distance(u, parking) > 9) { this.moveUnit(u, parking, dt * .3, 6); return; }
-            ops.phase = 'parked'; u.angle = parking.angle;
+            if (frontlineEnabled(this) ? !taxiAirfield(this,u,home,dt,false) : distance(u, parking) > 9) { if(!frontlineEnabled(this))this.moveUnit(u, parking, dt * .3, 6); return; }
+            ops.phase = 'parked'; delete ops.taxiStep; delete ops.taxiOutbound; u.angle = parking.angle;
           }
         }
         if (ops.phase === 'parked' && u.order && u.order.type !== 'rearm') ops.phase = 'taxiOut';
         if (ops.phase === 'taxiOut') {
           if (!airfieldRunwayAvailable(this, u, home)) return;
           const apron = airfieldApron(home);
-          if (distance(u, apron) > 9) { this.moveUnit(u, apron, dt * .3, 6); return; }
+          if (frontlineEnabled(this) ? !taxiAirfield(this,u,home,dt,true) : distance(u, apron) > 9) { if(!frontlineEnabled(this))this.moveUnit(u, apron, dt * .3, 6); return; }
           const exit = airfieldDeparture(home, u.type);
           u.airfieldOps = null; u.angle = exit.angle;
           u.deployment = { buildingId: home.id, start: this.time, until: this.time + 3, fromX: u.x, fromY: u.y, x: u.x + exit.forwardX * exit.distance, y: u.y + exit.forwardY * exit.distance };
@@ -970,11 +970,11 @@ export class Game {
         if (ops.phase === 'approach') this.moveUnit(u, airfieldHoldingPoint(this, u, home), dt, 0);
         return;
       }
-      if (ops.phase === 'approach' && distance(u, apron) <= 12) ops.phase = 'taxiIn';
+      if (ops.phase === 'approach' && distance(u, apron) <= 12) { ops.phase = 'taxiIn'; delete ops.taxiStep; delete ops.taxiOutbound; }
       if (ops.phase === 'taxiIn') {
         const parking = airfieldParking(home, ops.slot);
-        if (distance(u, parking) > 9) { this.moveUnit(u, parking, dt * .3, 6); return; }
-        ops.phase = 'parked'; u.angle = parking.angle; u.path = []; u.pathTimer = 0;
+        if (frontlineEnabled(this) ? !taxiAirfield(this,u,home,dt,false) : distance(u, parking) > 9) { if(!frontlineEnabled(this))this.moveUnit(u, parking, dt * .3, 6); return; }
+        ops.phase = 'parked'; delete ops.taxiStep; delete ops.taxiOutbound; u.angle = parking.angle; u.path = []; u.pathTimer = 0;
       }
       if (ops.phase === 'parked') { apron = airfieldParking(home, ops.slot); u.angle = apron.angle; }
     }
@@ -1384,13 +1384,13 @@ export class Game {
       const squared = (unit.x - other.x) ** 2 + (unit.y - other.y) ** 2;
       if (squared > (minimum + reach) ** 2) continue;
       nearby.push({ x: other.x, y: other.y, minimum, minimumSquared: minimum * minimum, collisionSquared: (separation - .01) ** 2,
-        previousSquared: (Math.sqrt(squared) + .001) ** 2, known: unitLayer(other) === layer && (other.owner === unit.owner || this.canSeeEntity(unit.owner, other)) });
+        previousSquared: (Math.sqrt(squared) + .001) ** 2, freight: other.type === 'containerShip', known: unitLayer(other) === layer && (other.owner === unit.owner || this.canSeeEntity(unit.owner, other)) });
     }
     let best = null, bestScore = Infinity;
     for (const turn of [0, .35, -.35, .7, -.7, 1.1, -1.1, 1.5, -1.5, 2.1, -2.1]) {
       const heading = angle + turn, next = { x: unit.x + Math.cos(heading) * amount, y: unit.y + Math.sin(heading) * amount };
       if (!this.canOccupyUnit(unit, next)) continue;
-      if(layer==='ground'&&nearby.some(other=>{const squared=(next.x-other.x)**2+(next.y-other.y)**2;return squared<other.collisionSquared&&squared<=other.previousSquared;}))continue;
+      if((layer==='ground'||this.map.snowToSea&&unit.type!=='containerShip'&&['naval','submerged'].includes(layer))&&nearby.some(other=>{if(other.freight)return false;const squared=(next.x-other.x)**2+(next.y-other.y)**2;return squared<other.collisionSquared&&squared<=other.previousSquared;}))continue;
       let score = distance(next, point) + Math.abs(turn) * amount * .08 + (turn < 0 ? amount * .015 : 0);
       if(unitLayer(unit)==='ground'&&unit.avoidUntil>this.time&&turn*unit.avoidSide<-.1)score+=amount*.85;
       const look = { x: unit.x + Math.cos(heading) * Math.min(dist, amount + UNITS[unit.type].speed * .4), y: unit.y + Math.sin(heading) * Math.min(dist, amount + UNITS[unit.type].speed * .4) };

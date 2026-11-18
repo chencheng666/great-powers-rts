@@ -3,6 +3,8 @@ import { FRONTLINE_BUILDINGS, FRONTLINE_CAPACITY, frontlineBuilding, reinforceme
 import { productionDuration } from './battlefield-details.js';
 import { airfieldParking } from './airfield-rules.js';
 import { unitRadius } from './unit-spacing.js';
+import { riverBanks } from './snow-to-sea.js';
+import { runwayCargo, updateCargoAirfield } from './cargo-airfield.js';
 import { battleMetric } from './battle-report.js';
 
 const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
@@ -64,6 +66,7 @@ export const frontlineOperations = {
     p.credits=Math.max(0,p.credits-need);q.paid+=need;q.progress+=dt;
     if(q.progress<duration&&q.paid<cost-.01)return;
     if(this.time<(b.spawnRetryAt||0))return;
+    if(runwayCargo(q.type)&&!this.hasBuilding(b.owner,'airfield')){b.spawnRetryAt=this.time+1;return;}
     const domain=reinforcementDomain(q.type),home=domain?this.reinforcementHome(b.owner,q.type,b.id):b;
     if(!home){b.spawnRetryAt=this.time+1;return;}
     const sea=domain==='dock',entry=sea?{x:3900+b.owner*180,y:this.world.height-120}:this.freightEntry(b.owner,false);
@@ -95,12 +98,13 @@ export const frontlineOperations = {
       if(r.phase==='withdraw'||r.phase==='outbound')continue;
       const home=this.getEntity(r.homeId),domain=reinforcementDomain(r.type);
       if(!home||home.hp<=0||home.owner!==u.owner){
-        if(!domain){const replacement=this.ownedBuildings(u.owner,'refinery')[0];if(replacement){r.homeId=replacement.id;continue;}}
+        if(!domain){const replacement=this.ownedBuildings(u.owner,'refinery')[0];if(replacement){r.homeId=replacement.id;continue;}if(r.cargo&&r.cargo.stage!=='approach')continue;}
         r.phase='withdraw';r.startedAt=this.time;u.order=null;continue;
       }
       if(!domain)continue;
       const arrived=domain==='carrier'?u.embarkedIn===home.id:domain==='airfield'?u.airfieldOps?.phase==='parked':distance(u,this.shipBerth(u,home))<95;
       if(!arrived)continue;
+      if(domain==='dock'){const heading=this.shipBerth(u,home).angle;if(Number.isFinite(heading))u.angle=u.turretAngle=heading;}
       delete u.reinforcement;u.resumeOrder=null;u.order=null;
       battleMetric(this,u.owner,'unitsProduced',1);
       if(r.rally&&!u.embarkedIn)u.order={type:'move',...this.resolveMoveGoal(u,r.rally.x,r.rally.y)};
@@ -115,6 +119,7 @@ export const frontlineOperations = {
       this.moveUnit(u,entry,dt,40);return true;
     }
     if(reinforcementDomain(r.type))return false;
+    if(runwayCargo(r.type))return updateCargoAirfield(this,u,dt);
     const home=this.getEntity(r.homeId);if(!home)return true;
     // 接收区必须是己方仓库周边的安全陆地，不能通过增援点绕过敌方防线。
     let target=r.delivery;
@@ -130,12 +135,11 @@ export const frontlineOperations = {
     const spawn=this.findSpawn(target.x,target.y,r.type);
     if(!spawn)return true;
     const payload=this.spawnUnit(u.owner,r.type,spawn.x,spawn.y);
-    const heavy=['tank','rocket','ballistic','harvester'].includes(r.type);
-    payload.deliveryUntil=this.time+(heavy?1.4:3);payload.deliveryKind=heavy?'landed':'parachute';
+    payload.deliveryUntil=this.time+3;payload.deliveryKind='parachute';
     if(r.rally)payload.order={type:'move',...this.resolveMoveGoal(payload,r.rally.x,r.rally.y)};
     r.phase='outbound';r.departedAt=this.time;u.order=null;
     battleMetric(this,u.owner,'unitsProduced',1);
-    if(u.owner===0){this.events.notice?.(`${UNITS[r.type].name}已${heavy?'着陆卸载':'空投抵达'}`);this.events.voice?.('unitReady');}
+    if(u.owner===0){this.events.notice?.(`${UNITS[r.type].name}已空投抵达`);this.events.voice?.('unitReady');}
     return true;
   },
   frontlineHarborAngle(home) {
@@ -144,6 +148,12 @@ export const frontlineOperations = {
   },
   frontlineBerth(u,home) {
     const slot=u.assignment?.homeId===home.id?u.assignment.slot:0,harbor=this.map.harbors?.[home.owner];
+    if(this.map.snowToSea&&home.owner<4&&harbor){
+      const lower=home.owner===1||home.owner===3,west=home.owner<2;
+      const y=(lower?[2420,2150,2695,1880,3200,3480]:[1205,945,685,425,165,1670])[slot];
+      const bank=riverBanks(y)[west?'west':'east'];
+      return {...this.navalGoal(bank+(west?1:-1)*(unitRadius(u)+57),y,unitRadius(u)+10), angle: lower ? -Math.PI/2 : Math.PI/2};
+    }
     const center=harbor?.approach||home,angle=this.frontlineHarborAngle(home);
     const across=(slot%3-1)*235,depth=170+Math.floor(slot/3)*235;
     return this.navalGoal(center.x+Math.cos(angle)*depth-Math.sin(angle)*across,center.y+Math.sin(angle)*depth+Math.cos(angle)*across,unitRadius(u)+10);

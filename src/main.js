@@ -976,7 +976,7 @@ function showHelp() {
   const missionRules = mission?.operation ? ' 固定任务编队，不开放自由生产；增援、运输、工业与采矿收入依本关规则。' : mission && isLifeline(state.game) ? ' 固定护航编队，海运抵港才结算，应急空运不计任务交付。' : ' 固定编队与整备资金，不开放生产和外部收入。';
   showModal('操作说明', `<p>${mission ? mission.briefing+missionRules : VICTORY_MODES[state.game?.victoryMode || 'quick'].description+'即可获胜。常规地图依靠运输机和集装箱船交付物资，子午月表保留自动采矿；工程师可占领油井。'}补给车自动维护陆军，舰艇和潜艇按 R 返港维修补弹。先选中一名单位，按 T 或点「同型」可选中全图同型号我方单位。兼容舰载机右键本方航母着舰，选中航母按 U 起飞。运输单位按 U 卸载，潜艇需要声呐探测。</p>
     <div class="keyline"><span>选择 / 框选部队</span><kbd>左键 / 拖动</kbd></div>
-    <div class="keyline"><span>移动 / 攻击目标</span><kbd>右键</kbd></div>
+    <div class="keyline"><span>移动 / 攻击目标</span><kbd>右键 / 触屏选中后点空地</kbd></div>
     <div class="keyline"><span>攻击移动 / 巡逻 / 停止</span><kbd>A / P / S</kbd></div>
     <div class="keyline"><span>返场整备 / 卸载或起飞</span><kbd>R / U</kbd></div>
     <div class="keyline"><span>选中所有作战单位</span><kbd>空格</kbd></div>
@@ -986,7 +986,7 @@ function showHelp() {
     <div class="keyline"><span>工厂集结点</span><kbd>选中工厂后右键</kbd></div>
     <div class="keyline"><span>全屏 / 收起指挥面板</span><kbd>F / B</kbd></div>
     <div class="keyline"><span>暂停 / 返回基地</span><kbd>Esc / H</kbd></div>
-    <p><a href="${new URL('../THIRD-PARTY-ASSETS.txt', import.meta.url).href}" download="第三方模型与材质署名.txt">第三方模型与材质署名</a></p>`, '<button class="primary-btn" data-modal="resume">进入战场</button>');
+    <p><a href="${new URL('../THIRD-PARTY-ASSETS.txt', import.meta.url).href}" download="第三方模型与材质署名.txt">第三方模型与材质署名（含 Wildfire Games）</a></p>`, '<button class="primary-btn" data-modal="resume">进入战场</button>');
 }
 
 function openSandbox(reward = false) {
@@ -1306,7 +1306,17 @@ function setupControls() {
     else if (state.drag?.moved) r.selectScreenBox(state.drag.start, p, state.drag.additive);
     else {
       state.dismissedInspectorId = null;
-      const picked = g.selectEntity(r.pickSelection(p.x, p.y, event.pointerType === 'touch'), event.shiftKey);
+      const target = r.pickSelection(p.x, p.y, event.pointerType === 'touch');
+      if (event.pointerType === 'touch' && !target && g.selected.some(id => {
+        const unit=g.getEntity(id);
+        return unit?.kind==='unit'&&unit.owner===0&&!unit.reinforcement&&!unit.embarkedIn&&unit.hp>0;
+      })) {
+        const point=r.pickPoint(p.x,p.y);
+        g.command(point.x,point.y);
+        state.drag=null;r.dragBox=null;
+        updateUI(true);return;
+      }
+      const picked = g.selectEntity(target, event.shiftKey);
       if (picked?.kind === 'unit' && event.pointerType !== 'touch') {
         state.lastSelectionClick = { id: picked.id, previousId: previousClick?.id };
       }

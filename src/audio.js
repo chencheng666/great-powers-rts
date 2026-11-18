@@ -265,7 +265,14 @@ export class GameAudio {
   syncBattle(game, listener, dt) {
     this.listener = listener;
     this.snowAmbience?.update(game,listener,this.active&&!this.paused&&!this.hidden&&game.running&&!this.settings.muted&&this.settings.master>0&&this.settings.effects>0);
-    if(this.music instanceof AdaptiveBattleMusic)this.music.update(battleMusicIntensity(game));
+    if(this.music instanceof AdaptiveBattleMusic){
+      // 交火强度按模拟时钟抽样，混音交给音频时钟，不跟随渲染帧数反复写入。
+      const now=this.context.currentTime;
+      if(this.musicPollGame!==game||this.musicPollTrack!==this.music||now>=(this.musicPollAt??0)){
+        this.musicPollGame=game;this.musicPollTrack=this.music;this.musicPollAt=now+.25;
+        this.music.update(battleMusicIntensity(game));
+      }
+    }
     if(this.reverbMap!==game.map){this.soundEffects?.reverb?.setTerrain(game.map);this.reverbMap=game.map;}
     if (!this.active || this.paused || !game.running || this.settings.muted || !this.settings.master || !this.settings.effects) {
       this.soundEffects?.syncMovement([]); this.movement.reset(); return;

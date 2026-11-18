@@ -1,3 +1,4 @@
+import { cargoGrounded } from './cargo-airfield.js';
 import { isLandingShip,unitMissionReady } from './joint-operations.js';
 import { commandEnabled } from './command-doctrines.js';
 import { frontlineEnabled, transportWeight } from './frontline-rules.js';
@@ -39,7 +40,7 @@ export const modernCombat = {
 
   aircraftGrounded(u) {
     if (!UNITS[u.type]?.tags.includes('air')) return false;
-    if(u.reinforcement?.progress>0&&['tank','rocket','ballistic','harvester'].includes(u.reinforcement.type)&&u.reinforcement.phase==='inbound')return true;
+    if(u.reinforcement?.cargo)return cargoGrounded(u.reinforcement.cargo);
     if (this.online && typeof u.airfieldGrounded === 'boolean') return u.airfieldGrounded;
     if (u.airfieldOps && ['taxiIn','parked','taxiOut'].includes(u.airfieldOps.phase) && !u.embarkedIn) return true;
     return !!UNITS[u.type]?.tags.includes('air') && !u.embarkedIn && !u.deployment && !u.deckApproach &&

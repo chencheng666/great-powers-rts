@@ -10,7 +10,7 @@ export function unitRadius(unit) {
   if (tags.includes('infantry')) return 9;
   if (tags.includes('rotorcraft')) return 48;
   // 进场与地面机体按停机展示比例收拢，避免停机位被巡航避碰半径堵死。
-  const apronScale = ['approach', 'taxiIn', 'parked', 'taxiOut'].includes(unit.airfieldOps?.phase) ? .32 : 1;
+  const apronScale = unit.reinforcement?.cargo && !['approach','glide','climb'].includes(unit.reinforcement.cargo.stage) ? .55 : ['approach', 'taxiIn', 'parked', 'taxiOut'].includes(unit.airfieldOps?.phase) ? .32 : 1;
   if (tags.includes('jet')) return apronScale * ({ airlift: 80, tanker:80, bomber: 76, freightPlane: 68 }[unit.type] || 40);
   if (tags.includes('drone')) return 20;
   if (tags.includes('ship')) return { carrier: 92, amphibious:82, supplyShip:76, destroyer: 65, submarine: 46, frigate: 48, patrol: 36, landing: 74, containerShip: 88 }[unit.type] || 48;
@@ -87,7 +87,9 @@ export function separateUnits(units, dt, canMove, time = 0, canOverlap = () => f
       if (distance >= minimum - .01) continue;
       if (distance < .001) { const angle = ((a.id * 13 + b.id * 7) % 32) * Math.PI / 16; dx = Math.cos(angle); dy = Math.sin(angle); distance = 1; }
       const push = Math.min((minimum - distance) / 2, dt * 60 / 3), nx = dx / distance, ny = dy / distance;
-      const aMobile = !(a.stunUntil > time), bMobile = !(b.stunUntil > time);
+      const onAirportRoute = unit => unit.reinforcement?.cargo &&
+        unit.reinforcement.cargo.stage !== 'approach' || ['taxiIn','taxiOut','parked'].includes(unit.airfieldOps?.phase);
+      const aMobile = !(a.stunUntil > time) && !onAirportRoute(a), bMobile = !(b.stunUntil > time) && !onAirportRoute(b);
       const movedA = aMobile && shift(a, -nx * push, -ny * push);
       const movedB = bMobile && shift(b, nx * push, ny * push);
       if (!movedA && movedB) shift(b, nx * push, ny * push);

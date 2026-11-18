@@ -1,3 +1,4 @@
+import { CARGO_STAGES, runwayCargo } from './cargo-airfield.js';
 import { validDoctrine } from './command-doctrines.js';
 import { validCampaign } from './snow-campaign.js';
 import { isLandingShip } from './joint-operations.js';
@@ -110,6 +111,8 @@ export function validateSave(save) {
           const r=entity.reinforcement;
           if(config.frontlineVersion!==1||!object(r)||!known(UNITS,r.type)||!UNITS[r.type].producer||!Number.isSafeInteger(r.homeId)||r.homeId<1||!['inbound','outbound','withdraw'].includes(r.phase)||!finite(r.startedAt)||r.startedAt<0||r.startedAt>s.time||r.progress!==undefined&&(!finite(r.progress)||r.progress<0)||r.rally!==null&&!point(r.rally)||r.delivery!==undefined&&!point(r.delivery)||entity.type!==r.type&&entity.type!=='freightPlane')invalid();
         }
+        const cargo=entity.reinforcement?.cargo;
+        if(cargo!==undefined&&(!object(cargo)||entity.type!=='freightPlane'||!runwayCargo(entity.reinforcement.type)||!Number.isSafeInteger(cargo.airfieldId)||cargo.airfieldId<1||!CARGO_STAGES.includes(cargo.stage)||!finite(cargo.fraction)||cargo.fraction<0||cargo.fraction>1||!finite(cargo.readyAt)||cargo.readyAt<0||cargo.readyAt>s.time+1.11))invalid();
         if(entity.deliveryUntil!==undefined&&(!finite(entity.deliveryUntil)||entity.deliveryUntil<0||entity.deliveryUntil>s.time+3.01||!['parachute','landed'].includes(entity.deliveryKind)))invalid();
         if (entity.defenseAmmo !== undefined && (entity.type !== 'carrier' || !Number.isInteger(entity.defenseAmmo) || entity.defenseAmmo < 0 || entity.defenseAmmo > 12)) invalid();
         for (const key of ['defenseReadyAt','defenseReload']) if (entity[key] !== undefined && (!finite(entity[key]) || entity[key] < 0 || key === 'defenseReload' && entity[key] > 2.4)) invalid();
