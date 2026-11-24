@@ -690,8 +690,8 @@ export const modernCombat = {
       if (t.order?.type === 'rearm' || t.fuelReturn || t.fuelServiceId || t.deployment || t.reinforcement) continue;
       if(commandEnabled(this)&&t.type==='amphibious'&&t.ammo<=0&&!t.passengers.length){this.requestResupply(t);continue;}
       const water = this.map.water;
-      let home = (this.map.snowToSea&&isLandingShip(t.type)?this.navalGoal(this.map.harbors[side].x,this.map.harbors[side].y,70):null) || (isLandingShip(t.type) && this.map.landingApproaches?.[side]) || (this.playerCount===6?this.map.spawns[side]:{ x: isLandingShip(t.type) ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 });
-      let shore = (this.map.snowToSea&&isLandingShip(t.type)?this.map.landingApproaches[side]:null) || (isLandingShip(t.type) && this.map.landingApproaches?.[1-side]) || (this.playerCount===6?this.enemyObjective(side):{ x: isLandingShip(t.type) ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 });
+      let home = (this.map.snowToSea&&isLandingShip(t.type)?this.navalGoal(this.map.harbors[side].x,this.map.harbors[side].y,70):null) || (isLandingShip(t.type) && this.map.landingApproaches?.[side]) || (this.map.spawns?this.map.spawns[side]:{ x: isLandingShip(t.type) ? water.x2 - unitRadius(t) : water ? water.x2 + 190 : this.world.width - 550, y: this.homeY + 190 });
+      let shore = (this.map.snowToSea&&isLandingShip(t.type)?this.map.landingApproaches[side]:null) || (isLandingShip(t.type) && this.map.landingApproaches?.[1-side]) || (this.map.spawns?this.enemyObjective(side):{ x: isLandingShip(t.type) ? water.x1 + unitRadius(t) : water ? water.x1 - 190 : 550, y: this.homeY + 190 });
       const islandTarget=commandEnabled(this)?this.knownIslandObjective(side):null;
       if(islandTarget&&isLandingShip(t.type))shore=this.navalGoal(islandTarget.x-360,islandTarget.y,unitRadius(t)+5);
       if(frontlineEnabled(this)&&t.type==='airlift'){

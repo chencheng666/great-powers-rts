@@ -182,7 +182,10 @@ export class Renderer {
     this.track(this.smokeField.material.uniforms.smokeVolume.value);
     this.ballisticTrails=new BallisticTrails(this.scene,{capacity:this.mobileBudget?280:720});
     if (this.quality === 'high'&&!this.mobileBudget) this.preparePostprocessing();
-    this.resize(); this.centerOn(game.map.maxPlayers===6?(game.homeX??game.map.spawns[0].x):innerWidth<700?400:470,game.map.maxPlayers===6?(game.online?game.homeY:game.map.spawns[0].y):game.homeY);
+    this.resize();
+    const spawn = game.map.spawns?.[0];
+    const focusX = spawn ? spawn.x + (game.map.maxPlayers === 6 ? 0 : 240 * Math.cos(spawn.angle)) : innerWidth < 700 ? 400 : 470;
+    this.centerOn(game.online ? game.homeX ?? focusX : focusX, game.online ? game.homeY : spawn?.y ?? game.homeY);
   }
 
   track(resource) { this.ownedResources.push(resource); return resource; }

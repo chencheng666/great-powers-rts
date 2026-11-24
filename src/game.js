@@ -207,7 +207,7 @@ export class Game {
   initBases() {
     if (this.map.missionOnly) return;
     for (const side of this.sides()) {
-      const mirror = (x,y) => this.playerCount===6 ? (()=>{const p=sixPoint(side,x-205,y-720,this.map);return[p.x,p.y];})() : side === 0 ? [x, y + this.homeY - 720] : [this.world.width - x, this.world.height - y - this.homeY + 720];
+      const mirror = (x,y) => this.map.spawns ? (()=>{const p=sixPoint(side,x-205,y-720,this.map);return[p.x,p.y];})() : side === 0 ? [x, y + this.homeY - 720] : [this.world.width - x, this.world.height - y - this.homeY + 720];
       for (const [type, x, y] of [
         ['hq', 205, 720], ['refinery', 335, 825],
         ...(frontlineEnabled(this)?[['airfield',480,540]]:[['power',320,595],['barracks',195,875],['factory',460,705]]),
@@ -229,6 +229,10 @@ export class Game {
         this.addBuilding(side, 'dock', harbor.x, harbor.y);
         const patrol = this.findNavalSpawn(harbor);
         if (patrol) this.spawnUnit(side, 'patrol', patrol.x, patrol.y);
+        if (this.map.startingLanding) {
+          const shore = this.map.landingApproaches[side];
+          this.spawnUnit(side, 'landing', shore.x, shore.y);
+        }
       }
       if (['ocean', 'archipelago'].includes(this.mapId)) {
         const [x, y] = this.battlefieldScale!==1 ? [side?this.map.water.x2-120:this.map.water.x1+120,this.homeY] : mirror(1160, 720);
@@ -346,7 +350,7 @@ export class Game {
     const size = BUILDINGS[type].size;
     if (x < size || y < size || x > this.world.width - size || y > this.world.height - size) return false;
     if (type === 'dock') {
-      if (!this.map.dockZones.some(rect => x >= rect.x1 && x <= rect.x2 && y >= rect.y1 && y <= rect.y2 && (this.map.snowToSea ? rect.owner === side : side === 0 ? x < this.world.width / 2 : x > this.world.width / 2))) return false;
+      if (!this.map.dockZones.some(rect => x >= rect.x1 && x <= rect.x2 && y >= rect.y1 && y <= rect.y2 && (rect.owner === undefined ? (side === 0 ? x < this.world.width / 2 : x > this.world.width / 2) : rect.owner === side))) return false;
     } else if ((this.map.combinedArms && islandDistance(this.map,x,y) < size * .65) || this.map.noBuild.some(rect => intersectsRect(x, y, size * 0.6, rect))) return false;
     if (this.ore.some(o => o.amount > 0 && distance(o, { x, y }) < 95)) return false;
     if (this.oil.some(o => distance(o, { x, y }) < 95)) return false;
@@ -738,7 +742,7 @@ export class Game {
       } else if (this.isAI(b.owner) && UNITS[unit.type].tags.includes('ship')) {
         const objective = (this.map.snowToSea?this.map.harbors[this.nearestEnemySide(b.owner)]?.approach:null) || this.map.navalObjectives?.[b.owner] || { x: this.map.water.x1 + unitRadius(unit) + 40, y: yCenter + random(-290, 290) };
         unit.order = { type: 'attackMove', ...objective };
-      } else if (this.isAI(b.owner) && unit.type !== 'harvester') unit.order = { type: 'move', ...(this.playerCount===6?sixPoint(b.owner,400+random(-70,70),random(-120,120),this.map):{x:this.world.width-630+random(-70,70),y:yCenter+random(-120,120)}) };
+      } else if (this.isAI(b.owner) && unit.type !== 'harvester') unit.order = { type: 'move', ...(this.map.spawns?sixPoint(b.owner,400+random(-70,70),random(-120,120),this.map):{x:this.world.width-630+random(-70,70),y:yCenter+random(-120,120)}) };
       if (b.rallyPoint && unit.type !== 'harvester') unit.order = { type: 'move', ...this.resolveMoveGoal(unit, b.rallyPoint.x, b.rallyPoint.y) };
       const carrier = !unit.order && d.tags.includes('deck') ? this.assignNewCarrierAircraft(unit) : null;
       if (unit.order) this.setDroneMission(unit);
@@ -1708,7 +1712,7 @@ export class Game {
     ];
     const index = Math.max(0, this.players[side].aiPlanIndex - 1);
     const preferred = slots[index] || slots[slots.length - 1];
-    const origin = this.playerCount===6 ? sixPoint(side,preferred[0]-205,preferred[1]-720,this.map) : { x: this.world.width - preferred[0], y: this.world.height - preferred[1] - this.homeY + 720 };
+    const origin = this.map.spawns ? sixPoint(side,preferred[0]-205,preferred[1]-720,this.map) : { x: this.world.width - preferred[0], y: this.world.height - preferred[1] - this.homeY + 720 };
     if (this.placeBuilding(side, type, origin.x, origin.y)) return;
     for (let radius = 0; radius <= 7; radius++) {
       for (let a = 0; a < 16; a++) {
@@ -1727,7 +1731,9 @@ export class Game {
     if (combat.length < 3) return;
     const wave = combat.filter(u => !['attackMove', 'rearm', 'board'].includes(u.order?.type)).slice(0, this.difficulty.waveSize);
     const objective = this.victoryMode === 'control' ? this.beacons.filter(site => site.owner !== side && this.hasExploredFor(side, site.x, site.y) && (!this.map.combinedArms || (this.map.snowToSea?snowLandConnected(this.map,site,wave[0]||combat[0]):islandIndex(this.map,site)===islandIndex(this.map,wave[0]||combat[0])))).sort((a, b) => distance(a, wave[0] || combat[0]) - distance(b, wave[0] || combat[0]))[0] : null;
-    for (const u of wave) { u.order = { type: 'attackMove', x: (objective?.x ?? (this.enemyObjective(side).x)) + random(-70, 70), y: (objective?.y ?? (this.enemyObjective(side).y)) + random(-90, 90) }; u.path = []; }
+    const enemy = this.enemyObjective(side);
+    const target = objective || (this.map.spawns && this.map.landingApproaches && islandIndex(this.map, enemy) !== islandIndex(this.map, combat[0]) ? this.map.scouts[side] : enemy);
+    for (const u of wave) { u.order = { type: 'attackMove', x: target.x + random(-70, 70), y: target.y + random(-90, 90) }; u.path = []; }
     if (wave.length && this.isVisible(wave[0].x, wave[0].y)) this.events.notice?.(objective ? '敌军正在争夺信标' : '敌军正在向基地推进');
   }
 

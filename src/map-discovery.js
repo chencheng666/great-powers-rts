@@ -5,6 +5,7 @@ export function mapCategory(id) {
   const m=MAPS[id];
   if(m?.training) return 'beginner';
   if(m?.future) return 'future';
+  if(id==='caiStrait') return 'sea';
   if(m?.combinedArms||m?.strategic||m?.maxPlayers===6) return 'strategy';
   return ['ocean','strait','archipelago'].includes(id)?'sea':'land';
 }
@@ -16,6 +17,7 @@ export function mapBrief(id) {
   const m=MAPS[id]; if(!m)return null;
   const tips={beginner:'推荐新兵难度，先练习移动、建造与补给。',land:'关注通道与侧翼，保持生产与前线补给。',sea:'先发展船坞，安排运输与护航，留意可登陆岸线。',future:'月表使用独立装备体系，注意矿石精炼与环境扰动。',strategy:'战场较大，先稳住资源与侦察，再规划多线推进。'};
   const w=m.world||WORLD;
+  if(id==='caiStrait')return {category:'玩家共创',tip:'海峡两岸各有一个港口和一座信标。争夺据点时，潮心岛的第三座信标往往决定胜负。',size:`${w.width} × ${w.height}`,special:'赠予 CAI · 双方单机 · 海空补给'};
   if(m.snowToSea)return {category:'主战场',tip:'护送空运与海运物资，卸货后资金到账。跨桥争夺油井和资源点，用舰队控制河口，再派运输部队争夺港岛。',size:`${w.width} × ${w.height}`,special:'1位玩家＋5个电脑阵营 · 空海补给经济 · 五处信标'};
   return {category:MAP_CATEGORIES[mapCategory(id)],tip:m.combinedArms?'北部山口、中部谷道、南部外海。守住船坞，派登陆舰争夺港岛。':tips[mapCategory(id)],size:`${w.width} × ${w.height}`,special:m.combinedArms?'三线推进 · 航空母舰与潜艇':m.progression?'成长解锁 · 普通单机':m.maxPlayers===6?'六方实验战场':m.training?'新兵：5000初始资金与支援':'可调整难度与胜利规则'};
 }
