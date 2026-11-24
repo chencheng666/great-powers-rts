@@ -376,7 +376,7 @@ async function deployGame(save = null, onlinePayload = null) {
   const events = { notice: toast, shot: beep, voice: key => gameAudio.say(key), selection: updateSelection, end: showResult, campaign:showCampaignIntermission };
   state.game = onlinePayload ? new OnlineGame(onlinePayload, events, onlineClient) : save ? Game.fromSave(save, events) : new Game(state.faction, enemy, events, { campaignId:state.launchCampaign, sandbox: state.launchChallenge || state.recommendedEntry ? null : loyalty.settings, challengeId:state.launchChallenge,nuclearEnabled:$('#nuclear-enabled').checked,victoryMode: state.victoryMode, difficulty: state.difficulty, mapId: state.mapId,battlefieldScale:$('#expanded-map').checked?1.5:1 });
   state.launchChallenge = null;state.launchCampaign=null;
-  if(state.game.campaign){state.mapId=state.game.mapId;state.victoryMode=state.game.victoryMode;}
+  if(state.game.campaign || state.game.map.islandObjective){state.mapId=state.game.mapId;state.victoryMode=state.game.victoryMode;}
   if (state.game.challenge) { state.mapId=state.game.mapId; state.victoryMode=state.game.victoryMode;state.difficulty='standard'; }
   if (onlinePayload) { state.faction=state.game.players[0].faction;state.mapId=state.game.mapId;state.victoryMode=state.game.victoryMode;state.difficulty='standard'; }
   if (save) {
@@ -407,7 +407,7 @@ async function deployGame(save = null, onlinePayload = null) {
   $('#battle-status').textContent = state.game.sandbox ? '指挥官沙盘 · 不计荣誉' : '战斗进行中';
   $('#battle-objective').textContent = VICTORY_MODES[state.victoryMode].description;
   $('.battlefield').classList.toggle('future', !!state.game.map.future);
-  $('#mission-label').textContent = `${state.game.sandbox ? '沙盘演练 · ' : ''}${VICTORY_MODES[state.victoryMode].name} · ${state.game.map.name}`;
+  $('#mission-label').textContent = `${state.game.sandbox ? '沙盘演练 · ' : ''}${state.game.map.islandObjective?.name ?? VICTORY_MODES[state.victoryMode].name} · ${state.game.map.name}`;
   if (state.game.challenge) { const d=CHALLENGES[state.game.challenge.id];$('#mission-label').textContent=d.name+' · 战术挑战'; state.renderer.centerOn(d.camera?.x||(state.game.challenge.id==='corridor'?760:1000),d.camera?.y||(state.game.challenge.id==='corridor'?1030:720)); }
   $('#minimap-map').textContent = state.game.map.name;
   $('#minimap-sector').textContent = state.game.map.sector;
@@ -544,7 +544,10 @@ function updateUI(force = false) {
   cyber.textContent=locked?`链路干扰 ${Math.ceil(p.cyberLockedUntil-g.time)} 秒 · 自动还击保留`:incoming?`网络攻击预警 ${Math.ceil(incoming.executeAt-g.time)} 秒`:ownPending?`网络攻击排程 ${Math.ceil(ownPending.executeAt-g.time)} 秒`:!g.hasPower(0)?'网络战 · 供电中断':p.cyberCharge>=INTELLIGENCE_RULES.cyberCharge?'网络攻击已就绪':`网络战充能 ${Math.ceil(Math.max(0,INTELLIGENCE_RULES.cyberCharge-(p.cyberCharge||0)))} 秒`;
   if(locked){state.drag=null;state.renderer.dragBox=null;}
   $('#save-btn').disabled = !g.running || !!g.online;
-  if (g.victoryMode === 'control') $('#battle-objective').textContent = `信标积分 ${Math.floor(p.controlScore)} : ${Math.floor(g.players[1].controlScore)} / ${g.controlGoal}`;
+  if (g.map.islandObjective) {
+    const {name,beacons,hold}=g.map.islandObjective;
+    $('#battle-objective').textContent=`${name} · 信标 ${g.islandSignalsHeld}/${beacons.length} · 驻守 ${Math.min(hold,Math.floor(p.controlScore+1e-6))}/${hold} 秒`;
+  } else if (g.victoryMode === 'control') $('#battle-objective').textContent = `信标积分 ${Math.floor(p.controlScore)} : ${Math.floor(g.players[1].controlScore)} / ${g.controlGoal}`;
   if (g.challenge) { const s=challengeStatus(g);$('#battle-objective').textContent=`${s.definition.name} · 剩余 ${s.seconds} 秒 · ${isIslandWatch(g)?watchSummary(g).status+' · ':g.challenge.operation?theaterSummary(g)+' · ':''}${isLifeline(g)?`海运 ${lifelineSummary(g).delivered} / ${freightRules(g).goal} · `:g.challenge.intel?`情报 ${g.challenge.intel.completed} / ${s.definition.nodes.length} · `:g.challenge.beachhead?`驻守 ${Math.floor(g.challenge.beachhead.hold)} / ${s.definition.holdTime} 秒 · `:''}${s.definition.targetName} ${s.health}%`; }
   if(g.campaign){const c=campaignSummary(g);$('#battle-objective').textContent=`连续战役 ${c.chapter}/3 · ${c.name} · 驻守 ${c.hold}/${c.holdGoal}秒`;}
   const environmentStatus = $('#environment-status');
@@ -1171,9 +1174,10 @@ function showResult(winner) {
     gameAudio.setPaused(false);gameAudio.say(draw?'draw':win?'victory':'defeat');
     if(win&&settlement?.status==='awarded')gameAudio.celebrate(settlement.toRank.index>settlement.fromRank.index);
   }
-  $('#battle-status').textContent = draw ? '双方平局' : win ? '任务完成' : '任务失败';
+  const missionSuccess=game.map.islandObjective?.success;
+  $('#battle-status').textContent = draw ? '双方平局' : win ? missionSuccess ?? '任务完成' : '任务失败';
   const award=win&&settlement?honorResultHTML(settlement,game.victoryMode):`<p>${draw?'双方战力同时耗尽，战局以平局结束。':win?`${game.map.name}由你控制。这场胜利值得庆祝。`:'一场失利不会抹去你的战绩。整备部队，再次出发。'}</p>${!win?'<p>荣誉积分不会减少，已获得的称号始终保留。</p>':''}`;
-  showModal(draw?'战役平局':win?'战役胜利':'重整旗鼓',`${award}<p class="result-battle-summary">${game.map.name} · ${VICTORY_MODES[game.victoryMode].name} · ${game.difficulty.name}难度 · ${seconds(game.time)} · 剩余部队 ${game.ownedUnits(0).length} · 油井 ${game.oil.filter(o=>o.owner===0).length} · 信标 ${game.beacons.filter(site=>site.owner===0).length}</p>${error?'<p class="honor-warning" id="honor-save-warning" role="alert"></p>':''}`,`${error?`<button class="secondary-btn" data-modal="retry-honor">${icon('refresh-cw')} 重试保存荣誉</button>`:''}<button class="primary-btn" data-modal="restart">${icon('play')} 再战一局</button><button class="secondary-btn" data-growth-open>成长奖励 / 分享战报</button><button class="secondary-btn" data-modal="honors">${icon('award')} 荣誉档案</button><button class="secondary-btn" data-modal="menu">${icon('house')} 返回主界面</button>`,draw?'战局结束':win?'凯旋归来':'征途仍在继续');
+  showModal(draw?'战役平局':win?missionSuccess ?? '战役胜利':'重整旗鼓',`${award}<p class="result-battle-summary">${game.map.name} · ${VICTORY_MODES[game.victoryMode].name} · ${game.difficulty.name}难度 · ${seconds(game.time)} · 剩余部队 ${game.ownedUnits(0).length} · 油井 ${game.oil.filter(o=>o.owner===0).length} · 信标 ${game.beacons.filter(site=>site.owner===0).length}</p>${error?'<p class="honor-warning" id="honor-save-warning" role="alert"></p>':''}`,`${error?`<button class="secondary-btn" data-modal="retry-honor">${icon('refresh-cw')} 重试保存荣誉</button>`:''}<button class="primary-btn" data-modal="restart">${icon('play')} 再战一局</button><button class="secondary-btn" data-growth-open>成长奖励 / 分享战报</button><button class="secondary-btn" data-modal="honors">${icon('award')} 荣誉档案</button><button class="secondary-btn" data-modal="menu">${icon('house')} 返回主界面</button>`,draw?'战局结束':win?'凯旋归来':'征途仍在继续');
   if(error)$('#honor-save-warning').textContent=error;
   $('#modal .modal-actions').insertAdjacentHTML('beforebegin', battleReportHTML(game));
   if(win)$('#modal').classList.add('victory-result');
@@ -1608,8 +1612,21 @@ const onlineClient=new OnlineClient({
 drawFactionPicker();
 $('#map-select').innerHTML = Object.entries(MAPS).sort(([a],[b])=>Number(b==='snowtosea')-Number(a==='snowtosea')).filter(([,map])=>!map.missionOnly&&(!candidateMode||map.maxPlayers===6&&!map.singleplayerOnly)).map(([id, map]) => `<option value="${id}">${map.name} · ${map.sector}</option>`).join('');
 $('#map-select').value = state.mapId;
-const updateNuclearOption=()=>{const enabled=supportsNuclearMap($('#map-select').value);$('#nuclear-option').hidden=!enabled;if(!enabled)$('#nuclear-enabled').checked=false;};
-$('#map-select').addEventListener('change',updateNuclearOption);updateNuclearOption();
+const updateMapRules=()=>{
+  const mapId=$('#map-select').value,objective=MAPS[mapId]?.islandObjective,enabled=supportsNuclearMap(mapId);
+  $('#nuclear-option').hidden=!enabled;
+  if(!enabled) $('#nuclear-enabled').checked=false;
+  for(const button of document.querySelectorAll('[data-victory]')){
+    const control=button.dataset.victory==='control';
+    button.disabled=!!objective&&!control;
+    if(objective) button.classList.toggle('active',control);
+    if(control) {
+      button.firstChild.nodeValue=objective?.name ?? '据点控制';
+      button.querySelector('small').textContent=objective?`守住三座信标 ${objective.hold} 秒`:'累计 240 分';
+    }
+  }
+};
+$('#map-select').addEventListener('change',updateMapRules);updateMapRules();
 setupMapDiscovery();
 if (location.protocol === 'file:') $('#desktop-download-link').href = 'https://www.daguojueqi.site/downloads/';
 setupControls();

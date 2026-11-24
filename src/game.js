@@ -82,6 +82,7 @@ export class Game {
     if (MAPS[this.mapId].singleplayerOnly && this.multiplayer) throw new Error('该战区仅供单机演练');
     this.map = battlefieldMap(this.mapId,this.battlefieldScale);
     this.world = this.map.world || WORLD;
+    if (this.map.islandObjective) this.victoryMode = 'control';
     this.frontlineVersion = this.map.snowToSea && !this.multiplayer && options.frontlineVersion !== 0 ? 1 : 0;
     this.fuelVersion = this.frontlineVersion===1 && options.fuelVersion!==0 ? 1 : 0;
     this.commandVersion=this.fuelVersion===1&&options.commandVersion!==0?1:0;
@@ -139,7 +140,12 @@ export class Game {
     return { side, faction, credits: this.map.startingCredits || 1550, powerIn: 0, powerOut: 0, controlScore: 0, buildQueue: null, abilityCharge: 0, abilityCooldown: 0, shieldUntil: 0, nuclearCharge:0,nuclearSpent:false,nuclearPending:null,aiPlanIndex: 0, aiUnitCount: 0, aiAirUnitCount: 0, aiNavyUnitCount: 0, aiEngineerRetryAt: this.difficulty.engineerStart, aiScoutRetryAt: 30, aiGhostRetryAt: 65, unitCount: 0 };
   }
 
-  get controlGoal() { return this.map.controlGoal ?? 240; }
+  get controlGoal() { return this.map.islandObjective?.hold ?? this.map.controlGoal ?? 240; }
+
+  get islandSignalsHeld() {
+    const required = this.map.islandObjective?.beacons;
+    return required ? this.beacons.filter(site => site.owner === 0 && required.includes(site.id)).length : 0;
+  }
 
   get faction() { return FACTIONS[this.players[0].faction]; }
 
@@ -614,7 +620,7 @@ export class Game {
       battleMetric(this, p.side, 'oilSeconds', this.oil.filter(o => o.owner === p.side).length * dt);
       battleMetric(this, p.side, 'beaconSeconds', this.beacons.filter(o => o.owner === p.side).length * dt);
       if (!this.challenge) p.credits += this.oil.filter(o => o.owner === p.side).length * 11 * dt;
-      if (this.victoryMode === 'control') p.controlScore += this.beacons.filter(site => site.owner === p.side).length * dt;
+      if (this.victoryMode === 'control' && !this.map.islandObjective) p.controlScore += this.beacons.filter(site => site.owner === p.side).length * dt;
       p.abilityCooldown = Math.max(0, p.abilityCooldown - dt);
       if (this.hasBuilding(p.side, 'super') && this.hasPower(p.side) && p.abilityCharge < 100) p.abilityCharge = Math.min(100, p.abilityCharge + dt * 0.85);
       this.updateBuildQueue(p, dt);
@@ -1744,6 +1750,13 @@ export class Game {
   checkVictory(dt=0) {
     if (this.campaign) { this.updateSnowCampaign(dt); return; }
     if (this.challenge) { this.updateChallenge(dt); return; }
+    if (this.map.islandObjective) {
+      if (!this.ownedBuildings(0).some(b => CORE_BUILDINGS.includes(b.type))) { this.endGame(1); return; }
+      const player = this.players[0], objective = this.map.islandObjective;
+      player.controlScore = this.islandSignalsHeld === objective.beacons.length ? Math.min(objective.hold, player.controlScore + dt) : 0;
+      if (player.controlScore >= objective.hold - 1e-6) this.endGame(0);
+      return;
+    }
     if(this.playerCount===6){
       for(const p of this.players)if(!p.eliminated){const lost=this.victoryMode==='annihilation'?this.ownedBuildings(p.side).length===0&&this.ownedUnits(p.side).filter(u=>!FREIGHT_TYPES.includes(u.type)).length===0:!this.ownedBuildings(p.side).some(b=>CORE_BUILDINGS.includes(b.type));if(lost){p.eliminated=true;p.buildQueue=null;p.readyBuilding=null;this.units=this.units.filter(u=>u.owner!==p.side);this.buildings=this.buildings.filter(b=>b.owner!==p.side);for(const site of [...this.oil,...this.beacons,...this.resourceSites])if(site.owner===p.side)site.owner=null;}}
       const alive=this.players.filter(p=>!p.eliminated);if(alive.length<=1)this.endGame(alive[0]?.side??'draw');

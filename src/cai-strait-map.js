@@ -16,13 +16,17 @@ export function caiStraitMap() {
     name: '潮汐海峡 · CAI 专属', sector: '玩家共创 · 海峡与群岛',
     fixedScale: true, singleplayerOnly: true, combinedArms: true, naval: true, startingLanding: true,
     world: { width, height, cell: 40, fog: 80 },
-    startingCredits: 3400, controlGoal: 480, ore: [], bridges: [],
+    startingCredits: 3400, ore: [], bridges: [],
+    islandObjective: {
+      name: '收复台岛', success: '台岛已收复', hold: 30,
+      beacons: ['cai-tide', 'cai-east-north', 'cai-east']
+    },
     water: rect(0, 0, width, height),
     islands: [
       { name: '西岸陆地', points: [[0,0],[1780,0],[1970,330],[1810,610],[1900,870],[1660,1080],
         [1790,1320],[1720,1480],[1740,1700],[1600,1880],[1690,2060],[1810,2170],[1780,2380],
         [1620,2590],[1660,2770],[1510,2960],[1630,3220],[1540,3440],[1730,3700],[1780,height],[0,height]] },
-      { name: '东部主岛', points: [[4210,260],[4470,360],[4750,670],[4820,1040],[4930,1270],[4830,1630],
+      { name: '台岛', points: [[4210,260],[4470,360],[4750,670],[4820,1040],[4930,1270],[4830,1630],
         [4780,2050],[4640,2450],[4580,2690],[4430,2930],[4250,3110],[4100,3420],[3900,3530],
         [3760,3310],[3770,3030],[3600,2830],[3490,2550],[3330,2350],[3300,2060],[3250,1810],
         [3420,1520],[3540,1220],[3660,960],[3860,790],[3910,540]] },
@@ -39,7 +43,7 @@ export function caiStraitMap() {
     seaEntries: [{ x: 2150, y: 3710 }, { x: 3150, y: 3700 }],
     beaches: [rect(1640, 2080, 1990, 2340), rect(3040, 2240, 3540, 2490),
       rect(2070, 1810, 2460, 2110), rect(2620, 1800, 3000, 2120)],
-    landingApproaches: [{ x: 1920, y: 2210 }, { x: 3180, y: 2340 }],
+    landingApproaches: [{ x: 1900, y: 2210 }, { x: 3225, y: 2340 }],
     navalObjectives: [{ x: 2140, y: 2460 }, { x: 2960, y: 1530 }],
     scouts: [{ x: 1390, y: 2260 }, { x: 3720, y: 2520 }],
     roads: [
@@ -52,7 +56,8 @@ export function caiStraitMap() {
     beacons: [
       { id: 'cai-west', name: '浅湾信标', x: 1400, y: 2230 },
       { id: 'cai-tide', name: '潮心岛 · CAI 信标', x: 2510, y: 1960 },
-      { id: 'cai-east', name: '山麓信标', x: 3720, y: 2520 }
+      { id: 'cai-east-north', name: '台岛北部信标', x: 3700, y: 1440 },
+      { id: 'cai-east', name: '台岛南部信标', x: 3720, y: 2520 }
     ],
     oil: [{ id: 'cai-oil-west', x: 1280, y: 1240 }, { id: 'cai-oil-east', x: 3910, y: 1730 }],
     resources: [

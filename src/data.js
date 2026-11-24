@@ -106,7 +106,7 @@ BUILD_ORDER.push('nuclearSilo');
 UNIT_ORDER.push('ewPlane', ...Object.keys(STRATEGIC_UNITS).filter(type => STRATEGIC_UNITS[type].producer));
 // 常规装备按战区能力解锁；保留月面、科幻和固定任务各自的装备规则。
 export const supportsModernMap = mapId => !!MAPS[mapId] && !MAPS[mapId].future && !MAPS[mapId].missionOnly;
-export const supportsNuclearMap = mapId => supportsModernMap(mapId) && MAPS[mapId].maxPlayers !== 6;
+export const supportsNuclearMap = mapId => supportsModernMap(mapId) && MAPS[mapId].maxPlayers !== 6 && !MAPS[mapId].islandObjective;
 export const supportsMap = (required, mapId) => !required || required === mapId || required === 'modern' && supportsModernMap(mapId) || required === 'ocean' && (['archipelago','islandwatch'].includes(mapId)||MAPS[mapId]?.naval) || required === 'meridian' && mapId === 'moonsea' || required === 'strategic' && (mapId === 'sentinel' || MAPS[mapId]?.combinedArms);
 UNITS.carrier.capacity = CARRIER_CAPACITY;
 UNITS.carrier.desc = '可编入24架自行生产的舰载制空机，最多6架同时出动；固定机位停放，逐机起降、付费整备，可一键召回。原版移除抽象对地打击编组，保留近程自卫，需反潜护卫。';
